@@ -3,9 +3,6 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-export const DEFAULT_BOUNDED_MAX_FILES = 50
-export const DEFAULT_BOUNDED_MAX_CHANGED_LINES = 10000
-
 // Project-owned config: a project supplies its own bounded-path allowlist/denylist and sensitive
 // pattern here so this generic engine never hardcodes a stack's routes, auth surface, or package
 // layout. See docs/stack-conventions.md (template in agents/templates/stack-conventions.md) for
@@ -15,8 +12,8 @@ const CONFIG_PATH = 'agent-workflow.config.json'
 
 function loadBoundedConfig() {
   const defaults = {
-    maxFiles: DEFAULT_BOUNDED_MAX_FILES,
-    maxChangedLines: DEFAULT_BOUNDED_MAX_CHANGED_LINES,
+    maxFiles: 50,
+    maxChangedLines: 10000,
     defaultBase: 'origin/main',
     deniedPathFragments: [],
     allowedExactPaths: [],
@@ -47,6 +44,10 @@ function loadBoundedConfig() {
 }
 
 const config = loadBoundedConfig()
+
+export const BOUNDED_MAX_FILES = config.maxFiles
+export const BOUNDED_MAX_CHANGED_LINES = config.maxChangedLines
+
 const ALLOWED_EXACT_PATHS = new Set(config.allowedExactPaths)
 const SENSITIVE_ADDITION_RE = config.sensitiveAdditionPattern
   ? new RegExp(config.sensitiveAdditionPattern, 'i')
