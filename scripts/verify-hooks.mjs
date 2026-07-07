@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { execFileSync, spawnSync } from 'node:child_process'
@@ -94,6 +94,12 @@ try {
   assert.match(result.stdout, /branch: work\/hook-test/)
   assert.match(result.stdout, /workstream/)
 
+  // prettier-on-write.mjs is best-effort: it silently no-ops when prettier isn't installed in
+  // the consuming project (not every project uses it). Only assert actual formatting when
+  // prettier is present; otherwise just confirm the hook exits 0 without touching the file.
+  const prettierAvailable = existsSync(
+    resolve(repoRoot, 'node_modules', 'prettier', 'bin', 'prettier.cjs'),
+  )
   const prettyFile = join(repoRoot, 'prettier-hook-test.ts')
   writeFileSync(prettyFile, 'export   const value={foo:"bar"}\n')
   result = runHook('prettier-on-write.mjs', {
@@ -101,7 +107,11 @@ try {
     input: JSON.stringify({ tool_input: { file_path: prettyFile } }),
   })
   assert.equal(result.status, 0)
-  assert.match(readFileSync(prettyFile, 'utf8'), /export const value = \{ foo: 'bar' \}/)
+  if (prettierAvailable) {
+    assert.match(readFileSync(prettyFile, 'utf8'), /export const value = \{ foo: 'bar' \}/)
+  } else {
+    assert.equal(readFileSync(prettyFile, 'utf8'), 'export   const value={foo:"bar"}\n')
+  }
 
   result = runHook('post-checkout', {
     cwd: repoRoot,
@@ -115,10 +125,15 @@ try {
   assert.equal(result.status, 0)
   assert.match(result.stdout, /\[session-status\] branch:/)
 
-  const codexHooks = JSON.parse(readFileSync(codexHooksPath, 'utf8'))
-  const preToolUseCommand = codexHooks.hooks?.PreToolUse?.[0]?.hooks?.[0]?.command ?? ''
-  assert.match(preToolUseCommand, /check-issue-branch\.mjs/)
-  assert.doesNotMatch(preToolUseCommand, /bash -lc/)
+  // .codex/hooks.json (like .claude/settings.json and .agy/settings.json) is intentionally not
+  // framework-synced — see lib/framework-files.mjs's known-limitation note — so a project may not
+  // have wired it yet. Only assert its contents when it exists.
+  if (existsSync(codexHooksPath)) {
+    const codexHooks = JSON.parse(readFileSync(codexHooksPath, 'utf8'))
+    const preToolUseCommand = codexHooks.hooks?.PreToolUse?.[0]?.hooks?.[0]?.command ?? ''
+    assert.match(preToolUseCommand, /check-issue-branch\.mjs/)
+    assert.doesNotMatch(preToolUseCommand, /bash -lc/)
+  }
 } finally {
   rmSync(tempRepo, { recursive: true, force: true })
   rmSync(join(repoRoot, 'prettier-hook-test.ts'), { force: true })
