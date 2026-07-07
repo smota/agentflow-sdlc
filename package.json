@@ -1,0 +1,22 @@
+{
+  "name": "multi-agent-sdlc",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "description": "Reusable multi-agent SDLC framework: role-based single-agent phases, branch discipline, PR/issue contracts, git hooks, and validators — extracted from Ativaly for reuse across projects.",
+  "packageManager": "pnpm@9.6.0",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:hooks": "node scripts/verify-hooks.mjs",
+    "test:workflow": "node scripts/verify-agent-workflow.mjs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3",
+    "vitest": "^2.0.4"
+  }
+}

@@ -1,0 +1,17 @@
+#!/usr/bin/env node
+import { spawnSync } from 'node:child_process'
+import { join } from 'node:path'
+import { runGit } from './hook-utils.mjs'
+
+const root = runGit(['rev-parse', '--show-toplevel'])
+if (root.length === 0) {
+  process.exit(0)
+}
+
+const result = spawnSync(process.execPath, [join(root, '.github', 'hooks', 'session-status.mjs')], {
+  cwd: root,
+  stdio: 'inherit',
+  env: process.env,
+})
+
+process.exit(result.status ?? 1)

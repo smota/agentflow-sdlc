@@ -1,0 +1,30 @@
+name: Validate PR
+
+on:
+  pull_request:
+    branches:
+      - development
+      - staging
+      - main
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-pr-body:
+    name: Validate PR body
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Check PR manifest contract
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          printf '%s' "$PR_BODY" > /tmp/pr-body.md
+          node scripts/validate-pr-manifest.mjs --path /tmp/pr-body.md

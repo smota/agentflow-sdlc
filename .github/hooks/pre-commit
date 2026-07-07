@@ -1,0 +1,55 @@
+#!/usr/bin/env node
+import {
+  getCurrentBranch,
+  isAllowedBranch,
+  isPausedGitOperation,
+  isTrunkBranch,
+  printLines,
+  runGit,
+} from './hook-utils.mjs'
+
+const branch = getCurrentBranch()
+
+if (isPausedGitOperation()) {
+  process.exit(0)
+}
+
+if (isTrunkBranch(branch)) {
+  printLines([
+    `  ERROR: direct commits to '${branch}' are not allowed.`,
+    '  Trunk branches receive changes via pull requests only.',
+    '  Start from development and create a feature branch:',
+    '    git checkout development && git checkout -b work/<theme>',
+  ])
+  process.exit(1)
+}
+
+if (!isAllowedBranch(branch)) {
+  printLines([
+    `  ERROR: branch '${branch}' does not follow the required naming convention.`,
+    '  Valid patterns:',
+    '    work/<theme>                  e.g. work/customer-registry',
+    '    hotfix/<theme>                e.g. hotfix/tenant-guard-regression',
+    '    spike/<theme>                 e.g. spike/route-optimization-research',
+    '    issue/<number>-<short-desc>   compatibility during migration',
+    '    wt/<slug>                     e.g. wt/172-developer-20260603 (agent worktrees)',
+    '    claude/<slug>                 e.g. claude/session-abc (Claude Code sessions)',
+    '  Start from development: git checkout development && git checkout -b work/<theme>',
+  ])
+  process.exit(1)
+}
+
+const stagedFiles = runGit(['diff', '--cached', '--name-only'])
+  .split('\n')
+  .map((filePath) => filePath.trim().replace(/\\/g, '/'))
+  .filter((filePath) => filePath.length > 0)
+
+if (stagedFiles.some((filePath) => /^scripts\/.*\.(sh|ps1)$/.test(filePath))) {
+  printLines([
+    '  ERROR: Bash and PowerShell scripts are forbidden in the scripts/ directory.',
+    '  Use cross-platform Node.js (.mjs) instead.',
+  ])
+  process.exit(1)
+}
+
+process.exit(0)

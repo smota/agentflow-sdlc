@@ -1,0 +1,13 @@
+# Default behavior, normalize line endings for all text files
+* text=auto
+
+# Markdown files always use LF (prevents CRLF noise on Windows checkouts)
+*.md text eol=lf
+
+# Shell and Node.js scripts must always use LF line endings
+*.sh text eol=lf
+*.mjs text eol=lf
+.github/hooks/pre-commit text eol=lf
+.github/hooks/pre-push text eol=lf
+.github/hooks/post-checkout text eol=lf
+.github/hooks/post-merge text eol=lf

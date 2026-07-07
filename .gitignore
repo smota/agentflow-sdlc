@@ -1,0 +1,8 @@
+node_modules/
+.agent-runs/
+.claude/skills/
+.codex/skills/
+.agy/skills/
+skills-lock.json
+SPEC.md
+*.log
