@@ -8,6 +8,9 @@
   "engines": {
     "node": ">=20.0.0"
   },
+  "bin": {
+    "multi-agent-sdlc": "./bin/cli.mjs"
+  },
   "scripts": {
     "test": "vitest run",
     "test:hooks": "node scripts/verify-hooks.mjs",

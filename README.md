@@ -36,6 +36,7 @@ See `docs/adr/` for the design decisions behind it, starting with
 | `.github/hooks/*`                                               | Git hooks: branch enforcement, prettier-on-write, session status                 |
 | `.github/ISSUE_TEMPLATE/`, `.github/*template.md`               | Issue and PR body templates                                                      |
 | `CLAUDE.md` / `CODEX.md` / `AGY.md`                             | Thin per-agent adapters pointing at a project's own `AGENTS.md`                  |
+| `bin/cli.mjs`, `lib/`                                           | The `init` / `sync` / `doctor` distribution CLI and its lockfile logic           |
 
 ## What's deliberately _not_ in here
 
@@ -53,12 +54,27 @@ Two channels, meant to be used together:
    personas) into `.claude/skills/`, `.codex/skills/`, `.agy/skills/`, alongside any other skill
    sources a project already uses.
 2. **The sync CLI** (`init` / `sync` / `doctor`) — installs and keeps in sync everything else
-   (hooks, templates, generic validators, issue/PR templates). Not yet built — tracked as a
-   follow-up in this repo.
+   (hooks, templates, generic validators, issue/PR templates).
 
-Until the sync CLI exists, install manually: copy this repo's files into a target project
-preserving their relative paths, then add `docs/stack-conventions.md` and
-`agent-workflow.config.json` with that project's own values.
+```bash
+# From a checkout of this repo, targeting another project's working directory:
+node bin/cli.mjs init --target /path/to/other-project
+node bin/cli.mjs sync --target /path/to/other-project   # re-run any time this repo updates
+node bin/cli.mjs doctor --target /path/to/other-project # read-only drift report, no writes
+```
+
+`init` installs every file in `lib/framework-files.mjs`'s `FRAMEWORK_FILES` list, seeds
+`docs/stack-conventions.md` from the template (once — never touched again), and writes
+`agent-framework-lock.json` in the target repo (path → content hash). `sync` re-installs anything
+unmodified since the last install/sync and reports — without touching — anything the project has
+locally edited (`conflicts`) or intentionally deleted (`removedByProject`). `doctor` is the same
+comparison with zero writes, plus an `updateAvailable` list for files that are unmodified locally
+but have a newer version in this repo. Commit `agent-framework-lock.json` in the consuming
+project — it's what makes `sync` safe to re-run.
+
+After the first `init`, fill in the consuming project's own `docs/stack-conventions.md` and
+`agent-workflow.config.json` (see `docs/project-config.md`) with its actual stack and domain
+rules — the CLI never writes to either beyond that one-time seed.
 
 ## Verifying this repo
 

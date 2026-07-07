@@ -4,6 +4,6 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    include: ['scripts/**/*.test.mjs'],
+    include: ['scripts/**/*.test.mjs', 'lib/**/*.test.mjs'],
   },
 })
