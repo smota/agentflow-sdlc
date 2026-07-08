@@ -1,86 +1,254 @@
 # multi-agent-sdlc
 
-A reusable multi-agent software development lifecycle framework: role-based single-agent phases,
-branch discipline, PR/issue contracts, git hooks, and deterministic validators. Extracted from
-[Ativaly](https://github.com/smota/ativaly) so the same process guardrails can be installed and
-kept in sync across unrelated projects, without carrying any of Ativaly's application-specific
-stack or domain rules along with it.
+Opinionated SDLC framework for reusable agent-assisted delivery: role-based workflows with optional multi-agent coordination, PR/issue contracts, git hooks, validators, and locally managed skills/tooling for optimized project setup.
+
+This repository is both the distributable framework and a live example of the workflow in use. Its own issues, workflow-status comments, handover comments, PR manifests, hooks, and validators demonstrate the intended operating model.
 
 ## What this is
 
-A **process layer**, not an application template. It defines _how_ an AI coding agent (Claude,
-Codex, Agy, or a human) works through an issue — phases, evidence, branch naming, PR contracts,
-issue labeling — independent of what the target project actually builds.
+`multi-agent-sdlc` is a **process layer** for software projects that use AI coding agents. It does not generate an application or dictate your tech stack. Instead, it installs a repeatable delivery system around your existing project:
 
-See `docs/adr/` for the design decisions behind it, starting with
-[ADR 001](docs/adr/001-role-based-single-agent-workflow.md).
+- role-based phases from analysis through PR readiness;
+- default single-agent execution with optional role routing to other agent CLIs;
+- deterministic issue, branch, commit, and PR contracts;
+- local hooks and validators that catch workflow drift early;
+- reusable templates for role passes, workflow status, handovers, and PR bodies;
+- project-local configuration for stack-specific commands, bounded work, routing, and conventions.
 
-## What's in here
+Use it when you want agent-assisted work to be reviewable, auditable, and easy to resume instead of being hidden in one chat session.
 
-| Path                                                            | Purpose                                                                          |
-| --------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| `docs/agent-workflow.md`                                        | The phase state machine, role-pass contract, branch strategy, PR manifest rules  |
-| `docs/issue-standards.md`                                       | Issue title/label conventions                                                    |
-| `docs/project-config.md`                                        | The `agent-workflow.config.json` contract consuming projects fill in             |
-| `agents/workflows/orchestrate/SKILL.md`                         | The orchestrator skill — runs an issue end to end                                |
-| `agents/workflows/scan/SKILL.md`                                | Broad-context architecture/security discovery skill                              |
-| `agents/templates/`                                             | Role-pass, PR-manifest, workflow-status-comment, and stack-conventions templates |
-| `agents/tools/registry.md`, `agents/evals/README.md`            | Tooling inventory and eval-framework scaffold                                    |
-| `scripts/validate-spec.mjs`                                     | Validates a SPEC.md export is ready for implementation                           |
-| `scripts/validate-bounded.mjs`                                  | Classifies a diff as Lane B (bounded) or not, config-driven                      |
-| `scripts/validate-pr-manifest.mjs`                              | Validates a PR body against the canonical manifest contract                      |
-| `scripts/ensure-workflow-artifacts.mjs`                         | Scaffolds local per-issue workflow notes                                         |
-| `scripts/branch-cleanup-report.mjs`                             | Reports merged-branch cleanup candidates                                         |
-| `scripts/issue-markdown.mjs`                                    | Pure markdown section-replace transform for issue body updates                   |
-| `scripts/verify-hooks.mjs`, `scripts/verify-agent-workflow.mjs` | Self-verification of this framework's own mechanics                              |
-| `.github/hooks/*`                                               | Git hooks: branch enforcement, prettier-on-write, session status                 |
-| `.github/ISSUE_TEMPLATE/`, `.github/*template.md`               | Issue and PR body templates                                                      |
-| `CLAUDE.md` / `CODEX.md` / `AGY.md`                             | Thin per-agent adapters pointing at a project's own `AGENTS.md`                  |
-| `bin/cli.mjs`, `lib/`                                           | The `init` / `sync` / `doctor` distribution CLI and its lockfile logic           |
+## Who it is for
 
-## What's deliberately _not_ in here
+This framework is for teams or solo maintainers who want:
 
-Anything that encodes a specific tech stack or business domain: TypeScript/framework rules,
-security/multi-tenancy specifics, CI package matrices, role-persona domain checklists. Those live
-in the consuming project's own `AGENTS.md` and `docs/stack-conventions.md` (copy the template at
-`agents/templates/stack-conventions.md` to start one), which this framework's generic engines read
-via `agent-workflow.config.json` — see `docs/project-config.md`.
+- one consistent way to run issues with Claude, Codex, Agy, Pi, or humans;
+- machine-checkable workflow evidence;
+- PRs that explain what happened and why;
+- safe defaults for branch discipline and self-review;
+- optional multi-agent handoffs without ad hoc discovery;
+- a local setup that can be synced across multiple repositories.
 
-## Consuming this framework in a project
+## What is included
 
-Two channels, meant to be used together:
+| Area             | Files                                                                                                                          |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Policy           | `AGENTS.md`, `CLAUDE.md`, `CODEX.md`, `AGY.md`                                                                                 |
+| Workflow docs    | `docs/agent-workflow.md`, `docs/issue-standards.md`, `docs/project-config.md`, `docs/agent-routing.md`, `docs/index.md`        |
+| Skills/workflows | `agents/workflows/orchestrate/SKILL.md`, `agents/workflows/scan/SKILL.md`                                                      |
+| Templates        | `agents/templates/role-pass.md`, `pr-manifest.md`, `workflow-status-comment.md`, `handover-comment.md`, `stack-conventions.md` |
+| Hooks            | `.github/hooks/*` branch checks, session status, commit readiness, formatting support                                          |
+| Validators       | `scripts/validate-spec.mjs`, `validate-bounded.mjs`, `validate-pr-manifest.mjs`, `validate-role-routing.mjs`                   |
+| Distribution     | `bin/cli.mjs`, `lib/install.mjs`, `lib/framework-files.mjs`, `agent-framework-lock.json` in consuming repos                    |
 
-1. **`npx skills add <this-repo-url>`** — installs the skill-shaped content (workflow skills, role
-   personas) into `.claude/skills/`, `.codex/skills/`, `.agy/skills/`, alongside any other skill
-   sources a project already uses.
-2. **The sync CLI** (`init` / `sync` / `doctor`) — installs and keeps in sync everything else
-   (hooks, templates, generic validators, issue/PR templates).
+## Defaults
+
+- **Execution:** single-agent by default.
+- **Roles:** product/JTBD when needed, analyst, architect, developer planning, developer, tester, review, tech writer, PR readiness.
+- **Routing:** optional; projects may route roles to `agy`, `codex`, `claude`, or `pi` with fallbacks.
+- **Evidence:** GitHub issue comments and PR bodies are durable; `.agent-runs/` files are local scratch and are not committed.
+- **Review:** bounded/standard work may use explicit self-review; high-assurance work requires human review before merge.
+- **Branching:** use the project branch strategy from `docs/agent-workflow.md` and `agent-workflow.config.json`; do not edit protected integration/trunk branches directly.
+- **Follow-ups:** create follow-up issues instead of hidden TODOs or silent omissions.
+
+## Install / initialize in a project
+
+### 1. Add skills/tooling
+
+Install the skill-shaped workflow content using your preferred skill mechanism. For example, when using a skill installer:
 
 ```bash
-# From a checkout of this repo, targeting another project's working directory:
-node bin/cli.mjs init --target /path/to/other-project
-node bin/cli.mjs sync --target /path/to/other-project   # re-run any time this repo updates
-node bin/cli.mjs doctor --target /path/to/other-project # read-only drift report, no writes
+npx skills add https://github.com/smota/multi-agent-sdlc
 ```
 
-`init` installs every file in `lib/framework-files.mjs`'s `FRAMEWORK_FILES` list, seeds
-`docs/stack-conventions.md` from the template (once — never touched again), and writes
-`agent-framework-lock.json` in the target repo (path → content hash). `sync` re-installs anything
-unmodified since the last install/sync and reports — without touching — anything the project has
-locally edited (`conflicts`) or intentionally deleted (`removedByProject`). `doctor` is the same
-comparison with zero writes, plus an `updateAvailable` list for files that are unmodified locally
-but have a newer version in this repo. Commit `agent-framework-lock.json` in the consuming
-project — it's what makes `sync` safe to re-run.
+This makes the workflow skills available to supported agents. The exact destination depends on the consuming agent/tooling setup.
 
-After the first `init`, fill in the consuming project's own `docs/stack-conventions.md` and
-`agent-workflow.config.json` (see `docs/project-config.md`) with its actual stack and domain
-rules — the CLI never writes to either beyond that one-time seed.
+### 2. Install framework files
 
-## Verifying this repo
+From a checkout of this repository, initialize another project:
+
+```bash
+git clone https://github.com/smota/multi-agent-sdlc.git
+cd multi-agent-sdlc
+pnpm install
+node bin/cli.mjs init --target /path/to/your-project
+```
+
+`init` installs framework-owned files and seeds project-owned starter files such as `AGENTS.md` and `docs/stack-conventions.md` once.
+
+### 3. Commit the lockfile in the consuming project
+
+```bash
+cd /path/to/your-project
+git add agent-framework-lock.json AGENTS.md docs/stack-conventions.md
+git commit -m "chore: initialize agent SDLC framework"
+```
+
+The lockfile lets future syncs update unmodified framework files safely.
+
+### 4. Configure your project
+
+Create or update `agent-workflow.config.json` in the consuming project. Start with CI commands and bounded-work settings:
+
+```json
+{
+  "ciCommands": ["pnpm lint", "pnpm test", "pnpm build"],
+  "bounded": {
+    "allowedExactPaths": ["README.md"],
+    "allowedPathPrefixes": ["docs/", "src/"],
+    "deniedPathFragments": ["/auth/", "/billing/", "/migrations/"]
+  }
+}
+```
+
+See [`docs/project-config.md`](docs/project-config.md) for routing, bounded work, and other defaults.
+
+## Sync / update framework files
+
+Run sync whenever this framework changes:
+
+```bash
+node /path/to/multi-agent-sdlc/bin/cli.mjs sync --target /path/to/your-project
+```
+
+Inspect drift without writing files:
+
+```bash
+node /path/to/multi-agent-sdlc/bin/cli.mjs doctor --target /path/to/your-project
+```
+
+`sync` updates framework files only when they are unchanged since the last install/sync. Local project edits are reported as conflicts instead of being overwritten.
+
+## Day-to-day usage
+
+### 1. Create or choose an issue
+
+Use the issue standards in [`docs/issue-standards.md`](docs/issue-standards.md). Agent-created issues should use the required type and lifecycle labels.
+
+Prompt example:
+
+```text
+Create a feature request for adding CSV import validation. Include acceptance criteria, test plan, open questions, and workflow classification.
+```
+
+### 2. Start a work branch
+
+Use the configured branch strategy. A common default is a short-lived work branch:
+
+```bash
+git checkout development
+git checkout -b work/csv-import-validation
+```
+
+### 3. Run the orchestrator
+
+Ask the agent to run the issue through the workflow:
+
+```text
+orchestrate #123
+```
+
+The orchestrator should:
+
+1. read `AGENTS.md`, the adapter, workflow docs, and the issue;
+2. classify the work;
+3. execute the role phases;
+4. write role-pass evidence locally;
+5. post/update workflow-status and handover comments on the issue;
+6. run validation;
+7. prepare the PR manifest;
+8. open a PR with explicit `Closes #123` lines.
+
+### 4. Review the PR
+
+The PR body should include workflow evidence, validation results, agent review fields, and follow-up status. For high-assurance work, open the PR first, then request human security/acceptance review before merge.
+
+## Copy-paste prompt examples
+
+Create an issue:
+
+```text
+Create a feature request to let projects configure branch strategy. Analyze and architect the request before implementation.
+```
+
+Run an issue:
+
+```text
+orchestrate #123
+```
+
+Ask for PR readiness:
+
+```text
+Run PR readiness for #123. Verify the PR body, closure lines, workflow evidence, validation status, handover comments, and GitHub checks.
+```
+
+Create a follow-up:
+
+```text
+Create a follow-up issue for the non-blocking docs gap found during review. Include acceptance criteria and a test plan.
+```
+
+Route a role to another agent:
+
+```text
+Route the developer role to Codex with Claude fallback for #123, and document the handover on the issue.
+```
+
+Run a focused scan:
+
+```text
+/scan "scan workflow scripts for hardcoded branch names that should come from project config"
+```
+
+## Live example: this repository
+
+This repository uses its own process. Look at its GitHub issues and PRs for examples of:
+
+- feature requests with acceptance criteria and test plans;
+- workflow-status comments on issues;
+- role handover comments;
+- PR manifests with `Closes #...` lines;
+- validation evidence such as `pnpm test`, `pnpm test:workflow`, and `pnpm format:check`;
+- follow-up issues for deferred work.
+
+Because the framework is developed using itself, the repo is the best live reference for expected behavior.
+
+## Documentation map
+
+Start with [`docs/index.md`](docs/index.md) for the full documentation index.
+
+Key references:
+
+- [`AGENTS.md`](AGENTS.md) — repository policy authority
+- [`docs/agent-workflow.md`](docs/agent-workflow.md) — phases, role-pass contract, evidence, branch and PR rules
+- [`docs/issue-standards.md`](docs/issue-standards.md) — issue titles, labels, and issue body updates
+- [`docs/project-config.md`](docs/project-config.md) — `agent-workflow.config.json`
+- [`docs/agent-routing.md`](docs/agent-routing.md) — optional role routing and handovers
+- [`agents/workflows/orchestrate/SKILL.md`](agents/workflows/orchestrate/SKILL.md) — orchestrator workflow
+- [`agents/workflows/scan/SKILL.md`](agents/workflows/scan/SKILL.md) — advisory scan workflow
+
+## Common mistakes
+
+- **Starting without `AGENTS.md`:** stop and restore/document policy authority first.
+- **Committing `.agent-runs/`:** these are local scratch artifacts and should stay uncommitted.
+- **Opening a PR with only `Closes #123`:** use the PR manifest structure.
+- **Skipping handover comments:** role transitions need issue-visible handover evidence.
+- **Treating routing as required:** routing is optional; single-agent execution is the default.
+- **Leaving TODOs in code/docs:** create follow-up issues instead.
+
+## Verifying this repository
 
 ```bash
 pnpm install
-node scripts/verify-hooks.mjs
-node scripts/verify-agent-workflow.mjs
 pnpm test
+pnpm test:workflow
+pnpm format:check
+```
+
+Additional checks:
+
+```bash
+node scripts/verify-hooks.mjs
+node scripts/validate-role-routing.mjs
+node scripts/validate-pr-manifest.mjs --path .agent-runs/issues/<issue>/pr-manifest.md
 ```
