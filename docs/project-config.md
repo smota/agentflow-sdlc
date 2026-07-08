@@ -127,6 +127,8 @@ This repository commits its own `agent-workflow.config.json` with a two-tier pol
   keeps role execution with the current executor.
 - `routing.agents.<slug>` — enables one supported local agent CLI (`agy`, `codex`, `claude`, or
   `pi`), names its setup/availability command, and points to its documented call/handover workflow.
+  `doctor-env` uses `availabilityCommand` for read-only environment reporting and never executes
+  installation commands.
 - `routing.roles.<role>.owner` — the core owner agent for a workflow role.
 - `routing.roles.<role>.fallbacks` — ordered fallback agents used when the owner is unavailable due
   to setup, quota, or local availability. The owner must not appear in its own fallback list.
@@ -139,6 +141,7 @@ node scripts/resolve-branch-strategy.mjs --json
 node scripts/validate-role-routing.mjs
 node scripts/resolve-role-route.mjs --role developer --current claude --json
 node scripts/integration-lifecycle.mjs --event path/to/pull_request_event.json
+node bin/cli.mjs doctor-env --json
 ```
 
 See `docs/agent-routing.md` for the route-resolution and ticket handover comment workflow. See

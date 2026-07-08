@@ -6,6 +6,10 @@ labels: ['qa', 'exploratory']
 assignees: []
 ---
 
+## qa-expert Role Guide
+
+See `docs/agents/qa-expert.md`. This issue type is for optional exploratory QA outside the main deterministic SDLC phase sequence.
+
 ## Target Scope
 
 <!-- Define the specific UI flows, features, or boundaries to explore. E.g., "Pro Plan Billing Portal only" -->

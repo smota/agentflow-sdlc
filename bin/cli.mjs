@@ -2,6 +2,7 @@
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { doctor, init, markMerged, sync } from '../lib/install.mjs'
+import { validateEnvironment } from '../lib/environment.mjs'
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -19,6 +20,25 @@ function printReport(title, report) {
     for (const item of list) {
       process.stdout.write(`    - ${item}\n`)
     }
+  }
+}
+
+function printEnvironmentReport(report) {
+  process.stdout.write(`Environment validation\n`)
+  process.stdout.write(`${report.note}\n\n`)
+  for (const required of [true, false]) {
+    process.stdout.write(`${required ? 'Required' : 'Optional'}:\n`)
+    for (const tool of report.tools.filter((item) => item.required === required)) {
+      process.stdout.write(
+        `  - ${tool.name}: ${tool.found ? `found ${tool.version}` : 'missing'}\n`,
+      )
+      process.stdout.write(`    Why: ${tool.why}\n`)
+      if (!tool.found) {
+        process.stdout.write(`    Install options:\n`)
+        for (const option of tool.installOptions) process.stdout.write(`      - ${option}\n`)
+      }
+    }
+    process.stdout.write(`\n`)
   }
 }
 
@@ -57,6 +77,13 @@ function main() {
     process.exit(drifted > 0 ? 1 : 0)
   }
 
+  if (command === 'doctor-env') {
+    const report = validateEnvironment(targetDir)
+    if (rest.includes('--json')) process.stdout.write(`${JSON.stringify(report, null, 2)}\n`)
+    else printEnvironmentReport(report)
+    process.exit(report.ok ? 0 : 1)
+  }
+
   if (command === 'mark-merged') {
     const path = positionalArgs(rest)[0]
     if (!path) {
@@ -69,7 +96,7 @@ function main() {
   }
 
   process.stderr.write(
-    'Usage: multi-agent-sdlc <init|sync|doctor|mark-merged> [path] [--target <dir>]\n',
+    'Usage: multi-agent-sdlc <init|sync|doctor|doctor-env|mark-merged> [path] [--target <dir>] [--json]\n',
   )
   process.exit(2)
 }

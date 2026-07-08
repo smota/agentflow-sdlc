@@ -14,7 +14,8 @@ The safe default is **single-agent**, multi-role execution: one executor moves t
 6. **Choose bounded-work rules** — define small safe paths and sensitive areas that require higher assurance.
 7. **Record merge expectations** — human/operator merge by default; document any explicit auto-merge command.
 8. **Enable integration lifecycle automation** — install/keep `.github/workflows/integration-lifecycle.yml` so issues close when PRs merge into the configured integration branch.
-9. **Validate setup** — run the validators before treating the project as configured.
+9. **Validate environment** — run `multi-agent-sdlc doctor-env` to check tools and install guidance without installing anything.
+10. **Validate setup** — run the validators before treating the project as configured.
 
 ## Minimal single-agent config
 
@@ -147,6 +148,17 @@ A project with staged promotion can separate integration, release-candidate, and
 ```
 
 See [`project-config.md`](project-config.md) for the full config contract and [`agent-routing.md`](agent-routing.md) for route resolution and handover details.
+
+## Environment validation
+
+Run this before the first issue to make missing tools explicit without changing the machine:
+
+```bash
+node /path/to/multi-agent-sdlc/bin/cli.mjs doctor-env --target /path/to/project
+node /path/to/multi-agent-sdlc/bin/cli.mjs doctor-env --target /path/to/project --json
+```
+
+`doctor-env` is read-only. It checks required tools, configured optional agent/runtime availability commands, and prints installation options when something is missing. It never runs install commands, edits shell profiles, authenticates GitHub, or installs packages.
 
 ## Setup validation
 

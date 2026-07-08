@@ -133,6 +133,15 @@ Before the first real issue, make these choices explicit:
 
 Use [`docs/project-setup.md`](docs/project-setup.md) for copyable examples, [`docs/default-skills.md`](docs/default-skills.md) for skill provenance, and the validators listed in those docs to check the setup. The installed GitHub workflow `.github/workflows/integration-lifecycle.yml` uses `scripts/integration-lifecycle.mjs` to comment, label, and close issues referenced with `Implements #...` or `Refs #...` after a PR merges into the configured integration branch.
 
+Validate local tooling without installing anything:
+
+```bash
+node bin/cli.mjs doctor-env --target /path/to/your-project
+node bin/cli.mjs doctor-env --target /path/to/your-project --json
+```
+
+`doctor-env` is read-only. It reports found/missing tools and proposes installation options, but it never runs install commands.
+
 ## Sync / update framework files
 
 Run sync whenever this framework changes:
@@ -195,7 +204,7 @@ The orchestrator should:
 5. post/update workflow-status and handover comments on the issue;
 6. run validation;
 7. prepare the PR manifest;
-8. commit, push, and open a PR with explicit `Closes #123` lines.
+8. commit, push, and open a PR with explicit `Implements #123` lines for integration-branch PRs.
 
 For multiple IDs in one request, such as `orchestrate #123 #124 #125`, the orchestrator processes
 the IDs in order and opens the PR after the final requested issue is complete.
@@ -259,6 +268,12 @@ Run PR readiness for #123. Verify the PR body, integration references, workflow 
 ```
 
 ### Optional scenarios
+
+Run exploratory QA with the optional `qa-expert` sidecar role:
+
+```text
+Plan an exploratory QA session for #123 using the qa-expert role. Focus on negative paths and boundaries not covered by the deterministic tester phase. Record findings as linked issues and apply needs-test to bugs that require regression automation.
+```
 
 Run a focused scan before implementation:
 
