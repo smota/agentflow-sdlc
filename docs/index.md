@@ -51,6 +51,8 @@ The framework also supports locally managed skills/tooling in consuming projects
 | Evidence              | GitHub issue comments and PR bodies are durable; `.agent-runs/` is local scratch               |
 | Handover              | Orchestrator-owned issue comments for role transitions                                         |
 | Review                | Bounded/standard may self-review; high-assurance requires human review before merge            |
+| PR creation           | Orchestration defaults to commit, push, and PR creation at the end                             |
+| Merge                 | Human/operator merges by default; explicit auto-merge uses the standard `gh pr merge` command  |
 | Follow-ups            | Create issues instead of hidden TODOs                                                          |
 | Config                | Missing project config fails closed where safety-sensitive, otherwise uses documented defaults |
 

@@ -156,11 +156,20 @@ The orchestrator should:
 5. post/update workflow-status and handover comments on the issue;
 6. run validation;
 7. prepare the PR manifest;
-8. open a PR with explicit `Closes #123` lines.
+8. commit, push, and open a PR with explicit `Closes #123` lines.
 
-### 4. Review the PR
+For multiple IDs in one request, such as `orchestrate #123 #124 #125`, the orchestrator processes
+the IDs in order and opens the PR after the final requested issue is complete.
 
-The PR body should include workflow evidence, validation results, agent review fields, and follow-up status. For high-assurance work, open the PR first, then request human security/acceptance review before merge.
+### 4. Review and merge the PR
+
+The PR body should include workflow evidence, validation results, agent review fields, merge owner, and follow-up status. A human/operator merges by default. If you explicitly want auto-merge after checks pass, tell the orchestrator to use the standard command:
+
+```bash
+gh pr merge --squash --delete-branch --auto
+```
+
+For high-assurance work, open the PR first, then request human security/acceptance review before merge.
 
 ## Copy-paste prompt examples
 
@@ -174,6 +183,18 @@ Run an issue:
 
 ```text
 orchestrate #123
+```
+
+Run multiple issues and open one final PR after the last ID:
+
+```text
+orchestrate #123 #124 #125
+```
+
+Explicitly request auto-merge after checks pass:
+
+```text
+orchestrate #123 and merge when checks pass
 ```
 
 Ask for PR readiness:

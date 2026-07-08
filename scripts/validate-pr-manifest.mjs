@@ -53,6 +53,8 @@ const agentReviewFields = {
   'Model / runtime': /^(?!<freeform identifier>$).+/,
   Review: /^(self-review|human-review-requested|human-reviewed)$/,
   'Workflow profile': /^(bounded|standard|high-assurance)$/,
+  'Merge owner':
+    /^(human\/operator|auto-merge-requested:`gh pr merge --squash --delete-branch --auto`)$/,
 }
 
 // When a "Regression test:" field is present in Agent review, it must have a valid value.
@@ -104,7 +106,7 @@ const checks = [
     ok: missingAgentFields.length === 0 && invalidAgentFields.length === 0,
     detail:
       missingAgentFields.length === 0 && invalidAgentFields.length === 0
-        ? 'Implemented by, Model / runtime, Review, and Workflow profile are filled in'
+        ? 'Implemented by, Model / runtime, Review, Workflow profile, and Merge owner are filled in'
         : [
             missingAgentFields.length > 0 ? `missing: ${missingAgentFields.join(', ')}` : '',
             invalidAgentFields.length > 0 ? `invalid: ${invalidAgentFields.join(', ')}` : '',

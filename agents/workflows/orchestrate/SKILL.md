@@ -16,7 +16,7 @@ specifically restoring that file.
 ## Invocation
 
 ```text
-/orchestrate #<issue-number>
+/orchestrate #<issue-number> [#<issue-number> ...]
 ```
 
 ## Before work
@@ -122,6 +122,11 @@ The selected profile changes who signs the evidence, not whether the evidence ex
 During migration, both the target workstream branches and the existing compatibility branches are operational.
 The target branch strategy is documented in `docs/agent-workflow.md`.
 
+Every orchestration call defaults to ending with committed work, a pushed branch, and an opened PR.
+For multiple issue IDs in one invocation, process them in order and defer PR creation until the final
+requested issue is complete; open one coherent final PR with one `Closes #...` line per implemented
+issue.
+
 Every PR must:
 
 - include explicit `Closes #<issue>` lines
@@ -136,7 +141,9 @@ Every PR must:
 - complete every required role-pass phase for the issue — including a terminal `blocked` phase-6
   for high-assurance work awaiting PR-stage review — before this PR merges (post-merge closeout,
   `docs/agent-workflow.md` §5)
-- verify the created PR directly in GitHub (number, target branch, final body, closure lines, and check status) before calling PR readiness complete
+- verify the created PR directly in GitHub (number, target branch, final body, closure lines, workflow-status and handover evidence links, and check status) before calling PR readiness complete
+- record merge ownership: human/operator merges by default; do not merge unless explicitly instructed
+- when explicit auto-merge is requested, use `gh pr merge --squash --delete-branch --auto`
 - do not mark workflow status as `ready` when required GitHub checks are expected to fail; use draft PR or blocked/expected-fail status with follow-up issues instead
 
 ## Known local-environment flakiness
@@ -187,7 +194,8 @@ When the issue being orchestrated carries the `bug` type label:
     copied from a prior pass or a template default (`docs/agent-workflow.md` §4).
 11. After merge, verify closure in GitHub comments or session evidence; do not require tracked repository edits on already-closed issues solely for workflow bookkeeping.
 12. Never commit `.agent-runs/` files or open a commit/PR whose only purpose is workflow bookkeeping for an already-closed issue (`docs/agent-workflow.md` §5).
-13. Once an issue's PR merges and its GitHub issue is confirmed closed, prune that issue's
+13. Do not stop an orchestration run after local implementation when PR creation is possible; commit, push, open the PR, and verify it as the default terminal action.
+14. Once an issue's PR merges and its GitHub issue is confirmed closed, prune that issue's
     phase-tracking tasks from the session task tracker before creating the next issue's phase
     tasks — do not leave a prior issue's stale `pending`/`in_progress` entries sitting alongside a
     new issue's tasks.
