@@ -4,18 +4,19 @@ This index maps the main concepts, defaults, roles, skills/workflows, templates,
 
 ## Start here
 
-1. [`../README.md`](../README.md) — overview, assisted onboarding, installation, usage, prompts, and live examples.
+1. [`../README.md`](../README.md) — overview, assisted onboarding/update, installation, usage, prompts, and live examples.
 2. [`assisted-onboarding.md`](assisted-onboarding.md) — agent-assisted setup for existing projects with explicit approval before changes.
-3. [`environment-tools.md`](environment-tools.md) — required, recommended, and optional tools compatible with `doctor-env`.
-4. [`../AGENTS.md`](../AGENTS.md) — required first-read repository policy.
-5. [`project-setup.md`](project-setup.md) — guided setup choices for agents, execution mode, routing, branch strategy, validation, bounded work, and skill provenance.
-6. [`agent-workflow.md`](agent-workflow.md) — phase model, role-pass contract, durable evidence, branch strategy, review model, and PR readiness.
-7. [`issue-standards.md`](issue-standards.md) — issue titles, labels, body update rules, and lifecycle metadata.
-8. [`project-config.md`](project-config.md) — project-local `agent-workflow.config.json` contract.
-9. [`execution-targets.md`](execution-targets.md) — `executionTarget`, `transport`, `launcher`, `executor`, and `delegationBoundary` concepts that disambiguate `with claude`/`with agy`/`with pi` requests.
-   [`agent-workflow.md` §4a](agent-workflow.md#4a-role-alternation-and-attribution-multi-agent-mode) extends this with `roleAlternationPlan`, `roleIntelligence`, `contextBoundary`, `independenceBoundary`, `roleAttributionMatrix`, `multiAgentClaim`, and `selfReviewDisclosure` — whether a multi-agent claim actually alternated SDLC roles across independent intelligences.
-10. [`release-versioning.md`](release-versioning.md) — configurable release strategy, default `main.minor.fix`, release evidence, validators, and preview helpers.
-11. [`default-skills.md`](default-skills.md) — default skills, recommended companion skills, upstream repositories, and CCPM-sourced skill surfaces.
+3. [`assisted-update.md`](assisted-update.md) — agent-assisted update workflow for already-adopted projects using `agent-framework-lock.json`, `doctor`, `sync`, and `mark-merged`.
+4. [`environment-tools.md`](environment-tools.md) — required, recommended, and optional tools compatible with `doctor-env`.
+5. [`../AGENTS.md`](../AGENTS.md) — required first-read repository policy.
+6. [`project-setup.md`](project-setup.md) — guided setup choices for agents, execution mode, routing, branch strategy, validation, bounded work, and skill provenance.
+7. [`agent-workflow.md`](agent-workflow.md) — phase model, role-pass contract, durable evidence, branch strategy, review model, and PR readiness.
+8. [`issue-standards.md`](issue-standards.md) — issue titles, labels, body update rules, and lifecycle metadata.
+9. [`project-config.md`](project-config.md) — project-local `agent-workflow.config.json` contract.
+10. [`execution-targets.md`](execution-targets.md) — `executionTarget`, `transport`, `launcher`, `executor`, and `delegationBoundary` concepts that disambiguate `with claude`/`with agy`/`with pi` requests.
+    [`agent-workflow.md` §4a](agent-workflow.md#4a-role-alternation-and-attribution-multi-agent-mode) extends this with `roleAlternationPlan`, `roleIntelligence`, `contextBoundary`, `independenceBoundary`, `roleAttributionMatrix`, `multiAgentClaim`, and `selfReviewDisclosure` — whether a multi-agent claim actually alternated SDLC roles across independent intelligences.
+11. [`release-versioning.md`](release-versioning.md) — configurable release strategy, default `main.minor.fix`, release evidence, validators, and preview helpers.
+12. [`default-skills.md`](default-skills.md) — default skills, recommended companion skills, upstream repositories, and CCPM-sourced skill surfaces.
 
 ## What it is
 
@@ -141,10 +142,11 @@ The CLI in [`../bin/cli.mjs`](../bin/cli.mjs) supports:
 node bin/cli.mjs init --target /path/to/project
 node bin/cli.mjs sync --target /path/to/project
 node bin/cli.mjs doctor --target /path/to/project
+node bin/cli.mjs update-prompt --target /path/to/project
 node bin/cli.mjs mark-merged CLAUDE.md --target /path/to/project
 ```
 
-The file list is maintained in [`../lib/framework-files.mjs`](../lib/framework-files.mjs). `init` installs framework files and seeds project-owned files once. `sync` updates only files that are unchanged since the last install/sync and seeds missing seed-once files without overwriting existing project-owned content. `mark-merged` records a hand-merged framework file as permanently project-managed so future syncs never fast-forward over local additions.
+The file list is maintained in [`../lib/framework-files.mjs`](../lib/framework-files.mjs). `init` installs framework files and seeds project-owned files once. `sync` updates only files that are unchanged since the last install/sync and seeds missing seed-once files without overwriting existing project-owned content. `update-prompt` prints the assisted update handoff for already-adopted projects before any writes occur. `mark-merged` records a hand-merged framework file as permanently project-managed so future syncs never fast-forward over local additions.
 
 ## Live example
 

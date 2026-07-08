@@ -67,6 +67,17 @@ function printOnboardingPrompt(targetDir) {
   )
 }
 
+function printUpdatePrompt(targetDir) {
+  process.stdout.write(`Use the multi-agent-sdlc assisted update guide:\n`)
+  process.stdout.write(
+    `https://github.com/smota/multi-agent-sdlc/blob/main/docs/assisted-update.md\n\n`,
+  )
+  process.stdout.write(`Apply it to this already-adopted project: ${targetDir}\n`)
+  process.stdout.write(
+    `Start read-only. Inspect agent-framework-lock.json, existing agent instructions, project docs, and local workflow configuration. Run doctor-env and doctor read-only. Compare the installed framework state with this source framework checkout/version. Classify every proposed update as safe fast-forward, conflict, seed-once skip, hand-merged, removed/missing, or validation blocker. Present an update plan and ask for approval before running sync, editing files, marking hand merges, committing, pushing, or opening a PR. Preserve project-owned conventions and record update evidence in the PR.\n`,
+  )
+}
+
 function positionalArgs(args) {
   const result = []
   for (let index = 0; index < args.length; index += 1) {
@@ -114,6 +125,11 @@ function main() {
     process.exit(0)
   }
 
+  if (command === 'update-prompt') {
+    printUpdatePrompt(targetDir)
+    process.exit(0)
+  }
+
   if (command === 'release-plan') {
     const plan = buildReleasePlan({
       repoRoot: targetDir,
@@ -138,7 +154,7 @@ function main() {
   }
 
   process.stderr.write(
-    'Usage: multi-agent-sdlc <init|sync|doctor|doctor-env|onboarding-prompt|release-plan|mark-merged> [path] [--target <dir>] [--json]\n',
+    'Usage: multi-agent-sdlc <init|sync|doctor|doctor-env|onboarding-prompt|update-prompt|release-plan|mark-merged> [path] [--target <dir>] [--json]\n',
   )
   process.exit(2)
 }
