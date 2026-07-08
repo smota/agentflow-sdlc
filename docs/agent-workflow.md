@@ -125,8 +125,8 @@ summaries.
 Durable workflow evidence lives in GitHub:
 
 - one signed workflow-status issue comment per addressed issue,
-- ticket handover comments when execution changes agent, falls back, returns phases, requests human
-  input, or ends before the next role can continue,
+- orchestrator-owned ticket handover comments for every role transition, in both single-agent and
+  multi-agent workflows,
 - the PR body's workflow evidence section,
 - validation output summarized in the PR body/comment,
 - follow-up issues for deferred work.
@@ -139,6 +139,8 @@ Rules:
 - Before PR creation, summarize role-pass evidence into the issue workflow-status comment and PR body.
 - Use `agents/templates/handover-comment.md` for required ticket handover comments; do not include
   secrets, credentials, private prompts, or unrelated local machine details.
+- The orchestrator owns handover comment compliance. A managed issue comment/thread is preferred to
+  reduce noise, but the issue timeline must contain durable evidence for each role-to-role handover.
 - Temporary scratch stays in `.agent-runs/scratch/`.
 
 ### Post-merge closeout
@@ -249,14 +251,19 @@ Before starting a routed phase, resolve the role:
 node scripts/resolve-role-route.mjs --role <role> --current <agy|codex|claude|pi> --json
 ```
 
-If the selected agent is the current executor, continue as single-agent execution. If the selected
-agent differs, or if the configured owner falls back to another agent, post a ticket handover comment
-before transferring control. Handover comments are also required when a role returns work to an
-earlier phase, a human review/decision is requested, or a session ends before the next role can
-continue. Use the selected agent's `callWorkflowDoc` to avoid on-the-fly discovery.
+If the selected agent is the current executor, continue as single-agent execution, but still record
+the phase-to-phase handover in the issue. If the selected agent differs, or if the configured owner
+falls back to another agent, include the routing/fallback details in that handover evidence.
+Handover comments are also required when a role returns work to an earlier phase, a human
+review/decision is requested, or a session ends before the next role can continue. Use the selected
+agent's `callWorkflowDoc` to avoid on-the-fly discovery.
 
-PR readiness must cite required handover comments, or state that none were required because the work
-remained single-agent without fallback/return/human handover.
+The preferred model is one orchestrator-managed handover thread per issue, marked with
+`<!-- agent-handover -->`, updated or appended as phases complete. A comment-per-handover model is
+also valid when a project wants a fully chronological issue timeline.
+
+PR readiness must cite the required handover comment/thread URL, or document an explicit exception
+when no role transition occurred.
 
 ## 8. Review model
 
