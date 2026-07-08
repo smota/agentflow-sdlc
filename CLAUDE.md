@@ -1,7 +1,8 @@
 # CLAUDE.md — Claude Role Adapter
 
 You MUST read `AGENTS.md` before any tool call, file write, architecture proposal, or gate
-decision. `AGENTS.md` is the single source of truth for repository policy.
+decision. `AGENTS.md` is the single source of truth for repository policy. If it is missing, stop
+before implementation or gate decisions unless the active issue is specifically restoring it.
 
 You MUST also read `docs/agent-workflow.md` before starting issue work. That document defines the
 single-agent, multi-role, phase-driven operating model, including the role-pass contract, branch

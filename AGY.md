@@ -1,6 +1,7 @@
 # AGY.md — Agy Role Adapter
 
-You MUST read `AGENTS.md` before any tool call, file write, or gate decision.
+You MUST read `AGENTS.md` before any tool call, file write, or gate decision. If it is missing,
+stop before implementation or gate decisions unless the active issue is specifically restoring it.
 You MUST read `docs/agent-workflow.md` before starting issue work.
 
 ## Default role
