@@ -19,14 +19,30 @@ Use it when you want agent-assisted work to be reviewable, auditable, and easy t
 
 ## Who it is for
 
-This framework is for teams or solo maintainers who want:
+This framework is for teams or solo maintainers who want agentic development to be manageable, auditable, and easier to reason about:
 
-- one consistent way to run issues with Claude, Codex, Agy, Pi, or humans;
-- machine-checkable workflow evidence;
-- PRs that explain what happened and why;
-- safe defaults for branch discipline and self-review;
-- optional multi-agent handoffs without ad hoc discovery;
-- a local setup that can be synced across multiple repositories.
+- compliance-minded teams that need durable evidence for AI-assisted work;
+- maintainers coordinating multiple agents, sessions, or contributors without losing context;
+- engineers who want less cognitive burden from remembering every branch, PR, handover, and review rule;
+- projects that need one consistent way to run issues with Claude, Codex, Agy, Pi, or humans;
+- teams that want PRs to explain what happened, why it happened, what was validated, and what remains;
+- organizations that need safe defaults for branch discipline, self-review, and high-assurance human review;
+- projects that want optional multi-agent handoffs without ad hoc discovery or undocumented routing;
+- teams that want reusable local skills/tooling synced across repositories.
+
+## Why these choices
+
+The framework is intentionally structured as a control system for agent-assisted delivery, not as ceremony for its own sake.
+
+- **Roles reduce ambiguity.** Analyst, architect, developer, tester, reviewer, tech writer, and PR-readiness passes each have a small job. That keeps the agent from mixing product decisions, implementation, validation, and review into one opaque step.
+- **Single-agent execution is the default.** One executor carrying context end to end reduces coordination overhead and avoids recreating a noisy multi-agent process for routine work.
+- **Optional routing supports specialization.** Projects can route roles to `agy`, `codex`, `claude`, or `pi` when it helps, but owners, fallbacks, and handovers are documented so agent availability or quota issues do not turn into on-the-fly process design.
+- **Locally managed skills reduce setup drift.** Workflow skills and tooling live with the project so agents do not have to rediscover commands, templates, or handoff rules on every run.
+- **Issue comments and PR manifests support compliance.** Workflow-status comments, handover comments, and PR manifests create durable evidence that survives session loss and can be reviewed by humans later.
+- **Hooks and validators reduce cognitive load.** Branch checks, manifest validation, bounded-work checks, and workflow verification let humans and agents rely on executable guardrails instead of memory.
+- **Follow-up issues prevent hidden drift.** Non-blocking findings are tracked as issues rather than buried as TODOs or lost in chat context.
+
+See [`docs/index.md`](docs/index.md) for the detailed map of roles, workflows, templates, hooks, validators, and defaults.
 
 ## What is included
 
