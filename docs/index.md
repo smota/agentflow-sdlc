@@ -34,6 +34,10 @@ The default phase sequence is defined in [`agent-workflow.md`](agent-workflow.md
 
 Each phase writes a role-pass artifact based on [`../agents/templates/role-pass.md`](../agents/templates/role-pass.md). Local role-pass files live under `.agent-runs/` and are not committed; summaries are durable in GitHub issue comments and PR bodies.
 
+Optional sidecar role:
+
+- [`qa-expert`](agents/qa-expert.md) — exploratory QA outside the main deterministic sequence; complements the `tester` role by finding negative-path, boundary, and UX issues that later become deterministic regression coverage.
+
 ## Skills and workflows
 
 | Workflow skill                                            | Use it for                                                          |
@@ -75,6 +79,7 @@ Useful commands:
 node scripts/validate-role-routing.mjs
 node scripts/resolve-role-route.mjs --role developer --current claude --json
 node scripts/validate-bounded.mjs --json
+node bin/cli.mjs doctor-env --json
 ```
 
 ## Routing and handovers
