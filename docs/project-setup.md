@@ -13,7 +13,8 @@ The safe default is **single-agent**, multi-role execution: one executor moves t
 5. **Choose validation commands** — list the CI-equivalent commands copied into PR manifests.
 6. **Choose bounded-work rules** — define small safe paths and sensitive areas that require higher assurance.
 7. **Record merge expectations** — human/operator merge by default; document any explicit auto-merge command.
-8. **Validate setup** — run the validators before treating the project as configured.
+8. **Enable integration lifecycle automation** — install/keep `.github/workflows/integration-lifecycle.yml` so issues close when PRs merge into the configured integration branch.
+9. **Validate setup** — run the validators before treating the project as configured.
 
 ## Minimal single-agent config
 
@@ -42,6 +43,24 @@ Start here when a project wants the default workflow and no role routing.
 ```
 
 This keeps every role with the active executor. It still records phase evidence, handover comments when required, workflow-status comments, commits, and PR manifests.
+
+## Integration lifecycle automation
+
+Adopting projects should keep the framework-owned `.github/workflows/integration-lifecycle.yml` and
+`scripts/integration-lifecycle.mjs` installed through `init`/`sync`. The workflow needs these token
+permissions:
+
+```yaml
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+```
+
+For integration-branch PRs, use `Implements #...` for implemented issues and `Refs #...` for related
+issues. After the PR merges into the configured integration branch, the automation comments on linked
+issues, applies configured labels, and closes them. Track release to trunk/main with a separate
+promotion issue.
 
 ## Optional multi-agent routing config
 

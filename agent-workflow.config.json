@@ -17,6 +17,13 @@
     "compatibilityBranchPrefixes": ["issue/", "wt/", "claude/"],
     "requireBoundedWorkBranch": true
   },
+  "integrationLifecycle": {
+    "integrationBranch": "development",
+    "trunkBranch": "main",
+    "referenceKeywords": ["Implements", "Refs"],
+    "addLabels": ["integrated:development", "awaiting-release"],
+    "closeIntegratedIssues": true
+  },
   "routing": {
     "defaultMode": "single-agent"
   }
