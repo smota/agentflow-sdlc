@@ -121,3 +121,19 @@ node scripts/resolve-role-route.mjs --role developer --current claude --json
 See `docs/agent-routing.md` for the route-resolution and ticket handover comment workflow. See
 `agents/templates/stack-conventions.md` for the companion doc that carries a project's role-persona
 domain checklists (the parts of `docs/stack-conventions.md` this config file doesn't cover).
+
+## Seed-once and hand-merged files
+
+`init` and `sync` both seed missing seed-once files such as `AGENTS.md` and
+`docs/stack-conventions.md`. Existing seed-once files are never overwritten because the consuming
+project owns them after first creation.
+
+When a project already had a file at a framework-owned path and you manually merge framework content
+into that local file, mark it as hand-merged instead of registering its hash as normally tracked:
+
+```bash
+node bin/cli.mjs mark-merged CLAUDE.md --target /path/to/project
+```
+
+Hand-merged files are reported separately by `sync` and `doctor` and are never fast-forwarded over
+local project additions.
