@@ -88,6 +88,51 @@ See [`docs/index.md`](docs/index.md) for the detailed map of roles, workflows, t
 - **Branching:** use the project branch strategy from `docs/agent-workflow.md` and `agent-workflow.config.json`; do not edit protected integration/trunk branches directly.
 - **Follow-ups:** create follow-up issues instead of hidden TODOs or silent omissions.
 
+## Contribute
+
+This is the canonical contributor entry point for this repository. It is for both human contributors and agent contributors. It summarizes the expected path, but it is not the policy authority. Before doing issue work, architecture proposals, file writes, commits, PR readiness, or gate decisions, follow the reading order in [`AGENTS.md`](AGENTS.md): repository policy, the active adapter (`CLAUDE.md`, `CODEX.md`, `AGY.md`, or equivalent), [`docs/agent-workflow.md`](docs/agent-workflow.md), [`docs/issue-standards.md`](docs/issue-standards.md), then the active issue or `SPEC.md`.
+
+### Required principles
+
+- **Issue-first work:** start from a GitHub issue or explicit maintainer direction. If the work needs a new issue, use the title and label rules in [`docs/issue-standards.md`](docs/issue-standards.md).
+- **Deterministic phases:** run the workflow phases that apply, record role-pass evidence, and keep durable state in GitHub issue comments, PR bodies, commits, and closure metadata.
+- **Bounded branches:** do implementation work on a short-lived work branch allowed by [`docs/agent-workflow.md`](docs/agent-workflow.md) and `agent-workflow.config.json`; do not edit protected integration or trunk branches directly.
+- **Evidence-backed validation:** every contribution names the commands or manual checks used to verify it, or explains why a check was not applicable.
+- **Follow-ups over drift:** useful out-of-scope findings become follow-up issues instead of hidden TODOs, silent omissions, or unapproved scope expansion.
+- **Safety:** never include secrets, credentials, tokens, or private local-only data in issues, PRs, commits, workflow evidence, or handover comments.
+- **Human and agent parity:** humans and agents use the same public contribution contract; agent-specific evidence requirements are linked from this section rather than duplicated here.
+
+### Contributor workflow
+
+1. **Choose or open an issue.** Confirm the issue has a valid Conventional Commit title, a primary type/domain label, and `drafted-by:<agent>` when an agent drafted it. For new issues, include acceptance criteria, a test plan or validation plan, open questions, and workflow classification.
+2. **Plan the work.** Read the required policy documents, classify the workflow profile, identify files likely to change, and decide which checks will prove the change. Use [`docs/project-config.md`](docs/project-config.md) and `agent-workflow.config.json` for project-specific branch, validation, routing, and bounded-work rules.
+3. **Create a work branch.** Prefer `work/<theme>`, `feature/<theme>`, `fix/<theme>`, `hotfix/<theme>`, or `spike/<theme>` unless project configuration says otherwise.
+4. **Implement narrowly.** Keep commits issue-scoped. Do not rewrite governance, templates, or unrelated docs unless the issue explicitly includes that scope.
+5. **Validate.** Run the relevant repository checks, such as `pnpm test`, `pnpm test:workflow`, `pnpm format:check`, `node scripts/validate-role-routing.mjs`, or a focused validator named by the issue. Record exact commands and outcomes.
+6. **Open the PR.** Use [`agents/templates/pr-manifest.md`](agents/templates/pr-manifest.md). For PRs into an integration branch, use `Implements #<issue>` lines; for PRs into default/trunk when GitHub should auto-close the issue, use `Closes #<issue>`. Include workflow evidence, validation status, agent review fields, merge owner, and follow-up issue status.
+
+### Template and checklist decisions
+
+The canonical `Contribute` section uses existing workflow templates instead of creating new contributor templates here:
+
+| Contributor need                           | Decision         | Source                                                                                                                                         |
+| ------------------------------------------ | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| New contributor quickstart checklist       | `include-inline` | `README.md#contribute`                                                                                                                         |
+| Issue selection / issue creation checklist | `link-existing`  | [`docs/issue-standards.md`](docs/issue-standards.md)                                                                                           |
+| Branch naming checklist                    | `link-existing`  | [`docs/agent-workflow.md`](docs/agent-workflow.md), `agent-workflow.config.json`                                                               |
+| PR body checklist                          | `link-existing`  | [`agents/templates/pr-manifest.md`](agents/templates/pr-manifest.md), PR readiness rules in [`docs/agent-workflow.md`](docs/agent-workflow.md) |
+| Validation evidence checklist              | `include-inline` | contributor workflow step 5                                                                                                                    |
+| Follow-up issue checklist                  | `include-inline` | required principles and contributor workflow                                                                                                   |
+
+### Quick checklist
+
+- [ ] I have an issue or explicit maintainer direction.
+- [ ] I read `AGENTS.md`, the active adapter, workflow docs, issue standards, and the active issue/spec.
+- [ ] I am on an allowed work branch, not a protected integration/trunk branch.
+- [ ] My change is scoped to the issue and records follow-ups for anything outside scope.
+- [ ] I ran the relevant validation commands or documented why they were not applicable.
+- [ ] My PR body uses the project manifest, the correct issue reference keyword, workflow evidence, validation evidence, agent review fields, merge owner, and follow-up status.
+
 ## Install / initialize in a project
 
 ### 1. Add skills/tooling
