@@ -63,8 +63,8 @@ try {
       .replace('human | claude | codex | agy | pi', 'codex')
       .replace('<freeform identifier>', 'workflow verifier')
       .replace(
-        'none-required | <GitHub issue comment URL(s) for cross-agent/fallback/return/human handovers>',
-        'none-required',
+        '<GitHub issue comment/thread URL(s) for role handovers> | exception:<reason no role transition occurred>',
+        'https://github.com/example/example-repo/issues/496#issuecomment-2',
       )
       .replace('self-review | human-review-requested | human-reviewed', 'self-review')
       .replace('bounded | standard | high-assurance', 'bounded')

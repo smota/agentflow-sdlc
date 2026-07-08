@@ -46,15 +46,23 @@ Validation checks supported agent slugs, owner/fallback shape, duplicate fallbac
 
 ## Handover comments
 
-Ticket comments are the canonical durable evidence for handovers. Use `agents/templates/handover-comment.md` whenever:
+Ticket comments are the canonical durable evidence for handovers in every workflow mode. The
+orchestrator owns posting or updating `agents/templates/handover-comment.md` for each role
+transition, including routine same-agent single-agent transitions.
 
+Use the handover comment/thread whenever:
+
+- one role hands off to the next role in the normal phase sequence;
 - execution changes from one agent CLI to another;
 - a configured owner falls back to another agent due to setup, quota, or availability;
 - a role returns work to an earlier phase;
 - a human review or human decision is requested;
 - a session ends before the next role can continue.
 
-Do not include secrets, credentials, private prompts, or unrelated local machine details in handover comments. For routine same-agent phase transitions, prefer the workflow-status comment unless a separate handover comment adds meaningful continuity.
+Do not include secrets, credentials, private prompts, or unrelated local machine details in handover
+comments. Prefer one managed `<!-- agent-handover -->` thread per issue when a project wants less
+comment noise; one comment per transition is also valid when a fully chronological issue timeline is
+preferred.
 
 ## Agent-specific workflow docs
 

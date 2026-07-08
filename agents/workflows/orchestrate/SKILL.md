@@ -69,9 +69,11 @@ Each phase must:
 - resolve configured role routing when `agent-workflow.config.json` has a `routing` section:
   `node scripts/resolve-role-route.mjs --role <role> --current <agent> --json`
 - use the selected agent's documented call workflow when route resolution selects another agent
-- post a ticket handover comment from `agents/templates/handover-comment.md` before cross-agent
-  transfer, fallback transfer, returned phase work, human decision/review requests, or ending a
-  session before the next role can continue
+- post or update an orchestrator-owned ticket handover comment from
+  `agents/templates/handover-comment.md` for every role transition, including same-agent
+  single-agent transitions; include routing/fallback details for cross-agent transfer, fallback
+  transfer, returned phase work, human decision/review requests, or ending a session before the next
+  role can continue
 - write a new local role-pass note using `agents/templates/role-pass.md`
 - update local `workflow.md`
 - update the workflow-status comment when the state meaningfully changes
@@ -128,8 +130,8 @@ Every PR must:
 - pass `node scripts/validate-pr-manifest.mjs --path <local-manifest-draft>` when using a local draft
 - include a CI-equivalent validation decision: `passed`, `not-run-with-reason`, or `expected-fail-with-follow-up`
 - summarize workflow evidence from the workflow-status comment
-- cite required ticket handover comments, or explicitly state that no handover comments were
-  required because execution stayed single-agent without fallback/return/human handover
+- cite the orchestrator-owned ticket handover comment/thread for role transitions, or explicitly
+  document the exception when no role transition occurred
 - record follow-up issues when non-blocking findings are deferred
 - complete every required role-pass phase for the issue — including a terminal `blocked` phase-6
   for high-assurance work awaiting PR-stage review — before this PR merges (post-merge closeout,

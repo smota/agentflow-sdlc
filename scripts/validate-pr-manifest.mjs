@@ -91,7 +91,7 @@ const checks = [
     ok:
       workflowEvidence !== null &&
       /Workflow-status comment:/m.test(workflowEvidence) &&
-      /Handover comments:\s*(none-required|https?:\/\/\S+)/m.test(workflowEvidence) &&
+      /Handover comments:\s*(https?:\/\/\S+|exception:.+)/m.test(workflowEvidence) &&
       /Role-pass summary:/m.test(workflowEvidence) &&
       /Validation evidence:/m.test(workflowEvidence),
   },

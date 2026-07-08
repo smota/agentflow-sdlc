@@ -3,11 +3,11 @@
 ## Agent handover
 
 **Issue:** #<number>
-**From:** <agent> / <role>
-**To:** <agent-or-role>
-**Phase:** <phase-number-and-name>
+**Mode:** single-agent | multi-agent
+**From:** <agent> / phase <number> / <role>
+**To:** <agent-or-role> / phase <number> / <role>
 **Reason:** phase transition | fallback route | quota/setup blocker | review return | human request | session ending
-**Routing decision:** single-agent | owner selected | fallback selected | blocked
+**Routing decision:** single-agent continuation | owner selected | fallback selected | blocked | not-applicable
 **Branch:** <branch>
 
 ### Context already established
