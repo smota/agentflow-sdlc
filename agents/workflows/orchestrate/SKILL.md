@@ -9,7 +9,9 @@ Run this issue end to end in-session as the default single-agent executor. Do no
 multi-agent workflow unless broad discovery, advisory review, or asynchronous support is genuinely
 needed.
 
-Read `AGENTS.md`, `docs/agent-workflow.md`, and the active issue or `SPEC.md` before starting.
+Read `AGENTS.md`, `docs/agent-workflow.md`, and the active issue or `SPEC.md` before starting. If
+`AGENTS.md` is missing, stop before implementation or gate decisions unless the active issue is
+specifically restoring that file.
 
 ## Invocation
 

@@ -1,8 +1,10 @@
 # Agent Workflow
 
 This document defines the target operating model for this project's agentic development workflow.
-It complements `AGENTS.md` by making the workflow state machine, role-pass contract, branch
-strategy, and PR manifest rules explicit and machine-checkable.
+`AGENTS.md` is the required first-read repository policy document; this document complements it by
+making the workflow state machine, role-pass contract, branch strategy, and PR manifest rules
+explicit and machine-checkable. If `AGENTS.md` is missing, stop before implementation or gate
+decisions unless the active issue is specifically restoring that file.
 
 ## 1. Operating principles
 
