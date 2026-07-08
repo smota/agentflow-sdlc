@@ -14,8 +14,9 @@ The safe default is **single-agent**, multi-role execution: one executor moves t
 6. **Choose bounded-work rules** — define small safe paths and sensitive areas that require higher assurance.
 7. **Record merge expectations** — human/operator merge by default; document any explicit auto-merge command.
 8. **Enable integration lifecycle automation** — install/keep `.github/workflows/integration-lifecycle.yml` so issues close when PRs merge into the configured integration branch.
-9. **Validate environment** — run `multi-agent-sdlc doctor-env` to check tools and install guidance without installing anything.
-10. **Validate setup** — run the validators before treating the project as configured.
+9. **Choose release versioning** — keep default `main.minor.fix` or configure SemVer, CalVer, custom tags, package version source, and release approval expectations.
+10. **Validate environment** — run `multi-agent-sdlc doctor-env` to check tools and install guidance without installing anything.
+11. **Validate setup** — run the validators before treating the project as configured.
 
 ## Minimal single-agent config
 
@@ -44,6 +45,18 @@ Start here when a project wants the default workflow and no role routing.
 ```
 
 This keeps every role with the active executor. It still records phase evidence, handover comments when required, workflow-status comments, commits, and PR manifests.
+
+## Release versioning choices
+
+The default release strategy is `main.minor.fix`: `main` for breaking/compatibility-impacting releases, `minor` for additive backwards-compatible capabilities, and `fix` for corrections. Projects can choose SemVer names, CalVer/date-based versions, custom tag formats, package-backed versions, or no package metadata. Document choices in `agent-workflow.config.json` under `releaseVersioning` and see [`release-versioning.md`](release-versioning.md).
+
+Setup prompts:
+
+- Which release strategy should this project use: default `main.minor.fix`, SemVer, CalVer, or custom?
+- Which branch creates releases: `main`, `development`, or a release-candidate branch?
+- Which file, if any, owns package version metadata?
+- What tag format is expected?
+- Who must approve tags, pushes, and GitHub Releases?
 
 ## Integration lifecycle automation
 

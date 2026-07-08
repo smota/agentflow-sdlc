@@ -3,6 +3,7 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { doctor, init, markMerged, sync } from '../lib/install.mjs'
 import { validateEnvironment } from '../lib/environment.mjs'
+import { buildReleasePlan } from '../lib/release-versioning.mjs'
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -40,6 +41,19 @@ function printEnvironmentReport(report) {
     }
     process.stdout.write(`\n`)
   }
+}
+
+function printReleasePlan(plan) {
+  process.stdout.write(`Release plan preview\n`)
+  process.stdout.write(`${plan.message}\n\n`)
+  process.stdout.write(`Strategy: ${plan.strategy}\n`)
+  process.stdout.write(`Bump: ${plan.bump}\n`)
+  process.stdout.write(`Current version: ${plan.currentVersion}\n`)
+  process.stdout.write(`Next version: ${plan.nextVersion}\n`)
+  process.stdout.write(`Tag: ${plan.tag}\n`)
+  if (plan.previousTag) process.stdout.write(`Previous tag: ${plan.previousTag}\n`)
+  process.stdout.write(`Release notes draft: ${plan.notesPath}\n`)
+  process.stdout.write(`Approval required: ${plan.approvalRequired ? 'yes' : 'no'}\n`)
 }
 
 function printOnboardingPrompt(targetDir) {
@@ -100,6 +114,18 @@ function main() {
     process.exit(0)
   }
 
+  if (command === 'release-plan') {
+    const plan = buildReleasePlan({
+      repoRoot: targetDir,
+      bump: getFlag(rest, '--bump', 'fix'),
+      currentVersion: getFlag(rest, '--current', undefined),
+      notesPath: getFlag(rest, '--notes', undefined),
+    })
+    if (rest.includes('--json')) process.stdout.write(`${JSON.stringify(plan, null, 2)}\n`)
+    else printReleasePlan(plan)
+    process.exit(0)
+  }
+
   if (command === 'mark-merged') {
     const path = positionalArgs(rest)[0]
     if (!path) {
@@ -112,7 +138,7 @@ function main() {
   }
 
   process.stderr.write(
-    'Usage: multi-agent-sdlc <init|sync|doctor|doctor-env|onboarding-prompt|mark-merged> [path] [--target <dir>] [--json]\n',
+    'Usage: multi-agent-sdlc <init|sync|doctor|doctor-env|onboarding-prompt|release-plan|mark-merged> [path] [--target <dir>] [--json]\n',
   )
   process.exit(2)
 }

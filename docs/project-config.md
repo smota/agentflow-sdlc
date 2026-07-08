@@ -44,6 +44,14 @@ never mark anything as bounded, and PR manifests will use placeholder CI command
     "addLabels": ["integrated:development", "awaiting-release"],
     "closeIntegratedIssues": true
   },
+  "releaseVersioning": {
+    "strategy": "main.minor.fix",
+    "segments": ["main", "minor", "fix"],
+    "tagFormat": "v${version}",
+    "packageVersionSource": "package.json",
+    "requireExplicitApproval": true,
+    "allowPrerelease": true
+  },
   "routing": {
     "defaultMode": "single-agent",
     "agents": {
@@ -125,6 +133,14 @@ This repository commits its own `agent-workflow.config.json` with a two-tier pol
   `integrated:development` and `awaiting-release`.
 - `integrationLifecycle.closeIntegratedIssues` — when true, linked implementation issues are closed
   after a merged integration PR is processed.
+- `releaseVersioning.strategy` — release naming strategy; defaults to `main.minor.fix`.
+- `releaseVersioning.segments` — ordered bump names. Defaults to `main`, `minor`, `fix`.
+- `releaseVersioning.tagFormat` — tag template containing `${version}`; defaults to `v${version}`.
+- `releaseVersioning.packageVersionSource` — package metadata source such as `package.json`, or `null`
+  for non-package projects.
+- `releaseVersioning.requireExplicitApproval` — when true, agents must not tag, push, or publish a
+  release without explicit operator approval.
+- `releaseVersioning.allowPrerelease` — whether pre-release suffixes such as `1.2.3-rc.1` are allowed.
 - `routing.defaultMode` — defaults to `single-agent`; routing is optional and missing routing config
   keeps role execution with the current executor.
 - `routing.agents.<slug>` — enables one supported local agent CLI (`agy`, `codex`, `claude`, or
