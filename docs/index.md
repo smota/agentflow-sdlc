@@ -124,6 +124,7 @@ An agent slug names who owns a role, not how it runs. See [`execution-targets.md
 | [`../scripts/issue-markdown.mjs`](../scripts/issue-markdown.mjs)                       | Updates issue body sections deterministically                                                                                |
 | [`../scripts/resolve-execution-target.mjs`](../scripts/resolve-execution-target.mjs)   | Resolves an ambiguous agent-brand mention or model id to a deterministic `executionTarget`, or fails requiring clarification |
 | [`../scripts/validate-role-attribution.mjs`](../scripts/validate-role-attribution.mjs) | Checks a `multiAgentClaim`'s role attribution matrix (also run automatically by `validate-pr-manifest.mjs`)                  |
+| [`../scripts/validate-release-closeout.mjs`](../scripts/validate-release-closeout.mjs) | Verifies a published GitHub Release/tag and user-facing release-note wording after release PR merge                          |
 
 Repository self-checks:
 
