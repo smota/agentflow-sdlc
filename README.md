@@ -116,7 +116,15 @@ Inspect drift without writing files:
 node /path/to/multi-agent-sdlc/bin/cli.mjs doctor --target /path/to/your-project
 ```
 
-`sync` updates framework files only when they are unchanged since the last install/sync. Local project edits are reported as conflicts instead of being overwritten.
+`sync` updates framework files only when they are unchanged since the last install/sync. Local project edits are reported as conflicts instead of being overwritten. `sync` also seeds missing seed-once project files such as `AGENTS.md` and `docs/stack-conventions.md` without touching them after they exist.
+
+If you hand-merge framework adapter content into a project-owned file at a framework path, do not register that file as a normal tracked hash. Mark it as permanently hand-merged instead:
+
+```bash
+node /path/to/multi-agent-sdlc/bin/cli.mjs mark-merged CLAUDE.md --target /path/to/your-project
+```
+
+Marked files show separately in `sync`/`doctor` output and are never fast-forwarded over local additions.
 
 ## Day-to-day usage
 

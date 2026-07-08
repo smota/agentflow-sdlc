@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { doctor, init, sync } from '../lib/install.mjs'
+import { doctor, init, markMerged, sync } from '../lib/install.mjs'
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -14,12 +14,24 @@ function getFlag(args, name, fallback) {
 function printReport(title, report) {
   process.stdout.write(`${title}\n`)
   for (const [key, list] of Object.entries(report)) {
-    if (list.length === 0) continue
+    if (!Array.isArray(list) || list.length === 0) continue
     process.stdout.write(`  ${key} (${list.length}):\n`)
     for (const item of list) {
       process.stdout.write(`    - ${item}\n`)
     }
   }
+}
+
+function positionalArgs(args) {
+  const result = []
+  for (let index = 0; index < args.length; index += 1) {
+    if (args[index] === '--target') {
+      index += 1
+      continue
+    }
+    if (!args[index].startsWith('--')) result.push(args[index])
+  }
+  return result
 }
 
 function main() {
@@ -45,7 +57,20 @@ function main() {
     process.exit(drifted > 0 ? 1 : 0)
   }
 
-  process.stderr.write('Usage: multi-agent-sdlc <init|sync|doctor> [--target <dir>]\n')
+  if (command === 'mark-merged') {
+    const path = positionalArgs(rest)[0]
+    if (!path) {
+      process.stderr.write('Usage: multi-agent-sdlc mark-merged <path> [--target <dir>]\n')
+      process.exit(2)
+    }
+    const report = markMerged(targetDir, path)
+    printReport(`Marked hand-merged framework file in ${targetDir}`, { merged: [report.merged] })
+    process.exit(0)
+  }
+
+  process.stderr.write(
+    'Usage: multi-agent-sdlc <init|sync|doctor|mark-merged> [path] [--target <dir>]\n',
+  )
   process.exit(2)
 }
 

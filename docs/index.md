@@ -124,9 +124,10 @@ The CLI in [`../bin/cli.mjs`](../bin/cli.mjs) supports:
 node bin/cli.mjs init --target /path/to/project
 node bin/cli.mjs sync --target /path/to/project
 node bin/cli.mjs doctor --target /path/to/project
+node bin/cli.mjs mark-merged CLAUDE.md --target /path/to/project
 ```
 
-The file list is maintained in [`../lib/framework-files.mjs`](../lib/framework-files.mjs). `init` installs framework files and seeds project-owned files once. `sync` updates only files that are unchanged since the last install/sync.
+The file list is maintained in [`../lib/framework-files.mjs`](../lib/framework-files.mjs). `init` installs framework files and seeds project-owned files once. `sync` updates only files that are unchanged since the last install/sync and seeds missing seed-once files without overwriting existing project-owned content. `mark-merged` records a hand-merged framework file as permanently project-managed so future syncs never fast-forward over local additions.
 
 ## Live example
 
