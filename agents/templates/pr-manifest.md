@@ -30,7 +30,9 @@
 - Rationale: <why this bump matches the project release strategy>
 - Included issues: <implemented/integrated issues in this release>
 - Deferred issues: none | <issues intentionally excluded>
-- Release notes: <path or URL>
+- Release notes: <path or URL; must be user-facing capability/outcome wording, not issue-list headings>
+- Post-merge closeout: pending:`gh release create <tag> --target <merge-commit> --title "<tag> — <capability title>" --notes-file <notes>` | verified:<release URL>
+- Closeout verification: pending | `gh release view <tag>` + `gh release list` + `node scripts/validate-release-closeout.mjs --tag <tag> --target <merge-commit> --notes <notes>`
 - Approval: <human/operator approval status before tags or releases are pushed>
 
 ## Role attribution matrix
