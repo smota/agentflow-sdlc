@@ -48,7 +48,38 @@ Optional meta-harness/runtime:
 
 ## Optional QA and integration tools
 
-- `qa-expert` is an optional exploratory QA sidecar role. Its required tools depend on the adopting project and should be documented in project conventions.
+### `qa-expert` tool profile
+
+`qa-expert` is an optional exploratory QA sidecar role. It is not part of the deterministic SDLC phase sequence, but its environment should be explicit when a project enables exploratory/manual QA.
+
+Baseline tools:
+
+| Tool                               | Why it matters                                                                                                          | Validation                             |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| `gh`                               | Creates exploratory QA session issues, records findings, links follow-up bugs, and applies labels such as `needs-test`. | `gh --version`                         |
+| Vibium                             | Default `qa-expert` browser automation skill/tool for exploratory browser use and evidence capture.                     | `vibium --version` or project-specific |
+| Browser(s)                         | Manual UX flow validation, accessibility checks, responsive behavior, and browser-specific regressions.                 | Project-specific                       |
+| Test data / seeded environment     | Reproducible exploratory sessions without relying on private or production-only data.                                   | Project-specific                       |
+| Screenshot / screen recording tool | Captures evidence for visual bugs, reproduction steps, and QA handoffs.                                                 | Project-specific                       |
+
+Default recommendation:
+
+- Prefer Vibium for `qa-expert` when browser-based exploratory QA is in scope. This is an opinionated default because it has been validated successfully for AI-assisted exploratory QA, but projects may override it when an existing QA stack is a better fit.
+- Vibium upstream repository: <https://github.com/VibiumDev/vibium>
+- Vibium website/docs: <https://vibium.com>
+
+Common project-specific additions:
+
+- Playwright, Cypress, Selenium, or another browser automation runner for repro scripts;
+- accessibility tooling such as Axe, Lighthouse, or browser devtools accessibility inspectors;
+- API tools such as curl, HTTPie, Postman, or Bruno for negative-path API exploration;
+- mobile simulators/emulators when the product has mobile acceptance paths;
+- local services, seed scripts, fixture loaders, or sandbox credentials required for safe manual QA.
+
+Document these in project conventions or `agent-workflow.config.json` as optional availability checks. `doctor-env` can report `qa-expert` dependencies when they are represented as configured optional tools; it should still remain read-only and only propose installation/setup options.
+
+### Integration lifecycle tools
+
 - GitHub integration lifecycle automation uses GitHub Actions plus `gh` for local investigation. The workflow itself runs in GitHub with `contents: read`, `pull-requests: read`, and `issues: write` permissions.
 
 ## Installation options

@@ -2,7 +2,7 @@
   "name": "multi-agent-sdlc",
   "private": true,
   "type": "module",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Reusable multi-agent SDLC framework: role-based single-agent phases, branch discipline, PR/issue contracts, git hooks, and validators — extracted from Ativaly for reuse across projects.",
   "packageManager": "pnpm@9.6.0",
   "engines": {
