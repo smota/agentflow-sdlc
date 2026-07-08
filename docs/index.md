@@ -6,9 +6,11 @@ This index maps the main concepts, defaults, roles, skills/workflows, templates,
 
 1. [`../README.md`](../README.md) — overview, installation, usage, prompts, and live examples.
 2. [`../AGENTS.md`](../AGENTS.md) — required first-read repository policy.
-3. [`agent-workflow.md`](agent-workflow.md) — phase model, role-pass contract, durable evidence, branch strategy, review model, and PR readiness.
-4. [`issue-standards.md`](issue-standards.md) — issue titles, labels, body update rules, and lifecycle metadata.
-5. [`project-config.md`](project-config.md) — project-local `agent-workflow.config.json` contract.
+3. [`project-setup.md`](project-setup.md) — guided setup choices for agents, execution mode, routing, branch strategy, validation, bounded work, and skill provenance.
+4. [`agent-workflow.md`](agent-workflow.md) — phase model, role-pass contract, durable evidence, branch strategy, review model, and PR readiness.
+5. [`issue-standards.md`](issue-standards.md) — issue titles, labels, body update rules, and lifecycle metadata.
+6. [`project-config.md`](project-config.md) — project-local `agent-workflow.config.json` contract.
+7. [`default-skills.md`](default-skills.md) — default skills, recommended companion skills, upstream repositories, and CCPM-sourced skill surfaces.
 
 ## What it is
 
@@ -39,7 +41,7 @@ Each phase writes a role-pass artifact based on [`../agents/templates/role-pass.
 | [`orchestrate`](../agents/workflows/orchestrate/SKILL.md) | Running an issue end-to-end through the phase model                 |
 | [`scan`](../agents/workflows/scan/SKILL.md)               | Broad-context architecture/security scans that feed review evidence |
 
-The framework also supports locally managed skills/tooling in consuming projects. Install workflow skills using your agent/skill manager, then use the sync CLI for hooks, templates, docs, and validators.
+The framework also supports locally managed skills/tooling in consuming projects. Install workflow skills using your agent/skill manager, then use the sync CLI for hooks, templates, docs, and validators. See [`default-skills.md`](default-skills.md) for upstream source and provenance notes.
 
 ## Defaults
 
@@ -58,12 +60,13 @@ The framework also supports locally managed skills/tooling in consuming projects
 
 ## Configuration
 
-Project-specific settings live in root-level `agent-workflow.config.json` in the consuming project. See [`project-config.md`](project-config.md).
+Project-specific settings live in root-level `agent-workflow.config.json` in the consuming project. Start with the guided checklist in [`project-setup.md`](project-setup.md), then use [`project-config.md`](project-config.md) for the complete field contract.
 
 Main sections:
 
 - `ciCommands` — commands copied into PR manifests as CI-equivalent validation.
 - `bounded` — path and diff limits for bounded self-reviewable work.
+- `branching` — trunk, integration, protected branch, PR target, and work branch rules.
 - `routing` — optional role owner/fallback table for `agy`, `codex`, `claude`, and `pi`.
 
 Useful commands:

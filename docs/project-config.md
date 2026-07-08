@@ -2,7 +2,7 @@
 
 The engines in this framework (`scripts/ensure-workflow-artifacts.mjs`, `scripts/validate-bounded.mjs`)
 are stack-agnostic. A consuming project supplies its own values in a single root-level
-`agent-workflow.config.json`, which these scripts read at runtime. Nothing here is required —
+`agent-workflow.config.json`, which these scripts read at runtime. Start with the guided checklist in [`project-setup.md`](project-setup.md), then use this page for the full field contract. Nothing here is required —
 every field has a safe, fails-closed default — but without it, bounded-work classification will
 never mark anything as bounded, and PR manifests will use placeholder CI commands.
 

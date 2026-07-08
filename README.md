@@ -116,7 +116,21 @@ Create or update `agent-workflow.config.json` in the consuming project. Start wi
 }
 ```
 
-See [`docs/project-config.md`](docs/project-config.md) for routing, bounded work, and other defaults.
+See [`docs/project-setup.md`](docs/project-setup.md) for a guided setup checklist and [`docs/project-config.md`](docs/project-config.md) for the complete configuration contract.
+
+### 5. Choose project defaults
+
+Before the first real issue, make these choices explicit:
+
+1. enabled agents (`claude`, `codex`, `agy`, `pi`);
+2. execution mode: keep the single-agent default or allow optional multi-agent role routing;
+3. role owners and fallbacks when routing is enabled;
+4. branch strategy and protected branches;
+5. CI-equivalent validation commands;
+6. bounded-work and sensitive-path rules;
+7. skill provenance and local overrides.
+
+Use [`docs/project-setup.md`](docs/project-setup.md) for copyable examples, [`docs/default-skills.md`](docs/default-skills.md) for skill provenance, and the validators listed in those docs to check the setup.
 
 ## Sync / update framework files
 
@@ -267,7 +281,9 @@ Key references:
 - [`AGENTS.md`](AGENTS.md) — repository policy authority
 - [`docs/agent-workflow.md`](docs/agent-workflow.md) — phases, role-pass contract, evidence, branch and PR rules
 - [`docs/issue-standards.md`](docs/issue-standards.md) — issue titles, labels, and issue body updates
+- [`docs/project-setup.md`](docs/project-setup.md) — guided project choices for agents, mode, branches, validation, and bounded work
 - [`docs/project-config.md`](docs/project-config.md) — `agent-workflow.config.json`
+- [`docs/default-skills.md`](docs/default-skills.md) — default skills, upstream sources, and provenance notes
 - [`docs/agent-routing.md`](docs/agent-routing.md) — optional role routing and handovers
 - [`agents/workflows/orchestrate/SKILL.md`](agents/workflows/orchestrate/SKILL.md) — orchestrator workflow
 - [`agents/workflows/scan/SKILL.md`](agents/workflows/scan/SKILL.md) — advisory scan workflow
