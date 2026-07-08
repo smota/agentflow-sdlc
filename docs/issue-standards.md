@@ -116,20 +116,23 @@ For epic issues, use a normal Conventional Commit title and apply the `epic` lab
 
 Every new issue must have at least:
 
-1. **One type label** — `feature`, `bug`, `dx`, `tooling`, or `qa` (choose the one that best describes the issue)
+1. **One primary type/domain label** — `feature`, `bug`, `dx`, `tooling`, `documentation`, or `qa` (choose the one that best describes the primary work)
 2. **A lifecycle label** — `drafted-by:<agent>` when the issue is created or drafted by an agent
 
-The type label requirement applies to every new issue, human or agent-created. The `drafted-by:<agent>` requirement applies only when the issue is created or drafted by an agent. An issue missing its type label, or missing `drafted-by:<agent>` when agent-created, is incomplete and must be corrected before work begins.
+The type/domain label requirement applies to every new issue, human or agent-created. The `drafted-by:<agent>` requirement applies only when the issue is created or drafted by an agent. An issue missing its primary type/domain label, or missing `drafted-by:<agent>` when agent-created, is incomplete and must be corrected before work begins.
+
+The `drafted-by:<agent>` label must name the runtime that actually created or materially drafted the issue in the current session. Do not copy the label from an adapter file, a previous issue, a prompt example, or the user's preferred agent. If the correct runtime-specific label does not exist, create it before opening the issue or immediately correct the issue after creation.
 
 Examples:
 
-| Created by | Minimum labels                 |
-| ---------- | ------------------------------ |
-| Human      | `feature`                      |
-| Claude     | `feature`, `drafted-by:claude` |
-| Codex      | `bug`, `drafted-by:codex`      |
-| Agy        | `dx`, `drafted-by:agy`         |
-| QA agent   | `qa`, `drafted-by:codex`       |
+| Created by | Minimum labels                    |
+| ---------- | --------------------------------- |
+| Human      | `feature`                         |
+| Claude     | `feature`, `drafted-by:claude`    |
+| Codex      | `bug`, `drafted-by:codex`         |
+| Agy        | `dx`, `drafted-by:agy`            |
+| Pi         | `tooling`, `drafted-by:pi`        |
+| QA agent   | `qa`, `drafted-by:<actual-agent>` |
 
 Additional routing and lifecycle labels (`for-implementation:<agent>`, `implemented-by:<agent>`, etc.) are applied as work progresses. They supplement — never replace — the minimum required set.
 
@@ -142,10 +145,13 @@ Use this canonical label vocabulary for new issues and issue updates.
 - `epic` - parent tracking issue with a GitHub task list of child issues
 - `feature` - user-facing product capability
 - `bug` - defect, regression, security bug, or broken behavior
-- `dx` - developer experience, agent workflow, repository workflow, or documentation for contributors
+- `dx` - developer experience, agent workflow, repository workflow, or contributor experience work
 - `tooling` - CLI tooling, automation, scripts, CI helpers, or local developer tools
+- `documentation` - documentation-first work where docs are the primary deliverable or review surface
 - `qa` - exploratory QA sessions, QA planning/execution, or QA evidence work
 - `exploratory` - exploratory/manual test-session scope marker used with `qa` issues
+
+Apply secondary labels only when they describe the primary work or a meaningful review queue. Do not add `documentation` merely because an implementation issue includes docs updates in its acceptance criteria; use it when the issue is documentation-first or when documentation review is the main work surface.
 
 ### Test Debt Labels
 
@@ -168,7 +174,7 @@ validator before treating any issue as bounded.
 
 ### Agent Lifecycle Labels
 
-- `drafted-by:<agent>` - issue, plan, or spec was drafted by an agent
+- `drafted-by:<agent>` - issue, plan, or spec was drafted by the named agent/runtime in the current session
 - `implemented-by:<agent>` - implementation was completed by an agent
 - `for-review:<agent>` - review is requested from an agent
 - `reviewed-by:<agent>` - review was completed by an agent
@@ -180,7 +186,7 @@ Examples:
 - `for-review:claude`
 - `reviewed-by:codex`
 
-Use lowercase agent slugs. Keep labels specific: prefer one routing label and one lifecycle label over a generic ownership label.
+Use lowercase agent slugs. Keep labels specific: prefer one routing label and one lifecycle label over a generic ownership label. Provenance labels are factual audit metadata: never use `drafted-by:claude`, `drafted-by:codex`, `drafted-by:agy`, or `drafted-by:pi` unless that agent/runtime actually drafted the issue.
 Update one workflow-status issue comment as work progresses. Do not create a comment for every
 internal phase or evidence role.
 
@@ -208,6 +214,11 @@ Feature implementation:
 - Title: `feat: add customer import validation`
 - Labels: `feature`, `for-implementation:codex`
 
+Feature implementation drafted by Pi:
+
+- Title: `feat: add Omnigent routing runtime support`
+- Labels: `feature`, `dx`, `tooling`, `drafted-by:pi`
+
 Bug fix:
 
 - Title: `fix: prevent tenant leakage in customer list`
@@ -222,6 +233,11 @@ Epic:
 
 - Title: `feat: customer lifecycle automation epic`
 - Labels: `epic`, `feature`
+
+Documentation-first issue:
+
+- Title: `chore: document Omnigent-powered SDLC scenarios`
+- Labels: `documentation`, `dx`, `drafted-by:pi`
 
 Agent review:
 
