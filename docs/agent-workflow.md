@@ -118,14 +118,37 @@ Each pass uses `agents/templates/role-pass.md`.
 - Branch name
 - Phase number and role
 - Workflow profile
+- Planned owner: the `roleAlternationPlan` owner for this role (`routing.roles.<role>.owner`), or
+  `not-applicable:single-agent` when no routing config assigns this role — see §4a
 - Actual executor identity (`human | claude | codex | agy | pi`)
-- Model / runtime when known
+- Launcher: the agent/runtime that initiated this pass (`human | claude | codex | agy | pi`); equal
+  to the actual executor identity in single-agent execution
+- Executor: the resolved `executionTarget` that actually ran this pass (for example `claude-cli`,
+  `anthropic-api`, `agy-cli`, `agy-session`, `pi-parent`, `pi-subagent`, `pi-session`,
+  `pi-subagent-model`, `codex-cli`, `provider-api`, or `human`) — see `docs/execution-targets.md`
+- Transport: how the executor was reached (`local-cli | provider-api | pi-subagent |
+intercom-session | orchestrated-worktree | manual`)
+- Delegation boundary: where the work happened relative to the launcher (`current-session |
+child-subagent | separate-local-session | child-worktree | human-handoff`)
+- Context boundary: derived from transport + delegation boundary (`current-session |
+fresh-session | forked-context | local-cli-child-process | provider-api-call | human-handoff |
+worktree | intercom-session`) — see §4a
+- Independence boundary: `independent | self-review | not-applicable`; required for the review
+  role — see §4a
+- Model / runtime when known (the actual model identifier, distinct from the execution target)
 - Inputs read
 - Decisions / findings
 - Open questions or `none`
 - Next-phase contract
 - Status: `pass | blocked | returned | skipped`
 - Signed-by and timestamp
+
+Record launcher, executor, transport, delegation boundary, and model as distinct fields — do not
+collapse them into "Actual executor identity" or "Model / runtime" alone. A bare agent-brand mention
+(`claude`, `agy`, `pi`) is not an execution target: resolve it with
+`node scripts/resolve-execution-target.mjs` (see `docs/execution-targets.md`) before recording it as
+the executor, and never report a provider-API model call (`model: anthropic/claude-*` or any
+`<brand>/<model>` identifier) as if the matching brand's local CLI ran.
 
 ### Provenance
 
@@ -137,6 +160,82 @@ Each pass uses `agents/templates/role-pass.md`.
   names both separately.
 - The workflow-status comment's `**Implemented by:**` field must match the `<agent>` of the latest
   role-pass signature, or `human` when a human performed the latest pass.
+- Ambiguous requests such as `with claude`, `with agy`, or `with pi` must resolve to an explicit
+  `executionTarget` from project config (`routing.agents.<slug>.defaultExecutionTarget`) or a
+  clarifying question before any work launches — never by silently inheriting the launcher's current
+  model or provider. See `docs/execution-targets.md`.
+
+## 4a. Role alternation and attribution (multi-agent mode)
+
+`docs/execution-targets.md` (issue #54) makes launcher/executor/transport/delegation boundary
+deterministic for a single pass. This section answers the question that provenance alone does not:
+when a run claims multi-agent contribution, did the SDLC roles actually alternate across
+independent intelligences, and is that alternation evidenced — not collapsed into one
+`Implemented by` field?
+
+### Concepts
+
+- **`roleAlternationPlan`** — the planned role-to-agent assignment recorded before implementation
+  starts. This is `routing.roles` in `agent-workflow.config.json` (see
+  [`project-config.md`](project-config.md)) — not a new field, just the name for that existing plan
+  when a run is evaluated for role alternation.
+- **`roleIntelligence`** — the actual intelligence source that executed a role. This reuses the
+  resolved `executionTarget` from `docs/execution-targets.md` (for example `claude-cli`, `agy-cli`,
+  `pi-parent`, `human`) rather than introducing a second identity field.
+- **`contextBoundary`** — a human-readable label for where a role ran: `current-session`,
+  `fresh-session`, `forked-context`, `local-cli-child-process`, `provider-api-call`,
+  `human-handoff`, `worktree`, or `intercom-session`. Derived from `transport` +
+  `delegationBoundary` (`lib/role-attribution.mjs#deriveContextBoundary`) — never recorded as an
+  independent fact that could disagree with those two `docs/execution-targets.md` fields.
+- **`independenceBoundary`** — whether a role was cognitively independent from another role,
+  especially developer vs. reviewer: `independent`, `self-review`, or `not-applicable`.
+- **`roleAttributionMatrix`** — the durable evidence table mapping phase, role, planned owner,
+  actual agent, executor, context boundary, independence boundary, and status. Required in the
+  workflow-status comment and PR manifest whenever a run's `Mode` is `multi-agent`; never required
+  for single-agent runs. In a multi-agent matrix, `Planned owner` must be an agent slug (`pi`,
+  `claude`, `codex`, `agy`, or `human`). If a role has no `routing.roles.<role>` entry but is still
+  included in a multi-agent run, record the planned owner as the agent intentionally assigned by the
+  pre-execution roleAlternationPlan, usually the current orchestrator for that phase. Do not use
+  `not-applicable:single-agent` inside a multi-agent matrix. See `agents/templates/pr-manifest.md`
+  and `agents/templates/workflow-status-comment.md`.
+- **`multiAgentClaim`** — any workflow evidence asserting multi-agent mode, tracked with the
+  `Mode: single-agent | multi-agent` field in the workflow-status comment and the PR manifest's
+  `## Agent review` section.
+- **`selfReviewDisclosure`** — the explicit rationale recorded in `## Agent review`
+  (`Self-review disclosure:`) when the developer and review rows in the matrix share the same
+  `roleIntelligence`.
+
+### Deterministic requirements when `multiAgentClaim` is true
+
+1. Record a `roleAlternationPlan` (`routing.roles`) before implementation starts.
+2. Every executed phase's role-pass records both `Planned owner` and the actual `roleIntelligence`.
+3. Developer and review rows must use different `roleIntelligence` values, unless the review row's
+   independence boundary is `self-review` and `Self-review disclosure` carries a rationale.
+   `high-assurance` workflow profile forbids self-review outright, disclosed or not.
+4. Tester/validation evidence names the agent that selected and ran checks (`Executed by` on the
+   tester role-pass).
+5. PR readiness cites the complete `roleAttributionMatrix`.
+6. Handover comments annotate the planned owner, actual owner, context boundary, and independence
+   boundary for the transition — not only the top-level launcher/executor. See
+   `agents/templates/handover-comment.md`.
+7. When routing falls back to a different agent, the matrix records both the planned owner and the
+   actual owner; a row with a blank or non-agent planned owner cannot prove a fallback occurred correctly.
+8. A skipped role records `status: skipped` with a reason.
+9. A `multiAgentClaim` requires at least two distinct `roleIntelligence` values across the matrix —
+   otherwise the run has degraded to single-agent and `Mode` must say so.
+
+Single-agent runs (`Mode: single-agent`) never require a `roleAttributionMatrix` — role alternation
+is optional value, never an artificial ritual forced onto a single executor.
+
+### Validation
+
+`scripts/validate-pr-manifest.mjs` enforces the requirements above whenever a PR manifest's `Mode`
+is `multi-agent`, and always passes single-agent manifests through unchanged.
+`scripts/validate-role-attribution.mjs` runs the same check against any markdown evidence surface
+(for example a workflow-status comment export) that is not a PR manifest. Both share
+`lib/role-attribution.mjs`, which is the source of truth if this document and the code ever
+disagree; it deliberately reuses `lib/execution-targets.mjs` and `lib/role-routing.mjs` rather than
+duplicating their fields.
 
 ## 5. Workflow evidence and local artifacts
 
@@ -291,7 +390,9 @@ Every PR must include:
 - related issues (`Refs #...`)
 - workflow evidence summary from the issue workflow-status comment
 - CI-equivalent validation status (`passed`, `not-run-with-reason`, or `expected-fail-with-follow-up`)
-- agent review fields under `## Agent review`
+- a `## Role attribution matrix` when `## Agent review`'s `Mode` is `multi-agent` — see §4a
+- agent review fields under `## Agent review`, including `Mode` (`single-agent | multi-agent`) and,
+  when developer/review share a `roleIntelligence`, `Self-review disclosure`
 - follow-up issues created during implementation
 
 The PR body should mirror this structure explicitly: one `Implements #<issue>` line per implemented
@@ -382,10 +483,16 @@ when no role transition occurred.
 - **High-assurance**: human security and acceptance review required. This review happens on the
   open PR before merge — implementation commits, pushes, and PR creation are never blocked on it.
   Only the merge and the phase-6 gate sign-off wait for the human reviewer on the now-open PR
-  (`for-review:human`).
+  (`for-review:human`). Self-review is forbidden outright at this profile, even with a
+  `selfReviewDisclosure` — see §4a.
 
 Review roles are read-only by default. If a review finds a defect, it returns the work to the
 implementation phase instead of patching code inside the review pass.
+
+When a run's `Mode` is `multi-agent`, the review role's `independenceBoundary` must be
+`independent` from the developer role unless self-review is explicitly disclosed (§4a). A
+single-agent run is exempt — the same executor performing every role is the expected shape, not a
+disclosed exception.
 
 Merged-PR closeout should happen in GitHub issue comments, PR metadata, and session evidence. Do not create new
 tracked repository changes on already-closed issues solely to update workflow bookkeeping.

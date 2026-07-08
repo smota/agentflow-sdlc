@@ -12,8 +12,10 @@ This index maps the main concepts, defaults, roles, skills/workflows, templates,
 6. [`agent-workflow.md`](agent-workflow.md) — phase model, role-pass contract, durable evidence, branch strategy, review model, and PR readiness.
 7. [`issue-standards.md`](issue-standards.md) — issue titles, labels, body update rules, and lifecycle metadata.
 8. [`project-config.md`](project-config.md) — project-local `agent-workflow.config.json` contract.
-9. [`release-versioning.md`](release-versioning.md) — configurable release strategy, default `main.minor.fix`, release evidence, validators, and preview helpers.
-10. [`default-skills.md`](default-skills.md) — default skills, recommended companion skills, upstream repositories, and CCPM-sourced skill surfaces.
+9. [`execution-targets.md`](execution-targets.md) — `executionTarget`, `transport`, `launcher`, `executor`, and `delegationBoundary` concepts that disambiguate `with claude`/`with agy`/`with pi` requests.
+   [`agent-workflow.md` §4a](agent-workflow.md#4a-role-alternation-and-attribution-multi-agent-mode) extends this with `roleAlternationPlan`, `roleIntelligence`, `contextBoundary`, `independenceBoundary`, `roleAttributionMatrix`, `multiAgentClaim`, and `selfReviewDisclosure` — whether a multi-agent claim actually alternated SDLC roles across independent intelligences.
+10. [`release-versioning.md`](release-versioning.md) — configurable release strategy, default `main.minor.fix`, release evidence, validators, and preview helpers.
+11. [`default-skills.md`](default-skills.md) — default skills, recommended companion skills, upstream repositories, and CCPM-sourced skill surfaces.
 
 ## What it is
 
@@ -93,30 +95,34 @@ Routing lets a project choose a core owner and fallback list for each role. The 
 
 Handover comments use [`../agents/templates/handover-comment.md`](../agents/templates/handover-comment.md). They document phase-to-phase continuity, routing/fallback details, blockers, and the next-role contract.
 
+An agent slug names who owns a role, not how it runs. See [`execution-targets.md`](execution-targets.md) for the `executionTarget`, `transport`, `launcher`, `executor`, and `delegationBoundary` vocabulary, and `scripts/resolve-execution-target.mjs` for resolving an ambiguous `with claude`/`with agy`/`with pi` request before launching work.
+
 ## Templates
 
-| Template                                                                       | Purpose                                           |
-| ------------------------------------------------------------------------------ | ------------------------------------------------- |
-| [`role-pass.md`](../agents/templates/role-pass.md)                             | Local phase evidence contract                     |
-| [`workflow-status-comment.md`](../agents/templates/workflow-status-comment.md) | Signed issue status comment                       |
-| [`handover-comment.md`](../agents/templates/handover-comment.md)               | Issue-visible role handover evidence              |
-| [`pr-manifest.md`](../agents/templates/pr-manifest.md)                         | PR body structure and merge evidence              |
-| [`stack-conventions.md`](../agents/templates/stack-conventions.md)             | Seed-once project stack/domain checklist template |
+| Template                                                                       | Purpose                                                                                        |
+| ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| [`role-pass.md`](../agents/templates/role-pass.md)                             | Local phase evidence contract, including planned owner/context/independence boundary           |
+| [`workflow-status-comment.md`](../agents/templates/workflow-status-comment.md) | Signed issue status comment, with a role attribution matrix when `Mode: multi-agent`           |
+| [`handover-comment.md`](../agents/templates/handover-comment.md)               | Issue-visible role handover evidence, including planned/actual owner and independence boundary |
+| [`pr-manifest.md`](../agents/templates/pr-manifest.md)                         | PR body structure, merge evidence, and role attribution matrix                                 |
+| [`stack-conventions.md`](../agents/templates/stack-conventions.md)             | Seed-once project stack/domain checklist template                                              |
 
 ## Hooks and validators
 
-| File                                                                                   | Purpose                                                           |
-| -------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| [`../.github/hooks/check-issue-branch.mjs`](../.github/hooks/check-issue-branch.mjs)   | Blocks direct work on protected branches and invalid branch names |
-| [`../.github/hooks/pre-commit`](../.github/hooks/pre-commit)                           | Local commit guardrails                                           |
-| [`../.github/hooks/pre-push`](../.github/hooks/pre-push)                               | Blocks direct pushes to protected branches                        |
-| [`../.github/hooks/session-status.mjs`](../.github/hooks/session-status.mjs)           | Summarizes branch/spec/session state                              |
-| [`../scripts/validate-spec.mjs`](../scripts/validate-spec.mjs)                         | Checks `SPEC.md` readiness                                        |
-| [`../scripts/validate-bounded.mjs`](../scripts/validate-bounded.mjs)                   | Checks bounded-work eligibility                                   |
-| [`../scripts/validate-pr-manifest.mjs`](../scripts/validate-pr-manifest.mjs)           | Checks PR body/manifest readiness                                 |
-| [`../scripts/ensure-workflow-artifacts.mjs`](../scripts/ensure-workflow-artifacts.mjs) | Scaffolds local `.agent-runs/` issue files                        |
-| [`../scripts/branch-cleanup-report.mjs`](../scripts/branch-cleanup-report.mjs)         | Reports merged branch cleanup candidates                          |
-| [`../scripts/issue-markdown.mjs`](../scripts/issue-markdown.mjs)                       | Updates issue body sections deterministically                     |
+| File                                                                                   | Purpose                                                                                                                      |
+| -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| [`../.github/hooks/check-issue-branch.mjs`](../.github/hooks/check-issue-branch.mjs)   | Blocks direct work on protected branches and invalid branch names                                                            |
+| [`../.github/hooks/pre-commit`](../.github/hooks/pre-commit)                           | Local commit guardrails                                                                                                      |
+| [`../.github/hooks/pre-push`](../.github/hooks/pre-push)                               | Blocks direct pushes to protected branches                                                                                   |
+| [`../.github/hooks/session-status.mjs`](../.github/hooks/session-status.mjs)           | Summarizes branch/spec/session state                                                                                         |
+| [`../scripts/validate-spec.mjs`](../scripts/validate-spec.mjs)                         | Checks `SPEC.md` readiness                                                                                                   |
+| [`../scripts/validate-bounded.mjs`](../scripts/validate-bounded.mjs)                   | Checks bounded-work eligibility                                                                                              |
+| [`../scripts/validate-pr-manifest.mjs`](../scripts/validate-pr-manifest.mjs)           | Checks PR body/manifest readiness                                                                                            |
+| [`../scripts/ensure-workflow-artifacts.mjs`](../scripts/ensure-workflow-artifacts.mjs) | Scaffolds local `.agent-runs/` issue files                                                                                   |
+| [`../scripts/branch-cleanup-report.mjs`](../scripts/branch-cleanup-report.mjs)         | Reports merged branch cleanup candidates                                                                                     |
+| [`../scripts/issue-markdown.mjs`](../scripts/issue-markdown.mjs)                       | Updates issue body sections deterministically                                                                                |
+| [`../scripts/resolve-execution-target.mjs`](../scripts/resolve-execution-target.mjs)   | Resolves an ambiguous agent-brand mention or model id to a deterministic `executionTarget`, or fails requiring clarification |
+| [`../scripts/validate-role-attribution.mjs`](../scripts/validate-role-attribution.mjs) | Checks a `multiAgentClaim`'s role attribution matrix (also run automatically by `validate-pr-manifest.mjs`)                  |
 
 Repository self-checks:
 

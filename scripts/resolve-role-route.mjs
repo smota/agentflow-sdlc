@@ -40,6 +40,10 @@ export function main(argv = process.argv.slice(2)) {
     process.stdout.write(
       `Role route: ${role} -> ${result.selectedAgent} (${result.mode}; ${result.reason})\n`,
     )
+    process.stdout.write(`Launcher: ${result.launcher}\n`)
+    process.stdout.write(
+      `Executor: ${result.executor} (transport: ${result.transport}; delegation boundary: ${result.delegationBoundary})\n`,
+    )
     if (result.handoverDoc) process.stdout.write(`Handover doc: ${result.handoverDoc}\n`)
     if (result.requiresHandoverComment) process.stdout.write('Handover comment: required\n')
   } else {
