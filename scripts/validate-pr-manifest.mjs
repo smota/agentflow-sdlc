@@ -49,7 +49,7 @@ const agentReview = extractSection(content, 'Agent review')
 const ciValidation = extractSection(content, 'CI-equivalent validation')
 
 const agentReviewFields = {
-  'Implemented by': /^(human|claude|codex|agy)$/,
+  'Implemented by': /^(human|claude|codex|agy|pi)$/,
   'Model / runtime': /^(?!<freeform identifier>$).+/,
   Review: /^(self-review|human-review-requested|human-reviewed)$/,
   'Workflow profile': /^(bounded|standard|high-assurance)$/,
@@ -91,6 +91,7 @@ const checks = [
     ok:
       workflowEvidence !== null &&
       /Workflow-status comment:/m.test(workflowEvidence) &&
+      /Handover comments:\s*(none-required|https?:\/\/\S+)/m.test(workflowEvidence) &&
       /Role-pass summary:/m.test(workflowEvidence) &&
       /Validation evidence:/m.test(workflowEvidence),
   },

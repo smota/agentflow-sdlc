@@ -7,7 +7,7 @@
 **Risk:** low | medium | high
 **Effort:** low | medium | high
 **Change surfaces:** docs | UI | service | API | data | infra | security
-**Implemented by:** pending | human | claude | codex | agy <!-- must match the <agent> of the latest role-pass signature, or `human` — see docs/agent-workflow.md §4 (Provenance) -->
+**Implemented by:** pending | human | claude | codex | agy | pi <!-- must match the <agent> of the latest role-pass signature, or `human` — see docs/agent-workflow.md §4 (Provenance) -->
 **Model / runtime:** freeform identifier | pending
 **Review:** pending | self-review | human-review-requested | human-reviewed
 **CI-equivalent validation:** pending | passed | not-run-with-reason | expected-fail-with-follow-up
@@ -50,6 +50,6 @@ Describe the next meaningful action or `none`.
 
 ---
 
-<!-- <agent> = the AI identity actually executing this update right now (claude | codex | agy | human) — never copied from a prior pass. See docs/agent-workflow.md §4 (Provenance). -->
+<!-- <agent> = the AI identity actually executing this update right now (claude | codex | agy | pi | human) — never copied from a prior pass. See docs/agent-workflow.md §4 (Provenance). -->
 
 Signed-off-by: `<agent>` (`orchestrator`)

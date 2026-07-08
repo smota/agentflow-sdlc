@@ -60,8 +60,12 @@ try {
   writeFileSync(
     manifestPath,
     manifestTemplate
-      .replace('human | claude | codex | agy', 'codex')
+      .replace('human | claude | codex | agy | pi', 'codex')
       .replace('<freeform identifier>', 'workflow verifier')
+      .replace(
+        'none-required | <GitHub issue comment URL(s) for cross-agent/fallback/return/human handovers>',
+        'none-required',
+      )
       .replace('self-review | human-review-requested | human-reviewed', 'self-review')
       .replace('bounded | standard | high-assurance', 'bounded')
       .replace('passed | not-run-with-reason | expected-fail-with-follow-up', 'passed')
