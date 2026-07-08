@@ -69,6 +69,7 @@ If you use Claude, Codex, Agy, Omnigent, or another harness, use the same prompt
    - CI-equivalent validation commands;
    - bounded-work paths and sensitive paths;
    - GitHub integration lifecycle automation;
+   - release versioning strategy (`main.minor.fix` by default), tag format, package version source, and release approval expectations;
    - optional `qa-expert` exploratory QA and its browser/API/accessibility/evidence tooling;
    - optional Omnigent policies/sandboxing.
 

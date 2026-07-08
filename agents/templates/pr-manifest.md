@@ -22,6 +22,17 @@
   see the project's CI-equivalent command list in its stack-conventions doc>
 - Notes: <none, reason not run, or expected failure summary with follow-up issue>
 
+## Release decision
+
+- Required for release/promotion PRs; use `not-applicable:<reason>` for ordinary implementation PRs.
+- Intended version/tag: <version and tag>
+- Bump type: main | minor | fix | project-configured value
+- Rationale: <why this bump matches the project release strategy>
+- Included issues: <implemented/integrated issues in this release>
+- Deferred issues: none | <issues intentionally excluded>
+- Release notes: <path or URL>
+- Approval: <human/operator approval status before tags or releases are pushed>
+
 ## Agent review
 
 - Implemented by: human | claude | codex | agy

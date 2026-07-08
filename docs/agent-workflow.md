@@ -335,6 +335,21 @@ and `awaiting-release`, and closes the implementation issues. Related references
 `contents: read`,
 `pull-requests: read`, and `issues: write`.
 
+### Release versioning and promotion evidence
+
+Release promotion from the integration branch to trunk/main uses the project's configured release
+versioning strategy. The default is `main.minor.fix`:
+
+- `main`: breaking or compatibility-impacting releases;
+- `minor`: additive backwards-compatible capabilities;
+- `fix`: backwards-compatible corrections and clarifications.
+
+Release PRs or release manifests must record the intended version/tag, bump type, rationale,
+included integrated issues, excluded/deferred issues, validation commands, release notes path, and
+operator approval before tags or GitHub Releases are pushed. Use `node bin/cli.mjs release-plan` for
+a read-only preview and `node scripts/validate-release-versioning.mjs` for consistency checks. See
+[`docs/release-versioning.md`](release-versioning.md).
+
 ### Role routing and handover comments
 
 A project may define role routing in `agent-workflow.config.json`; see `docs/project-config.md` and
