@@ -25,7 +25,10 @@ specifically restoring that file.
 2. Export `SPEC.md`, then validate it with `node scripts/validate-spec.mjs`.
 3. If the raw issue export does not let the validator resolve the issue number, normalize `SPEC.md` into an explicit `# Issue #<number>: <title>` document and re-run validation.
 4. Stop when open questions remain unresolved.
-5. Confirm the active branch follows an allowed pattern for the current migration phase.
+5. Confirm the active branch follows the configured branch strategy:
+   `node scripts/resolve-branch-strategy.mjs --json`. Missing config defaults to
+   `main -> staging -> development`, with edits only on feature/work branches and never directly on
+   `development`.
 6. Create or update the issue's signed workflow-status comment from `agents/templates/workflow-status-comment.md`.
 7. Create local `.agent-runs/issues/<issue>/workflow.md` and `.agent-runs/issues/<issue>/passes/` notes before the first role-pass when useful. These files are gitignored and must be summarized into the workflow-status comment/PR body rather than committed.
 
@@ -117,8 +120,10 @@ The selected profile changes who signs the evidence, not whether the evidence ex
 
 ## Branch and PR policy
 
-During migration, both the target workstream branches and the existing compatibility branches are operational.
-The target branch strategy is documented in `docs/agent-workflow.md`.
+During migration, both configured work branches and existing compatibility branches are operational.
+The default branch strategy is `main -> staging -> development -> feature/work branches`; direct
+implementation edits on `development` are denied by default. Project overrides live in
+`agent-workflow.config.json` and are documented in `docs/project-config.md`.
 
 Every PR must:
 

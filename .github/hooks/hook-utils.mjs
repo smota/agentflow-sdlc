@@ -1,14 +1,6 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
-
-const BRANCH_PATTERNS = [
-  /^issue\/[0-9]+-[a-z][a-z0-9-]+$/,
-  /^work\/[a-z][a-z0-9-]*$/,
-  /^hotfix\/[a-z][a-z0-9-]*$/,
-  /^spike\/[a-z][a-z0-9-]*$/,
-  /^wt\/[0-9A-Za-z-]+$/,
-  /^claude\//,
-]
+import { classifyBranch, loadProjectConfig } from '../../lib/branch-strategy.mjs'
 
 export function runGit(args, options = {}) {
   try {
@@ -30,12 +22,20 @@ export function getGitDir() {
   return runGit(['rev-parse', '--git-dir'])
 }
 
+export function getBranchClassification(branch) {
+  try {
+    return classifyBranch(branch, loadProjectConfig())
+  } catch {
+    return classifyBranch(branch, {})
+  }
+}
+
 export function isTrunkBranch(branch) {
-  return ['main', 'master', 'staging', 'development'].includes(branch)
+  return getBranchClassification(branch).classification === 'protected'
 }
 
 export function isAllowedBranch(branch) {
-  return BRANCH_PATTERNS.some((pattern) => pattern.test(branch))
+  return getBranchClassification(branch).allowedForImplementation
 }
 
 export function isPausedGitOperation() {

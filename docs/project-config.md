@@ -26,6 +26,17 @@ never mark anything as bounded, and PR manifests will use placeholder CI command
     "allowedPathFragments": ["/test/fixtures/", "/__fixtures__/"],
     "sensitiveAdditionPattern": "(TenantGuard|stripe|process\\.env|secret)"
   },
+  "branching": {
+    "trunk": "main",
+    "releaseCandidate": "staging",
+    "integration": "development",
+    "directEditDeniedBranches": ["main", "staging", "development"],
+    "defaultPrTarget": "development",
+    "promotionOrder": ["development", "staging", "main"],
+    "workBranchPrefixes": ["work/", "feature/", "fix/", "hotfix/", "spike/"],
+    "compatibilityBranchPrefixes": ["issue/", "wt/", "claude/"],
+    "requireBoundedWorkBranch": true
+  },
   "routing": {
     "defaultMode": "single-agent",
     "agents": {
@@ -77,6 +88,19 @@ never mark anything as bounded, and PR manifests will use placeholder CI command
   eligible for bounded classification. With this empty (the default), nothing is bounded.
 - `bounded.sensitiveAdditionPattern` — a regex (case-insensitive) checked against added diff lines;
   a match disqualifies the diff from bounded status even if every path is otherwise allowed.
+- `branching.trunk` / `releaseCandidate` / `integration` — protected branch tiers. Missing config
+  defaults to `main -> staging -> development`.
+- `branching.directEditDeniedBranches` — branches that reject direct implementation edits and
+  direct pushes. By default this includes `main`, `staging`, and `development`.
+- `branching.defaultPrTarget` — the target branch implementation PRs should use by default.
+- `branching.promotionOrder` — ordered protected promotion path, defaulting to
+  `development -> staging -> main`.
+- `branching.workBranchPrefixes` — prefixes for bounded feature/work branches where implementation
+  edits are allowed by default.
+- `branching.compatibilityBranchPrefixes` — temporary or agent-specific branch prefixes that remain
+  accepted during migration.
+- `branching.requireBoundedWorkBranch` — when true, implementation work must happen on a configured
+  work or compatibility branch, never directly on protected branches.
 - `routing.defaultMode` — defaults to `single-agent`; routing is optional and missing routing config
   keeps role execution with the current executor.
 - `routing.agents.<slug>` — enables one supported local agent CLI (`agy`, `codex`, `claude`, or
@@ -85,9 +109,11 @@ never mark anything as bounded, and PR manifests will use placeholder CI command
 - `routing.roles.<role>.fallbacks` — ordered fallback agents used when the owner is unavailable due
   to setup, quota, or local availability. The owner must not appear in its own fallback list.
 
-Validate routing with:
+Validate branching and routing with:
 
 ```bash
+node scripts/validate-branch-strategy.mjs
+node scripts/resolve-branch-strategy.mjs --json
 node scripts/validate-role-routing.mjs
 node scripts/resolve-role-route.mjs --role developer --current claude --json
 ```

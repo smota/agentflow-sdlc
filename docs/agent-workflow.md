@@ -163,16 +163,29 @@ Post-merge verification is explicit evidence, not an assumption. Record:
 
 ### Target model
 
-Use short-lived workstream branches:
+The default protected promotion path is:
+
+```text
+main <- staging <- development <- feature/work branches
+```
+
+Implementation edits must happen on a bounded feature/work branch by default, never directly on
+`development`, `staging`, or `main`. Projects may redefine branch names and allowed work prefixes in
+`agent-workflow.config.json`; see `docs/project-config.md`.
+
+Default short-lived work branches include:
 
 - `work/<theme>`
+- `feature/<theme>`
+- `fix/<theme>`
 - `hotfix/<theme>`
 - `spike/<theme>`
 
 Examples:
 
 - `work/customer-registry`
-- `work/agent-workflow`
+- `feature/customer-import`
+- `fix/tenant-guard-regression`
 - `hotfix/tenant-guard-regression`
 - `spike/route-optimization-research`
 

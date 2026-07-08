@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process'
 import { readFileSync, existsSync } from 'node:fs'
+import { classifyBranch, loadProjectConfig } from '../../lib/branch-strategy.mjs'
 
 const outputMode = process.argv.includes('--codex-json') ? 'codex-json' : 'plain'
 
@@ -65,21 +66,22 @@ const statusLines = runCommand('git', ['status', '--porcelain'])
 const uncommitted = statusLines.filter((line) => !line.startsWith('??')).length
 const untracked = statusLines.filter((line) => line.startsWith('??')).length
 
+let branchClassification
+try {
+  branchClassification = classifyBranch(branch, loadProjectConfig())
+} catch {
+  branchClassification = classifyBranch(branch, {})
+}
+
 let branchTag = '✗ wrong pattern'
-if (/^work\/[a-z][a-z0-9-]*$/.test(branch)) {
-  branchTag = '✓ (workstream)'
-} else if (/^hotfix\/[a-z][a-z0-9-]*$/.test(branch)) {
-  branchTag = '✓ (hotfix)'
-} else if (/^spike\/[a-z][a-z0-9-]*$/.test(branch)) {
-  branchTag = '✓ (spike)'
-} else if (/^issue\/[0-9]+-[a-z][a-z0-9-]+$/.test(branch)) {
+if (branchClassification.classification === 'work') {
+  branchTag = '✓ (work branch)'
+} else if (branchClassification.classification === 'compatibility') {
   branchTag = '✓ (compatibility branch)'
-} else if (/^wt\/[0-9A-Za-z-]+$/.test(branch)) {
-  branchTag = '✓ (agent worktree)'
-} else if (branch.startsWith('claude/')) {
-  branchTag = '✓ (claude session)'
-} else if (['development', 'staging', 'main'].includes(branch)) {
-  branchTag = '✗ trunk — run: git checkout -b work/<theme>'
+} else if (branchClassification.classification === 'protected') {
+  branchTag = `✗ protected — run: git checkout -b work/<theme>`
+} else if (branchClassification.classification === 'detached') {
+  branchTag = 'detached'
 }
 
 let ghFragment = ''
