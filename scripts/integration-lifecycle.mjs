@@ -9,7 +9,7 @@ const DEFAULT_CONFIG = {
   trunkBranch: 'main',
   closeIntegratedIssues: true,
   addLabels: ['integrated:development', 'awaiting-release'],
-  referenceKeywords: ['Implements', 'Refs'],
+  referenceKeywords: ['Implements', 'Closes'],
 }
 
 function isPlainObject(value) {
@@ -44,6 +44,8 @@ function escapeRegExp(value) {
 }
 
 export function parseIssueReferences(text = '', options = {}) {
+  // Only implementation/closure keywords should drive integration lifecycle actions.
+  // Related-reference keywords such as "Refs" are intentionally excluded by default.
   const keywords = options.referenceKeywords ?? DEFAULT_CONFIG.referenceKeywords
   const keywordPattern = keywords.map(escapeRegExp).join('|')
   const regex = new RegExp(

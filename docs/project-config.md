@@ -40,7 +40,7 @@ never mark anything as bounded, and PR manifests will use placeholder CI command
   "integrationLifecycle": {
     "integrationBranch": "development",
     "trunkBranch": "main",
-    "referenceKeywords": ["Implements", "Refs"],
+    "referenceKeywords": ["Implements", "Closes"],
     "addLabels": ["integrated:development", "awaiting-release"],
     "closeIntegratedIssues": true
   },
@@ -117,8 +117,10 @@ This repository commits its own `agent-workflow.config.json` with a two-tier pol
 - `integrationLifecycle.integrationBranch` — branch whose merged PRs mark implementation issues as
   integrated; defaults to the branch strategy's default PR target.
 - `integrationLifecycle.trunkBranch` — final release/trunk branch named in integration comments.
-- `integrationLifecycle.referenceKeywords` — PR-body keywords parsed by
-  `scripts/integration-lifecycle.mjs`; defaults to `Implements` and `Refs`.
+- `integrationLifecycle.referenceKeywords` — PR-body implementation/closure keywords parsed by
+  `scripts/integration-lifecycle.mjs`; defaults to `Implements` and `Closes`. Do not include
+  related-reference keywords such as `Refs` unless the project intentionally wants those references
+  to be labeled and closed as integrated work.
 - `integrationLifecycle.addLabels` — labels applied to linked issues after integration, commonly
   `integrated:development` and `awaiting-release`.
 - `integrationLifecycle.closeIntegratedIssues` — when true, linked implementation issues are closed

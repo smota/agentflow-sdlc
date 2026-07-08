@@ -153,7 +153,7 @@ Before the first real issue, make these choices explicit:
 7. skill provenance and local overrides;
 8. GitHub integration automation for closing issues when PRs merge to the integration branch.
 
-Use [`docs/project-setup.md`](docs/project-setup.md) for copyable examples, [`docs/default-skills.md`](docs/default-skills.md) for skill provenance, and the validators listed in those docs to check the setup. The installed GitHub workflow `.github/workflows/integration-lifecycle.yml` uses `scripts/integration-lifecycle.mjs` to comment, label, and close issues referenced with `Implements #...` or `Refs #...` after a PR merges into the configured integration branch.
+Use [`docs/project-setup.md`](docs/project-setup.md) for copyable examples, [`docs/default-skills.md`](docs/default-skills.md) for skill provenance, and the validators listed in those docs to check the setup. The installed GitHub workflow `.github/workflows/integration-lifecycle.yml` uses `scripts/integration-lifecycle.mjs` to comment, label, and close issues referenced with implementation/closure keywords such as `Implements #...` or `Closes #...` after a PR merges into the configured integration branch. Related references such as `Refs #...` are ignored by lifecycle automation.
 
 Validate local tooling without installing anything:
 

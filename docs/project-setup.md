@@ -59,9 +59,10 @@ permissions:
 ```
 
 For integration-branch PRs, use `Implements #...` for implemented issues and `Refs #...` for related
-issues. After the PR merges into the configured integration branch, the automation comments on linked
-issues, applies configured labels, and closes them. Track release to trunk/main with a separate
-promotion issue.
+issues. After the PR merges into the configured integration branch, the automation comments on issues
+referenced by implementation/closure keywords such as `Implements #...` or `Closes #...`, applies
+configured labels, and closes them. It intentionally ignores `Refs #...` related issues. Track
+release to trunk/main with a separate promotion issue.
 
 ## Optional multi-agent routing config
 

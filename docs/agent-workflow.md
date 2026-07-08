@@ -328,9 +328,11 @@ integrated. Promotion from integration to trunk/main is tracked by a separate pr
 
 The installed `.github/workflows/integration-lifecycle.yml` runs on merged PRs and delegates to
 `scripts/integration-lifecycle.mjs`. By default it processes PRs merged into `development`, parses
-`Implements #...` and `Refs #...` lines from the PR body, comments on linked issues with integration
-evidence, adds configured labels such as `integrated:development` and `awaiting-release`, and closes
-the implementation issues. Required GitHub token permissions are `contents: read`,
+implementation/closure lines such as `Implements #...` and `Closes #...` from the PR body, comments
+on linked issues with integration evidence, adds configured labels such as `integrated:development`
+and `awaiting-release`, and closes the implementation issues. Related references such as
+`Refs #...` are intentionally ignored by lifecycle automation. Required GitHub token permissions are
+`contents: read`,
 `pull-requests: read`, and `issues: write`.
 
 ### Role routing and handover comments
