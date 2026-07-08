@@ -38,6 +38,8 @@ node bin/cli.mjs onboarding-prompt --target /path/to/your-project
 
 See [`docs/assisted-onboarding.md`](docs/assisted-onboarding.md) and [`docs/environment-tools.md`](docs/environment-tools.md). The environment guide documents required, recommended, and optional tools compatible with `doctor-env`.
 
+Already adopted this framework? Use [`docs/assisted-update.md`](docs/assisted-update.md) and `node bin/cli.mjs update-prompt --target /path/to/your-project` to plan a read-only, approval-gated update before running `sync`.
+
 ## Who it is for
 
 This framework is for teams or solo maintainers who want agentic development to be manageable, auditable, and easier to reason about:
@@ -69,16 +71,16 @@ See [`docs/index.md`](docs/index.md) for the detailed map of roles, workflows, t
 
 ## What is included
 
-| Area             | Files                                                                                                                                                                         |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Policy           | `AGENTS.md`, `CLAUDE.md`, `CODEX.md`, `AGY.md`                                                                                                                                |
-| Workflow docs    | `docs/agent-workflow.md`, `docs/issue-standards.md`, `docs/project-config.md`, `docs/agent-routing.md`, `docs/execution-targets.md`, `docs/index.md`                          |
-| Onboarding docs  | `docs/assisted-onboarding.md`, `docs/environment-tools.md`, `docs/project-setup.md`, `docs/default-skills.md`                                                                 |
-| Skills/workflows | `agents/workflows/orchestrate/SKILL.md`, `agents/workflows/scan/SKILL.md`                                                                                                     |
-| Templates        | `agents/templates/role-pass.md`, `pr-manifest.md`, `workflow-status-comment.md`, `handover-comment.md`, `stack-conventions.md`                                                |
-| Hooks            | `.github/hooks/*` branch checks, session status, commit readiness, formatting support                                                                                         |
-| Validators       | `scripts/validate-spec.mjs`, `validate-bounded.mjs`, `validate-pr-manifest.mjs`, `validate-role-routing.mjs`, `validate-role-attribution.mjs`, `resolve-execution-target.mjs` |
-| Distribution     | `bin/cli.mjs`, `lib/install.mjs`, `lib/framework-files.mjs`, `agent-framework-lock.json` in consuming repos                                                                   |
+| Area                   | Files                                                                                                                                                                         |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Policy                 | `AGENTS.md`, `CLAUDE.md`, `CODEX.md`, `AGY.md`                                                                                                                                |
+| Workflow docs          | `docs/agent-workflow.md`, `docs/issue-standards.md`, `docs/project-config.md`, `docs/agent-routing.md`, `docs/execution-targets.md`, `docs/index.md`                          |
+| Onboarding/update docs | `docs/assisted-onboarding.md`, `docs/assisted-update.md`, `docs/environment-tools.md`, `docs/project-setup.md`, `docs/default-skills.md`                                      |
+| Skills/workflows       | `agents/workflows/orchestrate/SKILL.md`, `agents/workflows/scan/SKILL.md`                                                                                                     |
+| Templates              | `agents/templates/role-pass.md`, `pr-manifest.md`, `workflow-status-comment.md`, `handover-comment.md`, `stack-conventions.md`                                                |
+| Hooks                  | `.github/hooks/*` branch checks, session status, commit readiness, formatting support                                                                                         |
+| Validators             | `scripts/validate-spec.mjs`, `validate-bounded.mjs`, `validate-pr-manifest.mjs`, `validate-role-routing.mjs`, `validate-role-attribution.mjs`, `resolve-execution-target.mjs` |
+| Distribution           | `bin/cli.mjs`, `lib/install.mjs`, `lib/framework-files.mjs`, `agent-framework-lock.json` in consuming repos                                                                   |
 
 ## Defaults
 
@@ -216,7 +218,13 @@ node bin/cli.mjs doctor-env --target /path/to/your-project --json
 
 ## Sync / update framework files
 
-Run sync whenever this framework changes:
+For already-adopted projects, start with the assisted update workflow so the agent/operator inspects the lockfile, classifies conflicts, and asks for approval before writing:
+
+```bash
+node /path/to/multi-agent-sdlc/bin/cli.mjs update-prompt --target /path/to/your-project
+```
+
+Run sync whenever this framework changes and the update plan is approved:
 
 ```bash
 node /path/to/multi-agent-sdlc/bin/cli.mjs sync --target /path/to/your-project
