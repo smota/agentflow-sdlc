@@ -62,6 +62,43 @@ that skip is recorded with a reason.
 
 Any other transition is a workflow defect and must be logged in the workflow artifact.
 
+### Phase diagram
+
+This diagram illustrates the allowed state machine. The table and transition bullets above remain the authoritative contract.
+
+```mermaid
+flowchart LR
+  P0["0 Product manager / JTBD"] --> P1["1 Analyst"]
+  P1 --> P2["2 Architect"]
+  P2 --> P3["3 Developer planning"]
+  P3 --> P4["4 Developer"]
+  P4 --> P5["5 Tester"]
+  P5 --> P6["6 Review"]
+  P6 --> P7["7 Tech writer"]
+  P7 --> P8["8 PR readiness"]
+
+  P4 -. planning defect .-> P3
+  P6 -. review findings .-> P4
+  P7 -. docs remediation .-> P4
+  P8 -. merge blocker .-> P4
+```
+
+### Execution and evidence flow
+
+```mermaid
+flowchart TD
+  Issue["GitHub issue / SPEC.md"] --> RolePass["Local role-pass artifact"]
+  RolePass --> Status["Workflow-status issue comment"]
+  RolePass --> Handover["Handover comment when a role transitions"]
+  RolePass --> Commit["Issue-scoped commit"]
+  Commit --> PR["PR body / manifest"]
+  PR --> Review["Self-review or human review gate"]
+  Review --> Merge["Human/operator merge by default"]
+  RolePass --> FollowUp["Follow-up issue for out-of-scope findings"]
+```
+
+The default path is still single-agent execution. Optional multi-agent routing only changes who owns a role; it does not remove the role-pass, workflow-status, handover, PR, or follow-up evidence requirements.
+
 ## 4. Role-pass contract
 
 Every pass must answer the same questions:
