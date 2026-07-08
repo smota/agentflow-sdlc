@@ -8,6 +8,9 @@
 **Effort:** low | medium | high
 **Change surfaces:** docs | UI | service | API | data | infra | security
 **Implemented by:** pending | human | claude | codex | agy | pi <!-- must match the <agent> of the latest role-pass signature, or `human` — see docs/agent-workflow.md §4 (Provenance) -->
+**Executor:** pending | claude-cli | anthropic-api | agy-cli | agy-session | pi-parent | pi-subagent | pi-session | pi-subagent-model | codex-cli | provider-api | human <!-- see docs/execution-targets.md -->
+**Transport:** pending | local-cli | provider-api | pi-subagent | intercom-session | orchestrated-worktree | manual
+**Delegation boundary:** pending | current-session | child-subagent | separate-local-session | child-worktree | human-handoff
 **Model / runtime:** freeform identifier | pending
 **Review:** pending | self-review | human-review-requested | human-reviewed
 **CI-equivalent validation:** pending | passed | not-run-with-reason | expected-fail-with-follow-up

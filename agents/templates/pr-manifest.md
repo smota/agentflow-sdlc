@@ -35,7 +35,11 @@
 
 ## Agent review
 
-- Implemented by: human | claude | codex | agy
+- Implemented by: human | claude | codex | agy | pi
+- Launcher: <human | claude | codex | agy | pi> <!-- who initiated the implementation work; equal to "Implemented by" in single-agent execution -->
+- Executor: <claude-cli | anthropic-api | agy-cli | agy-session | pi-parent | pi-subagent | pi-session | pi-subagent-model | codex-cli | provider-api | human> <!-- see docs/execution-targets.md -->
+- Transport: <local-cli | provider-api | pi-subagent | intercom-session | orchestrated-worktree | manual>
+- Delegation boundary: <current-session | child-subagent | separate-local-session | child-worktree | human-handoff>
 - Model / runtime: <freeform identifier>
 - Review: self-review | human-review-requested | human-reviewed
 - Workflow profile: bounded | standard | high-assurance

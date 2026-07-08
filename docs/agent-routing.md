@@ -2,6 +2,12 @@
 
 Project-configurable role routing lets a consuming project choose which local agent CLI should own each workflow role. Routing is optional: without `agent-workflow.config.json` routing settings, every role stays with the current executor and the workflow remains single-agent.
 
+An agent slug names _who_ owns a role. It does not say _how_ that role runs. See
+[`execution-targets.md`](execution-targets.md) for the `executionTarget`, `transport`,
+`launcher`, `executor`, and `delegationBoundary` concepts that make the "how" explicit — required
+reading before treating a bare mention like `with claude`, `with agy`, or `with pi` as sufficient to
+launch work.
+
 ## Supported agent slugs
 
 The initial supported agent CLI slugs are:
@@ -25,14 +31,25 @@ Use `--no-availability-check` in tests or dry runs when local CLI availability s
 
 The resolver returns a machine-readable decision with:
 
-- selected agent;
+- selected agent (`selectedAgent`, the agent slug);
 - configured owner;
 - fallback attempts;
 - selection reason;
+- `launcher` (the resolving agent) and `executor` (the resolved `executionTarget` for the selected
+  agent, e.g. `claude-cli`, `codex-cli`) — see [`execution-targets.md`](execution-targets.md);
+- `transport` and `delegationBoundary` for the resolved execution target;
 - handover workflow doc;
 - whether a ticket handover comment is required.
 
-If routing config is missing or the role is not configured, the resolver selects the current executor and reports `single-agent` mode.
+If routing config is missing or the role is not configured, the resolver selects the current executor and reports `single-agent` mode, with `executor` defaulting to that agent's built-in local-CLI execution target.
+
+For a chat-level or free-text mention that role routing does not cover — a bare `with claude`/`with agy`/`with pi`, or a raw model identifier — resolve it deterministically before launching work:
+
+```bash
+node scripts/resolve-execution-target.mjs --agent claude --requested "with claude" --current-agent pi --json
+```
+
+This exits non-zero with `requiresClarification: true` when the request is genuinely ambiguous, instead of silently inheriting the launcher's current model or provider. See [`execution-targets.md`](execution-targets.md#resolving-ambiguous-requests).
 
 ## Validation
 
@@ -42,7 +59,7 @@ Validate project routing config with:
 node scripts/validate-role-routing.mjs
 ```
 
-Validation checks supported agent slugs, owner/fallback shape, duplicate fallbacks, owner duplication, and referenced handover docs.
+Validation checks supported agent slugs, owner/fallback shape, duplicate fallbacks, owner duplication, referenced handover docs, and — when set — that `routing.agents.<slug>.defaultExecutionTarget` is a valid execution target for that agent slug.
 
 ## Handover comments
 

@@ -50,6 +50,12 @@ const ciValidation = extractSection(content, 'CI-equivalent validation')
 
 const agentReviewFields = {
   'Implemented by': /^(human|claude|codex|agy|pi)$/,
+  Launcher: /^(human|claude|codex|agy|pi)$/,
+  Executor:
+    /^(claude-cli|anthropic-api|agy-cli|agy-session|pi-parent|pi-subagent|pi-session|pi-subagent-model|codex-cli|provider-api|human)$/,
+  Transport: /^(local-cli|provider-api|pi-subagent|intercom-session|orchestrated-worktree|manual)$/,
+  'Delegation boundary':
+    /^(current-session|child-subagent|separate-local-session|child-worktree|human-handoff)$/,
   'Model / runtime': /^(?!<freeform identifier>$).+/,
   Review: /^(self-review|human-review-requested|human-reviewed)$/,
   'Workflow profile': /^(bounded|standard|high-assurance)$/,
@@ -109,7 +115,7 @@ const checks = [
     ok: missingAgentFields.length === 0 && invalidAgentFields.length === 0,
     detail:
       missingAgentFields.length === 0 && invalidAgentFields.length === 0
-        ? 'Implemented by, Model / runtime, Review, Workflow profile, and Merge owner are filled in'
+        ? 'Implemented by, Launcher, Executor, Transport, Delegation boundary, Model / runtime, Review, Workflow profile, and Merge owner are filled in'
         : [
             missingAgentFields.length > 0 ? `missing: ${missingAgentFields.join(', ')}` : '',
             invalidAgentFields.length > 0 ? `invalid: ${invalidAgentFields.join(', ')}` : '',

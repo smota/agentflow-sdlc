@@ -119,13 +119,29 @@ Each pass uses `agents/templates/role-pass.md`.
 - Phase number and role
 - Workflow profile
 - Actual executor identity (`human | claude | codex | agy | pi`)
-- Model / runtime when known
+- Launcher: the agent/runtime that initiated this pass (`human | claude | codex | agy | pi`); equal
+  to the actual executor identity in single-agent execution
+- Executor: the resolved `executionTarget` that actually ran this pass (for example `claude-cli`,
+  `anthropic-api`, `agy-cli`, `agy-session`, `pi-parent`, `pi-subagent`, `pi-session`,
+  `pi-subagent-model`, `codex-cli`, `provider-api`, or `human`) — see `docs/execution-targets.md`
+- Transport: how the executor was reached (`local-cli | provider-api | pi-subagent |
+intercom-session | orchestrated-worktree | manual`)
+- Delegation boundary: where the work happened relative to the launcher (`current-session |
+child-subagent | separate-local-session | child-worktree | human-handoff`)
+- Model / runtime when known (the actual model identifier, distinct from the execution target)
 - Inputs read
 - Decisions / findings
 - Open questions or `none`
 - Next-phase contract
 - Status: `pass | blocked | returned | skipped`
 - Signed-by and timestamp
+
+Record launcher, executor, transport, delegation boundary, and model as distinct fields — do not
+collapse them into "Actual executor identity" or "Model / runtime" alone. A bare agent-brand mention
+(`claude`, `agy`, `pi`) is not an execution target: resolve it with
+`node scripts/resolve-execution-target.mjs` (see `docs/execution-targets.md`) before recording it as
+the executor, and never report a provider-API model call (`model: anthropic/claude-*` or any
+`<brand>/<model>` identifier) as if the matching brand's local CLI ran.
 
 ### Provenance
 
@@ -137,6 +153,10 @@ Each pass uses `agents/templates/role-pass.md`.
   names both separately.
 - The workflow-status comment's `**Implemented by:**` field must match the `<agent>` of the latest
   role-pass signature, or `human` when a human performed the latest pass.
+- Ambiguous requests such as `with claude`, `with agy`, or `with pi` must resolve to an explicit
+  `executionTarget` from project config (`routing.agents.<slug>.defaultExecutionTarget`) or a
+  clarifying question before any work launches — never by silently inheriting the launcher's current
+  model or provider. See `docs/execution-targets.md`.
 
 ## 5. Workflow evidence and local artifacts
 

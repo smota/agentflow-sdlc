@@ -1,6 +1,7 @@
 ## Agent Run
 
 **Agent:** human | claude | codex | agy
+**Executor:** claude-cli | anthropic-api | agy-cli | agy-session | pi-parent | pi-subagent | pi-session | pi-subagent-model | codex-cli | provider-api | human <!-- see docs/execution-targets.md -->
 **Model / runtime:** <freeform identifier>
 **Role:** orchestrator | developer | consolidated-review | security-review | acceptance | scanner | techwriter
 **Step:** workflow evidence or delegated step

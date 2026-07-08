@@ -58,6 +58,7 @@ The framework is intentionally structured as a control system for agent-assisted
 - **Roles reduce ambiguity.** Analyst, architect, developer, tester, reviewer, tech writer, and PR-readiness passes each have a small job. That keeps the agent from mixing product decisions, implementation, validation, and review into one opaque step.
 - **Single-agent execution is the default.** One executor carrying context end to end reduces coordination overhead and avoids recreating a noisy multi-agent process for routine work.
 - **Optional routing supports specialization.** Projects can route roles to `agy`, `codex`, `claude`, or `pi` when it helps, but owners, fallbacks, and handovers are documented so agent availability or quota issues do not turn into on-the-fly process design.
+- **Execution targets are explicit, not inferred from chat.** A bare `with claude`/`with agy`/`with pi` names who is being asked, not how the work runs (local CLI, provider API, subagent, or a separate session/worktree). See [`docs/execution-targets.md`](docs/execution-targets.md).
 - **Locally managed skills reduce setup drift.** Workflow skills and tooling live with the project so agents do not have to rediscover commands, templates, or handoff rules on every run.
 - **Issue comments and PR manifests support compliance.** Workflow-status comments, handover comments, and PR manifests create durable evidence that survives session loss and can be reviewed by humans later.
 - **Hooks and validators reduce cognitive load.** Branch checks, manifest validation, bounded-work checks, and workflow verification let humans and agents rely on executable guardrails instead of memory.
@@ -67,22 +68,23 @@ See [`docs/index.md`](docs/index.md) for the detailed map of roles, workflows, t
 
 ## What is included
 
-| Area             | Files                                                                                                                          |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| Policy           | `AGENTS.md`, `CLAUDE.md`, `CODEX.md`, `AGY.md`                                                                                 |
-| Workflow docs    | `docs/agent-workflow.md`, `docs/issue-standards.md`, `docs/project-config.md`, `docs/agent-routing.md`, `docs/index.md`        |
-| Onboarding docs  | `docs/assisted-onboarding.md`, `docs/environment-tools.md`, `docs/project-setup.md`, `docs/default-skills.md`                  |
-| Skills/workflows | `agents/workflows/orchestrate/SKILL.md`, `agents/workflows/scan/SKILL.md`                                                      |
-| Templates        | `agents/templates/role-pass.md`, `pr-manifest.md`, `workflow-status-comment.md`, `handover-comment.md`, `stack-conventions.md` |
-| Hooks            | `.github/hooks/*` branch checks, session status, commit readiness, formatting support                                          |
-| Validators       | `scripts/validate-spec.mjs`, `validate-bounded.mjs`, `validate-pr-manifest.mjs`, `validate-role-routing.mjs`                   |
-| Distribution     | `bin/cli.mjs`, `lib/install.mjs`, `lib/framework-files.mjs`, `agent-framework-lock.json` in consuming repos                    |
+| Area             | Files                                                                                                                                                |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Policy           | `AGENTS.md`, `CLAUDE.md`, `CODEX.md`, `AGY.md`                                                                                                       |
+| Workflow docs    | `docs/agent-workflow.md`, `docs/issue-standards.md`, `docs/project-config.md`, `docs/agent-routing.md`, `docs/execution-targets.md`, `docs/index.md` |
+| Onboarding docs  | `docs/assisted-onboarding.md`, `docs/environment-tools.md`, `docs/project-setup.md`, `docs/default-skills.md`                                        |
+| Skills/workflows | `agents/workflows/orchestrate/SKILL.md`, `agents/workflows/scan/SKILL.md`                                                                            |
+| Templates        | `agents/templates/role-pass.md`, `pr-manifest.md`, `workflow-status-comment.md`, `handover-comment.md`, `stack-conventions.md`                       |
+| Hooks            | `.github/hooks/*` branch checks, session status, commit readiness, formatting support                                                                |
+| Validators       | `scripts/validate-spec.mjs`, `validate-bounded.mjs`, `validate-pr-manifest.mjs`, `validate-role-routing.mjs`, `resolve-execution-target.mjs`         |
+| Distribution     | `bin/cli.mjs`, `lib/install.mjs`, `lib/framework-files.mjs`, `agent-framework-lock.json` in consuming repos                                          |
 
 ## Defaults
 
 - **Execution:** single-agent by default.
 - **Roles:** product/JTBD when needed, analyst, architect, developer planning, developer, tester, review, tech writer, PR readiness.
 - **Routing:** optional; projects may route roles to `agy`, `codex`, `claude`, or `pi` with fallbacks.
+- **Execution targets:** deterministic per agent (`claude-cli`/`anthropic-api`, `agy-cli`/`agy-session`, `pi-parent`/`pi-subagent`/`pi-session`/`pi-subagent-model`, `codex-cli`/`provider-api`); ambiguous requests resolve from project config or require a clarifying question, never silent inheritance.
 - **Evidence:** GitHub issue comments and PR bodies are durable; `.agent-runs/` files are local scratch and are not committed.
 - **Review:** bounded/standard work may use explicit self-review; high-assurance work requires human review before merge.
 - **Branching:** use the project branch strategy from `docs/agent-workflow.md` and `agent-workflow.config.json`; do not edit protected integration/trunk branches directly.
@@ -192,12 +194,13 @@ Before the first real issue, make these choices explicit:
 1. enabled agents (`claude`, `codex`, `agy`, `pi`);
 2. execution mode: keep the single-agent default or allow optional multi-agent role routing;
 3. role owners and fallbacks when routing is enabled;
-4. branch strategy and protected branches;
-5. CI-equivalent validation commands;
-6. bounded-work and sensitive-path rules;
-7. skill provenance and local overrides;
-8. GitHub integration automation for closing issues when PRs merge to the integration branch;
-9. release versioning strategy: default `main.minor.fix`, custom tag format, package version source, and approval expectations.
+4. per-agent `defaultExecutionTarget` (e.g. `claude-cli` vs `anthropic-api`) so a bare `with <agent>` resolves deterministically — see [`docs/execution-targets.md`](docs/execution-targets.md);
+5. branch strategy and protected branches;
+6. CI-equivalent validation commands;
+7. bounded-work and sensitive-path rules;
+8. skill provenance and local overrides;
+9. GitHub integration automation for closing issues when PRs merge to the integration branch;
+10. release versioning strategy: default `main.minor.fix`, custom tag format, package version source, and approval expectations.
 
 Use [`docs/project-setup.md`](docs/project-setup.md) for copyable examples, [`docs/default-skills.md`](docs/default-skills.md) for skill provenance, [`docs/release-versioning.md`](docs/release-versioning.md) for release choices, and the validators listed in those docs to check the setup. The installed GitHub workflow `.github/workflows/integration-lifecycle.yml` uses `scripts/integration-lifecycle.mjs` to comment, label, and close issues referenced with implementation/closure keywords such as `Implements #...` or `Closes #...` after a PR merges into the configured integration branch. Related references such as `Refs #...` are ignored by lifecycle automation.
 
