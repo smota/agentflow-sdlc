@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import {
+  getBranchClassification,
   getCurrentBranch,
   isAllowedBranch,
   isPausedGitOperation,
@@ -9,6 +10,7 @@ import {
 } from './hook-utils.mjs'
 
 const branch = getCurrentBranch()
+const branchInfo = getBranchClassification(branch)
 
 if (isPausedGitOperation()) {
   process.exit(0)
@@ -18,8 +20,8 @@ if (isTrunkBranch(branch)) {
   printLines([
     `  ERROR: direct commits to '${branch}' are not allowed.`,
     '  Trunk branches receive changes via pull requests only.',
-    '  Start from development and create a feature branch:',
-    '    git checkout development && git checkout -b work/<theme>',
+    `  Start from ${branchInfo.expectedPrTarget} and create a feature branch:`,
+    `    git checkout ${branchInfo.expectedPrTarget} && git checkout -b work/<theme>`,
   ])
   process.exit(1)
 }
@@ -34,7 +36,8 @@ if (!isAllowedBranch(branch)) {
     '    issue/<number>-<short-desc>   compatibility during migration',
     '    wt/<slug>                     e.g. wt/172-developer-20260603 (agent worktrees)',
     '    claude/<slug>                 e.g. claude/session-abc (Claude Code sessions)',
-    '  Start from development: git checkout development && git checkout -b work/<theme>',
+    `  Configured work prefixes: ${branchInfo.strategy.workBranchPrefixes.join(', ')}`,
+    `  Start from ${branchInfo.expectedPrTarget}: git checkout ${branchInfo.expectedPrTarget} && git checkout -b work/<theme>`,
   ])
   process.exit(1)
 }

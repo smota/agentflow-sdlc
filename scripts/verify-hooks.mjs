@@ -60,6 +60,31 @@ try {
   result = runHook('pre-commit', { cwd: tempRepo })
   assert.equal(result.status, 0)
 
+  writeFileSync(
+    join(tempRepo, 'agent-workflow.config.json'),
+    JSON.stringify(
+      {
+        branching: {
+          trunk: 'production',
+          releaseCandidate: 'preprod',
+          integration: 'develop',
+          directEditDeniedBranches: ['production', 'preprod', 'develop'],
+          defaultPrTarget: 'develop',
+          promotionOrder: ['develop', 'preprod', 'production'],
+          workBranchPrefixes: ['task/'],
+          compatibilityBranchPrefixes: ['issue/', 'wt/', 'claude/'],
+          requireBoundedWorkBranch: true,
+        },
+      },
+      null,
+      2,
+    ),
+  )
+  run('git', ['checkout', 'development'], { cwd: tempRepo })
+  run('git', ['checkout', '-b', 'task/hook-test'], { cwd: tempRepo })
+  result = runHook('pre-commit', { cwd: tempRepo })
+  assert.equal(result.status, 0)
+
   writeFileSync(join(tempRepo, 'scripts', 'bad.sh'), 'echo bad\n')
   run('git', ['add', 'scripts/bad.sh'], { cwd: tempRepo })
   result = runHook('pre-commit', { cwd: tempRepo })
@@ -68,7 +93,7 @@ try {
 
   result = runHook('pre-push', {
     cwd: tempRepo,
-    input: 'refs/heads/issue/1-hook-test deadbeef refs/heads/development cafebabe\n',
+    input: 'refs/heads/issue/1-hook-test deadbeef refs/heads/production cafebabe\n',
   })
   assert.equal(result.status, 1)
   assert.match(result.stderr, /direct push/)
@@ -79,7 +104,7 @@ try {
   run('git', ['checkout', 'development'], { cwd: tempRepo })
   result = runHook('check-issue-branch.mjs', { cwd: tempRepo })
   assert.equal(result.status, 1)
-  assert.match(result.stderr, /Trunk branches are read-only/)
+  assert.match(result.stderr, /does not follow the required convention/)
 
   writeFileSync(join(tempRepo, 'SPEC.md'), '# Issue #123: temp\n')
   run('git', ['checkout', 'issue/1-hook-test'], { cwd: tempRepo })
@@ -88,11 +113,11 @@ try {
   assert.match(result.stdout, /branch: issue\/1-hook-test/)
   assert.match(result.stdout, /spec: present \(#123\)/)
 
-  run('git', ['checkout', 'work/hook-test'], { cwd: tempRepo })
+  run('git', ['checkout', 'task/hook-test'], { cwd: tempRepo })
   result = runHook('session-status.mjs', { cwd: tempRepo })
   assert.equal(result.status, 0)
-  assert.match(result.stdout, /branch: work\/hook-test/)
-  assert.match(result.stdout, /workstream/)
+  assert.match(result.stdout, /branch: task\/hook-test/)
+  assert.match(result.stdout, /work branch/)
 
   // prettier-on-write.mjs is best-effort: it silently no-ops when prettier isn't installed in
   // the consuming project (not every project uses it). Only assert actual formatting when

@@ -1,6 +1,12 @@
-import { getCurrentBranch, isAllowedBranch, isTrunkBranch } from './hook-utils.mjs'
+import {
+  getBranchClassification,
+  getCurrentBranch,
+  isAllowedBranch,
+  isTrunkBranch,
+} from './hook-utils.mjs'
 
 const branch = getCurrentBranch()
+const branchInfo = getBranchClassification(branch)
 
 if (branch.length === 0) {
   process.exit(0)
@@ -11,7 +17,7 @@ if (isTrunkBranch(branch)) {
     [
       `Cannot write code on '${branch}'. Trunk branches are read-only for direct work.`,
       'Identify the GitHub issue and create a branch:',
-      '  git checkout development && git checkout -b work/<theme>',
+      `  git checkout ${branchInfo.expectedPrTarget} && git checkout -b work/<theme>`,
       '',
     ].join('\n'),
   )
@@ -29,7 +35,8 @@ if (!isAllowedBranch(branch)) {
       '  issue/<number>-<short-desc>  (compatibility branch during migration)',
       '  wt/<slug>                    (agent worktrees)',
       '  claude/<slug>                (Claude Code sessions)',
-      'Start from development: git checkout development && git checkout -b work/<theme>',
+      `Configured work prefixes: ${branchInfo.strategy.workBranchPrefixes.join(', ')}`,
+      `Start from ${branchInfo.expectedPrTarget}: git checkout ${branchInfo.expectedPrTarget} && git checkout -b work/<theme>`,
       '',
     ].join('\n'),
   )
