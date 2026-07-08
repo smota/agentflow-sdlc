@@ -197,7 +197,7 @@ migration, but new work should prefer `work/<theme>` unless a branch is already 
 
 ## 7. Commit and PR rules
 
-### Issue-scoped commits
+### Issue-scoped commits and default PR creation
 
 Each commit must map to one issue, even on a shared workstream branch.
 Recommended footer:
@@ -205,6 +205,21 @@ Recommended footer:
 ```text
 Refs: #497
 Role-Pass: developer
+```
+
+An orchestration call defaults to ending with committed work, a pushed branch, and an opened pull
+request. For one issue, the terminal sequence is: complete required phases, run validation, update
+workflow-status and handover comments, commit issue-scoped work, push the branch, open the PR, then
+verify the PR in GitHub. For multiple issue IDs in one orchestration request, process the IDs in
+order and defer the final PR until the last requested issue is complete; include one `Closes #...`
+line per implemented issue in that final PR.
+
+Merging is separate from PR creation. By default, the human/operator merges the PR. The orchestrator
+must not merge unless explicitly instructed to do so. When auto-merge is explicitly requested, use
+this default command to minimize variation:
+
+```bash
+gh pr merge --squash --delete-branch --auto
 ```
 
 ### PR manifest
@@ -231,9 +246,11 @@ PR readiness is incomplete until the created PR is verified directly in GitHub f
 - PR number/URL
 - target branch
 - final body content
-- required closure lines (`Closes` / `Refs`)
+- required closure lines (`Closes` / `Refs`) for every implemented issue
+- required workflow-status and handover evidence links
 - required `## Agent review` fields
 - GitHub check status
+- merge mode: `human/operator` by default, or explicit auto-merge command recorded when requested
 
 If any required GitHub check is expected to fail, the workflow-status comment must not claim `ready`.
 Use a draft PR or a blocked/expected-fail state with concrete follow-up issues instead.

@@ -27,6 +27,7 @@
 - Model / runtime: <freeform identifier>
 - Review: self-review | human-review-requested | human-reviewed
 - Workflow profile: bounded | standard | high-assurance
+- Merge owner: human/operator | auto-merge-requested:`gh pr merge --squash --delete-branch --auto`
 - Fallback chain: none | original agent -> backup agent
 - Regression test: added | not-applicable:<reason> <!-- required for bug fixes; omit for non-bug PRs -->
 

@@ -68,6 +68,10 @@ try {
       )
       .replace('self-review | human-review-requested | human-reviewed', 'self-review')
       .replace('bounded | standard | high-assurance', 'bounded')
+      .replace(
+        'human/operator | auto-merge-requested:`gh pr merge --squash --delete-branch --auto`',
+        'human/operator',
+      )
       .replace('passed | not-run-with-reason | expected-fail-with-follow-up', 'passed')
       .replace(
         '<GitHub issue comment URL or "to be posted before PR">',
