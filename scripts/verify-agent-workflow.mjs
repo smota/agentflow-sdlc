@@ -81,6 +81,7 @@ try {
       )
       .replace('self-review | human-review-requested | human-reviewed', 'self-review')
       .replace('bounded | standard | high-assurance', 'bounded')
+      .replace('single-agent | multi-agent', 'single-agent')
       .replace(
         'human/operator | auto-merge-requested:`gh pr merge --squash --delete-branch --auto`',
         'human/operator',

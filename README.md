@@ -58,6 +58,7 @@ The framework is intentionally structured as a control system for agent-assisted
 - **Roles reduce ambiguity.** Analyst, architect, developer, tester, reviewer, tech writer, and PR-readiness passes each have a small job. That keeps the agent from mixing product decisions, implementation, validation, and review into one opaque step.
 - **Single-agent execution is the default.** One executor carrying context end to end reduces coordination overhead and avoids recreating a noisy multi-agent process for routine work.
 - **Optional routing supports specialization.** Projects can route roles to `agy`, `codex`, `claude`, or `pi` when it helps, but owners, fallbacks, and handovers are documented so agent availability or quota issues do not turn into on-the-fly process design.
+- **Multi-agent claims are evidenced, not assumed.** A run that claims multi-agent mode must show its SDLC roles actually alternated across independent intelligences — a role attribution matrix, not just one `Implemented by` field. See [`docs/agent-workflow.md` §4a](docs/agent-workflow.md#4a-role-alternation-and-attribution-multi-agent-mode).
 - **Execution targets are explicit, not inferred from chat.** A bare `with claude`/`with agy`/`with pi` names who is being asked, not how the work runs (local CLI, provider API, subagent, or a separate session/worktree). See [`docs/execution-targets.md`](docs/execution-targets.md).
 - **Locally managed skills reduce setup drift.** Workflow skills and tooling live with the project so agents do not have to rediscover commands, templates, or handoff rules on every run.
 - **Issue comments and PR manifests support compliance.** Workflow-status comments, handover comments, and PR manifests create durable evidence that survives session loss and can be reviewed by humans later.
@@ -68,16 +69,16 @@ See [`docs/index.md`](docs/index.md) for the detailed map of roles, workflows, t
 
 ## What is included
 
-| Area             | Files                                                                                                                                                |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Policy           | `AGENTS.md`, `CLAUDE.md`, `CODEX.md`, `AGY.md`                                                                                                       |
-| Workflow docs    | `docs/agent-workflow.md`, `docs/issue-standards.md`, `docs/project-config.md`, `docs/agent-routing.md`, `docs/execution-targets.md`, `docs/index.md` |
-| Onboarding docs  | `docs/assisted-onboarding.md`, `docs/environment-tools.md`, `docs/project-setup.md`, `docs/default-skills.md`                                        |
-| Skills/workflows | `agents/workflows/orchestrate/SKILL.md`, `agents/workflows/scan/SKILL.md`                                                                            |
-| Templates        | `agents/templates/role-pass.md`, `pr-manifest.md`, `workflow-status-comment.md`, `handover-comment.md`, `stack-conventions.md`                       |
-| Hooks            | `.github/hooks/*` branch checks, session status, commit readiness, formatting support                                                                |
-| Validators       | `scripts/validate-spec.mjs`, `validate-bounded.mjs`, `validate-pr-manifest.mjs`, `validate-role-routing.mjs`, `resolve-execution-target.mjs`         |
-| Distribution     | `bin/cli.mjs`, `lib/install.mjs`, `lib/framework-files.mjs`, `agent-framework-lock.json` in consuming repos                                          |
+| Area             | Files                                                                                                                                                                         |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Policy           | `AGENTS.md`, `CLAUDE.md`, `CODEX.md`, `AGY.md`                                                                                                                                |
+| Workflow docs    | `docs/agent-workflow.md`, `docs/issue-standards.md`, `docs/project-config.md`, `docs/agent-routing.md`, `docs/execution-targets.md`, `docs/index.md`                          |
+| Onboarding docs  | `docs/assisted-onboarding.md`, `docs/environment-tools.md`, `docs/project-setup.md`, `docs/default-skills.md`                                                                 |
+| Skills/workflows | `agents/workflows/orchestrate/SKILL.md`, `agents/workflows/scan/SKILL.md`                                                                                                     |
+| Templates        | `agents/templates/role-pass.md`, `pr-manifest.md`, `workflow-status-comment.md`, `handover-comment.md`, `stack-conventions.md`                                                |
+| Hooks            | `.github/hooks/*` branch checks, session status, commit readiness, formatting support                                                                                         |
+| Validators       | `scripts/validate-spec.mjs`, `validate-bounded.mjs`, `validate-pr-manifest.mjs`, `validate-role-routing.mjs`, `validate-role-attribution.mjs`, `resolve-execution-target.mjs` |
+| Distribution     | `bin/cli.mjs`, `lib/install.mjs`, `lib/framework-files.mjs`, `agent-framework-lock.json` in consuming repos                                                                   |
 
 ## Defaults
 
@@ -420,6 +421,7 @@ Key references:
 - **Opening a PR with only `Closes #123`:** use the PR manifest structure.
 - **Skipping handover comments:** role transitions need issue-visible handover evidence.
 - **Treating routing as required:** routing is optional; single-agent execution is the default.
+- **Claiming multi-agent mode without a role attribution matrix:** `Mode: multi-agent` with only one role intelligence, or with developer/review sharing an intelligence and no self-review disclosure, fails `validate-pr-manifest.mjs`.
 - **Leaving TODOs in code/docs:** create follow-up issues instead.
 
 ## Verifying this repository

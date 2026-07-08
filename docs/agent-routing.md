@@ -2,6 +2,13 @@
 
 Project-configurable role routing lets a consuming project choose which local agent CLI should own each workflow role. Routing is optional: without `agent-workflow.config.json` routing settings, every role stays with the current executor and the workflow remains single-agent.
 
+The `routing.roles` table below is the project's **`roleAlternationPlan`** — the planned
+role-to-agent assignment recorded before implementation starts. See
+[`agent-workflow.md`](agent-workflow.md#4a-role-alternation-and-attribution-multi-agent-mode) for
+the full role-alternation and attribution concepts (`roleIntelligence`, `contextBoundary`,
+`independenceBoundary`, `roleAttributionMatrix`, `multiAgentClaim`, `selfReviewDisclosure`) that
+turn this plan into evidenced, machine-checkable multi-agent claims.
+
 An agent slug names _who_ owns a role. It does not say _how_ that role runs. See
 [`execution-targets.md`](execution-targets.md) for the `executionTarget`, `transport`,
 `launcher`, `executor`, and `delegationBoundary` concepts that make the "how" explicit — required
@@ -60,6 +67,46 @@ node scripts/validate-role-routing.mjs
 ```
 
 Validation checks supported agent slugs, owner/fallback shape, duplicate fallbacks, owner duplication, referenced handover docs, and — when set — that `routing.agents.<slug>.defaultExecutionTarget` is a valid execution target for that agent slug.
+
+Validate that a run's evidence backs up its `multiAgentClaim` with `node scripts/validate-pr-manifest.mjs --path <manifest>` (checks the `## Role attribution matrix` whenever `Mode: multi-agent`) or, for a non-PR-manifest evidence surface, `node scripts/validate-role-attribution.mjs --path <file>`. See [`agent-workflow.md` §4a](agent-workflow.md#4a-role-alternation-and-attribution-multi-agent-mode).
+
+## Example: Pi + Claude CLI + Agy role alternation
+
+A project that wants deterministic multi-agent role alternation assigns distinct owners per role
+instead of leaving every role with one agent. This example keeps `developer` and `review` on
+different intelligences (`claude` vs. `agy`), which is required unless a `Self-review disclosure`
+is recorded:
+
+```json
+{
+  "routing": {
+    "defaultMode": "optional-multi-agent",
+    "agents": {
+      "pi": { "enabled": true, "callWorkflowDoc": "docs/agents/pi-routing.md" },
+      "claude": { "enabled": true, "callWorkflowDoc": "docs/agents/claude-routing.md" },
+      "agy": { "enabled": true, "callWorkflowDoc": "docs/agents/agy-routing.md" },
+      "codex": { "enabled": true, "callWorkflowDoc": "docs/agents/codex-routing.md" }
+    },
+    "roles": {
+      "analyst": { "owner": "pi", "fallbacks": ["claude", "agy", "codex"] },
+      "architect": { "owner": "agy", "fallbacks": ["pi", "claude", "codex"] },
+      "developer-planning": { "owner": "pi", "fallbacks": ["claude", "agy", "codex"] },
+      "developer": { "owner": "claude", "fallbacks": ["codex", "agy", "pi"] },
+      "tester": { "owner": "pi", "fallbacks": ["claude", "codex"] },
+      "review": { "owner": "agy", "fallbacks": ["codex", "pi"] },
+      "tech-writer": { "owner": "claude", "fallbacks": ["agy", "codex", "pi"] },
+      "pr-readiness": { "owner": "pi", "fallbacks": ["agy", "codex"] }
+    }
+  }
+}
+```
+
+This `routing.roles` table is the `roleAlternationPlan`. At execution time each phase's role-pass
+records the actual `roleIntelligence` (which may differ from the plan on fallback), and the
+workflow-status comment/PR manifest aggregate those rows into the `roleAttributionMatrix` with
+`Mode: multi-agent`. A project that has no reason to alternate roles keeps
+`routing.defaultMode: "single-agent"` (or omits `routing` entirely) — single-agent mode remains
+fully valid and never requires this table.
 
 ## Handover comments
 

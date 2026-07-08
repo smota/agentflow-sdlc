@@ -1,5 +1,12 @@
 #!/usr/bin/env node
 import { existsSync, readFileSync } from 'node:fs'
+import {
+  extractSection,
+  fieldValue,
+  hasSection,
+  parseMarkdownTable,
+} from '../lib/markdown-sections.mjs'
+import { rowsFromTable, validateRoleAttributionMatrix } from '../lib/role-attribution.mjs'
 
 function getArg(name) {
   const index = process.argv.indexOf(name)
@@ -7,34 +14,6 @@ function getArg(name) {
     return ''
   }
   return process.argv[index + 1] ?? ''
-}
-
-function extractSection(content, heading) {
-  const escaped = heading.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  const headingRe = new RegExp(`^##\\s+${escaped}\\s*$`, 'm')
-  const match = headingRe.exec(content)
-  if (match === null) {
-    return null
-  }
-
-  const start = match.index + match[0].length
-  const rest = content.slice(start)
-  const nextHeading = rest.search(/^##\s+/m)
-  return (nextHeading === -1 ? rest : rest.slice(0, nextHeading)).trim()
-}
-
-function hasSection(content, heading) {
-  return extractSection(content, heading) !== null
-}
-
-function fieldValue(section, label) {
-  if (section === null) {
-    return null
-  }
-
-  const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  const match = section.match(new RegExp(`^- ${escaped}:\\s*(.+)$`, 'm'))
-  return match?.[1]?.trim() ?? null
 }
 
 const path = getArg('--path') || '.agent-runs/issues/unknown/pr-manifest.md'
@@ -61,6 +40,7 @@ const agentReviewFields = {
   'Workflow profile': /^(bounded|standard|high-assurance)$/,
   'Merge owner':
     /^(human\/operator|auto-merge-requested:`gh pr merge --squash --delete-branch --auto`)$/,
+  Mode: /^(single-agent|multi-agent)$/,
 }
 
 // When a "Regression test:" field is present in Agent review, it must have a valid value.
@@ -91,6 +71,18 @@ const followUps = extractSection(content, 'Follow-up issues')
 const hasConcreteFollowUp = followUps !== null && /#\d+/.test(followUps)
 const expectedFailHasFollowUp = ciStatus !== 'expected-fail-with-follow-up' || hasConcreteFollowUp
 
+// Role attribution matrix (issue #56): only required when the manifest claims multi-agent mode.
+// Single-agent PRs remain valid without a matrix — see docs/agent-workflow.md §4a.
+const multiAgentClaim = fieldValue(agentReview, 'Mode') === 'multi-agent'
+const roleAttributionSection = extractSection(content, 'Role attribution matrix')
+const roleAttributionRows = rowsFromTable(parseMarkdownTable(roleAttributionSection))
+const roleAttribution = validateRoleAttributionMatrix({
+  rows: roleAttributionRows,
+  multiAgentClaim,
+  workflowProfile: fieldValue(agentReview, 'Workflow profile'),
+  selfReviewDisclosure: fieldValue(agentReview, 'Self-review disclosure'),
+})
+
 const checks = [
   {
     name: 'implemented-issues',
@@ -115,7 +107,7 @@ const checks = [
     ok: missingAgentFields.length === 0 && invalidAgentFields.length === 0,
     detail:
       missingAgentFields.length === 0 && invalidAgentFields.length === 0
-        ? 'Implemented by, Launcher, Executor, Transport, Delegation boundary, Model / runtime, Review, Workflow profile, and Merge owner are filled in'
+        ? 'Implemented by, Launcher, Executor, Transport, Delegation boundary, Model / runtime, Review, Workflow profile, Merge owner, and Mode are filled in'
         : [
             missingAgentFields.length > 0 ? `missing: ${missingAgentFields.join(', ')}` : '',
             invalidAgentFields.length > 0 ? `invalid: ${invalidAgentFields.join(', ')}` : '',
@@ -150,6 +142,15 @@ const checks = [
         ? 'field absent (only required for bug fixes)'
         : `Regression test=${regressionTestValue}`
       : `invalid value "${regressionTestValue}" — must be "added" or "not-applicable:<reason>"`,
+  },
+  {
+    name: 'role-attribution-matrix',
+    ok: roleAttribution.ok,
+    detail: roleAttribution.ok
+      ? multiAgentClaim
+        ? `multi-agent claim verified across ${roleAttributionRows.length} role attribution matrix row(s)`
+        : 'not-applicable:single-agent'
+      : roleAttribution.errors.join('; '),
   },
 ]
 

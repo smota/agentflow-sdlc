@@ -121,6 +121,14 @@ templates under `agents/templates/`. Do not collapse them into a single freeform
 genuinely cannot distinguish two of these fields for a given evidence surface, it must record a
 deterministic reason why, not silently drop one.
 
+These fields answer _how_ a single pass ran. They do not say whether a run's SDLC roles actually
+alternated across independent intelligences, or whether a `multi-agent` claim is backed by more
+than one role intelligence — that is `contextBoundary`, `independenceBoundary`, and the
+`roleAttributionMatrix` from [`agent-workflow.md` §4a](agent-workflow.md#4a-role-alternation-and-attribution-multi-agent-mode).
+`contextBoundary` is derived from `transport` + `delegationBoundary`
+(`lib/role-attribution.mjs#deriveContextBoundary`) rather than recorded as a separate fact, so the
+two vocabularies cannot drift apart.
+
 ## Per-agent routing docs
 
 Each agent-specific routing guide distinguishes its execution targets:

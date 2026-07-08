@@ -81,18 +81,26 @@ never mark anything as bounded, and PR manifests will use placeholder CI command
       }
     },
     "roles": {
-      "analyst": { "owner": "claude", "fallbacks": ["codex", "agy", "pi"] },
-      "architect": { "owner": "claude", "fallbacks": ["codex", "agy", "pi"] },
-      "developer-planning": { "owner": "claude", "fallbacks": ["codex", "agy", "pi"] },
-      "developer": { "owner": "codex", "fallbacks": ["claude", "agy", "pi"] },
-      "tester": { "owner": "codex", "fallbacks": ["claude", "agy", "pi"] },
-      "review": { "owner": "claude", "fallbacks": ["codex"] },
-      "tech-writer": { "owner": "agy", "fallbacks": ["claude", "codex", "pi"] },
-      "pr-readiness": { "owner": "claude", "fallbacks": ["codex", "pi"] }
+      "analyst": { "owner": "pi", "fallbacks": ["claude", "agy", "codex"] },
+      "architect": { "owner": "agy", "fallbacks": ["pi", "claude", "codex"] },
+      "developer-planning": { "owner": "pi", "fallbacks": ["claude", "agy", "codex"] },
+      "developer": { "owner": "claude", "fallbacks": ["codex", "agy", "pi"] },
+      "tester": { "owner": "pi", "fallbacks": ["claude", "codex"] },
+      "review": { "owner": "agy", "fallbacks": ["codex", "pi"] },
+      "tech-writer": { "owner": "claude", "fallbacks": ["agy", "codex", "pi"] },
+      "pr-readiness": { "owner": "pi", "fallbacks": ["agy", "codex"] }
     }
   }
 }
 ```
+
+This example alternates roles across `pi`, `claude`, and `agy` (with `codex` as a shared fallback),
+and deliberately keeps `developer` (`claude`) and `review` (`agy`) on different agents — see
+[`agent-workflow.md` §4a](agent-workflow.md#4a-role-alternation-and-attribution-multi-agent-mode)
+and [`agent-routing.md`](agent-routing.md#example-pi--claude-cli--agy-role-alternation) for the
+role-alternation-plan and attribution-matrix contract this table feeds. A project with no reason to
+alternate roles can omit `routing` entirely or keep `routing.defaultMode: "single-agent"`; single-agent
+mode never requires a role attribution matrix.
 
 This repository commits its own `agent-workflow.config.json` with a two-tier policy:
 `development -> main`. It sets `releaseCandidate` to `null` because this project does not use a
@@ -157,7 +165,10 @@ This repository commits its own `agent-workflow.config.json` with a two-tier pol
   valid execution targets; omitting it falls back to the agent's built-in local-CLI default
   (`claude-cli`, `agy-cli`, `codex-cli`, or `pi-parent`). See
   [`execution-targets.md`](execution-targets.md).
-- `routing.roles.<role>.owner` — the core owner agent for a workflow role.
+- `routing.roles.<role>.owner` — the core owner agent for a workflow role. Together,
+  `routing.roles` is the project's `roleAlternationPlan` — the planned role-to-agent assignment
+  evaluated against actual execution evidence; see
+  [`agent-workflow.md` §4a](agent-workflow.md#4a-role-alternation-and-attribution-multi-agent-mode).
 - `routing.roles.<role>.fallbacks` — ordered fallback agents used when the owner is unavailable due
   to setup, quota, or local availability. The owner must not appear in its own fallback list.
 

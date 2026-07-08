@@ -33,6 +33,18 @@
 - Release notes: <path or URL>
 - Approval: <human/operator approval status before tags or releases are pushed>
 
+## Role attribution matrix
+
+<!-- Required when Agent review's Mode is multi-agent. Omit or leave empty for single-agent PRs —
+role alternation is never forced. One row per executed phase; "Planned owner" is the
+roleAlternationPlan owner (routing.roles.<role>.owner), "Actual agent" and "Executor" are the
+roleIntelligence that actually ran the phase. See docs/agent-workflow.md §4a and
+lib/role-attribution.mjs. -->
+
+| Phase    | Role   | Planned owner | Actual agent | Executor          | Context boundary  | Independence boundary                          | Status                                   |
+| -------- | ------ | ------------- | ------------ | ----------------- | ----------------- | ---------------------------------------------- | ---------------------------------------- |
+| <number> | <role> | <agent>       | <agent>      | <executionTarget> | <contextBoundary> | <independent \| self-review \| not-applicable> | <pass \| blocked \| returned \| skipped> |
+
 ## Agent review
 
 - Implemented by: human | claude | codex | agy | pi
@@ -46,6 +58,8 @@
 - Merge owner: human/operator | auto-merge-requested:`gh pr merge --squash --delete-branch --auto`
 - Fallback chain: none | original agent -> backup agent
 - Regression test: added | not-applicable:<reason> <!-- required for bug fixes; omit for non-bug PRs -->
+- Mode: single-agent | multi-agent <!-- multiAgentClaim; "multi-agent" requires >=2 distinct role intelligences in the Role attribution matrix above, verified by scripts/validate-pr-manifest.mjs -->
+- Self-review disclosure: not-applicable | <rationale for developer and review sharing the same intelligence> <!-- required when the Role attribution matrix's developer and review rows share the same Actual agent -->
 
 ## Follow-up issues
 
