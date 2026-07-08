@@ -75,6 +75,10 @@ never mark anything as bounded, and PR manifests will use placeholder CI command
 }
 ```
 
+This repository commits its own `agent-workflow.config.json` with a two-tier policy:
+`development -> main`. It sets `releaseCandidate` to `null` because this project does not use a
+`staging` branch.
+
 ## Fields
 
 - `ciCommands` — the exact lint/typecheck/test/build commands this project's CI runs, used to
@@ -89,12 +93,14 @@ never mark anything as bounded, and PR manifests will use placeholder CI command
 - `bounded.sensitiveAdditionPattern` — a regex (case-insensitive) checked against added diff lines;
   a match disqualifies the diff from bounded status even if every path is otherwise allowed.
 - `branching.trunk` / `releaseCandidate` / `integration` — protected branch tiers. Missing config
-  defaults to `main -> staging -> development`.
+  defaults to `main -> staging -> development`; set `releaseCandidate` to `null` for projects that
+  do not use a staging/release-candidate branch.
 - `branching.directEditDeniedBranches` — branches that reject direct implementation edits and
-  direct pushes. By default this includes `main`, `staging`, and `development`.
+  direct pushes. By default this includes `main`, `staging`, and `development`; projects without a
+  release-candidate branch should list only their actual protected branches.
 - `branching.defaultPrTarget` — the target branch implementation PRs should use by default.
 - `branching.promotionOrder` — ordered protected promotion path, defaulting to
-  `development -> staging -> main`.
+  `development -> staging -> main`; for a two-tier project use `development -> main`.
 - `branching.workBranchPrefixes` — prefixes for bounded feature/work branches where implementation
   edits are allowed by default.
 - `branching.compatibilityBranchPrefixes` — temporary or agent-specific branch prefixes that remain

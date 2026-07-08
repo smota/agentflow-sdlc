@@ -1,0 +1,23 @@
+{
+  "ciCommands": ["pnpm test", "pnpm test:workflow", "pnpm format:check"],
+  "bounded": {
+    "allowedExactPaths": ["README.md", "AGENTS.md", "CLAUDE.md", "CODEX.md", "AGY.md"],
+    "allowedPathPrefixes": ["docs/", "agents/templates/", "agents/workflows/"],
+    "deniedPathFragments": ["/auth/", "/billing/", "/migrations/"],
+    "defaultBase": "origin/development"
+  },
+  "branching": {
+    "trunk": "main",
+    "releaseCandidate": null,
+    "integration": "development",
+    "directEditDeniedBranches": ["main", "development"],
+    "defaultPrTarget": "development",
+    "promotionOrder": ["development", "main"],
+    "workBranchPrefixes": ["work/", "feature/", "fix/", "hotfix/", "spike/", "chore/"],
+    "compatibilityBranchPrefixes": ["issue/", "wt/", "claude/"],
+    "requireBoundedWorkBranch": true
+  },
+  "routing": {
+    "defaultMode": "single-agent"
+  }
+}

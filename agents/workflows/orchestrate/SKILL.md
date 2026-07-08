@@ -123,9 +123,10 @@ The selected profile changes who signs the evidence, not whether the evidence ex
 ## Branch and PR policy
 
 During migration, both configured work branches and existing compatibility branches are operational.
-The default branch strategy is `main -> staging -> development -> feature/work branches`; direct
-implementation edits on `development` are denied by default. Project overrides live in
-`agent-workflow.config.json` and are documented in `docs/project-config.md`.
+Resolve the active branch policy from `agent-workflow.config.json` before creating a branch or PR.
+This repository uses `development` as the default PR target and does not use `staging`; direct
+implementation edits on protected branches such as `development` and `main` are denied by default.
+Project overrides are documented in `docs/project-config.md`.
 
 Every orchestration call defaults to ending with committed work, a pushed branch, and an opened PR.
 For multiple issue IDs in one invocation, process them in order and defer PR creation until the final
