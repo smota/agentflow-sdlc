@@ -25,6 +25,41 @@ never mark anything as bounded, and PR manifests will use placeholder CI command
     "allowedPathPrefixes": ["docs/", "packages/ui/src/"],
     "allowedPathFragments": ["/test/fixtures/", "/__fixtures__/"],
     "sensitiveAdditionPattern": "(TenantGuard|stripe|process\\.env|secret)"
+  },
+  "routing": {
+    "defaultMode": "single-agent",
+    "agents": {
+      "agy": {
+        "enabled": true,
+        "availabilityCommand": "agy --version",
+        "callWorkflowDoc": "docs/agents/agy-routing.md"
+      },
+      "codex": {
+        "enabled": true,
+        "availabilityCommand": "codex --version",
+        "callWorkflowDoc": "docs/agents/codex-routing.md"
+      },
+      "claude": {
+        "enabled": true,
+        "availabilityCommand": "claude --version",
+        "callWorkflowDoc": "docs/agents/claude-routing.md"
+      },
+      "pi": {
+        "enabled": true,
+        "availabilityCommand": "pi --version",
+        "callWorkflowDoc": "docs/agents/pi-routing.md"
+      }
+    },
+    "roles": {
+      "analyst": { "owner": "claude", "fallbacks": ["codex", "agy", "pi"] },
+      "architect": { "owner": "claude", "fallbacks": ["codex", "agy", "pi"] },
+      "developer-planning": { "owner": "claude", "fallbacks": ["codex", "agy", "pi"] },
+      "developer": { "owner": "codex", "fallbacks": ["claude", "agy", "pi"] },
+      "tester": { "owner": "codex", "fallbacks": ["claude", "agy", "pi"] },
+      "review": { "owner": "claude", "fallbacks": ["codex"] },
+      "tech-writer": { "owner": "agy", "fallbacks": ["claude", "codex", "pi"] },
+      "pr-readiness": { "owner": "claude", "fallbacks": ["codex", "pi"] }
+    }
   }
 }
 ```
@@ -42,7 +77,21 @@ never mark anything as bounded, and PR manifests will use placeholder CI command
   eligible for bounded classification. With this empty (the default), nothing is bounded.
 - `bounded.sensitiveAdditionPattern` — a regex (case-insensitive) checked against added diff lines;
   a match disqualifies the diff from bounded status even if every path is otherwise allowed.
+- `routing.defaultMode` — defaults to `single-agent`; routing is optional and missing routing config
+  keeps role execution with the current executor.
+- `routing.agents.<slug>` — enables one supported local agent CLI (`agy`, `codex`, `claude`, or
+  `pi`), names its setup/availability command, and points to its documented call/handover workflow.
+- `routing.roles.<role>.owner` — the core owner agent for a workflow role.
+- `routing.roles.<role>.fallbacks` — ordered fallback agents used when the owner is unavailable due
+  to setup, quota, or local availability. The owner must not appear in its own fallback list.
 
-See `agents/templates/stack-conventions.md` for the companion doc that carries a project's
-role-persona domain checklists (the parts of `docs/stack-conventions.md` this config file doesn't
-cover).
+Validate routing with:
+
+```bash
+node scripts/validate-role-routing.mjs
+node scripts/resolve-role-route.mjs --role developer --current claude --json
+```
+
+See `docs/agent-routing.md` for the route-resolution and ticket handover comment workflow. See
+`agents/templates/stack-conventions.md` for the companion doc that carries a project's role-persona
+domain checklists (the parts of `docs/stack-conventions.md` this config file doesn't cover).

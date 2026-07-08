@@ -27,8 +27,10 @@ for related issue batches and autonomous delivery. The replacement is not a retu
 multi-agent choreography. Instead, this project uses a **single-agent**, **multi-role** workflow with
 explicit state, explicit artifacts, and explicit handoffs.
 
-Multi-agent delegation remains optional support for broad discovery, advisory review, or offline
-parallel work. It is not the default implementation model.
+Multi-agent delegation remains optional support for broad discovery, advisory review, routed role
+ownership, or offline parallel work. It is not the default implementation model. When a project
+configures role routing, resolve the next role with `scripts/resolve-role-route.mjs`; missing
+routing config keeps execution with the current single agent.
 
 ## 3. Workflow phases
 
@@ -75,7 +77,7 @@ Each pass uses `agents/templates/role-pass.md`.
 - Branch name
 - Phase number and role
 - Workflow profile
-- Actual executor identity (`human | claude | codex | agy`)
+- Actual executor identity (`human | claude | codex | agy | pi`)
 - Model / runtime when known
 - Inputs read
 - Decisions / findings
@@ -86,8 +88,8 @@ Each pass uses `agents/templates/role-pass.md`.
 
 ### Provenance
 
-- `<agent>` is the AI identity actually executing this pass right now (`claude`, `codex`, `agy`, or
-  `human`). Never copy `<agent>` from a prior pass, another issue, or a template example — record
+- `<agent>` is the AI identity actually executing this pass right now (`claude`, `codex`, `agy`,
+  `pi`, or `human`). Never copy `<agent>` from a prior pass, another issue, or a template example — record
   whichever agent is producing this specific pass.
 - `<role>` is the phase/role being performed (`analyst`, `architect`, ..., `orchestrator`) and is
   independent of `<agent>`. The same agent performs every role in-session, but the signature still
@@ -121,6 +123,8 @@ summaries.
 Durable workflow evidence lives in GitHub:
 
 - one signed workflow-status issue comment per addressed issue,
+- ticket handover comments when execution changes agent, falls back, returns phases, requests human
+  input, or ends before the next role can continue,
 - the PR body's workflow evidence section,
 - validation output summarized in the PR body/comment,
 - follow-up issues for deferred work.
@@ -131,6 +135,8 @@ Rules:
 - `passes/` contains local role-pass notes for completed phases.
 - `pr-manifest.md` is a local draft/source for the PR body.
 - Before PR creation, summarize role-pass evidence into the issue workflow-status comment and PR body.
+- Use `agents/templates/handover-comment.md` for required ticket handover comments; do not include
+  secrets, credentials, private prompts, or unrelated local machine details.
 - Temporary scratch stays in `.agent-runs/scratch/`.
 
 ### Post-merge closeout
@@ -229,6 +235,26 @@ If any required GitHub check is expected to fail, the workflow-status comment mu
 Use a draft PR or a blocked/expected-fail state with concrete follow-up issues instead.
 
 Use `agents/templates/pr-manifest.md` as a local draft template; copy the final manifest content into the PR body rather than committing the draft file.
+
+### Role routing and handover comments
+
+A project may define role routing in `agent-workflow.config.json`; see `docs/project-config.md` and
+`docs/agent-routing.md`. Supported agent slugs are `agy`, `codex`, `claude`, and `pi`.
+
+Before starting a routed phase, resolve the role:
+
+```bash
+node scripts/resolve-role-route.mjs --role <role> --current <agy|codex|claude|pi> --json
+```
+
+If the selected agent is the current executor, continue as single-agent execution. If the selected
+agent differs, or if the configured owner falls back to another agent, post a ticket handover comment
+before transferring control. Handover comments are also required when a role returns work to an
+earlier phase, a human review/decision is requested, or a session ends before the next role can
+continue. Use the selected agent's `callWorkflowDoc` to avoid on-the-fly discovery.
+
+PR readiness must cite required handover comments, or state that none were required because the work
+remained single-agent without fallback/return/human handover.
 
 ## 8. Review model
 

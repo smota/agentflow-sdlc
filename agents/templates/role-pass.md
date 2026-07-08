@@ -6,7 +6,7 @@
 **Role:** <product-manager | analyst | architect | developer-plan | developer | tester | review | techwriter | pr-readiness>
 **Status:** <pass | blocked | returned | skipped>
 **Workflow profile:** <bounded | standard | high-assurance>
-**Executed by:** <human | claude | codex | agy>
+**Executed by:** <human | claude | codex | agy | pi>
 **Model / runtime:** <freeform identifier or "not recorded">
 
 ### Inputs read
@@ -27,7 +27,7 @@
 
 ---
 
-<!-- <agent> = the AI identity actually executing THIS pass right now (claude | codex | agy | human) — never copied from a prior pass or template example. See docs/agent-workflow.md §4 (Provenance). -->
+<!-- <agent> = the AI identity actually executing THIS pass right now (claude | codex | agy | pi | human) — never copied from a prior pass or template example. See docs/agent-workflow.md §4 (Provenance). -->
 
 Signed-off-by: `<agent>` (`<role>`)
 Timestamp: `YYYY-MM-DDTHH:MM:SSZ`

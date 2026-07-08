@@ -10,6 +10,7 @@
 ## Workflow evidence
 
 - Workflow-status comment: <GitHub issue comment URL or "to be posted before PR">
+- Handover comments: none-required | <GitHub issue comment URL(s) for cross-agent/fallback/return/human handovers>
 - Role-pass summary: <summarize completed phases and any blockers>
 - Validation evidence: <commands and results>
 
