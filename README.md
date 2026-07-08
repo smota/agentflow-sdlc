@@ -17,6 +17,27 @@ This repository is both the distributable framework and a live example of the wo
 
 Use it when you want agent-assisted work to be reviewable, auditable, and easy to resume instead of being hidden in one chat session.
 
+## Fastest path: assisted onboarding
+
+Adding this to an existing project is easiest with the assisted onboarding guide. The assistant inspects existing instructions, validates tools read-only, asks you to choose agents and workflow defaults, proposes setup commands, and preserves project-specific conventions.
+
+Copy this prompt into your agent:
+
+```text
+Use the multi-agent-sdlc assisted onboarding guide:
+https://github.com/smota/multi-agent-sdlc/blob/main/docs/assisted-onboarding.md
+
+Apply it to this existing project. First inspect existing agent instructions and project docs. Validate the environment read-only. Ask me to choose agents, execution mode, branch strategy, validation commands, and GitHub automation. Propose install/setup commands but do not execute them without explicit approval. Preserve or merge existing instructions instead of overwriting them.
+```
+
+Prefer command output? Print the same onboarding prompt locally:
+
+```bash
+node bin/cli.mjs onboarding-prompt --target /path/to/your-project
+```
+
+See [`docs/assisted-onboarding.md`](docs/assisted-onboarding.md) and [`docs/environment-tools.md`](docs/environment-tools.md). The environment guide documents required, recommended, and optional tools compatible with `doctor-env`.
+
 ## Who it is for
 
 This framework is for teams or solo maintainers who want agentic development to be manageable, auditable, and easier to reason about:
@@ -50,6 +71,7 @@ See [`docs/index.md`](docs/index.md) for the detailed map of roles, workflows, t
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------ |
 | Policy           | `AGENTS.md`, `CLAUDE.md`, `CODEX.md`, `AGY.md`                                                                                 |
 | Workflow docs    | `docs/agent-workflow.md`, `docs/issue-standards.md`, `docs/project-config.md`, `docs/agent-routing.md`, `docs/index.md`        |
+| Onboarding docs  | `docs/assisted-onboarding.md`, `docs/environment-tools.md`, `docs/project-setup.md`, `docs/default-skills.md`                  |
 | Skills/workflows | `agents/workflows/orchestrate/SKILL.md`, `agents/workflows/scan/SKILL.md`                                                      |
 | Templates        | `agents/templates/role-pass.md`, `pr-manifest.md`, `workflow-status-comment.md`, `handover-comment.md`, `stack-conventions.md` |
 | Hooks            | `.github/hooks/*` branch checks, session status, commit readiness, formatting support                                          |

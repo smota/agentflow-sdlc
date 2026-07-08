@@ -4,13 +4,15 @@ This index maps the main concepts, defaults, roles, skills/workflows, templates,
 
 ## Start here
 
-1. [`../README.md`](../README.md) — overview, installation, usage, prompts, and live examples.
-2. [`../AGENTS.md`](../AGENTS.md) — required first-read repository policy.
-3. [`project-setup.md`](project-setup.md) — guided setup choices for agents, execution mode, routing, branch strategy, validation, bounded work, and skill provenance.
-4. [`agent-workflow.md`](agent-workflow.md) — phase model, role-pass contract, durable evidence, branch strategy, review model, and PR readiness.
-5. [`issue-standards.md`](issue-standards.md) — issue titles, labels, body update rules, and lifecycle metadata.
-6. [`project-config.md`](project-config.md) — project-local `agent-workflow.config.json` contract.
-7. [`default-skills.md`](default-skills.md) — default skills, recommended companion skills, upstream repositories, and CCPM-sourced skill surfaces.
+1. [`../README.md`](../README.md) — overview, assisted onboarding, installation, usage, prompts, and live examples.
+2. [`assisted-onboarding.md`](assisted-onboarding.md) — agent-assisted setup for existing projects with explicit approval before changes.
+3. [`environment-tools.md`](environment-tools.md) — required, recommended, and optional tools compatible with `doctor-env`.
+4. [`../AGENTS.md`](../AGENTS.md) — required first-read repository policy.
+5. [`project-setup.md`](project-setup.md) — guided setup choices for agents, execution mode, routing, branch strategy, validation, bounded work, and skill provenance.
+6. [`agent-workflow.md`](agent-workflow.md) — phase model, role-pass contract, durable evidence, branch strategy, review model, and PR readiness.
+7. [`issue-standards.md`](issue-standards.md) — issue titles, labels, body update rules, and lifecycle metadata.
+8. [`project-config.md`](project-config.md) — project-local `agent-workflow.config.json` contract.
+9. [`default-skills.md`](default-skills.md) — default skills, recommended companion skills, upstream repositories, and CCPM-sourced skill surfaces.
 
 ## What it is
 

@@ -42,6 +42,17 @@ function printEnvironmentReport(report) {
   }
 }
 
+function printOnboardingPrompt(targetDir) {
+  process.stdout.write(`Use the multi-agent-sdlc assisted onboarding guide:\n`)
+  process.stdout.write(
+    `https://github.com/smota/multi-agent-sdlc/blob/main/docs/assisted-onboarding.md\n\n`,
+  )
+  process.stdout.write(`Apply it to this existing project: ${targetDir}\n`)
+  process.stdout.write(
+    `First inspect existing agent instructions and project docs. Validate the environment read-only. Ask me to choose agents, execution mode, branch strategy, validation commands, and GitHub automation. Propose install/setup commands but do not execute them without explicit approval. Preserve or merge existing instructions instead of overwriting them.\n`,
+  )
+}
+
 function positionalArgs(args) {
   const result = []
   for (let index = 0; index < args.length; index += 1) {
@@ -84,6 +95,11 @@ function main() {
     process.exit(report.ok ? 0 : 1)
   }
 
+  if (command === 'onboarding-prompt') {
+    printOnboardingPrompt(targetDir)
+    process.exit(0)
+  }
+
   if (command === 'mark-merged') {
     const path = positionalArgs(rest)[0]
     if (!path) {
@@ -96,7 +112,7 @@ function main() {
   }
 
   process.stderr.write(
-    'Usage: multi-agent-sdlc <init|sync|doctor|doctor-env|mark-merged> [path] [--target <dir>] [--json]\n',
+    'Usage: multi-agent-sdlc <init|sync|doctor|doctor-env|onboarding-prompt|mark-merged> [path] [--target <dir>] [--json]\n',
   )
   process.exit(2)
 }
