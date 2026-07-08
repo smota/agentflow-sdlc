@@ -128,9 +128,10 @@ Before the first real issue, make these choices explicit:
 4. branch strategy and protected branches;
 5. CI-equivalent validation commands;
 6. bounded-work and sensitive-path rules;
-7. skill provenance and local overrides.
+7. skill provenance and local overrides;
+8. GitHub integration automation for closing issues when PRs merge to the integration branch.
 
-Use [`docs/project-setup.md`](docs/project-setup.md) for copyable examples, [`docs/default-skills.md`](docs/default-skills.md) for skill provenance, and the validators listed in those docs to check the setup.
+Use [`docs/project-setup.md`](docs/project-setup.md) for copyable examples, [`docs/default-skills.md`](docs/default-skills.md) for skill provenance, and the validators listed in those docs to check the setup. The installed GitHub workflow `.github/workflows/integration-lifecycle.yml` uses `scripts/integration-lifecycle.mjs` to comment, label, and close issues referenced with `Implements #...` or `Refs #...` after a PR merges into the configured integration branch.
 
 ## Sync / update framework files
 
@@ -211,13 +212,35 @@ For high-assurance work, open the PR first, then request human security/acceptan
 
 ## Copy-paste prompt examples
 
-Create an issue:
+### Product discovery and shaping
+
+Brainstorm before creating issues:
 
 ```text
-Create a feature request to let projects configure branch strategy. Analyze and architect the request before implementation.
+Brainstorm a feature for improving onboarding for first-time maintainers. Ask clarifying questions, identify the job-to-be-done, risks, non-goals, and likely acceptance criteria before opening any issues.
 ```
 
-Run an issue:
+Turn an idea into a feature request:
+
+```text
+Turn this idea into a product-ready feature request: <idea>. Include user value, acceptance criteria, non-goals, open questions, and a suggested workflow classification.
+```
+
+Break a feature into an epic and child issues:
+
+```text
+Break this feature request into an epic and ordered child issues. Identify dependencies, parallelizable work, validation needs, and any high-assurance review gates.
+```
+
+Create GitHub issues with this project's standards:
+
+```text
+Create GitHub issues for this epic using our issue standards, labels, acceptance criteria, workflow classification, and test plans.
+```
+
+### Orchestration
+
+Run one issue:
 
 ```text
 orchestrate #123
@@ -226,37 +249,53 @@ orchestrate #123
 Run multiple issues and open one final PR after the last ID:
 
 ```text
-orchestrate #123 #124 #125
-```
-
-Explicitly request auto-merge after checks pass:
-
-```text
-orchestrate #123 and merge when checks pass
+orchestrate #123 #124 #125 as one coherent workstream; defer PR creation until the final issue is complete.
 ```
 
 Ask for PR readiness:
 
 ```text
-Run PR readiness for #123. Verify the PR body, closure lines, workflow evidence, validation status, handover comments, and GitHub checks.
+Run PR readiness for #123. Verify the PR body, integration references, workflow evidence, validation status, handover comments, and GitHub checks.
 ```
 
-Create a follow-up:
+### Optional scenarios
+
+Run a focused scan before implementation:
+
+```text
+/scan "scan workflow scripts for branch-policy assumptions before implementation; summarize risks, affected files, and recommended follow-up issues"
+```
+
+Use configured routing only when it helps:
+
+```text
+Use the configured role routing for #123. If the selected owner is unavailable, record the fallback in the handover comment and continue with the configured fallback.
+```
+
+Stay single-agent unless delegation adds value:
+
+```text
+Keep this single-agent unless broad discovery or advisory review would materially reduce risk; if you delegate, validate the output before using it.
+```
+
+Create a follow-up instead of drifting scope:
 
 ```text
 Create a follow-up issue for the non-blocking docs gap found during review. Include acceptance criteria and a test plan.
 ```
 
-Route a role to another agent:
+### Development integration and promotion
+
+Close implementation tracking when work reaches the integration branch:
 
 ```text
-Route the developer role to Codex with Claude fallback for #123, and document the handover on the issue.
+After this PR merges to development, mark linked issues integrated and prepare a promotion summary for development -> main.
 ```
 
-Run a focused scan:
+Create a promotion issue:
 
 ```text
-/scan "scan workflow scripts for hardcoded branch names that should come from project config"
+Create a promotion issue for the current development branch: list integrated PRs, linked issues, validation needed before main, and release notes.
 ```
 
 ## Live example: this repository

@@ -1,6 +1,7 @@
 ## Implemented issues
 
-- Closes #<issue>
+- Implements #<issue> <!-- use for PRs targeting the configured integration branch; integration lifecycle automation comments, labels, and closes the issue after merge -->
+- Closes #<issue> <!-- use only when this PR targets the repository default/trunk branch and should rely on GitHub native auto-close semantics -->
 - Closes #<epic> <!-- include only when this PR implements the final remaining open child issues of that Epic; list child issues first and the Epic last -->
 
 ## Related issues

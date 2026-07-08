@@ -269,8 +269,9 @@ An orchestration call defaults to ending with committed work, a pushed branch, a
 request. For one issue, the terminal sequence is: complete required phases, run validation, update
 workflow-status and handover comments, commit issue-scoped work, push the branch, open the PR, then
 verify the PR in GitHub. For multiple issue IDs in one orchestration request, process the IDs in
-order and defer the final PR until the last requested issue is complete; include one `Closes #...`
-line per implemented issue in that final PR.
+order and defer the final PR until the last requested issue is complete; include one `Implements #...`
+line per implemented issue when the PR targets the integration branch, or `Closes #...` only when
+it targets the repository default/trunk branch and should rely on GitHub native auto-close semantics.
 
 Merging is separate from PR creation. By default, the human/operator merges the PR. The orchestrator
 must not merge unless explicitly instructed to do so. When auto-merge is explicitly requested, use
@@ -284,16 +285,18 @@ gh pr merge --squash --delete-branch --auto
 
 Every PR must include:
 
-- implemented issues (`Closes #...`)
+- implemented issues (`Implements #...` for integration PRs, `Closes #...` for trunk/default-branch PRs)
 - related issues (`Refs #...`)
 - workflow evidence summary from the issue workflow-status comment
 - CI-equivalent validation status (`passed`, `not-run-with-reason`, or `expected-fail-with-follow-up`)
 - agent review fields under `## Agent review`
 - follow-up issues created during implementation
 
-The PR body should mirror this structure explicitly: one `Closes #<issue>` line per implemented issue,
-`Refs #<issue>` only for non-closing references, the actual implementing agent, and the model / runtime
-used when known. Plain issue mentions are not sufficient for GitHub auto-closure.
+The PR body should mirror this structure explicitly: one `Implements #<issue>` line per implemented
+issue when merging to the configured integration branch, `Closes #<issue>` only when merging to the
+repository default/trunk branch, `Refs #<issue>` for non-closing references, the actual implementing
+agent, and the model / runtime used when known. Plain issue mentions are not sufficient for either
+GitHub auto-closure or integration lifecycle automation.
 
 If a PR implements the final remaining open child issues of an Epic, the PR body must also include
 `Closes #<epic>` after the child closure lines. Do not add the Epic close line early while any child
@@ -304,7 +307,7 @@ PR readiness is incomplete until the created PR is verified directly in GitHub f
 - PR number/URL
 - target branch
 - final body content
-- required closure lines (`Closes` / `Refs`) for every implemented issue
+- required issue reference lines (`Implements` / `Closes` / `Refs`) for every implemented issue
 - required workflow-status and handover evidence links
 - required `## Agent review` fields
 - GitHub check status
@@ -314,6 +317,19 @@ If any required GitHub check is expected to fail, the workflow-status comment mu
 Use a draft PR or a blocked/expected-fail state with concrete follow-up issues instead.
 
 Use `agents/templates/pr-manifest.md` as a local draft template; copy the final manifest content into the PR body rather than committing the draft file.
+
+### Development integration lifecycle
+
+For projects with a separate integration branch, implementation issues close when the work is merged
+to that integration branch. This keeps the open issue list focused on work that is not yet
+integrated. Promotion from integration to trunk/main is tracked by a separate promotion issue or PR.
+
+The installed `.github/workflows/integration-lifecycle.yml` runs on merged PRs and delegates to
+`scripts/integration-lifecycle.mjs`. By default it processes PRs merged into `development`, parses
+`Implements #...` and `Refs #...` lines from the PR body, comments on linked issues with integration
+evidence, adds configured labels such as `integrated:development` and `awaiting-release`, and closes
+the implementation issues. Required GitHub token permissions are `contents: read`,
+`pull-requests: read`, and `issues: write`.
 
 ### Role routing and handover comments
 

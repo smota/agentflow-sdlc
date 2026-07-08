@@ -37,6 +37,13 @@ never mark anything as bounded, and PR manifests will use placeholder CI command
     "compatibilityBranchPrefixes": ["issue/", "wt/", "claude/"],
     "requireBoundedWorkBranch": true
   },
+  "integrationLifecycle": {
+    "integrationBranch": "development",
+    "trunkBranch": "main",
+    "referenceKeywords": ["Implements", "Refs"],
+    "addLabels": ["integrated:development", "awaiting-release"],
+    "closeIntegratedIssues": true
+  },
   "routing": {
     "defaultMode": "single-agent",
     "agents": {
@@ -107,6 +114,15 @@ This repository commits its own `agent-workflow.config.json` with a two-tier pol
   accepted during migration.
 - `branching.requireBoundedWorkBranch` — when true, implementation work must happen on a configured
   work or compatibility branch, never directly on protected branches.
+- `integrationLifecycle.integrationBranch` — branch whose merged PRs mark implementation issues as
+  integrated; defaults to the branch strategy's default PR target.
+- `integrationLifecycle.trunkBranch` — final release/trunk branch named in integration comments.
+- `integrationLifecycle.referenceKeywords` — PR-body keywords parsed by
+  `scripts/integration-lifecycle.mjs`; defaults to `Implements` and `Refs`.
+- `integrationLifecycle.addLabels` — labels applied to linked issues after integration, commonly
+  `integrated:development` and `awaiting-release`.
+- `integrationLifecycle.closeIntegratedIssues` — when true, linked implementation issues are closed
+  after a merged integration PR is processed.
 - `routing.defaultMode` — defaults to `single-agent`; routing is optional and missing routing config
   keeps role execution with the current executor.
 - `routing.agents.<slug>` — enables one supported local agent CLI (`agy`, `codex`, `claude`, or
@@ -122,6 +138,7 @@ node scripts/validate-branch-strategy.mjs
 node scripts/resolve-branch-strategy.mjs --json
 node scripts/validate-role-routing.mjs
 node scripts/resolve-role-route.mjs --role developer --current claude --json
+node scripts/integration-lifecycle.mjs --event path/to/pull_request_event.json
 ```
 
 See `docs/agent-routing.md` for the route-resolution and ticket handover comment workflow. See

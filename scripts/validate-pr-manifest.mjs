@@ -86,7 +86,10 @@ const hasConcreteFollowUp = followUps !== null && /#\d+/.test(followUps)
 const expectedFailHasFollowUp = ciStatus !== 'expected-fail-with-follow-up' || hasConcreteFollowUp
 
 const checks = [
-  { name: 'implemented-issues', ok: /## Implemented issues\s+[\s\S]*Closes #\d+/m.test(content) },
+  {
+    name: 'implemented-issues',
+    ok: /## Implemented issues\s+[\s\S]*(Closes|Implements) #\d+/m.test(content),
+  },
   { name: 'related-issues', ok: hasSection(content, 'Related issues') },
   {
     name: 'workflow-evidence',

@@ -130,13 +130,13 @@ Project overrides are documented in `docs/project-config.md`.
 
 Every orchestration call defaults to ending with committed work, a pushed branch, and an opened PR.
 For multiple issue IDs in one invocation, process them in order and defer PR creation until the final
-requested issue is complete; open one coherent final PR with one `Closes #...` line per implemented
-issue.
+requested issue is complete; open one coherent final PR with one `Implements #...` line per
+implemented issue when targeting the integration branch.
 
 Every PR must:
 
-- include explicit `Closes #<issue>` lines
-- include `Closes #<epic>` too when this PR completes the final remaining open child issues of that Epic
+- include explicit `Implements #<issue>` lines for PRs targeting the configured integration branch, or `Closes #<issue>` lines only for PRs targeting the repository default/trunk branch
+- include `Closes #<epic>` only when this PR targets the default/trunk branch and completes the final remaining open child issues of that Epic
 - include a PR manifest/evidence section using `agents/templates/pr-manifest.md`. **CRITICAL**: When executing `gh pr create`, you MUST use `--body-file` or populate the body with the full structure from this template. Do NOT just use `--body "Closes #<issue>"`.
 - pass `node scripts/validate-pr-manifest.mjs --path <local-manifest-draft>` when using a local draft
 - include a CI-equivalent validation decision: `passed`, `not-run-with-reason`, or `expected-fail-with-follow-up`
