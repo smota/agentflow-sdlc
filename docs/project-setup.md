@@ -80,48 +80,55 @@ release to trunk/main with a separate promotion issue.
 ## Optional multi-agent routing config
 
 Use this only when the project has a reason to route specific roles to different local agent CLIs.
+`routing.roles` is the project's `roleAlternationPlan`; see
+[`agent-workflow.md` §4a](agent-workflow.md#4a-role-alternation-and-attribution-multi-agent-mode)
+for how planned ownership becomes evidenced multi-agent claims.
 
 ```json
 {
   "routing": {
-    "defaultMode": "single-agent",
+    "defaultMode": "optional-multi-agent",
     "agents": {
+      "pi": {
+        "enabled": true,
+        "availabilityCommand": "pi --version",
+        "callWorkflowDoc": "docs/agents/pi-routing.md"
+      },
       "claude": {
         "enabled": true,
         "availabilityCommand": "claude --version",
         "callWorkflowDoc": "docs/agents/claude-routing.md"
-      },
-      "codex": {
-        "enabled": true,
-        "availabilityCommand": "codex --version",
-        "callWorkflowDoc": "docs/agents/codex-routing.md"
       },
       "agy": {
         "enabled": true,
         "availabilityCommand": "agy --version",
         "callWorkflowDoc": "docs/agents/agy-routing.md"
       },
-      "pi": {
+      "codex": {
         "enabled": true,
-        "availabilityCommand": "pi --version",
-        "callWorkflowDoc": "docs/agents/pi-routing.md"
+        "availabilityCommand": "codex --version",
+        "callWorkflowDoc": "docs/agents/codex-routing.md"
       }
     },
     "roles": {
-      "analyst": { "owner": "claude", "fallbacks": ["codex", "agy", "pi"] },
-      "architect": { "owner": "claude", "fallbacks": ["codex", "agy", "pi"] },
-      "developer-planning": { "owner": "claude", "fallbacks": ["codex", "agy", "pi"] },
-      "developer": { "owner": "codex", "fallbacks": ["claude", "agy", "pi"] },
-      "tester": { "owner": "codex", "fallbacks": ["claude", "pi"] },
-      "review": { "owner": "claude", "fallbacks": ["codex", "pi"] },
-      "tech-writer": { "owner": "agy", "fallbacks": ["claude", "codex", "pi"] },
-      "pr-readiness": { "owner": "claude", "fallbacks": ["codex", "pi"] }
+      "analyst": { "owner": "pi", "fallbacks": ["claude", "agy", "codex"] },
+      "architect": { "owner": "agy", "fallbacks": ["pi", "claude", "codex"] },
+      "developer-planning": { "owner": "pi", "fallbacks": ["claude", "agy", "codex"] },
+      "developer": { "owner": "claude", "fallbacks": ["codex", "agy", "pi"] },
+      "tester": { "owner": "pi", "fallbacks": ["claude", "codex"] },
+      "review": { "owner": "agy", "fallbacks": ["codex", "pi"] },
+      "tech-writer": { "owner": "claude", "fallbacks": ["agy", "codex", "pi"] },
+      "pr-readiness": { "owner": "pi", "fallbacks": ["agy", "codex"] }
     }
   }
 }
 ```
 
-Routing is optional. If routing config is absent or a role is not configured, the resolver keeps execution with the current single agent. When ownership changes or a fallback is used, record that in handover evidence.
+This example keeps `developer` (`claude`) and `review` (`agy`) on different agents, which is
+required unless a run explicitly records a `Self-review disclosure`. Routing is optional. If
+routing config is absent or a role is not configured, the resolver keeps execution with the current
+single agent — single-agent mode never requires a role attribution matrix. When ownership changes
+or a fallback is used, record that in handover evidence.
 
 ## Branch strategy choices
 

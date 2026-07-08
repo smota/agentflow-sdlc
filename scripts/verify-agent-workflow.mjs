@@ -60,7 +60,20 @@ try {
   writeFileSync(
     manifestPath,
     manifestTemplate
-      .replace('human | claude | codex | agy | pi', 'codex')
+      .replace('Implemented by: human | claude | codex | agy | pi', 'Implemented by: codex')
+      .replace('Launcher: human | claude | codex | agy | pi', 'Launcher: codex')
+      .replace(
+        'Executor: claude-cli | anthropic-api | agy-cli | agy-session | pi-parent | pi-subagent | pi-session | pi-subagent-model | codex-cli | provider-api | human',
+        'Executor: codex-cli',
+      )
+      .replace(
+        'Transport: local-cli | provider-api | pi-subagent | intercom-session | orchestrated-worktree | manual',
+        'Transport: local-cli',
+      )
+      .replace(
+        'Delegation boundary: current-session | child-subagent | separate-local-session | child-worktree | human-handoff',
+        'Delegation boundary: current-session',
+      )
       .replace('<freeform identifier>', 'workflow verifier')
       .replace(
         '<GitHub issue comment/thread URL(s) for role handovers> | exception:<reason no role transition occurred>',
@@ -68,6 +81,7 @@ try {
       )
       .replace('self-review | human-review-requested | human-reviewed', 'self-review')
       .replace('bounded | standard | high-assurance', 'bounded')
+      .replace('single-agent | multi-agent', 'single-agent')
       .replace(
         'human/operator | auto-merge-requested:`gh pr merge --squash --delete-branch --auto`',
         'human/operator',

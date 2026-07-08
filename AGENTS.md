@@ -19,7 +19,13 @@ Before issue work, architecture proposals, file writes, commits, or gate decisio
 - Single-agent execution is the default.
 - Work proceeds through role-based phases defined in `docs/agent-workflow.md`.
 - Optional multi-agent support is allowed only when it adds clear value or project routing selects another executor.
-- Every completed phase records role-pass evidence.
+- An agent slug (`claude`, `codex`, `agy`, `pi`, `human`) names who is asked to work, not how the
+  work runs. Resolve the execution target (`claude-cli` vs `anthropic-api`, `agy-cli` vs
+  `agy-session`, `pi-parent` vs `pi-subagent`/`pi-session`/`pi-subagent-model`, `codex-cli` vs
+  `provider-api`) from project config or a clarifying question before launching work — never by
+  inheriting the launcher's current model or provider. See `docs/execution-targets.md`.
+- Every completed phase records role-pass evidence, including launcher, executor, transport, and
+  delegation boundary as distinct fields.
 - Durable workflow state lives in GitHub issue comments, PR bodies, commits, and closure metadata.
 - Local `.agent-runs/` files are scratch execution artifacts and must not be committed.
 
