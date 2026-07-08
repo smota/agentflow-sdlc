@@ -202,15 +202,23 @@ Post-merge verification is explicit evidence, not an assumption. Record:
 
 ### Target model
 
-The default protected promotion path is:
+The framework default supports a three-tier protected promotion path:
 
 ```text
 main <- staging <- development <- feature/work branches
 ```
 
+This repository overrides that default in `agent-workflow.config.json` because it uses `development`
+as the integration branch and does not use a `staging` branch:
+
+```text
+main <- development <- feature/work branches
+```
+
 Implementation edits must happen on a bounded feature/work branch by default, never directly on
-`development`, `staging`, or `main`. Projects may redefine branch names and allowed work prefixes in
-`agent-workflow.config.json`; see `docs/project-config.md`.
+protected branches such as `development` or `main`. Projects may redefine branch names, optional
+release-candidate usage, PR targets, and allowed work prefixes in `agent-workflow.config.json`; see
+`docs/project-config.md`.
 
 Default short-lived work branches include:
 

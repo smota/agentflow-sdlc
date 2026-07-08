@@ -91,7 +91,25 @@ Routing is optional. If routing config is absent or a role is not configured, th
 
 ## Branch strategy choices
 
-A simple project can use `main` as both trunk and default PR target. A project with staged promotion can separate integration, release-candidate, and trunk branches.
+A simple project can use `main` as both trunk and default PR target. This repository uses a two-tier `development -> main` policy with no `staging` branch:
+
+```json
+{
+  "branching": {
+    "trunk": "main",
+    "releaseCandidate": null,
+    "integration": "development",
+    "directEditDeniedBranches": ["main", "development"],
+    "defaultPrTarget": "development",
+    "promotionOrder": ["development", "main"],
+    "workBranchPrefixes": ["work/", "feature/", "fix/", "hotfix/", "spike/", "chore/"],
+    "compatibilityBranchPrefixes": ["issue/", "wt/", "claude/"],
+    "requireBoundedWorkBranch": true
+  }
+}
+```
+
+A project with staged promotion can separate integration, release-candidate, and trunk branches:
 
 ```json
 {
