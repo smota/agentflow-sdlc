@@ -54,12 +54,19 @@ Optional meta-harness/runtime:
 
 Baseline tools:
 
-| Tool                               | Why it matters                                                                                                          | Validation       |
-| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ---------------- |
-| `gh`                               | Creates exploratory QA session issues, records findings, links follow-up bugs, and applies labels such as `needs-test`. | `gh --version`   |
-| Browser(s)                         | Manual UX flow validation, accessibility checks, responsive behavior, and browser-specific regressions.                 | Project-specific |
-| Test data / seeded environment     | Reproducible exploratory sessions without relying on private or production-only data.                                   | Project-specific |
-| Screenshot / screen recording tool | Captures evidence for visual bugs, reproduction steps, and QA handoffs.                                                 | Project-specific |
+| Tool                               | Why it matters                                                                                                          | Validation                             |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| `gh`                               | Creates exploratory QA session issues, records findings, links follow-up bugs, and applies labels such as `needs-test`. | `gh --version`                         |
+| Vibium                             | Default `qa-expert` browser automation skill/tool for exploratory browser use and evidence capture.                     | `vibium --version` or project-specific |
+| Browser(s)                         | Manual UX flow validation, accessibility checks, responsive behavior, and browser-specific regressions.                 | Project-specific                       |
+| Test data / seeded environment     | Reproducible exploratory sessions without relying on private or production-only data.                                   | Project-specific                       |
+| Screenshot / screen recording tool | Captures evidence for visual bugs, reproduction steps, and QA handoffs.                                                 | Project-specific                       |
+
+Default recommendation:
+
+- Prefer Vibium for `qa-expert` when browser-based exploratory QA is in scope. This is an opinionated default because it has been validated successfully for AI-assisted exploratory QA, but projects may override it when an existing QA stack is a better fit.
+- Vibium upstream repository: <https://github.com/VibiumDev/vibium>
+- Vibium website/docs: <https://vibium.com>
 
 Common project-specific additions:
 

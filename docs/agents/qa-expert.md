@@ -14,6 +14,15 @@ Use `qa-expert` for:
 
 Do not use it to replace the deterministic `tester` role. The `tester` role owns repeatable validation and regression automation.
 
+## Default skill/tool
+
+Default to Vibium for browser-based `qa-expert` sessions. Vibium is an opinionated default, but it is recommended here because it has been highly and happily validated for AI-assisted exploratory QA.
+
+- Repository: <https://github.com/VibiumDev/vibium>
+- Website/docs: <https://vibium.com>
+
+Projects may override this default when they already have a stronger validated QA stack, but the override should be documented in project conventions and environment validation notes.
+
 ## Inputs
 
 Before starting, read:
@@ -44,5 +53,5 @@ A `qa-expert` session should produce durable GitHub evidence:
 ## Prompt example
 
 ```text
-Plan an exploratory QA session for #123 using the qa-expert role. Focus on negative paths and boundaries not covered by the deterministic tester phase. Record findings as linked issues and apply needs-test to bugs that require regression automation.
+Plan an exploratory QA session for #123 using the qa-expert role and Vibium as the default browser QA skill/tool. Focus on negative paths and boundaries not covered by the deterministic tester phase. Record findings as linked issues and apply needs-test to bugs that require regression automation.
 ```
