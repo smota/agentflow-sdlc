@@ -96,6 +96,10 @@ See [`docs/index.md`](docs/index.md) for the detailed map of roles, workflows, t
 - **Follow-ups:** create follow-up issues instead of hidden TODOs or silent omissions.
 - **Extension packs:** `evidence-driven-engineering` and `agent-handoff-governance` are available for repositories that want stricter decision, evidence, and handoff discipline.
 
+## License
+
+Licensed under the Apache License, Version 2.0. See [`LICENSE`](LICENSE) for the full license text.
+
 ## Contribute
 
 This is the canonical contributor entry point for this repository. It is for both human contributors and agent contributors. It summarizes the expected path, but it is not the policy authority. Before doing issue work, architecture proposals, file writes, commits, PR readiness, or gate decisions, follow the reading order in [`AGENTS.md`](AGENTS.md): repository policy, the active adapter (`CLAUDE.md`, `CODEX.md`, `AGY.md`, or equivalent), [`docs/agent-workflow.md`](docs/agent-workflow.md), [`docs/issue-standards.md`](docs/issue-standards.md), then the active issue or `SPEC.md`.
