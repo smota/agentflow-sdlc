@@ -82,19 +82,9 @@ Main sections:
 - `branching` — trunk, integration, protected branch, PR target, and work branch rules.
 - `capabilities` — optional policy for portable PLAN/WORKFLOW/LOOP/SUB-AGENTS behavior and fallbacks.
 - `extensions` — repository-level extension packs for opinionated engineering approaches, required skills/capabilities, templates, helper tools, and validators.
-- `routing` — optional role owner/fallback table for `agy`, `codex`, `claude`, and `pi`.
+  node bin/cli.mjs doctor-env --json
 
-Useful commands:
-
-```bash
-node scripts/validate-role-routing.mjs
-node scripts/resolve-role-route.mjs --role developer --current claude --json
-node scripts/validate-bounded.mjs --json
-node scripts/resolve-capability.mjs --capability delegated-subagents --execution-target pi-subagent --json
-node scripts/extension-pack.mjs list
-node scripts/validate-extension-packs.mjs --allow-empty
-node bin/cli.mjs doctor-env --json
-```
+````
 
 ## Routing and handovers
 
@@ -137,7 +127,6 @@ An agent slug names who owns a role, not how it runs. See [`execution-targets.md
 | [`../scripts/validate-release-closeout.mjs`](../scripts/validate-release-closeout.mjs)       | Verifies a published GitHub Release/tag and user-facing release-note wording after release PR merge                          |
 | [`../scripts/extension-pack.mjs`](../scripts/extension-pack.mjs)                             | Lists, inspects, and scaffolds repository extension packs                                                                    |
 | [`../scripts/validate-extension-packs.mjs`](../scripts/validate-extension-packs.mjs)         | Validates configured extension pack manifests, docs, tools, templates, required skills/capabilities, and optional validators |
-
 Repository self-checks:
 
 ```bash
@@ -145,7 +134,7 @@ pnpm test
 pnpm test:workflow
 pnpm format:check
 node scripts/verify-hooks.mjs
-```
+````
 
 ## Distribution and sync
 
