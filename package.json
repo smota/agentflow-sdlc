@@ -15,6 +15,7 @@
     "test": "vitest run",
     "test:hooks": "node scripts/verify-hooks.mjs",
     "test:workflow": "node scripts/verify-agent-workflow.mjs",
+    "validate:extensions": "node scripts/validate-extension-packs.mjs --allow-empty",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
