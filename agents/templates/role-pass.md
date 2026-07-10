@@ -24,6 +24,16 @@
 
 - <decision or finding>
 
+### Capability evidence
+
+```json
+{
+  "capabilitiesUsed": []
+}
+```
+
+Record portable advanced capabilities from `docs/capabilities.md` when a pass requests PLAN, WORKFLOW, LOOP, SUB-AGENTS, or their framework equivalents. Include mode, adapter, artifact, required/optional status, and guardrails such as loop stop conditions or subagent boundaries.
+
 ### Open questions
 
 - none
@@ -34,7 +44,7 @@
 
 ---
 
-<!-- <agent> = the AI identity actually executing THIS pass right now (claude | codex | agy | pi | human) — never copied from a prior pass or template example. See docs/agent-workflow.md §4 (Provenance). Executor/Transport/Delegation boundary come from docs/execution-targets.md; resolve ambiguous "with <agent>" requests with scripts/resolve-execution-target.mjs before recording them. Planned owner/Context boundary/Independence boundary are the role-alternation concepts from docs/agent-workflow.md §4a and lib/role-attribution.mjs (issue #56); they feed the roleAttributionMatrix in the workflow-status comment and PR manifest. -->
+<!-- <agent> = the AI identity actually executing THIS pass right now (claude | codex | agy | pi | human) — never copied from a prior pass or template example. See docs/agent-workflow.md §4 (Provenance). Executor/Transport/Delegation boundary come from docs/execution-targets.md; resolve ambiguous "with <agent>" requests with scripts/resolve-execution-target.mjs before recording them. Planned owner/Context boundary/Independence boundary are the role-alternation concepts from docs/agent-workflow.md §4a and lib/role-attribution.mjs (issue #56); they feed the roleAttributionMatrix in the workflow-status comment and PR manifest. Capability evidence comes from docs/capabilities.md and can be checked with scripts/validate-capability-evidence.mjs. -->
 
 Signed-off-by: `<agent>` (`<role>`)
 Timestamp: `YYYY-MM-DDTHH:MM:SSZ`

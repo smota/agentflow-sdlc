@@ -52,6 +52,27 @@ never mark anything as bounded, and PR manifests will use placeholder CI command
     "requireExplicitApproval": true,
     "allowPrerelease": true
   },
+  "capabilities": {
+    "plan-before-edit": {
+      "requiredFor": ["architect", "developer-planning", "developer"],
+      "fallback": "framework-emulated"
+    },
+    "workflow-orchestration": {
+      "preferred": "framework",
+      "allowNative": true
+    },
+    "bounded-loop": {
+      "allowedLoops": ["review-loop", "test-fix-loop"],
+      "maxIterationsDefault": 3,
+      "requiresStopCondition": true
+    },
+    "delegated-subagents": {
+      "default": "optional",
+      "maxParallel": 3,
+      "readOnlyByDefault": true,
+      "singleWriterRule": true
+    }
+  },
   "routing": {
     "defaultMode": "single-agent",
     "agents": {
@@ -153,6 +174,17 @@ This repository commits its own `agent-workflow.config.json` with a two-tier pol
 - `releaseVersioning.requireExplicitApproval` — when true, agents must not tag, push, or publish a
   release without explicit operator approval.
 - `releaseVersioning.allowPrerelease` — whether pre-release suffixes such as `1.2.3-rc.1` are allowed.
+- `capabilities` — optional policy for portable advanced agent capabilities; missing config fails
+  closed for required capability claims and otherwise uses framework-emulated or optional-unavailable
+  behavior. See [`capabilities.md`](capabilities.md).
+- `capabilities.<name>.requiredFor` — workflow roles that must resolve the capability before work
+  continues, such as requiring `plan-before-edit` before developer edits.
+- `capabilities.<name>.fallback` / `preferred` — whether the project prefers native/package support
+  or framework-emulated evidence when the selected execution target lacks a native feature.
+- `capabilities.bounded-loop.maxIterationsDefault` and `requiresStopCondition` — default guardrails
+  for loops so review/fix or test/fix cycles cannot run indefinitely.
+- `capabilities.delegated-subagents.maxParallel`, `readOnlyByDefault`, and `singleWriterRule` —
+  delegation guardrails for subagents, separate sessions, or package-backed workers.
 - `routing.defaultMode` — defaults to `single-agent`; routing is optional and missing routing config
   keeps role execution with the current executor.
 - `routing.agents.<slug>` — enables one supported local agent CLI (`agy`, `codex`, `claude`, or
@@ -180,6 +212,7 @@ node scripts/resolve-branch-strategy.mjs --json
 node scripts/validate-role-routing.mjs
 node scripts/resolve-role-route.mjs --role developer --current claude --json
 node scripts/resolve-execution-target.mjs --agent claude --requested "with claude" --current-agent pi --json
+node scripts/resolve-capability.mjs --capability plan-before-edit --execution-target claude-cli --required --json
 node scripts/integration-lifecycle.mjs --event path/to/pull_request_event.json
 node bin/cli.mjs doctor-env --json
 ```

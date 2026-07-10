@@ -15,8 +15,9 @@ This index maps the main concepts, defaults, roles, skills/workflows, templates,
 9. [`project-config.md`](project-config.md) — project-local `agent-workflow.config.json` contract.
 10. [`execution-targets.md`](execution-targets.md) — `executionTarget`, `transport`, `launcher`, `executor`, and `delegationBoundary` concepts that disambiguate `with claude`/`with agy`/`with pi` requests.
     [`agent-workflow.md` §4a](agent-workflow.md#4a-role-alternation-and-attribution-multi-agent-mode) extends this with `roleAlternationPlan`, `roleIntelligence`, `contextBoundary`, `independenceBoundary`, `roleAttributionMatrix`, `multiAgentClaim`, and `selfReviewDisclosure` — whether a multi-agent claim actually alternated SDLC roles across independent intelligences.
-11. [`release-versioning.md`](release-versioning.md) — configurable release strategy, default `main.minor.fix`, release evidence, validators, and preview helpers.
-12. [`default-skills.md`](default-skills.md) — default skills, recommended companion skills, upstream repositories, and CCPM-sourced skill surfaces.
+11. [`capabilities.md`](capabilities.md) — portable PLAN/WORKFLOW/LOOP/SUB-AGENTS capability vocabulary, resolution modes, evidence, and adapter links.
+12. [`release-versioning.md`](release-versioning.md) — configurable release strategy, default `main.minor.fix`, release evidence, validators, and preview helpers.
+13. [`default-skills.md`](default-skills.md) — default skills, recommended companion skills, upstream repositories, and CCPM-sourced skill surfaces.
 
 ## What it is
 
@@ -77,6 +78,7 @@ Main sections:
 - `ciCommands` — commands copied into PR manifests as CI-equivalent validation.
 - `bounded` — path and diff limits for bounded self-reviewable work.
 - `branching` — trunk, integration, protected branch, PR target, and work branch rules.
+- `capabilities` — optional policy for portable PLAN/WORKFLOW/LOOP/SUB-AGENTS behavior and fallbacks.
 - `routing` — optional role owner/fallback table for `agy`, `codex`, `claude`, and `pi`.
 
 Useful commands:
@@ -85,6 +87,7 @@ Useful commands:
 node scripts/validate-role-routing.mjs
 node scripts/resolve-role-route.mjs --role developer --current claude --json
 node scripts/validate-bounded.mjs --json
+node scripts/resolve-capability.mjs --capability delegated-subagents --execution-target pi-subagent --json
 node bin/cli.mjs doctor-env --json
 ```
 
@@ -110,21 +113,23 @@ An agent slug names who owns a role, not how it runs. See [`execution-targets.md
 
 ## Hooks and validators
 
-| File                                                                                   | Purpose                                                                                                                      |
-| -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| [`../.github/hooks/check-issue-branch.mjs`](../.github/hooks/check-issue-branch.mjs)   | Blocks direct work on protected branches and invalid branch names                                                            |
-| [`../.github/hooks/pre-commit`](../.github/hooks/pre-commit)                           | Local commit guardrails                                                                                                      |
-| [`../.github/hooks/pre-push`](../.github/hooks/pre-push)                               | Blocks direct pushes to protected branches                                                                                   |
-| [`../.github/hooks/session-status.mjs`](../.github/hooks/session-status.mjs)           | Summarizes branch/spec/session state                                                                                         |
-| [`../scripts/validate-spec.mjs`](../scripts/validate-spec.mjs)                         | Checks `SPEC.md` readiness                                                                                                   |
-| [`../scripts/validate-bounded.mjs`](../scripts/validate-bounded.mjs)                   | Checks bounded-work eligibility                                                                                              |
-| [`../scripts/validate-pr-manifest.mjs`](../scripts/validate-pr-manifest.mjs)           | Checks PR body/manifest readiness                                                                                            |
-| [`../scripts/ensure-workflow-artifacts.mjs`](../scripts/ensure-workflow-artifacts.mjs) | Scaffolds local `.agent-runs/` issue files                                                                                   |
-| [`../scripts/branch-cleanup-report.mjs`](../scripts/branch-cleanup-report.mjs)         | Reports merged branch cleanup candidates                                                                                     |
-| [`../scripts/issue-markdown.mjs`](../scripts/issue-markdown.mjs)                       | Updates issue body sections deterministically                                                                                |
-| [`../scripts/resolve-execution-target.mjs`](../scripts/resolve-execution-target.mjs)   | Resolves an ambiguous agent-brand mention or model id to a deterministic `executionTarget`, or fails requiring clarification |
-| [`../scripts/validate-role-attribution.mjs`](../scripts/validate-role-attribution.mjs) | Checks a `multiAgentClaim`'s role attribution matrix (also run automatically by `validate-pr-manifest.mjs`)                  |
-| [`../scripts/validate-release-closeout.mjs`](../scripts/validate-release-closeout.mjs) | Verifies a published GitHub Release/tag and user-facing release-note wording after release PR merge                          |
+| File                                                                                         | Purpose                                                                                                                      |
+| -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| [`../.github/hooks/check-issue-branch.mjs`](../.github/hooks/check-issue-branch.mjs)         | Blocks direct work on protected branches and invalid branch names                                                            |
+| [`../.github/hooks/pre-commit`](../.github/hooks/pre-commit)                                 | Local commit guardrails                                                                                                      |
+| [`../.github/hooks/pre-push`](../.github/hooks/pre-push)                                     | Blocks direct pushes to protected branches                                                                                   |
+| [`../.github/hooks/session-status.mjs`](../.github/hooks/session-status.mjs)                 | Summarizes branch/spec/session state                                                                                         |
+| [`../scripts/validate-spec.mjs`](../scripts/validate-spec.mjs)                               | Checks `SPEC.md` readiness                                                                                                   |
+| [`../scripts/validate-bounded.mjs`](../scripts/validate-bounded.mjs)                         | Checks bounded-work eligibility                                                                                              |
+| [`../scripts/validate-pr-manifest.mjs`](../scripts/validate-pr-manifest.mjs)                 | Checks PR body/manifest readiness                                                                                            |
+| [`../scripts/ensure-workflow-artifacts.mjs`](../scripts/ensure-workflow-artifacts.mjs)       | Scaffolds local `.agent-runs/` issue files                                                                                   |
+| [`../scripts/branch-cleanup-report.mjs`](../scripts/branch-cleanup-report.mjs)               | Reports merged branch cleanup candidates                                                                                     |
+| [`../scripts/issue-markdown.mjs`](../scripts/issue-markdown.mjs)                             | Updates issue body sections deterministically                                                                                |
+| [`../scripts/resolve-execution-target.mjs`](../scripts/resolve-execution-target.mjs)         | Resolves an ambiguous agent-brand mention or model id to a deterministic `executionTarget`, or fails requiring clarification |
+| [`../scripts/resolve-capability.mjs`](../scripts/resolve-capability.mjs)                     | Resolves portable advanced capability requests for a selected execution target                                               |
+| [`../scripts/validate-capability-evidence.mjs`](../scripts/validate-capability-evidence.mjs) | Checks role-pass/manifest capability evidence for required modes and LOOP/SUB-AGENTS guardrails                              |
+| [`../scripts/validate-role-attribution.mjs`](../scripts/validate-role-attribution.mjs)       | Checks a `multiAgentClaim`'s role attribution matrix (also run automatically by `validate-pr-manifest.mjs`)                  |
+| [`../scripts/validate-release-closeout.mjs`](../scripts/validate-release-closeout.mjs)       | Verifies a published GitHub Release/tag and user-facing release-note wording after release PR merge                          |
 
 Repository self-checks:
 
