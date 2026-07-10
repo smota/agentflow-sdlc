@@ -73,6 +73,9 @@ never mark anything as bounded, and PR manifests will use placeholder CI command
       "singleWriterRule": true
     }
   },
+  "extensions": {
+    "enabledPacks": ["extensions/my-engineering-approach"]
+  },
   "routing": {
     "defaultMode": "single-agent",
     "agents": {
@@ -185,6 +188,7 @@ This repository commits its own `agent-workflow.config.json` with a two-tier pol
   for loops so review/fix or test/fix cycles cannot run indefinitely.
 - `capabilities.delegated-subagents.maxParallel`, `readOnlyByDefault`, and `singleWriterRule` —
   delegation guardrails for subagents, separate sessions, or package-backed workers.
+- `extensions.enabledPacks` — repository-local extension pack directories. Each pack must contain `extension-pack.yaml` and `README.md`; see [`extension-packs.md`](extension-packs.md). A pack can require installed skills, harness capabilities, helper tools, templates, and deterministic validators that extend role-pass evidence without replacing core issue/PR governance.
 - `routing.defaultMode` — defaults to `single-agent`; routing is optional and missing routing config
   keeps role execution with the current executor.
 - `routing.agents.<slug>` — enables one supported local agent CLI (`agy`, `codex`, `claude`, or
@@ -213,6 +217,7 @@ node scripts/validate-role-routing.mjs
 node scripts/resolve-role-route.mjs --role developer --current claude --json
 node scripts/resolve-execution-target.mjs --agent claude --requested "with claude" --current-agent pi --json
 node scripts/resolve-capability.mjs --capability plan-before-edit --execution-target claude-cli --required --json
+node scripts/validate-extension-packs.mjs --allow-empty
 node scripts/integration-lifecycle.mjs --event path/to/pull_request_event.json
 node bin/cli.mjs doctor-env --json
 ```

@@ -18,7 +18,8 @@ This index maps the main concepts, defaults, roles, skills/workflows, templates,
     [`agent-workflow.md` §4a](agent-workflow.md#4a-role-alternation-and-attribution-multi-agent-mode) extends this with `roleAlternationPlan`, `roleIntelligence`, `contextBoundary`, `independenceBoundary`, `roleAttributionMatrix`, `multiAgentClaim`, and `selfReviewDisclosure` — whether a multi-agent claim actually alternated SDLC roles across independent intelligences.
 11. [`capabilities.md`](capabilities.md) — portable PLAN/WORKFLOW/LOOP/SUB-AGENTS capability vocabulary, resolution modes, evidence, and adapter links.
 12. [`release-versioning.md`](release-versioning.md) — configurable release strategy, default `main.minor.fix`, release evidence, validators, and preview helpers.
-13. [`default-skills.md`](default-skills.md) — default skills, recommended companion skills, upstream repositories, and CCPM-sourced skill surfaces.
+13. [`extension-packs.md`](extension-packs.md) — repository-level contrib-style overlays for opinionated engineering approaches, skills, tools, templates, and validators.
+14. [`default-skills.md`](default-skills.md) — default skills, recommended companion skills, upstream repositories, and CCPM-sourced skill surfaces.
 
 ## What it is
 
@@ -80,6 +81,7 @@ Main sections:
 - `bounded` — path and diff limits for bounded self-reviewable work.
 - `branching` — trunk, integration, protected branch, PR target, and work branch rules.
 - `capabilities` — optional policy for portable PLAN/WORKFLOW/LOOP/SUB-AGENTS behavior and fallbacks.
+- `extensions` — repository-level extension packs for opinionated engineering approaches, required skills/capabilities, templates, helper tools, and validators.
 - `routing` — optional role owner/fallback table for `agy`, `codex`, `claude`, and `pi`.
 
 Useful commands:
@@ -89,6 +91,8 @@ node scripts/validate-role-routing.mjs
 node scripts/resolve-role-route.mjs --role developer --current claude --json
 node scripts/validate-bounded.mjs --json
 node scripts/resolve-capability.mjs --capability delegated-subagents --execution-target pi-subagent --json
+node scripts/extension-pack.mjs list
+node scripts/validate-extension-packs.mjs --allow-empty
 node bin/cli.mjs doctor-env --json
 ```
 
@@ -131,6 +135,8 @@ An agent slug names who owns a role, not how it runs. See [`execution-targets.md
 | [`../scripts/validate-capability-evidence.mjs`](../scripts/validate-capability-evidence.mjs) | Checks role-pass/manifest capability evidence for required modes and LOOP/SUB-AGENTS guardrails                              |
 | [`../scripts/validate-role-attribution.mjs`](../scripts/validate-role-attribution.mjs)       | Checks a `multiAgentClaim`'s role attribution matrix (also run automatically by `validate-pr-manifest.mjs`)                  |
 | [`../scripts/validate-release-closeout.mjs`](../scripts/validate-release-closeout.mjs)       | Verifies a published GitHub Release/tag and user-facing release-note wording after release PR merge                          |
+| [`../scripts/extension-pack.mjs`](../scripts/extension-pack.mjs)                             | Lists, inspects, and scaffolds repository extension packs                                                                    |
+| [`../scripts/validate-extension-packs.mjs`](../scripts/validate-extension-packs.mjs)         | Validates configured extension pack manifests, docs, tools, templates, required skills/capabilities, and optional validators |
 
 Repository self-checks:
 
