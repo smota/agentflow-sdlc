@@ -38,7 +38,7 @@ node bin/cli.mjs onboarding-prompt --target /path/to/your-project
 
 See [`docs/assisted-onboarding.md`](docs/assisted-onboarding.md) and [`docs/environment-tools.md`](docs/environment-tools.md). The environment guide documents required, recommended, and optional tools compatible with `doctor-env`.
 
-Already adopted this framework? Use [`docs/assisted-update.md`](docs/assisted-update.md) and `node bin/cli.mjs update-prompt --target /path/to/your-project` to plan a read-only, approval-gated update before running `sync`.
+Already adopted this framework? Use [`docs/assisted-update.md`](docs/assisted-update.md) and `node bin/cli.mjs update-prompt --target /path/to/your-project` to plan a read-only, approval-gated update before running `sync`. The proposed next step is a deterministic update-plan flow documented in [`docs/deterministic-assisted-update.md`](docs/deterministic-assisted-update.md).
 
 ## Who it is for
 
