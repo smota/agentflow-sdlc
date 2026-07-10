@@ -7,6 +7,7 @@ This index maps the main concepts, defaults, roles, skills/workflows, templates,
 1. [`../README.md`](../README.md) — overview, assisted onboarding/update, installation, usage, prompts, and live examples.
 2. [`assisted-onboarding.md`](assisted-onboarding.md) — agent-assisted setup for existing projects with explicit approval before changes.
 3. [`assisted-update.md`](assisted-update.md) — agent-assisted update workflow for already-adopted projects using `agent-framework-lock.json`, `doctor`, `sync`, and `mark-merged`.
+   [`deterministic-assisted-update.md`](deterministic-assisted-update.md) documents the proposed deterministic update-plan direction.
 4. [`environment-tools.md`](environment-tools.md) — required, recommended, and optional tools compatible with `doctor-env`.
 5. [`../AGENTS.md`](../AGENTS.md) — required first-read repository policy.
 6. [`project-setup.md`](project-setup.md) — guided setup choices for agents, execution mode, routing, branch strategy, validation, bounded work, and skill provenance.

@@ -4,9 +4,13 @@ Assisted update is the guided workflow for a project that already adopted `multi
 
 Use assisted onboarding for first-time adoption. Use this guide when the target project already has framework files, a lockfile, or earlier hand-merged framework content.
 
-## Core rule: plan before sync
+For the proposed next iteration of this flow, see [`deterministic-assisted-update.md`](deterministic-assisted-update.md). The target direction is to make update planning machine-readable and deterministic, so an LLM session presents and verifies CLI output instead of improvising file classifications or write commands.
+
+## Core rule: deterministic plan before sync
 
 The update assistant must start read-only. It may inspect files, run read-only validators, and propose commands. It must not run `sync`, edit conflicts, mark files merged, commit, push, or open a PR until the operator approves the update plan.
+
+Until a dedicated deterministic `update-plan` command exists, the agent must treat `doctor`, `doctor-env`, lockfile state, and the classification checklist in this guide as evidence to present for approval. The long-term target is for a CLI-generated update plan to become the source of truth for these classifications.
 
 Low-level sync semantics stay deterministic:
 
