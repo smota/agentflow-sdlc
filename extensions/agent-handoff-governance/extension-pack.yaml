@@ -1,0 +1,24 @@
+id: agent-handoff-governance
+kind: workflow-overlay
+version: 0.1.0
+description: Governance for agent/human handoffs, provenance, delegation boundaries, and review transfer.
+principles: principles.md
+documentation:
+  - README.md
+requiredSkills: []
+requiredCapabilities:
+  - read
+  - shell
+templates:
+  - templates/handoff-comment.md
+  - templates/role-pass-handoff-addendum.md
+  - templates/human-review-request.md
+  - templates/async-handoff.md
+tools: []
+validators:
+  - path: validators/validate-handoff-shape.mjs
+    command: node validators/validate-handoff-shape.mjs
+  - path: validators/validate-provenance-fields.mjs
+    command: node validators/validate-provenance-fields.mjs
+  - path: validators/validate-review-boundary.mjs
+    command: node validators/validate-review-boundary.mjs

@@ -13,6 +13,7 @@ This repository is both the distributable framework and a live example of the wo
 - deterministic issue, branch, commit, and PR contracts;
 - local hooks and validators that catch workflow drift early;
 - reusable templates for role passes, workflow status, handovers, and PR bodies;
+- optional extension packs for reusable engineering approaches and handoff governance;
 - project-local configuration for stack-specific commands, bounded work, routing, and conventions.
 
 Use it when you want agent-assisted work to be reviewable, auditable, and easy to resume instead of being hidden in one chat session.
@@ -80,6 +81,7 @@ See [`docs/index.md`](docs/index.md) for the detailed map of roles, workflows, t
 | Templates              | `agents/templates/role-pass.md`, `pr-manifest.md`, `workflow-status-comment.md`, `handover-comment.md`, `stack-conventions.md`                                                |
 | Hooks                  | `.github/hooks/*` branch checks, session status, commit readiness, formatting support                                                                                         |
 | Validators             | `scripts/validate-spec.mjs`, `validate-bounded.mjs`, `validate-pr-manifest.mjs`, `validate-role-routing.mjs`, `validate-role-attribution.mjs`, `resolve-execution-target.mjs` |
+| Extension packs        | `extensions/evidence-driven-engineering`, `extensions/agent-handoff-governance`                                                                                               |
 | Distribution           | `bin/cli.mjs`, `lib/install.mjs`, `lib/framework-files.mjs`, `agent-framework-lock.json` in consuming repos                                                                   |
 
 ## Defaults
@@ -92,6 +94,7 @@ See [`docs/index.md`](docs/index.md) for the detailed map of roles, workflows, t
 - **Review:** bounded/standard work may use explicit self-review; high-assurance work requires human review before merge.
 - **Branching:** use the project branch strategy from `docs/agent-workflow.md` and `agent-workflow.config.json`; do not edit protected integration/trunk branches directly.
 - **Follow-ups:** create follow-up issues instead of hidden TODOs or silent omissions.
+- **Extension packs:** `evidence-driven-engineering` and `agent-handoff-governance` are available for repositories that want stricter decision, evidence, and handoff discipline.
 
 ## Contribute
 
