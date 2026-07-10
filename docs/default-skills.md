@@ -2,6 +2,8 @@
 
 This page documents the default and recommended skills/workflows used with `multi-agent-sdlc`, where they come from, and how consuming projects should track local changes. Skills are local workflow capabilities: they make agent behavior repeatable, but they do not replace `AGENTS.md`, `docs/agent-workflow.md`, issue comments, commits, PR bodies, or validators as durable evidence.
 
+Skills should request portable advanced capabilities such as `plan-before-edit`, `workflow-orchestration`, `bounded-loop`, and `delegated-subagents` instead of hard-coding platform-specific mechanisms such as Claude subagents, Codex profiles, or Pi package commands. See [`capabilities.md`](capabilities.md) for the capability vocabulary and resolver model.
+
 ## Why provenance matters
 
 Documenting skills makes agent-assisted work easier to audit:
@@ -17,6 +19,32 @@ Documenting skills makes agent-assisted work easier to audit:
 | ---------------- | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------- | --------------------------------------------- |
 | `orchestrate`    | Run one issue through the role-based SDLC phases, create evidence, commit, push, and open a PR. | Issue implementation, chores, fixes, and workstreams that need the formal role-pass workflow. | [`agents/workflows/orchestrate/SKILL.md`](../agents/workflows/orchestrate/SKILL.md) | <https://github.com/smota/multi-agent-sdlc> | [`docs/agent-workflow.md`](agent-workflow.md) |
 | `scan`           | Perform broad-context scans that feed planning, review, or security evidence.                   | Architecture, security, risk, or cross-cutting discovery before implementation or review.     | [`agents/workflows/scan/SKILL.md`](../agents/workflows/scan/SKILL.md)               | <https://github.com/smota/multi-agent-sdlc> | [`docs/index.md`](index.md)                   |
+
+## Capability-aware skill authoring
+
+Framework-owned skills should describe advanced behavior as capability requirements:
+
+```yaml
+capabilities:
+  requires:
+    - plan-before-edit
+  optional:
+    - workflow-orchestration
+    - bounded-loop
+    - delegated-subagents
+fallbacks:
+  plan-before-edit: framework-emulated
+  delegated-subagents: inline-parent-work
+```
+
+Use the skill body to state constraints and evidence, for example:
+
+- PLAN: write or cite the plan artifact before edits.
+- WORKFLOW: map any native/package workflow back to the SDLC phase model.
+- LOOP: set max iterations and stop conditions.
+- SUB-AGENTS: default reviewers/researchers to read-only, keep one writer per worktree, and record launcher/executor/transport/delegation/context/independence boundaries.
+
+A skill may be intentionally platform-specific, but it must say so explicitly in its description and should still record capability evidence in role passes and PR manifests.
 
 ## Recommended companion skills/tooling
 
