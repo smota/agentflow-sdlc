@@ -1,0 +1,24 @@
+id: evidence-driven-engineering
+kind: engineering-approach
+version: 0.1.0
+description: Evidence-first engineering practices for decisions, analysis, validation, and PR readiness.
+principles: principles.md
+documentation:
+  - README.md
+requiredSkills: []
+requiredCapabilities:
+  - read
+  - shell
+templates:
+  - templates/adr-template.md
+  - templates/analysis-guardrails.md
+  - templates/review-checklist.md
+  - templates/pr-evidence-addendum.md
+tools: []
+validators:
+  - path: validators/validate-adr-shape.mjs
+    command: node validators/validate-adr-shape.mjs
+  - path: validators/validate-no-hidden-todos.mjs
+    command: node validators/validate-no-hidden-todos.mjs
+  - path: validators/validate-evidence-sections.mjs
+    command: node validators/validate-evidence-sections.mjs

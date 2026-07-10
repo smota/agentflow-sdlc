@@ -19,6 +19,7 @@ This index maps the main concepts, defaults, roles, skills/workflows, templates,
 11. [`capabilities.md`](capabilities.md) — portable PLAN/WORKFLOW/LOOP/SUB-AGENTS capability vocabulary, resolution modes, evidence, and adapter links.
 12. [`release-versioning.md`](release-versioning.md) — configurable release strategy, default `main.minor.fix`, release evidence, validators, and preview helpers.
 13. [`extension-packs.md`](extension-packs.md) — repository-level contrib-style overlays for opinionated engineering approaches, skills, tools, templates, and validators.
+    Built-in packs: `extensions/evidence-driven-engineering` for decision/evidence discipline and `extensions/agent-handoff-governance` for provenance, delegation, and handoff boundaries.
 14. [`default-skills.md`](default-skills.md) — default skills, recommended companion skills, upstream repositories, and CCPM-sourced skill surfaces.
 
 ## What it is
@@ -81,7 +82,7 @@ Main sections:
 - `bounded` — path and diff limits for bounded self-reviewable work.
 - `branching` — trunk, integration, protected branch, PR target, and work branch rules.
 - `capabilities` — optional policy for portable PLAN/WORKFLOW/LOOP/SUB-AGENTS behavior and fallbacks.
-- `extensions` — repository-level extension packs for opinionated engineering approaches, required skills/capabilities, templates, helper tools, and validators.
+- `extensions` — repository-level extension packs for opinionated engineering approaches, required skills/capabilities, templates, helper tools, and validators. This repository enables `extensions/evidence-driven-engineering` and `extensions/agent-handoff-governance` as reference packs.
   node bin/cli.mjs doctor-env --json
 
 ````

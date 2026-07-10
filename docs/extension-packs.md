@@ -104,6 +104,26 @@ A configured extension pack may add requirements to each role pass:
 
 Extensions must not hide execution-target provenance. Role-pass evidence still records launcher, executor, transport, delegation boundary, and review independence according to the core workflow.
 
+## Built-in packs
+
+This repository includes two stack-neutral packs that can be enabled by consuming projects:
+
+- `extensions/evidence-driven-engineering` — ADRs, analysis guardrails, decision evidence, validation honesty, PR evidence, and follow-up discipline.
+- `extensions/agent-handoff-governance` — handoff templates, provenance fields, delegation boundaries, review/implementation separation, human review requests, async resume points, and single-writer/multiple-reviewer coordination.
+
+Enable both when a project wants the full evidence and handoff operating model:
+
+```json
+{
+  "extensions": {
+    "enabledPacks": [
+      "extensions/evidence-driven-engineering",
+      "extensions/agent-handoff-governance"
+    ]
+  }
+}
+```
+
 ## Helper commands
 
 List discovered packs:

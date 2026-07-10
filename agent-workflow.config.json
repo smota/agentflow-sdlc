@@ -26,5 +26,11 @@
   },
   "routing": {
     "defaultMode": "single-agent"
+  },
+  "extensions": {
+    "enabledPacks": [
+      "extensions/evidence-driven-engineering",
+      "extensions/agent-handoff-governance"
+    ]
   }
 }
