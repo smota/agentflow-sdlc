@@ -18,7 +18,8 @@ Low-level sync semantics stay deterministic:
 - locally modified framework-owned files are reported as conflicts and are not overwritten;
 - seed-once files such as `AGENTS.md` and `docs/stack-conventions.md` are created only when missing and are not overwritten after they exist;
 - hand-merged files recorded with `mark-merged` are reported separately and are never fast-forwarded;
-- project-owned files outside the framework file list are not touched by the framework CLI.
+- project-owned files outside the framework file list are not touched by the framework CLI;
+- extension-pack discovery is automatic but activation is explicit: `doctor` reports enabled, missing, invalid, discovered-disabled, and duplicate-id extension states, while `sync` must not silently enable newly shipped packs.
 
 ## Copy-paste agent handoff
 
@@ -60,7 +61,8 @@ Inspect and summarize:
 - source framework package version from `package.json`;
 - target `agent-framework-lock.json` presence and relevant metadata;
 - current target branch and git status;
-- existing workflow configuration in `agent-workflow.config.json`;
+- existing workflow configuration in `agent-workflow.config.json`, especially `extensions.enabledPacks`;
+- extension discovery/validation output from `node /path/to/multi-agent-sdlc/bin/cli.mjs extensions list --target /path/to/project` and `extensions validate`;
 - project-specific instructions in `AGENTS.md`, adapter files, and `docs/stack-conventions.md`.
 
 Do not paste secrets or private local-only data into issues, PRs, or handover comments.
@@ -69,14 +71,16 @@ Do not paste secrets or private local-only data into issues, PRs, or handover co
 
 Use `doctor` output and, after approval, `sync` output with these classifications:
 
-| Classification       | Meaning                                                                      | Default action                                                              |
-| -------------------- | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| `safe fast-forward`  | framework-owned file still matches lockfile and can be updated automatically | allow `sync`                                                                |
-| `conflict`           | framework-owned file changed locally since install/sync                      | manually review and merge; never overwrite silently                         |
-| `seed-once skip`     | project-owned starter exists and should not be overwritten                   | preserve target file                                                        |
-| `hand-merged`        | framework path intentionally marked with `mark-merged`                       | preserve target file; review only when needed                               |
-| `removed/missing`    | file is absent in target                                                     | distinguish intentionally removed from never-installed older framework file |
-| `validation blocker` | required tool, config, or check prevents safe update                         | stop or create follow-up issue                                              |
+| Classification                      | Meaning                                                                       | Default action                                                              |
+| ----------------------------------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `safe fast-forward`                 | framework-owned file still matches lockfile and can be updated automatically  | allow `sync`                                                                |
+| `conflict`                          | framework-owned file changed locally since install/sync                       | manually review and merge; never overwrite silently                         |
+| `seed-once skip`                    | project-owned starter exists and should not be overwritten                    | preserve target file                                                        |
+| `hand-merged`                       | framework path intentionally marked with `mark-merged`                        | preserve target file; review only when needed                               |
+| `removed/missing`                   | file is absent in target                                                      | distinguish intentionally removed from never-installed older framework file |
+| `validation blocker`                | required tool, config, or check prevents safe update                          | stop or create follow-up issue                                              |
+| `extension discovered-disabled`     | extension pack is available under `extensions/` or `contrib/` but not enabled | present as an explicit adoption choice; do not auto-enable                  |
+| `extension enabled-missing/invalid` | configured pack is missing, malformed, has duplicate ids, or fails validation | stop or create follow-up issue before claiming update readiness             |
 
 ### 4. Propose the update plan
 
@@ -90,6 +94,7 @@ Before writes, present a plan containing:
 - seed-once files to preserve;
 - hand-merged files and whether they need review;
 - validation commands to run after update;
+- extension choices: packs newly discovered but not enabled, missing/invalid enabled packs, duplicate ids, and whether any explicit `extensions enable`/`disable` command is proposed;
 - rollback/stop rule if unexpected conflicts appear.
 
 Ask for explicit approval before running `sync` or editing any file.
