@@ -68,6 +68,7 @@ If you use Claude, Codex, Agy, Omnigent, or another harness, use the same prompt
    - branch strategy;
    - CI-equivalent validation commands;
    - bounded-work paths and sensitive paths;
+   - extension packs: discover with `node /path/to/multi-agent-sdlc/bin/cli.mjs extensions list --target /path/to/project`, inspect before enabling, and enable only by explicit choice in `agent-workflow.config.json`;
    - GitHub integration lifecycle automation;
    - release versioning strategy (`main.minor.fix` by default), tag format, package version source, and release approval expectations;
    - optional `qa-expert` exploratory QA and its browser/API/accessibility/evidence tooling;
@@ -76,7 +77,8 @@ If you use Claude, Codex, Agy, Omnigent, or another harness, use the same prompt
 5. **Review skills and provenance**
    - install workflow skills only with approval;
    - document local skill locations and upstream sources;
-   - record project-specific overrides.
+   - record project-specific overrides;
+   - validate configured extension packs with `node /path/to/multi-agent-sdlc/bin/cli.mjs extensions validate --target /path/to/project`.
 
 6. **Summarize outcome**
    - files changed;

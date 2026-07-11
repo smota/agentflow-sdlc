@@ -4,6 +4,12 @@ import { fileURLToPath } from 'node:url'
 import { doctor, init, markMerged, sync } from '../lib/install.mjs'
 import { validateEnvironment } from '../lib/environment.mjs'
 import { buildReleasePlan } from '../lib/release-versioning.mjs'
+import {
+  buildExtensionRegistry,
+  resolveExtensionPack,
+  setExtensionPackEnabled,
+  validateConfiguredExtensionPacks,
+} from '../lib/extension-packs.mjs'
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -56,6 +62,90 @@ function printReleasePlan(plan) {
   process.stdout.write(`Approval required: ${plan.approvalRequired ? 'yes' : 'no'}\n`)
 }
 
+function printExtensionRegistry(registry) {
+  process.stdout.write('Extension packs\n')
+  for (const pack of registry.discovered) {
+    const enabled = registry.configured.includes(pack.relativeDir) ? 'enabled' : 'disabled'
+    process.stdout.write(
+      `${pack.relativeDir}\t${pack.manifest.id}\t${pack.manifest.kind}\t${enabled}\n`,
+    )
+  }
+  if (registry.enabledMissing.length) {
+    process.stdout.write(`Missing enabled packs:\n`)
+    for (const item of registry.enabledMissing) process.stdout.write(`  - ${item}\n`)
+  }
+  if (registry.duplicateIds.length) {
+    process.stdout.write(`Duplicate ids:\n`)
+    for (const item of registry.duplicateIds) process.stdout.write(`  - ${item}\n`)
+  }
+}
+
+function handleExtensions(rest, targetDir) {
+  const [subcommand, selector] = positionalArgs(rest)
+  const json = rest.includes('--json')
+  const runValidators = rest.includes('--run-validators')
+
+  if (subcommand === 'list') {
+    const registry = buildExtensionRegistry(targetDir)
+    if (json) process.stdout.write(`${JSON.stringify(registry, null, 2)}\n`)
+    else printExtensionRegistry(registry)
+    process.exit(0)
+  }
+
+  if (subcommand === 'inspect') {
+    if (!selector) {
+      process.stderr.write(
+        'Usage: multi-agent-sdlc extensions inspect <pack> [--target <dir>] [--json]\n',
+      )
+      process.exit(2)
+    }
+    const pack = resolveExtensionPack(targetDir, selector)
+    const output = { dir: pack.relativeDir, manifest: pack.manifest }
+    if (json) process.stdout.write(`${JSON.stringify(output, null, 2)}\n`)
+    else process.stdout.write(`${JSON.stringify(output, null, 2)}\n`)
+    process.exit(0)
+  }
+
+  if (subcommand === 'enable' || subcommand === 'disable') {
+    if (!selector) {
+      process.stderr.write(
+        `Usage: multi-agent-sdlc extensions ${subcommand} <pack> [--target <dir>] [--json]\n`,
+      )
+      process.exit(2)
+    }
+    const result = setExtensionPackEnabled(targetDir, selector, subcommand === 'enable')
+    if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+    else
+      process.stdout.write(
+        `${subcommand === 'enable' ? 'Enabled' : 'Disabled'} ${result.pack}${result.changed ? '' : ' (unchanged)'}\n`,
+      )
+    process.exit(0)
+  }
+
+  if (subcommand === 'validate') {
+    const result = validateConfiguredExtensionPacks(targetDir, { runValidators })
+    if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+    else
+      printReport('Extension validation', {
+        valid: result.results
+          .filter((item) => item.errors.length === 0)
+          .map((item) => item.pack.relativeDir),
+        errors: result.results.flatMap((item) => item.errors),
+      })
+    const failures = result.results.reduce((count, item) => count + item.errors.length, 0)
+    process.exit(failures > 0 ? 1 : 0)
+  }
+
+  process.stderr.write(`Usage:
+  multi-agent-sdlc extensions list [--target <dir>] [--json]
+  multi-agent-sdlc extensions inspect <pack> [--target <dir>] [--json]
+  multi-agent-sdlc extensions enable <pack> [--target <dir>] [--json]
+  multi-agent-sdlc extensions disable <pack> [--target <dir>] [--json]
+  multi-agent-sdlc extensions validate [--target <dir>] [--run-validators] [--json]
+`)
+  process.exit(2)
+}
+
 function printOnboardingPrompt(targetDir) {
   process.stdout.write(`Use the multi-agent-sdlc assisted onboarding guide:\n`)
   process.stdout.write(
@@ -94,6 +184,15 @@ function main() {
   const [command, ...rest] = process.argv.slice(2)
   const targetDir = resolve(getFlag(rest, '--target', process.cwd()))
 
+  if (command === 'extensions') {
+    try {
+      handleExtensions(rest, targetDir)
+    } catch (error) {
+      process.stderr.write(`${error.message}\n`)
+      process.exit(1)
+    }
+  }
+
   if (command === 'init') {
     const report = init(packageRoot, targetDir)
     printReport(`Installed framework into ${targetDir}`, report)
@@ -108,8 +207,15 @@ function main() {
 
   if (command === 'doctor') {
     const report = doctor(packageRoot, targetDir)
-    printReport(`Framework status for ${targetDir}`, report)
-    const drifted = report.modified.length + report.missing.length + report.notInstalled.length
+    if (rest.includes('--json')) process.stdout.write(`${JSON.stringify(report, null, 2)}\n`)
+    else printReport(`Framework status for ${targetDir}`, report)
+    const drifted =
+      report.modified.length +
+      report.missing.length +
+      report.notInstalled.length +
+      (report.extensionEnabledMissing?.length ?? 0) +
+      (report.extensionEnabledInvalid?.length ?? 0) +
+      (report.extensionDuplicateIds?.length ?? 0)
     process.exit(drifted > 0 ? 1 : 0)
   }
 
@@ -154,7 +260,7 @@ function main() {
   }
 
   process.stderr.write(
-    'Usage: multi-agent-sdlc <init|sync|doctor|doctor-env|onboarding-prompt|update-prompt|release-plan|mark-merged> [path] [--target <dir>] [--json]\n',
+    'Usage: multi-agent-sdlc <init|sync|doctor|doctor-env|extensions|onboarding-prompt|update-prompt|release-plan|mark-merged> [path] [--target <dir>] [--json]\n',
   )
   process.exit(2)
 }

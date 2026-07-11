@@ -12,6 +12,8 @@ Extension packs are repository-level overlays for the core multi-agent SDLC proc
 
 ## Repository configuration
 
+`agent-workflow.config.json` is the canonical source for extension activation. Enabled pack entries are deterministic, slash-normalized paths relative to the adopting repository root:
+
 ```json
 {
   "extensions": {
@@ -20,16 +22,20 @@ Extension packs are repository-level overlays for the core multi-agent SDLC proc
 }
 ```
 
+Discovery is automatic; activation is explicit. `init`, `sync`, `doctor`, and the extension helper commands scan `extensions/` and `contrib/` every time they run, so a repo-local pack committed after initial setup is visible without rerunning `init`. Newly shipped framework packs may be discovered by `doctor`/`extensions list`, but they are not enabled unless `agent-workflow.config.json` is changed through review or the deterministic helper.
+
 Run validation with:
 
 ```bash
 node scripts/validate-extension-packs.mjs
+node bin/cli.mjs extensions validate --target /path/to/project
 ```
 
-If a pack declares executable validators, run them too:
+If a pack declares executable validators, run them explicitly:
 
 ```bash
 node scripts/validate-extension-packs.mjs --run-validators
+node bin/cli.mjs extensions validate --target /path/to/project --run-validators
 ```
 
 ## Pack layout
@@ -126,23 +132,34 @@ Enable both when a project wants the full evidence and handoff operating model:
 
 ## Helper commands
 
-List discovered packs:
+Use the main framework CLI in adopting projects:
+
+```bash
+node bin/cli.mjs extensions list --target /path/to/project
+node bin/cli.mjs extensions inspect extensions/my-engineering-approach --target /path/to/project
+node bin/cli.mjs extensions enable extensions/my-engineering-approach --target /path/to/project
+node bin/cli.mjs extensions disable extensions/my-engineering-approach --target /path/to/project
+node bin/cli.mjs extensions validate --target /path/to/project
+```
+
+`enable` and `disable` are idempotent and preserve unrelated `agent-workflow.config.json` fields while canonicalizing `extensions.enabledPacks`. Exact relative paths are preferred. Manifest `id` aliases are accepted only when unique; duplicate ids fail with candidate paths rather than guessing.
+
+Repository-local development helpers remain available:
 
 ```bash
 node scripts/extension-pack.mjs list
-```
-
-Inspect one pack:
-
-```bash
 node scripts/extension-pack.mjs inspect extensions/my-engineering-approach
-```
-
-Scaffold a pack:
-
-```bash
 node scripts/extension-pack.mjs scaffold extensions/my-engineering-approach my-engineering-approach
 ```
+
+Recommended adoption flow:
+
+1. discover available packs;
+2. inspect the pack contract;
+3. enable deterministically;
+4. validate;
+5. commit `agent-workflow.config.json` and any repo-local packs;
+6. later discover new repo-local or framework-shipped packs without automatic activation.
 
 ## Safety and review
 
