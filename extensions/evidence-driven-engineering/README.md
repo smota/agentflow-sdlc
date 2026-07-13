@@ -1,6 +1,6 @@
 # Evidence-driven engineering
 
-This extension pack adds reusable engineering discipline to the core multi-agent SDLC workflow. It is intentionally stack-neutral: it defines how a team analyzes work, records decisions, validates outcomes, and prepares reviewable PRs without naming any application framework, cloud provider, database, or product domain.
+This extension pack adds reusable engineering discipline to the core AgentFlow SDLC workflow. It is intentionally stack-neutral: it defines how a team analyzes work, records decisions, validates outcomes, and prepares reviewable PRs without naming any application framework, cloud provider, database, or product domain.
 
 ## Use this pack when
 

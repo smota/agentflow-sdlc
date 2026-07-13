@@ -1,6 +1,6 @@
 # Extension Packs
 
-Extension packs are repository-level overlays for the core multi-agent SDLC process. The core framework stays neutral: it owns phase order, issue/PR governance, role-pass evidence, execution-target attribution, and safety/review gates. A pack adds opinionated engineering guidance, tools, templates, required skills, harness capabilities, and validators without forking the process framework.
+Extension packs are repository-level overlays for the core AgentFlow SDLC process. The core framework stays neutral: it owns phase order, issue/PR governance, role-pass evidence, execution-target attribution, and safety/review gates. A pack adds opinionated engineering guidance, tools, templates, required skills, harness capabilities, and validators without forking the process framework.
 
 ## Design goals
 

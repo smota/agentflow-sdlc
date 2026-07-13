@@ -1,6 +1,6 @@
 # Framework documentation index
 
-This index maps the main concepts, defaults, roles, skills/workflows, templates, hooks, validators, and configuration surfaces in `multi-agent-sdlc`.
+This index maps the main concepts, defaults, roles, skills/workflows, templates, hooks, validators, and configuration surfaces in `agentflow-sdlc`.
 
 ## Start here
 
@@ -24,7 +24,7 @@ This index maps the main concepts, defaults, roles, skills/workflows, templates,
 
 ## What it is
 
-`multi-agent-sdlc` is an opinionated agent-assisted SDLC framework. It installs process guardrails around an existing project instead of creating a new app. The default model is a single agent moving through explicit roles; optional routing can hand a role to another supported agent CLI.
+**AgentFlow SDLC** is an opinionated agent-assisted SDLC framework. It installs process guardrails around an existing project instead of creating a new app. The default model is a single agent moving through explicit roles; optional routing can hand a role to another supported agent CLI.
 
 ## Roles and phases
 

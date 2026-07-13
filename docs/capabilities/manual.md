@@ -1,6 +1,6 @@
 # Human/manual capability adapter
 
-This adapter describes how portable `multi-agent-sdlc` capabilities may be resolved when the selected execution target is `human` or when a required capability needs human approval.
+This adapter describes how portable `agentflow-sdlc` capabilities may be resolved when the selected execution target is `human` or when a required capability needs human approval.
 
 ## Capability matrix
 

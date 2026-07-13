@@ -1,6 +1,6 @@
 # Deterministic assisted update proposal
 
-This review covers the update path for projects that already use `multi-agent-sdlc`. The current workflow works, but the update plan is still too dependent on an LLM reading prose instructions and manually classifying update state. The target is an onboarding-like flow where deterministic CLI output drives the plan even when the command is invoked from an LLM session.
+This review covers the update path for projects that already use **AgentFlow SDLC**. The current workflow works, but the update plan is still too dependent on an LLM reading prose instructions and manually classifying update state. The target is an onboarding-like flow where deterministic CLI output drives the plan even when the command is invoked from an LLM session.
 
 ## Current update flow
 
@@ -89,7 +89,7 @@ The output should be stable enough for tests and PR evidence:
   "recommendedCommands": [
     {
       "phase": "apply-approved-fast-forwards",
-      "command": "node /path/to/multi-agent-sdlc/bin/cli.mjs sync --target /path/to/project",
+      "command": "node /path/to/agentflow-sdlc/bin/cli.mjs sync --target /path/to/project",
       "requiresApproval": true,
       "writes": true
     }

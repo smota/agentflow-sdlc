@@ -1,6 +1,6 @@
 # Assisted update
 
-Assisted update is the guided workflow for a project that already adopted `multi-agent-sdlc` and wants to update its installed framework files from a known `agent-framework-lock.json` state to a newer framework checkout/version.
+Assisted update is the guided workflow for a project that already adopted **AgentFlow SDLC** and wants to update its installed framework files from a known `agent-framework-lock.json` state to a newer framework checkout/version.
 
 Use assisted onboarding for first-time adoption. Use this guide when the target project already has framework files, a lockfile, or earlier hand-merged framework content.
 
@@ -24,12 +24,12 @@ Low-level sync semantics stay deterministic:
 ## Copy-paste agent handoff
 
 ```text
-Use the multi-agent-sdlc assisted update guide:
-https://github.com/smota/multi-agent-sdlc/blob/main/docs/assisted-update.md
+Use the AgentFlow SDLC assisted update guide:
+https://github.com/smota/agentflow-sdlc/blob/main/docs/assisted-update.md
 
 Apply it to this already-adopted project: <target-project-path>
 
-Start read-only. Inspect agent-framework-lock.json, existing agent instructions, project docs, and local workflow configuration. Run read-only environment/framework checks. Compare the installed framework state with this source framework checkout/version. Classify every proposed update as safe fast-forward, conflict, seed-once skip, hand-merged, removed/missing, or validation blocker. Present an update plan and ask for approval before running sync, editing files, marking hand merges, committing, pushing, or opening a PR. Preserve project-owned conventions and record update evidence in the PR.
+Start read-only. Inspect agent-framework-lock.json, existing agent instructions, project docs, and local workflow configuration. Run read-only environment/framework checks, including `migrate-rename` check mode. Compare the installed framework state with this source framework checkout/version. Classify every proposed update as safe fast-forward, rename migration, conflict, seed-once skip, hand-merged, removed/missing, or validation blocker. Present an update plan and ask for approval before running `migrate-rename --write`, sync, editing files, marking hand merges, committing, pushing, or opening a PR. Preserve project-owned conventions and record update evidence in the PR.
 ```
 
 Prefer command output? Print the same update prompt locally:
@@ -46,13 +46,24 @@ Read-only checks:
 
 ```bash
 test -f /path/to/project/agent-framework-lock.json && echo "lockfile found"
-node /path/to/multi-agent-sdlc/bin/cli.mjs doctor --target /path/to/project
-node /path/to/multi-agent-sdlc/bin/cli.mjs doctor-env --target /path/to/project
+node /path/to/agentflow-sdlc/bin/cli.mjs doctor --target /path/to/project
+node /path/to/agentflow-sdlc/bin/cli.mjs doctor-env --target /path/to/project
 ```
 
 If the project has no lockfile and no recognizable framework files, switch to [`docs/assisted-onboarding.md`](assisted-onboarding.md). If the project has framework files but no lockfile, treat the update as a recovery/migration and require explicit operator approval before deciding between `init`, manual merge, or follow-up work.
 
-### 2. Record installed and source framework state
+### 2. Run the AgentFlow SDLC rename migration when needed
+
+Projects adopted before the product rename may still contain old framework repository, command, or docs references in framework-managed files. Check first, then write only after approval:
+
+```bash
+node /path/to/agentflow-sdlc/bin/cli.mjs migrate-rename --target /path/to/project
+node /path/to/agentflow-sdlc/bin/cli.mjs migrate-rename --target /path/to/project --write
+```
+
+`migrate-rename` updates known framework-owned/adopter guidance files from the old repository and command slug to `agentflow-sdlc`. It is intentionally narrow: it does not rewrite arbitrary project product text or files outside its deterministic allowlist.
+
+### 3. Record installed and source framework state
 
 Inspect and summarize:
 
@@ -62,12 +73,12 @@ Inspect and summarize:
 - target `agent-framework-lock.json` presence and relevant metadata;
 - current target branch and git status;
 - existing workflow configuration in `agent-workflow.config.json`, especially `extensions.enabledPacks`;
-- extension discovery/validation output from `node /path/to/multi-agent-sdlc/bin/cli.mjs extensions list --target /path/to/project` and `extensions validate`;
+- extension discovery/validation output from `node /path/to/agentflow-sdlc/bin/cli.mjs extensions list --target /path/to/project` and `extensions validate`;
 - project-specific instructions in `AGENTS.md`, adapter files, and `docs/stack-conventions.md`.
 
 Do not paste secrets or private local-only data into issues, PRs, or handover comments.
 
-### 3. Classify update results
+### 4. Classify update results
 
 Use `doctor` output and, after approval, `sync` output with these classifications:
 
@@ -82,7 +93,7 @@ Use `doctor` output and, after approval, `sync` output with these classification
 | `extension discovered-disabled`     | extension pack is available under `extensions/` or `contrib/` but not enabled | present as an explicit adoption choice; do not auto-enable                  |
 | `extension enabled-missing/invalid` | configured pack is missing, malformed, has duplicate ids, or fails validation | stop or create follow-up issue before claiming update readiness             |
 
-### 4. Propose the update plan
+### 5. Propose the update plan
 
 Before writes, present a plan containing:
 
@@ -99,12 +110,12 @@ Before writes, present a plan containing:
 
 Ask for explicit approval before running `sync` or editing any file.
 
-### 5. Apply approved sync
+### 6. Apply approved sync
 
 After approval, run:
 
 ```bash
-node /path/to/multi-agent-sdlc/bin/cli.mjs sync --target /path/to/project
+node /path/to/agentflow-sdlc/bin/cli.mjs sync --target /path/to/project
 ```
 
 If conflicts are reported, inspect each conflict and choose one of:
@@ -114,25 +125,25 @@ If conflicts are reported, inspect each conflict and choose one of:
 - if the file should remain intentionally hand-merged at a framework path, record it:
 
 ```bash
-node /path/to/multi-agent-sdlc/bin/cli.mjs mark-merged <path> --target /path/to/project
+node /path/to/agentflow-sdlc/bin/cli.mjs mark-merged <path> --target /path/to/project
 ```
 
 Run `doctor` again after conflict handling.
 
-### 6. Validate the updated project
+### 7. Validate the updated project
 
 Minimum validation:
 
 ```bash
-node /path/to/multi-agent-sdlc/bin/cli.mjs doctor --target /path/to/project
-node /path/to/multi-agent-sdlc/bin/cli.mjs doctor-env --target /path/to/project
+node /path/to/agentflow-sdlc/bin/cli.mjs doctor --target /path/to/project
+node /path/to/agentflow-sdlc/bin/cli.mjs doctor-env --target /path/to/project
 ```
 
 Then run the consuming project's configured CI-equivalent commands from `agent-workflow.config.json` and `docs/stack-conventions.md`, for example lint, test, typecheck, build, workflow validators, or project-specific smoke tests.
 
 If a validation failure is expected or out of scope, record it with a follow-up issue rather than hiding it in a TODO.
 
-### 7. Prepare update PR evidence
+### 8. Prepare update PR evidence
 
 The update PR body should include:
 

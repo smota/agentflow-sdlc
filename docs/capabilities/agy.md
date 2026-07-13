@@ -1,6 +1,6 @@
 # Agy capability adapter
 
-This adapter describes how portable `multi-agent-sdlc` capabilities may be resolved when the selected execution target is `agy-cli` or `agy-session`.
+This adapter describes how portable `agentflow-sdlc` capabilities may be resolved when the selected execution target is `agy-cli` or `agy-session`.
 
 ## Capability matrix
 

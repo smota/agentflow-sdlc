@@ -1,6 +1,6 @@
 # Default skills and upstream sources
 
-This page documents the default and recommended skills/workflows used with `multi-agent-sdlc`, where they come from, and how consuming projects should track local changes. Skills are local workflow capabilities: they make agent behavior repeatable, but they do not replace `AGENTS.md`, `docs/agent-workflow.md`, issue comments, commits, PR bodies, or validators as durable evidence.
+This page documents the default and recommended skills/workflows used with **AgentFlow SDLC**, where they come from, and how consuming projects should track local changes. Skills are local workflow capabilities: they make agent behavior repeatable, but they do not replace `AGENTS.md`, `docs/agent-workflow.md`, issue comments, commits, PR bodies, or validators as durable evidence.
 
 Skills should request portable advanced capabilities such as `plan-before-edit`, `workflow-orchestration`, `bounded-loop`, and `delegated-subagents` instead of hard-coding platform-specific mechanisms such as Claude subagents, Codex profiles, or Pi package commands. See [`capabilities.md`](capabilities.md) for the capability vocabulary and resolver model.
 
@@ -15,10 +15,10 @@ Documenting skills makes agent-assisted work easier to audit:
 
 ## Framework-owned skills
 
-| Skill / workflow | Purpose                                                                                         | When to use                                                                                   | Local source                                                                        | Upstream repository                         | Website / docs                                |
-| ---------------- | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------- | --------------------------------------------- |
-| `orchestrate`    | Run one issue through the role-based SDLC phases, create evidence, commit, push, and open a PR. | Issue implementation, chores, fixes, and workstreams that need the formal role-pass workflow. | [`agents/workflows/orchestrate/SKILL.md`](../agents/workflows/orchestrate/SKILL.md) | <https://github.com/smota/multi-agent-sdlc> | [`docs/agent-workflow.md`](agent-workflow.md) |
-| `scan`           | Perform broad-context scans that feed planning, review, or security evidence.                   | Architecture, security, risk, or cross-cutting discovery before implementation or review.     | [`agents/workflows/scan/SKILL.md`](../agents/workflows/scan/SKILL.md)               | <https://github.com/smota/multi-agent-sdlc> | [`docs/index.md`](index.md)                   |
+| Skill / workflow | Purpose                                                                                         | When to use                                                                                   | Local source                                                                        | Upstream repository                       | Website / docs                                |
+| ---------------- | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ----------------------------------------- | --------------------------------------------- |
+| `orchestrate`    | Run one issue through the role-based SDLC phases, create evidence, commit, push, and open a PR. | Issue implementation, chores, fixes, and workstreams that need the formal role-pass workflow. | [`agents/workflows/orchestrate/SKILL.md`](../agents/workflows/orchestrate/SKILL.md) | <https://github.com/smota/agentflow-sdlc> | [`docs/agent-workflow.md`](agent-workflow.md) |
+| `scan`           | Perform broad-context scans that feed planning, review, or security evidence.                   | Architecture, security, risk, or cross-cutting discovery before implementation or review.     | [`agents/workflows/scan/SKILL.md`](../agents/workflows/scan/SKILL.md)               | <https://github.com/smota/agentflow-sdlc> | [`docs/index.md`](index.md)                   |
 
 ## Capability-aware skill authoring
 
@@ -50,12 +50,12 @@ A skill may be intentionally platform-specific, but it must say so explicitly in
 
 These are not vendored by this repository, but they are common local companions for teams that use this framework.
 
-| Skill / tool           | Purpose                                                                                          | Upstream repository                         | Website / docs                                               | Notes                                                                                  |
-| ---------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------- | ------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
-| `ccpm`                 | Spec-driven project management using PRDs, epics, GitHub Issues, worktrees, and agent execution. | <https://github.com/automazeio/ccpm>        | <https://github.com/automazeio/ccpm>                         | Useful reference source for issue/epic management patterns.                            |
-| Agent CLI routing docs | Explain how `agy`, `codex`, `claude`, and `pi` hand work off when project routing selects them.  | <https://github.com/smota/multi-agent-sdlc> | [`docs/agent-routing.md`](agent-routing.md)                  | Project-configured; validate with `node scripts/validate-role-routing.mjs`.            |
-| Vibium                 | Default browser QA skill/tool for optional `qa-expert` exploratory sessions.                     | <https://github.com/VibiumDev/vibium>       | <https://vibium.com>                                         | Opinionated default for `qa-expert`; projects may override with a documented QA stack. |
-| Project sync CLI       | Installs and syncs hooks, docs, validators, templates, and seed-once files.                      | <https://github.com/smota/multi-agent-sdlc> | [`README.md`](../README.md#install--initialize-in-a-project) | Run `node bin/cli.mjs init`, `sync`, `doctor`, or `mark-merged`.                       |
+| Skill / tool           | Purpose                                                                                          | Upstream repository                       | Website / docs                                               | Notes                                                                                  |
+| ---------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------- | ------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| `ccpm`                 | Spec-driven project management using PRDs, epics, GitHub Issues, worktrees, and agent execution. | <https://github.com/automazeio/ccpm>      | <https://github.com/automazeio/ccpm>                         | Useful reference source for issue/epic management patterns.                            |
+| Agent CLI routing docs | Explain how `agy`, `codex`, `claude`, and `pi` hand work off when project routing selects them.  | <https://github.com/smota/agentflow-sdlc> | [`docs/agent-routing.md`](agent-routing.md)                  | Project-configured; validate with `node scripts/validate-role-routing.mjs`.            |
+| Vibium                 | Default browser QA skill/tool for optional `qa-expert` exploratory sessions.                     | <https://github.com/VibiumDev/vibium>     | <https://vibium.com>                                         | Opinionated default for `qa-expert`; projects may override with a documented QA stack. |
+| Project sync CLI       | Installs and syncs hooks, docs, validators, templates, and seed-once files.                      | <https://github.com/smota/agentflow-sdlc> | [`README.md`](../README.md#install--initialize-in-a-project) | Run `node bin/cli.mjs init`, `sync`, `doctor`, or `mark-merged`.                       |
 
 ## Original CCPM-sourced skill surfaces
 
@@ -73,7 +73,7 @@ The upstream CCPM repository publishes one `ccpm` skill with phase references an
 | Next                 | Identify the next priority item.                                                       | [`references/scripts/next.sh`](https://github.com/automazeio/ccpm/blob/main/skill/ccpm/references/scripts/next.sh)       |
 | Blocked              | Identify blocked work.                                                                 | [`references/scripts/blocked.sh`](https://github.com/automazeio/ccpm/blob/main/skill/ccpm/references/scripts/blocked.sh) |
 
-Do not imply these nine surfaces are vendored by `multi-agent-sdlc` unless a consuming project actually installs or copies them. Treat them as CCPM-sourced references and record any local adoption in project documentation.
+Do not imply these nine surfaces are vendored by `agentflow-sdlc` unless a consuming project actually installs or copies them. Treat them as CCPM-sourced references and record any local adoption in project documentation.
 
 ## Local management checklist
 
