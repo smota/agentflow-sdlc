@@ -1,6 +1,6 @@
 # Codex CLI capability adapter
 
-This adapter describes how portable `multi-agent-sdlc` capabilities may be resolved when the selected execution target is `codex-cli` or `provider-api`.
+This adapter describes how portable `agentflow-sdlc` capabilities may be resolved when the selected execution target is `codex-cli` or `provider-api`.
 
 ## Capability matrix
 

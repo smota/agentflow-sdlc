@@ -15,7 +15,7 @@ The safe default is **single-agent**, multi-role execution: one executor moves t
 7. **Record merge expectations** — human/operator merge by default; document any explicit auto-merge command.
 8. **Enable integration lifecycle automation** — install/keep `.github/workflows/integration-lifecycle.yml` so issues close when PRs merge into the configured integration branch.
 9. **Choose release versioning** — keep default `main.minor.fix` or configure SemVer, CalVer, custom tags, package version source, and release approval expectations.
-10. **Validate environment** — run `multi-agent-sdlc doctor-env` to check tools and install guidance without installing anything.
+10. **Validate environment** — run `agentflow-sdlc doctor-env` to check tools and install guidance without installing anything.
 11. **Validate setup** — run the validators before treating the project as configured.
 
 ## Minimal single-agent config
@@ -175,8 +175,8 @@ See [`project-config.md`](project-config.md) for the full config contract and [`
 Run this before the first issue to make missing tools explicit without changing the machine:
 
 ```bash
-node /path/to/multi-agent-sdlc/bin/cli.mjs doctor-env --target /path/to/project
-node /path/to/multi-agent-sdlc/bin/cli.mjs doctor-env --target /path/to/project --json
+node /path/to/agentflow-sdlc/bin/cli.mjs doctor-env --target /path/to/project
+node /path/to/agentflow-sdlc/bin/cli.mjs doctor-env --target /path/to/project --json
 ```
 
 `doctor-env` is read-only. It checks required tools, configured optional agent/runtime availability commands, and prints installation options when something is missing. It never runs install commands, edits shell profiles, authenticates GitHub, or installs packages.

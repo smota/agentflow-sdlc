@@ -50,7 +50,8 @@ describe('CLI prompt helpers', () => {
     expect(output).toContain('tmp-app')
     expect(output).toContain('Start read-only')
     expect(output).toContain('agent-framework-lock.json')
-    expect(output).toContain('ask for approval before running sync')
+    expect(output).toContain('migrate-rename read-only')
+    expect(output).toContain('ask for approval before running migrate-rename --write, sync')
   })
 })
 

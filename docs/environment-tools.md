@@ -1,6 +1,6 @@
 # Environment tools
 
-Use this guide to understand the local tools that make `multi-agent-sdlc` work well. Start with read-only validation and then choose what to install yourself. The framework must propose installation options, not execute them automatically.
+Use this guide to understand the local tools that make `agentflow-sdlc` work well. Start with read-only validation and then choose what to install yourself. The framework must propose installation options, not execute them automatically.
 
 ## Validate first
 

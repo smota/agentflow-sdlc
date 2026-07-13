@@ -1,4 +1,4 @@
-# multi-agent-sdlc
+# AgentFlow SDLC
 
 Opinionated SDLC framework for reusable agent-assisted delivery: role-based workflows with optional multi-agent coordination, PR/issue contracts, git hooks, validators, and locally managed skills/tooling for optimized project setup.
 
@@ -6,7 +6,7 @@ This repository is both the distributable framework and a live example of the wo
 
 ## What this is
 
-`multi-agent-sdlc` is a **process layer** for software projects that use AI coding agents. It does not generate an application or dictate your tech stack. Instead, it installs a repeatable delivery system around your existing project:
+**AgentFlow SDLC** is a **process layer** for software projects that use AI coding agents. It does not generate an application or dictate your tech stack. Instead, it installs a repeatable delivery system around your existing project:
 
 - role-based phases from analysis through PR readiness;
 - default single-agent execution with optional role routing to other agent CLIs;
@@ -25,8 +25,8 @@ Adding this to an existing project is easiest with the assisted onboarding guide
 Copy this prompt into your agent:
 
 ```text
-Use the multi-agent-sdlc assisted onboarding guide:
-https://github.com/smota/multi-agent-sdlc/blob/main/docs/assisted-onboarding.md
+Use the AgentFlow SDLC assisted onboarding guide:
+https://github.com/smota/agentflow-sdlc/blob/main/docs/assisted-onboarding.md
 
 Apply it to this existing project. First inspect existing agent instructions and project docs. Validate the environment read-only. Ask me to choose agents, execution mode, branch strategy, validation commands, and GitHub automation. Propose install/setup commands but do not execute them without explicit approval. Preserve or merge existing instructions instead of overwriting them.
 ```
@@ -152,7 +152,7 @@ The canonical `Contribute` section uses existing workflow templates instead of c
 Install the skill-shaped workflow content using your preferred skill mechanism. For example, when using a skill installer:
 
 ```bash
-npx skills add https://github.com/smota/multi-agent-sdlc
+npx skills add https://github.com/smota/agentflow-sdlc
 ```
 
 This makes the workflow skills available to supported agents. The exact destination depends on the consuming agent/tooling setup.
@@ -162,8 +162,8 @@ This makes the workflow skills available to supported agents. The exact destinat
 From a checkout of this repository, initialize another project:
 
 ```bash
-git clone https://github.com/smota/multi-agent-sdlc.git
-cd multi-agent-sdlc
+git clone https://github.com/smota/agentflow-sdlc.git
+cd agentflow-sdlc
 pnpm install
 node bin/cli.mjs init --target /path/to/your-project
 ```
@@ -228,19 +228,26 @@ node bin/cli.mjs doctor-env --target /path/to/your-project --json
 For already-adopted projects, start with the assisted update workflow so the agent/operator inspects the lockfile, classifies conflicts, and asks for approval before writing:
 
 ```bash
-node /path/to/multi-agent-sdlc/bin/cli.mjs update-prompt --target /path/to/your-project
+node /path/to/agentflow-sdlc/bin/cli.mjs update-prompt --target /path/to/your-project
+```
+
+If the adopting project predates the AgentFlow SDLC rename, check and apply the narrow rename migration before sync:
+
+```bash
+node /path/to/agentflow-sdlc/bin/cli.mjs migrate-rename --target /path/to/your-project
+node /path/to/agentflow-sdlc/bin/cli.mjs migrate-rename --target /path/to/your-project --write
 ```
 
 Run sync whenever this framework changes and the update plan is approved:
 
 ```bash
-node /path/to/multi-agent-sdlc/bin/cli.mjs sync --target /path/to/your-project
+node /path/to/agentflow-sdlc/bin/cli.mjs sync --target /path/to/your-project
 ```
 
 Inspect drift without writing files:
 
 ```bash
-node /path/to/multi-agent-sdlc/bin/cli.mjs doctor --target /path/to/your-project
+node /path/to/agentflow-sdlc/bin/cli.mjs doctor --target /path/to/your-project
 ```
 
 `sync` updates framework files only when they are unchanged since the last install/sync. Local project edits are reported as conflicts instead of being overwritten. `sync` also seeds missing seed-once project files such as `AGENTS.md` and `docs/stack-conventions.md` without touching them after they exist.
@@ -248,7 +255,7 @@ node /path/to/multi-agent-sdlc/bin/cli.mjs doctor --target /path/to/your-project
 If you hand-merge framework adapter content into a project-owned file at a framework path, do not register that file as a normal tracked hash. Mark it as permanently hand-merged instead:
 
 ```bash
-node /path/to/multi-agent-sdlc/bin/cli.mjs mark-merged CLAUDE.md --target /path/to/your-project
+node /path/to/agentflow-sdlc/bin/cli.mjs mark-merged CLAUDE.md --target /path/to/your-project
 ```
 
 Marked files show separately in `sync`/`doctor` output and are never fast-forwarded over local additions.

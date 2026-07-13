@@ -1,6 +1,6 @@
 # Pi capability adapter
 
-This adapter describes how portable `multi-agent-sdlc` capabilities may be resolved when the selected execution target is `pi-parent`, `pi-subagent`, `pi-session`, or `pi-subagent-model`.
+This adapter describes how portable `agentflow-sdlc` capabilities may be resolved when the selected execution target is `pi-parent`, `pi-subagent`, `pi-session`, or `pi-subagent-model`.
 
 ## Capability matrix
 

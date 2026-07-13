@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -166,7 +165,7 @@ function ensureLabel(repo, label) {
       '--color',
       '5319e7',
       '--description',
-      'Managed by multi-agent-sdlc integration lifecycle automation',
+      'Managed by agentflow-sdlc integration lifecycle automation',
     ])
   } catch {
     // Existing labels are fine; continue so adopting repositories do not need manual setup.
@@ -196,4 +195,13 @@ function main() {
   if (args.apply && !plan.skipped) applyPlan(plan, args.repo ?? process.env.GITHUB_REPOSITORY)
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) main()
+const invokedPath = process.argv[1]?.replace(/\\/g, '/')
+const invokedDirectly = invokedPath?.endsWith('/scripts/integration-lifecycle.mjs')
+if (
+  !process.env.VITEST_WORKER_ID &&
+  process.env.npm_lifecycle_event !== 'test' &&
+  invokedDirectly &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
+  main()
+}
