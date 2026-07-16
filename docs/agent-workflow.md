@@ -369,10 +369,7 @@ Role-Pass: developer
 An orchestration call defaults to ending with committed work, a pushed branch, and an opened pull
 request. For one issue, the terminal sequence is: complete required phases, run validation, update
 workflow-status and handover comments, commit issue-scoped work, push the branch, open the PR, then
-verify the PR in GitHub. For multiple issue IDs in one orchestration request, process the IDs in
-order and defer the final PR until the last requested issue is complete; include one `Implements #...`
-line per implemented issue when the PR targets the integration branch, or `Closes #...` only when
-it targets the repository default/trunk branch and should rely on GitHub native auto-close semantics.
+verify the PR in GitHub. For multiple issue IDs in one orchestration request, this is framed as an **Architectural Sprint**. The Architect phase must evaluate all batched issues *collectively* to produce a unified technical design (Solution Design Document) before implementation begins on any single issue. Process the IDs in order and defer the final PR until the last requested issue is complete; include one `Implements #...` line per implemented issue when the PR targets the integration branch, or `Closes #...` only when it targets the repository default/trunk branch and should rely on GitHub native auto-close semantics.
 
 Merging is separate from PR creation. By default, the human/operator merges the PR. The orchestrator
 must not merge unless explicitly instructed to do so. When auto-merge is explicitly requested, use
