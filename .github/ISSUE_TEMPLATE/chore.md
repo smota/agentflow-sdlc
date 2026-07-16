@@ -6,9 +6,19 @@ labels: dx
 assignees: ''
 ---
 
-## Problem statement
+## Background & Problem Statement
 
 Describe the repository, process, documentation, or tooling problem.
+
+## Proposed Solution
+
+## Requirements
+
+- [ ]
+
+## Technical Design
+
+
 
 ## Scope
 

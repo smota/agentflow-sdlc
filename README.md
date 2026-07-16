@@ -1,4 +1,4 @@
-# multi-agent-sdlc
+# AgentFlow SDLC
 
 Opinionated SDLC framework for reusable agent-assisted delivery: role-based workflows with optional multi-agent coordination, PR/issue contracts, git hooks, validators, and locally managed skills/tooling for optimized project setup.
 
@@ -6,13 +6,14 @@ This repository is both the distributable framework and a live example of the wo
 
 ## What this is
 
-`multi-agent-sdlc` is a **process layer** for software projects that use AI coding agents. It does not generate an application or dictate your tech stack. Instead, it installs a repeatable delivery system around your existing project:
+**AgentFlow SDLC** is a **process layer** for software projects that use AI coding agents. It does not generate an application or dictate your tech stack. Instead, it installs a repeatable delivery system around your existing project:
 
 - role-based phases from analysis through PR readiness;
 - default single-agent execution with optional role routing to other agent CLIs;
 - deterministic issue, branch, commit, and PR contracts;
 - local hooks and validators that catch workflow drift early;
 - reusable templates for role passes, workflow status, handovers, and PR bodies;
+- optional extension packs for reusable engineering approaches and handoff governance;
 - project-local configuration for stack-specific commands, bounded work, routing, and conventions.
 
 Use it when you want agent-assisted work to be reviewable, auditable, and easy to resume instead of being hidden in one chat session.
@@ -24,8 +25,8 @@ Adding this to an existing project is easiest with the assisted onboarding guide
 Copy this prompt into your agent:
 
 ```text
-Use the multi-agent-sdlc assisted onboarding guide:
-https://github.com/smota/multi-agent-sdlc/blob/main/docs/assisted-onboarding.md
+Use the AgentFlow SDLC assisted onboarding guide:
+https://github.com/smota/agentflow-sdlc/blob/main/docs/assisted-onboarding.md
 
 Apply it to this existing project. First inspect existing agent instructions and project docs. Validate the environment read-only. Ask me to choose agents, execution mode, branch strategy, validation commands, and GitHub automation. Propose install/setup commands but do not execute them without explicit approval. Preserve or merge existing instructions instead of overwriting them.
 ```
@@ -57,6 +58,20 @@ This framework is for teams or solo maintainers who want agentic development to 
 
 The framework is intentionally structured as a control system for agent-assisted delivery, not as ceremony for its own sake.
 
+### Core Tenets Matrix
+
+| Tenet | Problem Addressed | AgentFlow Solution |
+| --- | --- | --- |
+| **Traceability** | Context loss across ephemeral chat sessions. | Durable state in GitHub issues, PR manifests, and commits. |
+| **Predictability** | Agents skipping steps or inventing undocumented processes. | A machine-checkable, role-based phase state machine. |
+| **Efficiency** | Wasted token context, API calls, redundant data transfer. | Single-agent default; Dual-Write handoffs & Architect Sprints. |
+| **Compliance** | Opaque code generation without clear boundaries or review. | Built-in review rules, PR manifests, and validation hooks. |
+| **Parity** | Agents and humans following different contribution rules. | Exact same public contribution contract for humans and agents. |
+
+### Human and Agent Parity
+
+A core rule of AgentFlow SDLC is **Human/Agent Parity**. Humans and agents use the exact same public contribution contract. Agents do not get a "shortcut" past review gates or phase completions, and humans do not skip workflow-status updates. This parity ensures all work is equally verifiable, auditable, and seamlessly interchangeable regardless of the executor.
+
 - **Roles reduce ambiguity.** Analyst, architect, developer, tester, reviewer, tech writer, and PR-readiness passes each have a small job. That keeps the agent from mixing product decisions, implementation, validation, and review into one opaque step.
 - **Single-agent execution is the default.** One executor carrying context end to end reduces coordination overhead and avoids recreating a noisy multi-agent process for routine work.
 - **Optional routing supports specialization.** Projects can route roles to `agy`, `codex`, `claude`, or `pi` when it helps, but owners, fallbacks, and handovers are documented so agent availability or quota issues do not turn into on-the-fly process design.
@@ -80,6 +95,7 @@ See [`docs/index.md`](docs/index.md) for the detailed map of roles, workflows, t
 | Templates              | `agents/templates/role-pass.md`, `pr-manifest.md`, `workflow-status-comment.md`, `handover-comment.md`, `stack-conventions.md`                                                |
 | Hooks                  | `.github/hooks/*` branch checks, session status, commit readiness, formatting support                                                                                         |
 | Validators             | `scripts/validate-spec.mjs`, `validate-bounded.mjs`, `validate-pr-manifest.mjs`, `validate-role-routing.mjs`, `validate-role-attribution.mjs`, `resolve-execution-target.mjs` |
+| Extension packs        | `extensions/evidence-driven-engineering`, `extensions/agent-handoff-governance`                                                                                               |
 | Distribution           | `bin/cli.mjs`, `lib/install.mjs`, `lib/framework-files.mjs`, `agent-framework-lock.json` in consuming repos                                                                   |
 
 ## Defaults
@@ -92,6 +108,11 @@ See [`docs/index.md`](docs/index.md) for the detailed map of roles, workflows, t
 - **Review:** bounded/standard work may use explicit self-review; high-assurance work requires human review before merge.
 - **Branching:** use the project branch strategy from `docs/agent-workflow.md` and `agent-workflow.config.json`; do not edit protected integration/trunk branches directly.
 - **Follow-ups:** create follow-up issues instead of hidden TODOs or silent omissions.
+- **Extension packs:** `evidence-driven-engineering` and `agent-handoff-governance` are available for repositories that want stricter decision, evidence, and handoff discipline.
+
+## License
+
+Licensed under the Apache License, Version 2.0. See [`LICENSE`](LICENSE) for the full license text.
 
 ## Contribute
 
@@ -145,7 +166,7 @@ The canonical `Contribute` section uses existing workflow templates instead of c
 Install the skill-shaped workflow content using your preferred skill mechanism. For example, when using a skill installer:
 
 ```bash
-npx skills add https://github.com/smota/multi-agent-sdlc
+npx skills add https://github.com/smota/agentflow-sdlc
 ```
 
 This makes the workflow skills available to supported agents. The exact destination depends on the consuming agent/tooling setup.
@@ -155,8 +176,8 @@ This makes the workflow skills available to supported agents. The exact destinat
 From a checkout of this repository, initialize another project:
 
 ```bash
-git clone https://github.com/smota/multi-agent-sdlc.git
-cd multi-agent-sdlc
+git clone https://github.com/smota/agentflow-sdlc.git
+cd agentflow-sdlc
 pnpm install
 node bin/cli.mjs init --target /path/to/your-project
 ```
@@ -221,19 +242,26 @@ node bin/cli.mjs doctor-env --target /path/to/your-project --json
 For already-adopted projects, start with the assisted update workflow so the agent/operator inspects the lockfile, classifies conflicts, and asks for approval before writing:
 
 ```bash
-node /path/to/multi-agent-sdlc/bin/cli.mjs update-prompt --target /path/to/your-project
+node /path/to/agentflow-sdlc/bin/cli.mjs update-prompt --target /path/to/your-project
+```
+
+If the adopting project predates the AgentFlow SDLC rename, check and apply the narrow rename migration before sync:
+
+```bash
+node /path/to/agentflow-sdlc/bin/cli.mjs migrate-rename --target /path/to/your-project
+node /path/to/agentflow-sdlc/bin/cli.mjs migrate-rename --target /path/to/your-project --write
 ```
 
 Run sync whenever this framework changes and the update plan is approved:
 
 ```bash
-node /path/to/multi-agent-sdlc/bin/cli.mjs sync --target /path/to/your-project
+node /path/to/agentflow-sdlc/bin/cli.mjs sync --target /path/to/your-project
 ```
 
 Inspect drift without writing files:
 
 ```bash
-node /path/to/multi-agent-sdlc/bin/cli.mjs doctor --target /path/to/your-project
+node /path/to/agentflow-sdlc/bin/cli.mjs doctor --target /path/to/your-project
 ```
 
 `sync` updates framework files only when they are unchanged since the last install/sync. Local project edits are reported as conflicts instead of being overwritten. `sync` also seeds missing seed-once project files such as `AGENTS.md` and `docs/stack-conventions.md` without touching them after they exist.
@@ -241,7 +269,7 @@ node /path/to/multi-agent-sdlc/bin/cli.mjs doctor --target /path/to/your-project
 If you hand-merge framework adapter content into a project-owned file at a framework path, do not register that file as a normal tracked hash. Mark it as permanently hand-merged instead:
 
 ```bash
-node /path/to/multi-agent-sdlc/bin/cli.mjs mark-merged CLAUDE.md --target /path/to/your-project
+node /path/to/agentflow-sdlc/bin/cli.mjs mark-merged CLAUDE.md --target /path/to/your-project
 ```
 
 Marked files show separately in `sync`/`doctor` output and are never fast-forwarded over local additions.
@@ -273,6 +301,18 @@ Ask the agent to run the issue through the workflow:
 
 ```text
 orchestrate #123
+```
+
+### Issue Lifecycle Flowchart
+
+```mermaid
+flowchart TD
+  Issue["GitHub issue / SPEC.md"] --> Roles["Phase 1-8 Execution"]
+  Roles --> Artifacts["Local Role-Pass / Scratch Artifacts"]
+  Artifacts --> Compliance["Workflow-status & Handover Comments"]
+  Compliance --> Commit["Issue-Scoped Commit"]
+  Commit --> PR["PR Manifest & CI Validation"]
+  PR --> Merge["Human Review / Auto-Merge"]
 ```
 
 The orchestrator should:

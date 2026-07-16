@@ -1,6 +1,6 @@
 # Release versioning
 
-`multi-agent-sdlc` uses a configurable release versioning strategy so humans and agents can agree on the next release before tags, package versions, or GitHub Releases are created.
+`agentflow-sdlc` uses a configurable release versioning strategy so humans and agents can agree on the next release before tags, package versions, or GitHub Releases are created.
 
 ## Default: `main.minor.fix`
 

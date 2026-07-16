@@ -1,6 +1,6 @@
 # Deterministic assisted update proposal
 
-This review covers the update path for projects that already use `multi-agent-sdlc`. The current workflow works, but the update plan is still too dependent on an LLM reading prose instructions and manually classifying update state. The target is an onboarding-like flow where deterministic CLI output drives the plan even when the command is invoked from an LLM session.
+This review covers the update path for projects that already use **AgentFlow SDLC**. The current workflow works, but the update plan is still too dependent on an LLM reading prose instructions and manually classifying update state. The target is an onboarding-like flow where deterministic CLI output drives the plan even when the command is invoked from an LLM session.
 
 ## Current update flow
 
@@ -14,25 +14,27 @@ Current entry points:
 
 ## What is deterministic today
 
-| Area                      | Deterministic behavior today                                                                           |
-| ------------------------- | ------------------------------------------------------------------------------------------------------ |
-| Framework file list       | `lib/framework-files.mjs` is the canonical source for framework-owned and seed-once paths.             |
-| Lockfile hashes           | `lib/lockfile.mjs` records content hashes for framework-owned files.                                   |
-| Safe fast-forward         | `sync` updates a framework-owned file only when the target hash still matches the lockfile hash.       |
-| Local conflict protection | `sync` reports locally modified framework-owned files as `conflicts` and does not overwrite them.      |
-| Seed-once behavior        | `AGENTS.md` and `docs/stack-conventions.md` are created only when missing; existing files are skipped. |
-| Hand-merged behavior      | `mark-merged` removes a tracked hash and adds the path to the lockfile `merged` list.                  |
-| Read-only drift report    | `doctor` reports `ok`, `modified`, `merged`, `missing`, `notInstalled`, and `updateAvailable`.         |
+| Area                      | Deterministic behavior today                                                                                                                                |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Framework file list       | `lib/framework-files.mjs` is the canonical source for framework-owned and seed-once paths.                                                                  |
+| Lockfile hashes           | `lib/lockfile.mjs` records content hashes for framework-owned files.                                                                                        |
+| Safe fast-forward         | `sync` updates a framework-owned file only when the target hash still matches the lockfile hash.                                                            |
+| Local conflict protection | `sync` reports locally modified framework-owned files as `conflicts` and does not overwrite them.                                                           |
+| Seed-once behavior        | `AGENTS.md` and `docs/stack-conventions.md` are created only when missing; existing files are skipped.                                                      |
+| Hand-merged behavior      | `mark-merged` removes a tracked hash and adds the path to the lockfile `merged` list.                                                                       |
+| Read-only drift report    | `doctor` reports `ok`, `modified`, `merged`, `missing`, `notInstalled`, and `updateAvailable`.                                                              |
+| Extension state           | `doctor` reports enabled-valid, enabled-missing, enabled-invalid, discovered-disabled, and duplicate-id extension packs without enabling or disabling them. |
 
 ## What still depends on LLM judgment
 
-| Area             | Current LLM-dependent step                                                                                                                    | Risk                                                                   |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| Update readiness | The agent decides whether `doctor` output is enough to proceed.                                                                               | Agents may miss a blocker or overstate safety.                         |
-| Category mapping | The agent maps `doctor`/`sync` arrays into safe fast-forward, conflict, seed-once skip, hand-merged, missing/removed, and blocker categories. | Different agents produce different plans for the same state.           |
-| Command plan     | The agent decides whether to run `sync`, edit conflicts, call `mark-merged`, or stop.                                                         | A prompt mistake can propose writes before approval.                   |
-| PR evidence      | The agent writes update evidence from memory/prose.                                                                                           | Evidence may omit counts, file categories, or approval boundary.       |
-| Recovery path    | Projects with no lockfile, old lockfiles, or hand-merged files require ad hoc interpretation.                                                 | Update can drift into onboarding or manual repair without clear state. |
+| Area               | Current LLM-dependent step                                                                                                                    | Risk                                                                   |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Update readiness   | The agent decides whether `doctor` output is enough to proceed.                                                                               | Agents may miss a blocker or overstate safety.                         |
+| Category mapping   | The agent maps `doctor`/`sync` arrays into safe fast-forward, conflict, seed-once skip, hand-merged, missing/removed, and blocker categories. | Different agents produce different plans for the same state.           |
+| Command plan       | The agent decides whether to run `sync`, edit conflicts, call `mark-merged`, or stop.                                                         | A prompt mistake can propose writes before approval.                   |
+| PR evidence        | The agent writes update evidence from memory/prose.                                                                                           | Evidence may omit counts, file categories, or approval boundary.       |
+| Extension adoption | The agent decides whether newly discovered extension packs should be enabled.                                                                 | Optional policy changes can be activated silently instead of reviewed. |
+| Recovery path      | Projects with no lockfile, old lockfiles, or hand-merged files require ad hoc interpretation.                                                 | Update can drift into onboarding or manual repair without clear state. |
 
 ## Target deterministic flow
 
@@ -75,12 +77,19 @@ The output should be stable enough for tests and PR evidence:
     "handMerged": ["CODEX.md"],
     "removedOrMissing": [],
     "notInstalled": [],
-    "blockers": []
+    "blockers": [],
+    "extensions": {
+      "enabledValid": ["extensions/evidence-driven-engineering"],
+      "enabledMissing": [],
+      "enabledInvalid": [],
+      "discoveredDisabled": ["extensions/agent-handoff-governance"],
+      "duplicateIds": []
+    }
   },
   "recommendedCommands": [
     {
       "phase": "apply-approved-fast-forwards",
-      "command": "node /path/to/multi-agent-sdlc/bin/cli.mjs sync --target /path/to/project",
+      "command": "node /path/to/agentflow-sdlc/bin/cli.mjs sync --target /path/to/project",
       "requiresApproval": true,
       "writes": true
     }
@@ -132,6 +141,7 @@ Safety rules:
 - no write command before approval;
 - no manual conflict edit without a file-specific plan;
 - no `mark-merged` unless the plan lists the file and the operator confirms it was manually reconciled;
+- no `extensions enable` or `extensions disable` unless the operator explicitly approves the extension choice;
 - no PR readiness claim without deterministic PR evidence from the plan;
 - no fallback from update to onboarding unless the plan classifies the target as not adopted or recovery/migration.
 

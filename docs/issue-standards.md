@@ -16,6 +16,10 @@ Prefer **section-targeted updates** over full body replacement.
 
 Use a section update when you are changing a known heading such as:
 
+- `Background & Problem Statement`
+- `Proposed Solution`
+- `Requirements`
+- `Technical Design`
 - `Acceptance criteria`
 - `Open questions`
 - `Feature Tracking`
@@ -78,6 +82,27 @@ gh issue edit 123 --body-file .agent-runs/scratch/123-new-body.md
 For full replacement, construct the new body directly — preserving the governance content listed
 above — and apply it the same way. `scripts/issue-markdown.mjs` only performs section-targeted
 updates.
+
+## Recommended Issue Structure
+
+To ensure the Architect phase has a clear, unambiguous goal, issues should use a strict template that separates the *problem* from the *technical design*:
+
+```markdown
+## Background & Problem Statement
+*Why is this needed? What fails or scales poorly in the current state?*
+
+## Proposed Solution
+*High-level description of what we are building.*
+
+## Requirements
+- [ ] Business or technical requirement 1
+
+## Technical Design
+*Exact file paths, template names, or data structures expected. The Architect phase writes its Solution Design Document (SDD) here.*
+
+## Acceptance criteria
+- [ ] Pass/Fail condition 1
+```
 
 ## Issue Titles
 

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { parseIssueReferences, planIntegrationLifecycle } from '../integration-lifecycle.mjs'
 
 describe('integration lifecycle', () => {
-  it('parses implementation references and de-duplicates local issues', () => {
+  it('parses implementation references and de-duplicates local issues', async () => {
+    const { parseIssueReferences } = await import('../integration-lifecycle.mjs')
     const refs = parseIssueReferences(`
       Implements #24, #25
       Refs #25; #26
@@ -13,7 +13,8 @@ describe('integration lifecycle', () => {
     expect(refs).toEqual(['#24', '#25', '#123'])
   })
 
-  it('ignores related references by default', () => {
+  it('ignores related references by default', async () => {
+    const { parseIssueReferences } = await import('../integration-lifecycle.mjs')
     const refs = parseIssueReferences(`
       Refs #27
       Related to #28
@@ -24,7 +25,8 @@ describe('integration lifecycle', () => {
     expect(refs).toEqual(['#29', '#30'])
   })
 
-  it('plans issue closure only for merged integration PRs', () => {
+  it('plans issue closure only for merged integration PRs', async () => {
+    const { planIntegrationLifecycle } = await import('../integration-lifecycle.mjs')
     const plan = planIntegrationLifecycle(
       {
         number: 42,
@@ -50,7 +52,8 @@ describe('integration lifecycle', () => {
     expect(plan.comment).toContain('Integrated into `development`')
   })
 
-  it('skips non-integration PRs', () => {
+  it('skips non-integration PRs', async () => {
+    const { planIntegrationLifecycle } = await import('../integration-lifecycle.mjs')
     const plan = planIntegrationLifecycle(
       {
         number: 42,

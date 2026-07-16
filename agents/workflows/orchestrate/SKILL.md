@@ -72,11 +72,13 @@ Each phase must:
 - resolve configured role routing when `agent-workflow.config.json` has a `routing` section:
   `node scripts/resolve-role-route.mjs --role <role> --current <agent> --json`
 - use the selected agent's documented call workflow when route resolution selects another agent
+- implement the **Dual-Write Handoff**: write the detailed Solution Design Document (SDD) to a local scratch file (`.agent-runs/scratch/SDD-<issue>.md`) for efficiency, AND simultaneously post it (or a high-fidelity summary with exact file changes) to the canonical `handover-comment.md` on the GitHub issue for compliance.
 - post or update an orchestrator-owned ticket handover comment from
   `agents/templates/handover-comment.md` for every role transition, including same-agent
   single-agent transitions; include routing/fallback details for cross-agent transfer, fallback
   transfer, returned phase work, human decision/review requests, or ending a session before the next
   role can continue
+- enforce the **Opt-in Design Gate**: if instructed by the human (e.g., `orchestrate #123 and pause after design`), the orchestrator MUST pause after writing the SDD in the Architect phase and request human approval via an issue comment before proceeding to the Developer phase. If not explicitly requested, proceed automatically.
 - write a new local role-pass note using `agents/templates/role-pass.md`
 - update local `workflow.md`
 - update the workflow-status comment when the state meaningfully changes
