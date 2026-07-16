@@ -58,6 +58,20 @@ This framework is for teams or solo maintainers who want agentic development to 
 
 The framework is intentionally structured as a control system for agent-assisted delivery, not as ceremony for its own sake.
 
+### Core Tenets Matrix
+
+| Tenet | Problem Addressed | AgentFlow Solution |
+| --- | --- | --- |
+| **Traceability** | Context loss across ephemeral chat sessions. | Durable state in GitHub issues, PR manifests, and commits. |
+| **Predictability** | Agents skipping steps or inventing undocumented processes. | A machine-checkable, role-based phase state machine. |
+| **Efficiency** | Wasted token context, API calls, redundant data transfer. | Single-agent default; Dual-Write handoffs & Architect Sprints. |
+| **Compliance** | Opaque code generation without clear boundaries or review. | Built-in review rules, PR manifests, and validation hooks. |
+| **Parity** | Agents and humans following different contribution rules. | Exact same public contribution contract for humans and agents. |
+
+### Human and Agent Parity
+
+A core rule of AgentFlow SDLC is **Human/Agent Parity**. Humans and agents use the exact same public contribution contract. Agents do not get a "shortcut" past review gates or phase completions, and humans do not skip workflow-status updates. This parity ensures all work is equally verifiable, auditable, and seamlessly interchangeable regardless of the executor.
+
 - **Roles reduce ambiguity.** Analyst, architect, developer, tester, reviewer, tech writer, and PR-readiness passes each have a small job. That keeps the agent from mixing product decisions, implementation, validation, and review into one opaque step.
 - **Single-agent execution is the default.** One executor carrying context end to end reduces coordination overhead and avoids recreating a noisy multi-agent process for routine work.
 - **Optional routing supports specialization.** Projects can route roles to `agy`, `codex`, `claude`, or `pi` when it helps, but owners, fallbacks, and handovers are documented so agent availability or quota issues do not turn into on-the-fly process design.
@@ -287,6 +301,18 @@ Ask the agent to run the issue through the workflow:
 
 ```text
 orchestrate #123
+```
+
+### Issue Lifecycle Flowchart
+
+```mermaid
+flowchart TD
+  Issue["GitHub issue / SPEC.md"] --> Roles["Phase 1-8 Execution"]
+  Roles --> Artifacts["Local Role-Pass / Scratch Artifacts"]
+  Artifacts --> Compliance["Workflow-status & Handover Comments"]
+  Compliance --> Commit["Issue-Scoped Commit"]
+  Commit --> PR["PR Manifest & CI Validation"]
+  PR --> Merge["Human Review / Auto-Merge"]
 ```
 
 The orchestrator should:
