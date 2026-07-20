@@ -5,26 +5,28 @@ This index maps the main concepts, defaults, roles, skills/workflows, templates,
 ## Start here
 
 1. [`../README.md`](../README.md) — overview, assisted onboarding/update, installation, usage, prompts, and live examples.
-2. [`assisted-onboarding.md`](assisted-onboarding.md) — agent-assisted setup for existing projects with explicit approval before changes.
-3. [`assisted-update.md`](assisted-update.md) — agent-assisted update workflow for already-adopted projects using `agent-framework-lock.json`, `doctor`, `sync`, and `mark-merged`.
+2. [`agentflow-in-5-minutes.md`](agentflow-in-5-minutes.md) — short public explainer for the problem, lifecycle, primary evaluation path, and evidence model.
+3. [`assisted-onboarding.md`](assisted-onboarding.md) — LLM-assisted setup for existing projects with read-only inspection and explicit approval before changes.
+4. [`assisted-update.md`](assisted-update.md) — LLM-assisted update workflow for already-adopted projects using `agent-framework-lock.json`, `doctor`, `sync`, and `mark-merged`.
    [`deterministic-assisted-update.md`](deterministic-assisted-update.md) documents the proposed deterministic update-plan direction.
-4. [`environment-tools.md`](environment-tools.md) — required, recommended, and optional tools compatible with `doctor-env`.
-5. [`../AGENTS.md`](../AGENTS.md) — required first-read repository policy.
-6. [`project-setup.md`](project-setup.md) — guided setup choices for agents, execution mode, routing, branch strategy, validation, bounded work, and skill provenance.
-7. [`agent-workflow.md`](agent-workflow.md) — phase model, role-pass contract, durable evidence, branch strategy, review model, and PR readiness.
-8. [`issue-standards.md`](issue-standards.md) — issue titles, labels, body update rules, and lifecycle metadata.
-9. [`project-config.md`](project-config.md) — project-local `agent-workflow.config.json` contract.
-10. [`execution-targets.md`](execution-targets.md) — `executionTarget`, `transport`, `launcher`, `executor`, and `delegationBoundary` concepts that disambiguate `with claude`/`with agy`/`with pi` requests.
+5. [`environment-tools.md`](environment-tools.md) — required, recommended, and optional tools compatible with `doctor-env`.
+6. [`../AGENTS.md`](../AGENTS.md) — required first-read repository policy.
+7. [`project-setup.md`](project-setup.md) — guided setup choices for agents, execution mode, routing, branch strategy, validation, bounded work, and skill provenance.
+8. [`agent-workflow.md`](agent-workflow.md) — phase model, role-pass contract, durable evidence, branch strategy, review model, and PR readiness.
+9. [`issue-standards.md`](issue-standards.md) — issue titles, labels, body update rules, and lifecycle metadata.
+10. [`project-config.md`](project-config.md) — project-local `agent-workflow.config.json` contract.
+11. [`execution-targets.md`](execution-targets.md) — `executionTarget`, `transport`, `launcher`, `executor`, and `delegationBoundary` concepts that disambiguate `with claude`/`with agy`/`with pi` requests.
     [`agent-workflow.md` §4a](agent-workflow.md#4a-role-alternation-and-attribution-multi-agent-mode) extends this with `roleAlternationPlan`, `roleIntelligence`, `contextBoundary`, `independenceBoundary`, `roleAttributionMatrix`, `multiAgentClaim`, and `selfReviewDisclosure` — whether a multi-agent claim actually alternated SDLC roles across independent intelligences.
-11. [`capabilities.md`](capabilities.md) — portable PLAN/WORKFLOW/LOOP/SUB-AGENTS capability vocabulary, resolution modes, evidence, and adapter links.
-12. [`release-versioning.md`](release-versioning.md) — configurable release strategy, default `main.minor.fix`, release evidence, validators, and preview helpers.
-13. [`extension-packs.md`](extension-packs.md) — repository-level contrib-style overlays for opinionated engineering approaches, skills, tools, templates, and validators.
+12. [`capabilities.md`](capabilities.md) — portable PLAN/WORKFLOW/LOOP/SUB-AGENTS capability vocabulary, resolution modes, evidence, and adapter links.
+13. [`release-versioning.md`](release-versioning.md) — configurable release strategy, default `main.minor.fix`, release evidence, validators, and preview helpers.
+14. [`extension-packs.md`](extension-packs.md) — repository-level contrib-style overlays for opinionated engineering approaches, skills, tools, templates, and validators.
     Built-in packs: `extensions/evidence-driven-engineering` for decision/evidence discipline and `extensions/agent-handoff-governance` for provenance, delegation, and handoff boundaries.
-14. [`default-skills.md`](default-skills.md) — default skills, recommended companion skills, upstream repositories, and CCPM-sourced skill surfaces.
+15. [`examples/simple-bugfix-flow.md`](examples/simple-bugfix-flow.md), [`examples/multi-agent-review-flow.md`](examples/multi-agent-review-flow.md), and [`examples/high-assurance-flow.md`](examples/high-assurance-flow.md) — public example flows and evidence excerpts.
+16. [`default-skills.md`](default-skills.md) — default skills, recommended companion skills, upstream repositories, and CCPM-sourced skill surfaces.
 
 ## What it is
 
-**AgentFlow SDLC** is an opinionated agent-assisted SDLC framework. It installs process guardrails around an existing project instead of creating a new app. The default model is a single agent moving through explicit roles; optional routing can hand a role to another supported agent CLI.
+**AgentFlow SDLC** is an open-source process layer for AI-assisted software delivery. It installs process guardrails around an existing project instead of creating a new app. The default model is a single agent moving through explicit roles; optional routing can hand a role to another supported agent CLI.
 
 ## Roles and phases
 
