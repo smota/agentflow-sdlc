@@ -1,6 +1,8 @@
 # AgentFlow SDLC
 
-Opinionated SDLC framework for reusable agent-assisted delivery: role-based workflows with optional multi-agent coordination, PR/issue contracts, git hooks, validators, and locally managed skills/tooling for optimized project setup.
+AgentFlow SDLC is an open-source process layer for AI-assisted software delivery. It makes agent work understandable, reviewable, resumable, and safe to ship through GitHub.
+
+AI assistants can write code quickly. AgentFlow helps teams keep the surrounding delivery system clear: what was requested, why decisions were made, what changed, what was validated, who reviewed it, and what should happen next.
 
 This repository is both the distributable framework and a live example of the workflow in use. Its own issues, workflow-status comments, handover comments, PR manifests, hooks, and validators demonstrate the intended operating model.
 
@@ -18,9 +20,17 @@ This repository is both the distributable framework and a live example of the wo
 
 Use it when you want agent-assisted work to be reviewable, auditable, and easy to resume instead of being hidden in one chat session.
 
-## Fastest path: assisted onboarding
+## Why this matters now
 
-Adding this to an existing project is easiest with the assisted onboarding guide. The assistant inspects existing instructions, validates tools read-only, asks you to choose agents and workflow defaults, proposes setup commands, and preserves project-specific conventions.
+AI-native engineering has created a new failure mode: the code may be fast, but the work can become hard to understand. Important requirements, architecture tradeoffs, validation evidence, and review boundaries often remain trapped in a single LLM conversation. That makes adoption harder for teams that need GitHub history, compliance evidence, repeatable handoffs, or clear human approval gates.
+
+AgentFlow SDLC turns that hidden session work into a visible delivery path. It keeps humans and agents on the same contribution contract, stores durable evidence in GitHub, and uses local validators and templates to reduce process drift.
+
+Read the short overview: [`docs/agentflow-in-5-minutes.md`](docs/agentflow-in-5-minutes.md).
+
+## Fastest path: LLM-assisted onboarding
+
+Adding this to an existing project is easiest with the LLM-assisted onboarding guide. The assistant inspects existing instructions, validates tools read-only, asks you to choose agents and workflow defaults, proposes setup commands, and preserves project-specific conventions before any installation runs.
 
 Copy this prompt into your agent:
 
@@ -31,7 +41,7 @@ https://github.com/smota/agentflow-sdlc/blob/main/docs/assisted-onboarding.md
 Apply it to this existing project. First inspect existing agent instructions and project docs. Validate the environment read-only. Ask me to choose agents, execution mode, branch strategy, validation commands, and GitHub automation. Propose install/setup commands but do not execute them without explicit approval. Preserve or merge existing instructions instead of overwriting them.
 ```
 
-Prefer command output? Print the same onboarding prompt locally:
+Prefer command output? Print the same LLM onboarding message locally:
 
 ```bash
 node bin/cli.mjs onboarding-prompt --target /path/to/your-project
@@ -39,11 +49,28 @@ node bin/cli.mjs onboarding-prompt --target /path/to/your-project
 
 See [`docs/assisted-onboarding.md`](docs/assisted-onboarding.md) and [`docs/environment-tools.md`](docs/environment-tools.md). The environment guide documents required, recommended, and optional tools compatible with `doctor-env`.
 
-Already adopted this framework? Use [`docs/assisted-update.md`](docs/assisted-update.md) and `node bin/cli.mjs update-prompt --target /path/to/your-project` to plan a read-only, approval-gated update before running `sync`. The proposed next step is a deterministic update-plan flow documented in [`docs/deterministic-assisted-update.md`](docs/deterministic-assisted-update.md).
+Already adopted this framework? Use the LLM-assisted update path in [`docs/assisted-update.md`](docs/assisted-update.md), or print it with `node bin/cli.mjs update-prompt --target /path/to/your-project`, to plan a read-only, approval-gated update before running `sync`. Manual commands remain available as a reference path, but the recommended evaluation experience is assistant-guided inspection first. The proposed next step is a deterministic update-plan flow documented in [`docs/deterministic-assisted-update.md`](docs/deterministic-assisted-update.md).
+
+## How the workflow becomes evidence
+
+```mermaid
+flowchart LR
+  Request["Request or GitHub issue"] --> Analyze["Analyst: acceptance criteria"]
+  Analyze --> Architect["Architect: approach and risk"]
+  Architect --> Plan["Developer planning: files and checks"]
+  Plan --> Build["Developer: scoped implementation"]
+  Build --> Test["Tester: validation evidence"]
+  Test --> Review["Review: self-review or human gate"]
+  Review --> Docs["Tech writer: docs decision"]
+  Docs --> PR["PR readiness: manifest"]
+  PR --> Evidence["GitHub issue comments, commits, and PR body"]
+```
+
+See [`docs/agentflow-in-5-minutes.md`](docs/agentflow-in-5-minutes.md) and the examples in [`docs/examples/`](docs/examples/) for concrete issue, review, and PR evidence shapes.
 
 ## Who it is for
 
-This framework is for teams or solo maintainers who want agentic development to be manageable, auditable, and easier to reason about:
+This framework is for AI engineering teams, platform / DevEx teams, open-source maintainers, compliance-minded product teams, and solo maintainers who want agentic development to be manageable, auditable, and easier to reason about:
 
 - compliance-minded teams that need durable evidence for AI-assisted work;
 - maintainers coordinating multiple agents, sessions, or contributors without losing context;
@@ -54,19 +81,26 @@ This framework is for teams or solo maintainers who want agentic development to 
 - projects that want optional multi-agent handoffs without ad hoc discovery or undocumented routing;
 - teams that want reusable local skills/tooling synced across repositories.
 
+## What it is not
+
+- **Not an app generator:** it does not create your product or choose your stack.
+- **Not a GitHub replacement:** it uses issues, comments, commits, and PRs as the durable evidence plane.
+- **Not multi-agent theater:** single-agent execution is the default; optional multi-agent routing is explicit and evidenced.
+- **Not a blind installer:** onboarding and updates start with LLM-assisted, read-only inspection and require approval before setup or sync commands run.
+
 ## Why these choices
 
 The framework is intentionally structured as a control system for agent-assisted delivery, not as ceremony for its own sake.
 
 ### Core Tenets Matrix
 
-| Tenet | Problem Addressed | AgentFlow Solution |
-| --- | --- | --- |
-| **Traceability** | Context loss across ephemeral chat sessions. | Durable state in GitHub issues, PR manifests, and commits. |
-| **Predictability** | Agents skipping steps or inventing undocumented processes. | A machine-checkable, role-based phase state machine. |
-| **Efficiency** | Wasted token context, API calls, redundant data transfer. | Single-agent default; Dual-Write handoffs & Architect Sprints. |
-| **Compliance** | Opaque code generation without clear boundaries or review. | Built-in review rules, PR manifests, and validation hooks. |
-| **Parity** | Agents and humans following different contribution rules. | Exact same public contribution contract for humans and agents. |
+| Tenet              | Problem Addressed                                          | AgentFlow Solution                                             |
+| ------------------ | ---------------------------------------------------------- | -------------------------------------------------------------- |
+| **Traceability**   | Context loss across ephemeral chat sessions.               | Durable state in GitHub issues, PR manifests, and commits.     |
+| **Predictability** | Agents skipping steps or inventing undocumented processes. | A machine-checkable, role-based phase state machine.           |
+| **Efficiency**     | Wasted token context, API calls, redundant data transfer.  | Single-agent default; Dual-Write handoffs & Architect Sprints. |
+| **Compliance**     | Opaque code generation without clear boundaries or review. | Built-in review rules, PR manifests, and validation hooks.     |
+| **Parity**         | Agents and humans following different contribution rules.  | Exact same public contribution contract for humans and agents. |
 
 ### Human and Agent Parity
 
@@ -86,17 +120,18 @@ See [`docs/index.md`](docs/index.md) for the detailed map of roles, workflows, t
 
 ## What is included
 
-| Area                   | Files                                                                                                                                                                         |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Policy                 | `AGENTS.md`, `CLAUDE.md`, `CODEX.md`, `AGY.md`                                                                                                                                |
-| Workflow docs          | `docs/agent-workflow.md`, `docs/issue-standards.md`, `docs/project-config.md`, `docs/agent-routing.md`, `docs/execution-targets.md`, `docs/index.md`                          |
-| Onboarding/update docs | `docs/assisted-onboarding.md`, `docs/assisted-update.md`, `docs/environment-tools.md`, `docs/project-setup.md`, `docs/default-skills.md`                                      |
-| Skills/workflows       | `agents/workflows/orchestrate/SKILL.md`, `agents/workflows/scan/SKILL.md`                                                                                                     |
-| Templates              | `agents/templates/role-pass.md`, `pr-manifest.md`, `workflow-status-comment.md`, `handover-comment.md`, `stack-conventions.md`                                                |
-| Hooks                  | `.github/hooks/*` branch checks, session status, commit readiness, formatting support                                                                                         |
-| Validators             | `scripts/validate-spec.mjs`, `validate-bounded.mjs`, `validate-pr-manifest.mjs`, `validate-role-routing.mjs`, `validate-role-attribution.mjs`, `resolve-execution-target.mjs` |
-| Extension packs        | `extensions/evidence-driven-engineering`, `extensions/agent-handoff-governance`                                                                                               |
-| Distribution           | `bin/cli.mjs`, `lib/install.mjs`, `lib/framework-files.mjs`, `agent-framework-lock.json` in consuming repos                                                                   |
+| Area                   | Files                                                                                                                                                                                  |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Policy                 | `AGENTS.md`, `CLAUDE.md`, `CODEX.md`, `AGY.md`                                                                                                                                         |
+| Workflow docs          | `docs/agentflow-in-5-minutes.md`, `docs/agent-workflow.md`, `docs/issue-standards.md`, `docs/project-config.md`, `docs/agent-routing.md`, `docs/execution-targets.md`, `docs/index.md` |
+| Onboarding/update docs | `docs/assisted-onboarding.md`, `docs/assisted-update.md`, `docs/deterministic-assisted-update.md`, `docs/environment-tools.md`, `docs/project-setup.md`, `docs/default-skills.md`      |
+| Skills/workflows       | `agents/workflows/orchestrate/SKILL.md`, `agents/workflows/scan/SKILL.md`                                                                                                              |
+| Templates              | `agents/templates/role-pass.md`, `pr-manifest.md`, `workflow-status-comment.md`, `handover-comment.md`, `stack-conventions.md`                                                         |
+| Hooks                  | `.github/hooks/*` branch checks, session status, commit readiness, formatting support                                                                                                  |
+| Validators             | `scripts/validate-spec.mjs`, `validate-bounded.mjs`, `validate-pr-manifest.mjs`, `validate-role-routing.mjs`, `validate-role-attribution.mjs`, `resolve-execution-target.mjs`          |
+| Examples               | `docs/examples/simple-bugfix-flow.md`, `docs/examples/multi-agent-review-flow.md`, `docs/examples/high-assurance-flow.md`                                                              |
+| Extension packs        | `extensions/evidence-driven-engineering`, `extensions/agent-handoff-governance`                                                                                                        |
+| Distribution           | `bin/cli.mjs`, `lib/install.mjs`, `lib/framework-files.mjs`, `agent-framework-lock.json` in consuming repos                                                                            |
 
 ## Defaults
 
