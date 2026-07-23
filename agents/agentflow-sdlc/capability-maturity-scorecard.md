@@ -1,0 +1,14 @@
+# Capability maturity scorecard
+
+| Level                               | Status        | Evidence                                                                                                                                                                                | Gaps / next proof                                                                                         |
+| ----------------------------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| 0 Prompt-only                       | Passed        | `AGENT.md`, `../../README.md` explain goal, users, non-goals.                                                                                                                           | Keep prompt semantics stable across adapters.                                                             |
+| 1 Structured instructions           | Passed        | `../../AGENTS.md`, `../../docs/agent-workflow.md`, `../../agents/templates/role-pass.md`.                                                                                               | Keep role-pass fields synchronized with validators.                                                       |
+| 2 Tool-aware                        | Mostly passed | `tools-actions.md`, `../../agents/tools/registry.md`, `../../scripts/validate-spec.mjs`, `../../scripts/resolve-capability.mjs`.                                                        | Add executable schema validation if MCP/OpenAPI contracts become first-class.                             |
+| 3 Safe mutation                     | Mostly passed | Branch rules in `../../agent-workflow.config.json`, review rules in `../../docs/agent-workflow.md`, PR template in `../../agents/templates/pr-manifest.md`.                             | More automated rollback evidence for mutating GitHub operations would strengthen this level.              |
+| 4 Orchestration and handoffs        | Strong        | `runtime-capabilities.md`, `handoff-contract.md`, `execution-model.md`, `../../docs/capabilities.md`, `../../docs/execution-targets.md`, `../../scripts/validate-role-attribution.mjs`. | Keep no-false-multi-agent-claim checks enforced in PR manifests.                                          |
+| 5 Learning / continuous improvement | Partial       | `evals.md`, `continuous-improvement-plan.md`, `../../agents/evals/README.md`, release docs under `../../docs/releases/`.                                                                | Implement executable eval suites, benchmark fixtures, feedback triage reports, and regression dashboards. |
+
+## Current maturity judgment
+
+AgentFlow SDLC Agent is Level 4 strong and

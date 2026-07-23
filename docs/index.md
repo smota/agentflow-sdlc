@@ -23,6 +23,7 @@ This index maps the main concepts, defaults, roles, skills/workflows, templates,
     Built-in packs: `extensions/evidence-driven-engineering` for decision/evidence discipline and `extensions/agent-handoff-governance` for provenance, delegation, and handoff boundaries.
 15. [`examples/simple-bugfix-flow.md`](examples/simple-bugfix-flow.md), [`examples/multi-agent-review-flow.md`](examples/multi-agent-review-flow.md), and [`examples/high-assurance-flow.md`](examples/high-assurance-flow.md) — public example flows and evidence excerpts.
 16. [`default-skills.md`](default-skills.md) — default skills, recommended companion skills, upstream repositories, and CCPM-sourced skill surfaces.
+17. [`../agents/agentflow-sdlc/README.md`](../agents/agentflow-sdlc/README.md) — canonical portable AgentFlow SDLC agent package with maturity, capability, handoff, eval, and improvement-loop contracts.
 
 ## What it is
 
@@ -56,6 +57,8 @@ Optional sidecar role:
 | --------------------------------------------------------- | ------------------------------------------------------------------- |
 | [`orchestrate`](../agents/workflows/orchestrate/SKILL.md) | Running an issue end-to-end through the phase model                 |
 | [`scan`](../agents/workflows/scan/SKILL.md)               | Broad-context architecture/security scans that feed review evidence |
+
+Canonical agent package: [`../agents/agentflow-sdlc/AGENT.md`](../agents/agentflow-sdlc/AGENT.md). Use it when a consuming project needs a portable agent definition, runtime capability matrix, sub-agent handoff rules, validation checklist, eval plan, and continuous-improvement loop.
 
 The framework also supports locally managed skills/tooling in consuming projects. Install workflow skills using your agent/skill manager, then use the sync CLI for hooks, templates, docs, and validators. See [`default-skills.md`](default-skills.md) for upstream source and provenance notes.
 
