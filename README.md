@@ -272,6 +272,15 @@ node bin/cli.mjs doctor-env --target /path/to/your-project --json
 
 `doctor-env` is read-only. It reports found/missing tools and proposes installation options, but it never runs install commands.
 
+Validate local tooling without installing anything:
+
+```bash
+node bin/cli.mjs doctor-env --target /path/to/your-project
+node bin/cli.mjs doctor-env --target /path/to/your-project --json
+```
+
+`doctor-env` is read-only. It reports found/missing tools and proposes installation options, but it never runs install commands.
+
 ## Sync / update framework files
 
 For already-adopted projects, start with the assisted update workflow so the agent/operator inspects the lockfile, classifies conflicts, and asks for approval before writing:
