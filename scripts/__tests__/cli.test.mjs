@@ -102,3 +102,51 @@ describe('CLI extension helpers', () => {
     expect(JSON.parse(disable).enabledPacks).toEqual([])
   })
 })
+
+describe('CLI extension helpers', () => {
+  it('lists, inspects, enables, disables, and validates packs deterministically', () => {
+    const repo = tempRepo()
+    writePack(repo, 'extensions/sample', 'sample')
+
+    const list = execFileSync(process.execPath, [cli, 'extensions', 'list', '--target', repo], {
+      encoding: 'utf8',
+    })
+    expect(list).toContain('extensions/sample')
+    expect(list).toContain('disabled')
+
+    const inspect = execFileSync(
+      process.execPath,
+      [cli, 'extensions', 'inspect', 'sample', '--target', repo, '--json'],
+      { encoding: 'utf8' },
+    )
+    expect(JSON.parse(inspect).dir).toBe('extensions/sample')
+
+    const enable = execFileSync(
+      process.execPath,
+      [cli, 'extensions', 'enable', 'sample', '--target', repo, '--json'],
+      { encoding: 'utf8' },
+    )
+    expect(JSON.parse(enable).enabledPacks).toEqual(['extensions/sample'])
+
+    const enableAgain = execFileSync(
+      process.execPath,
+      [cli, 'extensions', 'enable', 'extensions/sample', '--target', repo, '--json'],
+      { encoding: 'utf8' },
+    )
+    expect(JSON.parse(enableAgain).changed).toBe(false)
+
+    const validate = execFileSync(
+      process.execPath,
+      [cli, 'extensions', 'validate', '--target', repo, '--json'],
+      { encoding: 'utf8' },
+    )
+    expect(JSON.parse(validate).results[0].errors).toEqual([])
+
+    const disable = execFileSync(
+      process.execPath,
+      [cli, 'extensions', 'disable', 'sample', '--target', repo, '--json'],
+      { encoding: 'utf8' },
+    )
+    expect(JSON.parse(disable).enabledPacks).toEqual([])
+  })
+})
