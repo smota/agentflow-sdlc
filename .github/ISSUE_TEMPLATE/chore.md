@@ -18,8 +18,6 @@ Describe the repository, process, documentation, or tooling problem.
 
 ## Technical Design
 
-
-
 ## Scope
 
 **In scope**

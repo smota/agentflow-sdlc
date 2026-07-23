@@ -85,22 +85,27 @@ updates.
 
 ## Recommended Issue Structure
 
-To ensure the Architect phase has a clear, unambiguous goal, issues should use a strict template that separates the *problem* from the *technical design*:
+To ensure the Architect phase has a clear, unambiguous goal, issues should use a strict template that separates the _problem_ from the _technical design_:
 
 ```markdown
 ## Background & Problem Statement
-*Why is this needed? What fails or scales poorly in the current state?*
+
+_Why is this needed? What fails or scales poorly in the current state?_
 
 ## Proposed Solution
-*High-level description of what we are building.*
+
+_High-level description of what we are building._
 
 ## Requirements
+
 - [ ] Business or technical requirement 1
 
 ## Technical Design
-*Exact file paths, template names, or data structures expected. The Architect phase writes its Solution Design Document (SDD) here.*
+
+_Exact file paths, template names, or data structures expected. The Architect phase writes its Solution Design Document (SDD) here._
 
 ## Acceptance criteria
+
 - [ ] Pass/Fail condition 1
 ```
 
