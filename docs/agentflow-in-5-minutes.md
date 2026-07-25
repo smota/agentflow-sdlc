@@ -1,6 +1,6 @@
 # AgentFlow SDLC in 5 minutes
 
-AgentFlow SDLC is an open-source process layer for AI-assisted software delivery. It helps teams turn fast but opaque AI coding sessions into work that is understandable, reviewable, resumable, and safe to ship through GitHub.
+AgentFlow SDLC is an open-source process layer for AI-assisted software delivery. Version 1.0 is the first mature release: a stable way for teams to use AI more confidently while keeping work understandable, reviewable, resumable, and safe to ship through GitHub.
 
 ## The problem it solves
 
@@ -37,6 +37,12 @@ flowchart LR
 
 AgentFlow is **single-agent by default**. One executor can carry context end to end while switching through explicit roles: analyst, architect, developer, tester, reviewer, tech writer, and PR-readiness.
 
+## Intelligent collaboration when it helps
+
+AgentFlow 1.0 can use more AI intelligence without asking people to manage more agents. Clear work stays single-agent. Uncertain work can invite focused advisors. Broad work can use bounded discovery. Sensitive work keeps human approval. In every case, the parent workflow owns synthesis and leaves compact evidence.
+
+The guiding rule is: **increase intelligence per decision, not agents per task**.
+
 Optional multi-agent routing is available when it adds value, but it is explicit and evidenced. A multi-agent claim must show which intelligence executed which role, how it was reached, and whether review was independent.
 
 ## The primary way to evaluate it
@@ -56,6 +62,16 @@ node bin/cli.mjs update-prompt --target /path/to/your-project
 ```
 
 Both flows are read-only first and approval-gated before setup or sync commands run.
+
+## What you see vs. what AgentFlow may coordinate
+
+| You see                       | AgentFlow may coordinate                               |
+| ----------------------------- | ------------------------------------------------------ |
+| A clear architecture decision | focused risk, testability, or documentation checks     |
+| A readable PR summary         | structured evidence from the work session              |
+| A validation result           | bounded fix/check loops                                |
+| A handoff comment             | enough context for another person or agent to continue |
+| A human approval gate         | review retained for consequential decisions            |
 
 ## What the evidence looks like
 

@@ -1,12 +1,12 @@
 # Intelligent collaboration
 
-AgentFlow SDLC uses intelligent collaboration to increase decision quality without increasing the cognitive load of AI-assisted delivery. The goal is not more agents. The goal is better SDLC decisions with compact, auditable evidence.
+AgentFlow SDLC 1.0 uses intelligent collaboration to help teams use AI more confidently in software delivery. The goal is not more agents. The goal is better SDLC decisions with less coordination burden and compact, auditable evidence.
 
 ## Core principle
 
 Increase intelligence per decision, not agents per task.
 
-Harnesses may run temporary helper intelligence behind stable SDLC roles, but the visible workflow remains the same: issue, role phases, evidence, validation, PR manifest, and follow-up issues.
+Agent tools may run temporary helper intelligence behind stable SDLC roles, but the visible workflow remains the same: issue, role phases, evidence, validation, PR manifest, and follow-up issues.
 
 ## Decision budget
 

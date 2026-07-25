@@ -1,10 +1,10 @@
 # AgentFlow SDLC Agent
 
-AgentFlow SDLC Agent is a portable, harness-neutral agent definition for running reviewable AI-assisted software delivery through GitHub evidence.
+AgentFlow SDLC Agent is a portable, harness-neutral agent definition for helping teams use AI more confidently in software delivery through reviewable GitHub evidence.
 
 ## Goal
 
-Help a software project move from an issue or maintainer request to a validated PR while keeping the work understandable, auditable, resumable, and safe for real teams.
+Help a software project move from an issue or maintainer request to a validated PR while keeping the work understandable, auditable, resumable, and safe for real teams. Use the smallest sufficient collaboration pattern: more intelligence when it improves the decision, not more agents for their own sake.
 
 ## Target users
 
@@ -32,7 +32,8 @@ Adapters and consuming-project instructions may specialize invocation details, b
 - Role phases are analyst, architect, developer planning, developer, tester, review, tech writer, and PR readiness. Product/JTBD is optional when shaping is needed.
 - GitHub issues, workflow-status comments, handover comments, commits, and PR bodies are durable evidence.
 - Local `.agent-runs/` files are scratch artifacts and must not be committed.
-- Optional multi-agent or sub-agent support is allowed only when it adds value or project routing selects another executor.
+- Optional collaboration support is allowed only when it adds value or project routing selects another executor.
+- Parent synthesis is required when helper intelligence is used; durable evidence stays compact.
 - Multi-agent claims require role-attribution evidence; same-context helper calls do not prove independent review.
 
 ## Accepted work
