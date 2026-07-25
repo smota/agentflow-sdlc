@@ -34,6 +34,19 @@
 
 Record portable advanced capabilities from `docs/capabilities.md` when a pass requests PLAN, WORKFLOW, LOOP, SUB-AGENTS, or their framework equivalents. Include mode, adapter, artifact, required/optional status, and guardrails such as loop stop conditions or subagent boundaries.
 
+### Collaboration evidence
+
+```json
+{
+  "collaborationMode": "single-agent",
+  "reason": "single-agent path was sufficient",
+  "helpers": [],
+  "synthesis": "not-applicable:single-agent"
+}
+```
+
+Record intelligent collaboration evidence from `docs/intelligent-collaboration.md` whenever helpers, councils, bounded loops, spikes, or human-gated collaboration are used. Single-agent passes may record the compact default above.
+
 ### Open questions
 
 - none

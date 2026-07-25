@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AgentFlow Bounded Environment",
+  "type": "object",
+  "required": ["environment", "permissions", "singleWriterRule", "cleanup"],
+  "properties": {
+    "environment": {
+      "enum": [
+        "current-session",
+        "forked-context",
+        "fresh-session",
+        "worktree",
+        "provider-api-call",
+        "human-handoff"
+      ]
+    },
+    "cwd": { "type": "string" },
+    "permissions": { "enum": ["read-only", "writer", "test-runner", "reviewer", "human-gate"] },
+    "maxFiles": { "type": "integer", "minimum": 1 },
+    "timeoutMs": { "type": "integer", "minimum": 1 },
+    "singleWriterRule": { "type": "boolean" },
+    "cleanup": { "type": "string", "minLength": 1 }
+  }
+}

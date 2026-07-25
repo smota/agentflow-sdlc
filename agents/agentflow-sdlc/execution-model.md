@@ -19,6 +19,10 @@ Product/JTBD can run before analyst when feature shaping is needed.
 
 If `../../agent-workflow.config.json` configures role routing, resolve the next owner with `../../scripts/resolve-role-route.mjs`. A selected owner still must resolve to an explicit execution target from `../../docs/execution-targets.md`.
 
+## Intelligent collaboration path
+
+Use `../../scripts/resolve-collaboration-plan.mjs` to select `single-agent`, `advisory`, `council`, `parallel-discovery`, `spike`, or `human-gated` mode from profile, risk, effort, uncertainty, change surface, and harness capability. The chosen mode must be the smallest sufficient collaboration that reduces meaningful uncertainty.
+
 ## Subprocess, job, and sub-agent path
 
 Sub-agents and subprocesses are optional capability implementations. Use them only when they add clear value, such as broad discovery, read-only review, isolated research, or offline handoff. Record capability evidence and boundaries in the parent workflow.

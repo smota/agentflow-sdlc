@@ -14,6 +14,7 @@
 - Handover comments: <GitHub issue comment/thread URL(s) for role handovers> | exception:<reason no role transition occurred>
 - Role-pass summary: <summarize completed phases and any blockers>
 - Capability evidence: <PLAN/WORKFLOW/LOOP/SUB-AGENTS capabilities used, resolution modes, fallbacks, and artifacts; use `not-applicable:<reason>` when none were requested>
+- Collaboration evidence: <collaboration mode, smallest-sufficient reason, helpers/gates used, synthesis/dissent summary, or `single-agent:<reason>`>
 - Validation evidence: <commands and results>
 
 ## CI-equivalent validation

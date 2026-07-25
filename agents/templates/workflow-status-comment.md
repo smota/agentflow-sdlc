@@ -37,6 +37,13 @@
 - Commands: not recorded yet
 - Notes: none
 
+### Collaboration
+
+- Mode: single-agent | advisory | council | parallel-discovery | spike | human-gated
+- Reason: pending
+- Helpers/gates: none
+- Synthesis: pending | not-applicable:single-agent
+
 ### Current Findings
 
 None.

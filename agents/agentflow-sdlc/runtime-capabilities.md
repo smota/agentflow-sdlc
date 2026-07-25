@@ -18,6 +18,17 @@ AgentFlow SDLC uses portable capability names from `../../docs/capabilities.md` 
 - Optional unavailable capabilities may be skipped with evidence.
 - Required unavailable capabilities block work.
 
+## Intelligent collaboration modes
+
+Use `../../docs/intelligent-collaboration.md` to choose the smallest sufficient collaboration mode:
+
+- `single-agent` for clear low-risk work;
+- `advisory` for focused read-only second opinions;
+- `council` for high-uncertainty role-local strategy decisions;
+- `parallel-discovery` for broad read-only repo discovery;
+- `spike` for isolated worktree experiments;
+- `human-gated` for high-assurance authority decisions.
+
 ## Sub-agent constraints
 
 - Use sub-agents for broad discovery, read-only review, isolated research, or controlled handoff.

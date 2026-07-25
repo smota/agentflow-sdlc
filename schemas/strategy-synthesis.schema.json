@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AgentFlow Strategy Synthesis",
+  "type": "object",
+  "required": ["decision", "rationale", "dispositions"],
+  "properties": {
+    "decision": { "type": "string", "minLength": 1 },
+    "rationale": { "type": "string", "minLength": 1 },
+    "optionsConsidered": { "type": "array", "items": { "type": "string" } },
+    "dispositions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["finding", "status"],
+        "properties": {
+          "finding": { "type": "string" },
+          "status": { "enum": ["accepted", "rejected", "deferred-follow-up", "blocker"] },
+          "reason": { "type": "string" }
+        }
+      }
+    }
+  }
+}

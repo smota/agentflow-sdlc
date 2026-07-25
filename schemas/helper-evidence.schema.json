@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AgentFlow Helper Evidence",
+  "type": "object",
+  "required": ["collaborationMode", "reason", "helpers", "synthesis"],
+  "properties": {
+    "collaborationMode": { "type": "string" },
+    "reason": { "type": "string" },
+    "helpers": { "type": "array", "items": { "type": "object" } },
+    "synthesis": { "type": "string" },
+    "rawTranscriptLocalOnly": { "type": "boolean" },
+    "dissent": { "type": "string" },
+    "critiqueDisposition": { "type": "array", "items": { "type": "object" } }
+  }
+}
