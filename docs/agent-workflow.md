@@ -34,6 +34,8 @@ ownership, or offline parallel work. It is not the default implementation model.
 configures role routing, resolve the next role with `scripts/resolve-role-route.mjs`; missing
 routing config keeps execution with the current single agent.
 
+Intelligent collaboration is the opinionated harness-leverage layer for this optional support. It increases intelligence per decision, not agents per task: use `docs/intelligent-collaboration.md` and `scripts/resolve-collaboration-plan.mjs` to select the smallest sufficient mode, then record compact collaboration evidence without changing the phase model.
+
 ## 3. Workflow phases
 
 The orchestrator is a state machine. Each issue declares which phases apply and may skip only when

@@ -120,19 +120,21 @@ See [`docs/index.md`](docs/index.md) for the detailed map of roles, workflows, t
 
 ## What is included
 
-| Area                   | Files                                                                                                                                                                                  |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Policy                 | `AGENTS.md`, `CLAUDE.md`, `CODEX.md`, `AGY.md`                                                                                                                                         |
-| Workflow docs          | `docs/agentflow-in-5-minutes.md`, `docs/agent-workflow.md`, `docs/issue-standards.md`, `docs/project-config.md`, `docs/agent-routing.md`, `docs/execution-targets.md`, `docs/index.md` |
-| Onboarding/update docs | `docs/assisted-onboarding.md`, `docs/assisted-update.md`, `docs/deterministic-assisted-update.md`, `docs/environment-tools.md`, `docs/project-setup.md`, `docs/default-skills.md`      |
-| Agent package          | `agents/agentflow-sdlc/AGENT.md`, maturity scorecard, knowledge/tool contracts, runtime capabilities, handoff/execution docs, evals, and improvement loop                              |
-| Skills/workflows       | `agents/workflows/orchestrate/SKILL.md`, `agents/workflows/scan/SKILL.md`                                                                                                              |
-| Templates              | `agents/templates/role-pass.md`, `pr-manifest.md`, `workflow-status-comment.md`, `handover-comment.md`, `stack-conventions.md`                                                         |
-| Hooks                  | `.github/hooks/*` branch checks, session status, commit readiness, formatting support                                                                                                  |
-| Validators             | `scripts/validate-spec.mjs`, `validate-bounded.mjs`, `validate-pr-manifest.mjs`, `validate-role-routing.mjs`, `validate-role-attribution.mjs`, `resolve-execution-target.mjs`          |
-| Examples               | `docs/examples/simple-bugfix-flow.md`, `docs/examples/multi-agent-review-flow.md`, `docs/examples/high-assurance-flow.md`                                                              |
-| Extension packs        | `extensions/evidence-driven-engineering`, `extensions/agent-handoff-governance`                                                                                                        |
-| Distribution           | `bin/cli.mjs`, `lib/install.mjs`, `lib/framework-files.mjs`, `agent-framework-lock.json` in consuming repos                                                                            |
+| Area                      | Files                                                                                                                                                                                  |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Policy                    | `AGENTS.md`, `CLAUDE.md`, `CODEX.md`, `AGY.md`                                                                                                                                         |
+| Workflow docs             | `docs/agentflow-in-5-minutes.md`, `docs/agent-workflow.md`, `docs/issue-standards.md`, `docs/project-config.md`, `docs/agent-routing.md`, `docs/execution-targets.md`, `docs/index.md` |
+| Onboarding/update docs    | `docs/assisted-onboarding.md`, `docs/assisted-update.md`, `docs/deterministic-assisted-update.md`, `docs/environment-tools.md`, `docs/project-setup.md`, `docs/default-skills.md`      |
+| Agent package             | `agents/agentflow-sdlc/AGENT.md`, maturity scorecard, knowledge/tool contracts, runtime capabilities, handoff/execution docs, evals, and improvement loop                              |
+| Role agents               | `agents/roles/<role>/AGENT.md` packages for phase roles that can run inline, as helpers, or manually without changing semantics                                                        |
+| Intelligent collaboration | `docs/intelligent-collaboration.md`, `agents/workflows/intelligent-collaboration/SKILL.md`, collaboration resolver, schemas, validators, examples, and evals                           |
+| Skills/workflows          | `agents/workflows/orchestrate/SKILL.md`, `agents/workflows/scan/SKILL.md`                                                                                                              |
+| Templates                 | `agents/templates/role-pass.md`, `pr-manifest.md`, `workflow-status-comment.md`, `handover-comment.md`, `stack-conventions.md`                                                         |
+| Hooks                     | `.github/hooks/*` branch checks, session status, commit readiness, formatting support                                                                                                  |
+| Validators                | `scripts/validate-spec.mjs`, `validate-bounded.mjs`, `validate-pr-manifest.mjs`, `validate-role-routing.mjs`, `validate-role-attribution.mjs`, `resolve-execution-target.mjs`          |
+| Examples                  | `docs/examples/simple-bugfix-flow.md`, `docs/examples/multi-agent-review-flow.md`, `docs/examples/high-assurance-flow.md`                                                              |
+| Extension packs           | `extensions/evidence-driven-engineering`, `extensions/agent-handoff-governance`                                                                                                        |
+| Distribution              | `bin/cli.mjs`, `lib/install.mjs`, `lib/framework-files.mjs`, `agent-framework-lock.json` in consuming repos                                                                            |
 
 ## Defaults
 

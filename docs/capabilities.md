@@ -136,6 +136,10 @@ Resolution order is native, package, framework-emulated, manual, optional-unavai
 
 Capabilities never replace role-pass evidence, issue comments, PR manifests, execution-target resolution, or follow-up issue discipline.
 
+## Intelligent collaboration
+
+`docs/intelligent-collaboration.md` defines collaboration modes that compose these capabilities without changing the SDLC phase model. A collaboration plan may request `workflow-orchestration`, `delegated-subagents`, and `bounded-loop`, but it must still use the smallest sufficient collaboration mode and record parent synthesis. Use `node scripts/resolve-collaboration-plan.mjs --json` to preview the selected mode, and `node scripts/validate-collaboration-evidence.mjs --path <evidence.json>` when helper evidence is produced.
+
 ## False-claim guardrails
 
 - A provider model id such as `anthropic/claude-*` is not the same thing as `claude-cli`.

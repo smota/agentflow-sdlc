@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AgentFlow Collaboration Plan",
+  "type": "object",
+  "required": ["collaborationMode", "reason", "writer", "helpers", "humanGate"],
+  "properties": {
+    "issueNumber": { "type": ["integer", "null"] },
+    "collaborationMode": {
+      "enum": [
+        "auto-minimal",
+        "single-agent",
+        "advisory",
+        "council",
+        "parallel-discovery",
+        "spike",
+        "human-gated"
+      ]
+    },
+    "reason": { "type": "string", "minLength": 1 },
+    "capabilities": { "type": "array", "items": { "type": "string" } },
+    "environment": {
+      "enum": [
+        "current-session",
+        "forked-context",
+        "fresh-session",
+        "worktree",
+        "provider-api-call",
+        "human-handoff"
+      ]
+    },
+    "helpers": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/helper" }
+    },
+    "writer": { "type": "string", "minLength": 1 },
+    "humanGate": { "type": "boolean" },
+    "synthesisRequired": { "type": "boolean" }
+  },
+  "$defs": {
+    "helper": {
+      "type": "object",
+      "required": ["role", "permissions"],
+      "properties": {
+        "role": { "type": "string", "minLength": 1 },
+        "executor": { "type": "string" },
+        "transport": { "type": "string" },
+        "delegationBoundary": { "type": "string" },
+        "contextBoundary": { "type": "string" },
+        "permissions": { "enum": ["read-only", "writer", "test-runner", "reviewer", "human-gate"] },
+        "maxFiles": { "type": "integer", "minimum": 1 },
+        "artifact": { "type": "string" }
+      }
+    }
+  }
+}
