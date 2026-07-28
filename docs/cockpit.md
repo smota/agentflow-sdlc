@@ -108,6 +108,36 @@ Write-capable actions are structured and auditable:
 
 Forbidden actions include remote gate bypass, marking validation/review passed, weakening acceptance criteria silently, deleting evidence, and merge-by-chat.
 
+## Running the MVP server
+
+Cockpit currently ships as a minimal Node service:
+
+```bash
+AGENTFLOW_REPOSITORIES=smota/agentflow-sdlc \
+GITHUB_TOKEN=ghp_readonly_or_fine_grained_token \
+pnpm cockpit
+```
+
+Remote mode requires GitHub OAuth configuration:
+
+```bash
+COCKPIT_REMOTE=true \
+COCKPIT_PUBLIC_URL=https://cockpit.example.com \
+COCKPIT_SESSION_SECRET=32-plus-character-secret \
+GITHUB_CLIENT_ID=... \
+GITHUB_CLIENT_SECRET=... \
+GITHUB_ALLOWED_USERS=samue \
+AGENTFLOW_REPOSITORIES=smota/agentflow-sdlc \
+pnpm cockpit
+```
+
+Available surfaces:
+
+- `/healthz` — health check.
+- `/` — Goal Board for registered repository.
+- `/issues/<number>` — issue SDLC view.
+- `/login`, `/oauth/callback`, `/logout` — GitHub OAuth flow for remote mode.
+
 ## Future Docker deployment
 
-Docker is a second-pass packaging option, not an MVP dependency. Current implementation should stay Docker-ready by using environment configuration, stateless server boundaries, GitHub API as primary data source, `/healthz`, and no mandatory local repo mount.
+Docker is a second-pass packaging option, not an MVP dependency. Current implementation stays Docker-ready by using environment configuration, stateless server boundaries, GitHub API as primary data source, `/healthz`, and no mandatory local repo mount.
