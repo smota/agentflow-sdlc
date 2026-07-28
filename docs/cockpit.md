@@ -1,6 +1,6 @@
 # AgentFlow Cockpit
 
-AgentFlow Cockpit is the planned optional UI for goal-oriented SDLC delivery. It presents GitHub issues, epics, comments, PRs, role-pass evidence, validation, and follow-ups as AgentFlow workflow state instead of a generic issue list.
+AgentFlow Cockpit is the optional Goal Command Center for goal-oriented SDLC delivery. It turns GitHub issues, epics, comments, PRs, role-pass evidence, validation, and follow-ups into goals, evidence health, role flow contributions, graph navigation, next-best-actions, and replayable goal stories.
 
 Cockpit is optional. The CLI/GitHub workflow remains authoritative and fully usable without Cockpit.
 
@@ -45,17 +45,17 @@ Cockpit does not require a mounted repo checkout in remote mode. Future Docker d
 
 ## Opinionated views
 
-### Goal Board
+### Goal Command Center
 
-Shows goals grouped by workflow state: Intake, Scoped, Planned, Implementation, Validation, Review, PR Ready, Done, and Blocked.
+Shows top metrics, a highlight goal, next-best-actions, goal health, follow-ups, and human gates. GitHub issue details are secondary metadata; the primary language is goal, confidence, evidence, next action, and role flow.
 
 ### Epic View
 
 Rolls up child issues, dependencies, acceptance matrix, risk, active workstreams, PRs, follow-ups, and decisions.
 
-### Issue SDLC View
+### Goal Detail, Selected Path, and Role Flow Contributions
 
-Shows phases 0-8:
+Shows the selected path/profile/risk first, then phases 0-8 as role contributions rather than a generic timeline. Roles can be complete, skipped by path, not applicable, not started, needs attention, blocked, or error:
 
 1. Product manager / JTBD
 2. Analyst
@@ -67,20 +67,24 @@ Shows phases 0-8:
 8. Tech writer
 9. PR readiness
 
-Each phase shows role-pass completeness, evidence, validation, handover, and next role contract.
+Each role card shows completion first. Supporting evidence is detail/proof behind the role status. Roles skipped by selected path explain why and do not reduce readiness.
 
-### Evidence Health
+### Readiness Health
 
-Reports governance completeness, not model confidence:
+Reports governance completeness as a path-aware score with explainable dimensions, not model confidence. The denominator includes only applicable checks; skipped-by-path and not-applicable checks are excluded:
 
-- Required policy read state.
-- Acceptance criteria.
-- Role-pass fields.
-- Validation status.
-- Review independence.
-- Human gate requirements.
-- PR manifest readiness.
-- Follow-up disposition.
+- Scope.
+- Design.
+- Implementation.
+- Validation.
+- Review/gates.
+- Follow-ups.
+
+Missing optional evidence is shown with fail-safe copy instead of generic `unknown` warnings.
+
+### Version / Release Lens
+
+Shows whether the goal is in progress, merged, awaiting release, or delivered/closed. It also surfaces target branch, release impact, candidate version when known, and release-note state. This reinforces that merged work is not always delivered work.
 
 ### Comments lanes
 
