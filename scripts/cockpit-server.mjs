@@ -3,6 +3,11 @@ import { createServer } from 'node:http'
 import { randomBytes } from 'node:crypto'
 import { appendFileSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
+import {
+  formatDurableActionBody,
+  parseCockpitIntent,
+  evaluateGuardedAction,
+} from '../lib/cockpit-actions.mjs'
 import { authorizeCockpitUser, createAuditEvent } from '../lib/cockpit-auth.mjs'
 import { loadCockpitConfig, validateCockpitConfig } from '../lib/cockpit-config.mjs'
 import { createGitHubClient, loadRepositoryPermission } from '../lib/cockpit-github.mjs'
@@ -46,6 +51,8 @@ createServer(async (req, res) => {
         403,
       )
 
+    if (url.pathname === '/actions' && req.method === 'POST')
+      return actionEndpoint(req, res, repo, session)
     if (url.pathname === '/') return home(res, repo, session)
     const issueMatch = url.pathname.match(/^\/issues\/(\d+)$/)
     if (issueMatch) return issuePage(res, repo, Number(issueMatch[1]), session)
@@ -91,6 +98,59 @@ async function issuePage(res, repo, number, session) {
     res,
     renderCockpitPage({ repo, user: session?.user?.login || 'token', body: renderIssueView(view) }),
   )
+}
+
+async function actionEndpoint(req, res, repo, session) {
+  if (!config.writeActions) return json(res, { ok: false, errors: ['write-actions-disabled'] }, 403)
+  const payload = JSON.parse(await readBody(req))
+  const parsed = parseCockpitIntent({ ...payload, repo })
+  if (!parsed.ok) return json(res, parsed, 400)
+  const intent = parsed.intent
+  const guard = evaluateGuardedAction({
+    action: intent.type,
+    userRole: session?.role || 'operator',
+    highAssurance: Boolean(payload.highAssurance),
+    confirmation: req.headers['x-cockpit-confirm'] === 'true',
+  })
+  if (!guard.ok) {
+    audit(
+      createAuditEvent({
+        actor: session?.user?.login || 'token',
+        action: intent.type,
+        target: `${repo}#${intent.issue}`,
+        allowed: false,
+        reason: guard.reasons,
+      }),
+    )
+    return json(res, { ok: false, errors: guard.reasons }, 403)
+  }
+
+  const writeClient = session?.token ? createGitHubClient({ token: session.token }) : github
+  let result
+  if (intent.type === 'draft-follow-up') {
+    result = await writeClient.createIssue(repo, {
+      title: payload.title || `Follow-up from #${intent.issue}`,
+      body: formatDurableActionBody(intent),
+      labels: ['drafted-by:pi'],
+    })
+  } else {
+    result = await writeClient.createIssueComment(
+      repo,
+      intent.issue,
+      formatDurableActionBody(intent),
+    )
+  }
+  audit(
+    createAuditEvent({
+      actor: session?.user?.login || 'token',
+      action: intent.type,
+      target: `${repo}#${intent.issue}`,
+      allowed: true,
+      resultUrl: result.html_url,
+      previewSummary: intent.body.slice(0, 120),
+    }),
+  )
+  return json(res, { ok: true, url: result.html_url })
 }
 
 async function authorizeRequest({ session, repo }) {
@@ -173,6 +233,12 @@ function logout(req, res) {
 
 function audit(event) {
   appendFileSync(join(config.dataDir, 'audit.jsonl'), `${JSON.stringify(event)}\n`)
+}
+
+async function readBody(req) {
+  const chunks = []
+  for await (const chunk of req) chunks.push(chunk)
+  return Buffer.concat(chunks).toString('utf8') || '{}'
 }
 
 function readCookie(req, name) {

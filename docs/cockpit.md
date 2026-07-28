@@ -137,6 +137,7 @@ Available surfaces:
 - `/` — Goal Board for registered repository.
 - `/issues/<number>` — issue SDLC view.
 - `/login`, `/oauth/callback`, `/logout` — GitHub OAuth flow for remote mode.
+- `POST /actions` — guarded write gateway when `COCKPIT_WRITE_ACTIONS=true` and request includes `X-Cockpit-Confirm: true`.
 
 ## Future Docker deployment
 
