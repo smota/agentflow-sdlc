@@ -53,9 +53,9 @@ Shows top metrics, a highlight goal, next-best-actions, goal health, follow-ups,
 
 Rolls up child issues, dependencies, acceptance matrix, risk, active workstreams, PRs, follow-ups, and decisions.
 
-### Goal Detail and Role Flow Contributions
+### Goal Detail, Selected Path, and Role Flow Contributions
 
-Shows phases 0-8 as role contributions rather than a generic timeline:
+Shows the selected path/profile/risk first, then phases 0-8 as role contributions rather than a generic timeline. Roles can be complete, skipped by path, not applicable, not started, needs attention, blocked, or error:
 
 1. Product manager / JTBD
 2. Analyst
@@ -67,11 +67,11 @@ Shows phases 0-8 as role contributions rather than a generic timeline:
 8. Tech writer
 9. PR readiness
 
-Each role card shows whether contribution evidence is recorded, inferred, not recorded yet, not applicable, needs attention, blocked, or error.
+Each role card shows completion first. Supporting evidence is detail/proof behind the role status. Roles skipped by selected path explain why and do not reduce readiness.
 
-### Evidence Health Check
+### Readiness Health
 
-Reports governance completeness as a score with explainable dimensions, not model confidence:
+Reports governance completeness as a path-aware score with explainable dimensions, not model confidence. The denominator includes only applicable checks; skipped-by-path and not-applicable checks are excluded:
 
 - Scope.
 - Design.
@@ -81,6 +81,10 @@ Reports governance completeness as a score with explainable dimensions, not mode
 - Follow-ups.
 
 Missing optional evidence is shown with fail-safe copy instead of generic `unknown` warnings.
+
+### Version / Release Lens
+
+Shows whether the goal is in progress, merged, awaiting release, or delivered/closed. It also surfaces target branch, release impact, candidate version when known, and release-note state. This reinforces that merged work is not always delivered work.
 
 ### Comments lanes
 

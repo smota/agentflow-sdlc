@@ -11,8 +11,10 @@ Docker deployment is intentionally a second pass. This checklist covers local an
 2. Open `/` and verify Goal Board loads.
 3. Open `/issues/119` and verify:
    - Goal detail renders with AgentFlow goal language.
-   - Role Flow Contributions render instead of generic timeline framing.
-   - Evidence Health Check renders score and explainable dimensions.
+   - Selected Path renders profile, risk, applicable roles, and skipped roles.
+   - Role Flow Contributions render status first instead of generic timeline framing.
+   - Readiness Health renders score, denominator, excluded skipped/not-applicable checks, and explainable dimensions.
+   - Version / Release Lens renders release impact, target branch, and awaiting-release state where inferable.
    - Graph Navigation renders nodes/edges and detail panel.
    - Workflow lanes render comments by purpose.
    - Guarded actions panel says server-side auth/CSRF/audit required.
@@ -89,7 +91,9 @@ Use a process manager such as systemd, pm2, or a platform process runner. Termin
 - [ ] Top metrics, highlight zone, and next-best-actions are visible above the goal list.
 - [ ] GitHub issue/PR/comment language is secondary to goal, confidence, evidence, next action, and follow-ups.
 - [ ] Fail-safe states avoid generic `unknown` warnings except real errors.
-- [ ] Evidence Health behaves like a health check with score and dimensions.
+- [ ] Readiness Health behaves like a health check with score, dimensions, and denominator.
+- [ ] Skipped-by-path roles explain why they were skipped and do not reduce score.
+- [ ] Version / Release Lens distinguishes merged, awaiting release, delivered/closed, and no-release-impact states.
 
 ## Release checklist
 
