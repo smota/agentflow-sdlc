@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import { createServer } from 'node:http'
 import { randomBytes } from 'node:crypto'
-import { appendFileSync, mkdirSync } from 'node:fs'
-import { join } from 'node:path'
+import { appendFileSync, mkdirSync, readFileSync } from 'node:fs'
+import { extname, join, normalize } from 'node:path'
 import {
   formatDurableActionBody,
   parseCockpitIntent,
@@ -55,6 +55,7 @@ createServer(async (req, res) => {
     const limited = rateLimit(`${req.socket.remoteAddress || 'unknown'}:${url.pathname}`)
     if (!limited.ok) return json(res, { ok: false, errors: ['rate-limit-exceeded'] }, 429)
     if (url.pathname === '/healthz') return json(res, { ok: true })
+    if (url.pathname.startsWith('/assets/cockpit/')) return asset(res, url.pathname)
     if (url.pathname === '/login') return login(req, res)
     if (url.pathname === '/oauth/callback') return oauthCallback(url, res)
     if (url.pathname === '/logout') return logout(req, res)
@@ -361,6 +362,14 @@ function text(res, body, contentType = 'text/plain; charset=utf-8', status = 200
     ...securityHeaders({ publicUrl: config.publicUrl }),
   })
   res.end(body)
+}
+
+function asset(res, pathname) {
+  const relative = normalize(pathname.replace(/^\/assets\/cockpit\//, '')).replace(/^\.\.[/\\]/, '')
+  const fullPath = join('assets', 'cockpit', relative)
+  const type = extname(fullPath) === '.png' ? 'image/png' : 'application/octet-stream'
+  res.writeHead(200, { 'Content-Type': type, ...securityHeaders({ publicUrl: config.publicUrl }) })
+  res.end(readFileSync(fullPath))
 }
 
 function redirect(res, location) {

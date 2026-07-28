@@ -10,10 +10,11 @@ Docker deployment is intentionally a second pass. This checklist covers local an
    ```
 2. Open `/` and verify Goal Board loads.
 3. Open `/issues/119` and verify:
-   - SDLC timeline renders.
-   - Evidence Health renders.
-   - Relationship Graph renders nodes/edges.
-   - Comment lanes render workflow sections.
+   - Goal detail renders with AgentFlow goal language.
+   - Role Flow Contributions render instead of generic timeline framing.
+   - Evidence Health Check renders score and explainable dimensions.
+   - Graph Navigation renders nodes/edges and detail panel.
+   - Workflow lanes render comments by purpose.
    - Guarded actions panel says server-side auth/CSRF/audit required.
 4. Open `/issues/127/replay` and verify compact Goal Story replay.
 5. Open `/issues/127/replay.md` and verify markdown export.
@@ -80,6 +81,15 @@ Use a process manager such as systemd, pm2, or a platform process runner. Termin
 - Disable writes with `COCKPIT_WRITE_ACTIONS=false`.
 - Disable telemetry with `COCKPIT_RUNNER_TELEMETRY=false`.
 - Remove OAuth app credentials if compromised.
+
+## Goal Command Center UX checklist
+
+- [ ] Header uses repo-local AgentFlow logo and product palette.
+- [ ] Home page answers what goal needs attention and why within one screen.
+- [ ] Top metrics, highlight zone, and next-best-actions are visible above the goal list.
+- [ ] GitHub issue/PR/comment language is secondary to goal, confidence, evidence, next action, and follow-ups.
+- [ ] Fail-safe states avoid generic `unknown` warnings except real errors.
+- [ ] Evidence Health behaves like a health check with score and dimensions.
 
 ## Release checklist
 
