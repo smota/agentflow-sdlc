@@ -12,7 +12,14 @@ import { authorizeCockpitUser, createAuditEvent } from '../lib/cockpit-auth.mjs'
 import { loadCockpitConfig, validateCockpitConfig } from '../lib/cockpit-config.mjs'
 import { createGitHubClient, loadRepositoryPermission } from '../lib/cockpit-github.mjs'
 import { buildCockpitIssueView, buildGoalBoard } from '../lib/cockpit-read-model.mjs'
-import { renderCockpitPage, renderGoalBoard, renderIssueView } from '../lib/cockpit-ui.mjs'
+import { loadGoalStoryFromGitHub } from '../lib/cockpit-replay-github.mjs'
+import { renderGoalStoryMarkdown } from '../lib/cockpit-replay.mjs'
+import {
+  renderCockpitPage,
+  renderGoalBoard,
+  renderGoalStory,
+  renderIssueView,
+} from '../lib/cockpit-ui.mjs'
 
 const config = loadCockpitConfig()
 const validation = validateCockpitConfig(config)
@@ -54,6 +61,9 @@ createServer(async (req, res) => {
     if (url.pathname === '/actions' && req.method === 'POST')
       return actionEndpoint(req, res, repo, session)
     if (url.pathname === '/') return home(res, repo, session)
+    const replayMatch = url.pathname.match(/^\/issues\/(\d+)\/replay(\.md)?$/)
+    if (replayMatch)
+      return replayPage(res, repo, Number(replayMatch[1]), session, Boolean(replayMatch[2]))
     const issueMatch = url.pathname.match(/^\/issues\/(\d+)$/)
     if (issueMatch) return issuePage(res, repo, Number(issueMatch[1]), session)
     return html(
@@ -151,6 +161,19 @@ async function actionEndpoint(req, res, repo, session) {
     }),
   )
   return json(res, { ok: true, url: result.html_url })
+}
+
+async function replayPage(res, repo, number, session, markdown = false) {
+  const story = await loadGoalStoryFromGitHub({ client: github, repo, issueNumber: number })
+  if (markdown) return text(res, renderGoalStoryMarkdown(story), 'text/markdown; charset=utf-8')
+  return html(
+    res,
+    renderCockpitPage({
+      repo,
+      user: session?.user?.login || 'token',
+      body: renderGoalStory(story),
+    }),
+  )
 }
 
 async function authorizeRequest({ session, repo }) {
@@ -255,6 +278,11 @@ function html(res, body, status = 200) {
 function json(res, body, status = 200) {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' })
   res.end(JSON.stringify(body))
+}
+
+function text(res, body, contentType = 'text/plain; charset=utf-8', status = 200) {
+  res.writeHead(status, { 'Content-Type': contentType })
+  res.end(body)
 }
 
 function redirect(res, location) {

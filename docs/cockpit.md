@@ -94,6 +94,36 @@ Comments are grouped by workflow purpose using markers/templates:
 - Validation
 - Follow-ups
 
+## Goal Story replay
+
+Goal Story replay is a read-only reconstruction of how a goal moved from intent to outcome. It does not rerun agents and does not mutate GitHub.
+
+Replay sources, in precedence order:
+
+1. GitHub issue and PR durable state.
+2. Workflow-status, handover, validation, review, and follow-up comment markers.
+3. PR commits, merge status, and check summaries.
+4. Optional sanitized runner events in a later version.
+
+Replay groups events into AgentFlow sections:
+
+- Goal
+- Scope
+- Role timeline
+- Decisions
+- Validation
+- Review/Gates
+- PR readiness
+- Outcome
+- Follow-ups
+
+The UI defaults to compact mode for short goals and marks evidence as durable, inferred, missing, or stale. Missing evidence is shown explicitly instead of invented. Markdown export is available for sharing in GitHub comments or postmortems.
+
+Current routes:
+
+- `/issues/<number>/replay` — HTML Goal Story replay.
+- `/issues/<number>/replay.md` — markdown export.
+
 ## Guarded actions
 
 Write-capable actions are structured and auditable:
