@@ -6,3 +6,6 @@ node_modules/
 skills-lock.json
 SPEC.md
 *.log
+.agents/
+.pi/
+.pi-subagents/
