@@ -10,13 +10,15 @@ Docker deployment is intentionally a second pass. This checklist covers local an
    ```
 2. Open `/` and verify Goal Board loads.
 3. Open `/issues/119` and verify:
-   - Goal detail renders with AgentFlow goal language.
-   - Selected Path renders profile, risk, applicable roles, and skipped roles.
-   - Role Flow Contributions render status first instead of generic timeline framing.
-   - Readiness Health renders score, denominator, excluded skipped/not-applicable checks, and explainable dimensions.
-   - Version / Release Lens renders release impact, target branch, and awaiting-release state where inferable.
-   - Graph Navigation renders nodes/edges and detail panel.
-   - Workflow lanes render comments by purpose.
+   - Goal detail has a back link to Goal Command Center.
+   - Compact goal header avoids a second large page header.
+   - Selected Path and Version / Release Lens appear in the summary strip.
+   - Human review status is explicit when required by high-assurance path.
+   - Next-best-actions render as compact row cards.
+   - Role Flow Contributions render icon/status first instead of generic timeline framing.
+   - Readiness Health renders score, denominator, excluded skipped/not-applicable checks, and hover/focus detail.
+   - Relationship Map renders only when relationships exist and explains its navigation purpose.
+   - Activity & Decisions hides empty lanes or shows a compact empty state.
    - Guarded actions panel says server-side auth/CSRF/audit required.
 4. Open `/issues/127/replay` and verify compact Goal Story replay.
 5. Open `/issues/127/replay.md` and verify markdown export.
@@ -91,7 +93,9 @@ Use a process manager such as systemd, pm2, or a platform process runner. Termin
 - [ ] Top metrics, highlight zone, and next-best-actions are visible above the goal list.
 - [ ] GitHub issue/PR/comment language is secondary to goal, confidence, evidence, next action, and follow-ups.
 - [ ] Fail-safe states avoid generic `unknown` warnings except real errors.
-- [ ] Readiness Health behaves like a health check with score, dimensions, and denominator.
+- [ ] Header hides local token implementation detail and labels the repository as Workspace.
+- [ ] Goal Story appears as a styled action, not an unstyled utility link.
+- [ ] Readiness Health behaves like a health check with score, dimensions, denominator, and floating details.
 - [ ] Skipped-by-path roles explain why they were skipped and do not reduce score.
 - [ ] Version / Release Lens distinguishes merged, awaiting release, delivered/closed, and no-release-impact states.
 
