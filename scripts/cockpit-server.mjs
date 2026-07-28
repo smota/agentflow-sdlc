@@ -12,7 +12,23 @@ import { authorizeCockpitUser, createAuditEvent } from '../lib/cockpit-auth.mjs'
 import { loadCockpitConfig, validateCockpitConfig } from '../lib/cockpit-config.mjs'
 import { createGitHubClient, loadRepositoryPermission } from '../lib/cockpit-github.mjs'
 import { buildCockpitIssueView, buildGoalBoard } from '../lib/cockpit-read-model.mjs'
-import { renderCockpitPage, renderGoalBoard, renderIssueView } from '../lib/cockpit-ui.mjs'
+import { loadGoalStoryFromGitHub } from '../lib/cockpit-replay-github.mjs'
+import {
+  clearSessionCookie,
+  createCsrfToken,
+  createRateLimiter,
+  rejectForbiddenTelemetryFields,
+  secureSessionCookie,
+  securityHeaders,
+  verifyCsrfToken,
+} from '../lib/cockpit-security.mjs'
+import { renderGoalStoryMarkdown } from '../lib/cockpit-replay.mjs'
+import {
+  renderCockpitPage,
+  renderGoalBoard,
+  renderGoalStory,
+  renderIssueView,
+} from '../lib/cockpit-ui.mjs'
 
 const config = loadCockpitConfig()
 const validation = validateCockpitConfig(config)
@@ -26,11 +42,18 @@ for (const warning of validation.warnings) console.warn(`Cockpit warning: ${warn
 mkdirSync(config.dataDir, { recursive: true })
 
 const sessions = new Map()
+const oauthStates = new Map()
 const github = createGitHubClient({ token: config.github.token })
+const rateLimit = createRateLimiter({
+  limit: config.rateLimit.limit,
+  windowMs: config.rateLimit.windowMs,
+})
 
 createServer(async (req, res) => {
   try {
     const url = new URL(req.url, config.publicUrl)
+    const limited = rateLimit(`${req.socket.remoteAddress || 'unknown'}:${url.pathname}`)
+    if (!limited.ok) return json(res, { ok: false, errors: ['rate-limit-exceeded'] }, 429)
     if (url.pathname === '/healthz') return json(res, { ok: true })
     if (url.pathname === '/login') return login(req, res)
     if (url.pathname === '/oauth/callback') return oauthCallback(url, res)
@@ -53,9 +76,14 @@ createServer(async (req, res) => {
 
     if (url.pathname === '/actions' && req.method === 'POST')
       return actionEndpoint(req, res, repo, session)
+    if (url.pathname === '/telemetry' && req.method === 'POST')
+      return telemetryEndpoint(req, res, repo, session)
     if (url.pathname === '/') return home(res, repo, session)
+    const replayMatch = url.pathname.match(/^\/issues\/(\d+)\/replay(\.md)?$/)
+    if (replayMatch)
+      return replayPage(res, repo, Number(replayMatch[1]), session, Boolean(replayMatch[2]))
     const issueMatch = url.pathname.match(/^\/issues\/(\d+)$/)
-    if (issueMatch) return issuePage(res, repo, Number(issueMatch[1]), session)
+    if (issueMatch) return issuePage(req, res, repo, Number(issueMatch[1]), session)
     return html(
       res,
       renderCockpitPage({ body: '<section class="panel"><h1>Not found</h1></section>' }),
@@ -78,31 +106,56 @@ createServer(async (req, res) => {
 async function home(res, repo, session) {
   const issues = await github.issues(repo, { state: 'open', per_page: 50 })
   const board = buildGoalBoard({ issues: issues.filter((issue) => !issue.pull_request) })
+  const sessionId = 'local-token'
   return html(
     res,
     renderCockpitPage({
       repo,
       user: session?.user?.login || 'token',
+      csrfToken: createCsrfToken({
+        sessionId,
+        secret: config.sessionSecret || 'local-development-session-secret-32',
+      }),
       body: renderGoalBoard(board),
     }),
   )
 }
 
-async function issuePage(res, repo, number, session) {
+async function issuePage(req, res, repo, number, session) {
   const [issue, comments] = await Promise.all([
     github.issue(repo, number),
     github.issueComments(repo, number),
   ])
   const view = buildCockpitIssueView({ issue, comments })
+  const sessionId = readCookie(req, 'cockpit_session') || 'local-token'
   return html(
     res,
-    renderCockpitPage({ repo, user: session?.user?.login || 'token', body: renderIssueView(view) }),
+    renderCockpitPage({
+      repo,
+      user: session?.user?.login || 'token',
+      csrfToken: createCsrfToken({
+        sessionId,
+        secret: config.sessionSecret || 'local-development-session-secret-32',
+      }),
+      body: renderIssueView(view),
+    }),
   )
 }
 
 async function actionEndpoint(req, res, repo, session) {
   if (!config.writeActions) return json(res, { ok: false, errors: ['write-actions-disabled'] }, 403)
-  const payload = JSON.parse(await readBody(req))
+  const payload = await readPayload(req)
+  const sessionId = readCookie(req, 'cockpit_session') || 'local-token'
+  const csrf = req.headers['x-cockpit-csrf'] || payload.csrf
+  if (
+    !verifyCsrfToken({
+      token: csrf,
+      sessionId,
+      secret: config.sessionSecret || 'local-development-session-secret-32',
+    })
+  ) {
+    return json(res, { ok: false, errors: ['csrf-invalid'] }, 403)
+  }
   const parsed = parseCockpitIntent({ ...payload, repo })
   if (!parsed.ok) return json(res, parsed, 400)
   const intent = parsed.intent
@@ -153,6 +206,37 @@ async function actionEndpoint(req, res, repo, session) {
   return json(res, { ok: true, url: result.html_url })
 }
 
+async function telemetryEndpoint(req, res, repo, session) {
+  if (!config.runnerTelemetry)
+    return json(res, { ok: false, errors: ['runner-telemetry-disabled'] }, 403)
+  const payload = await readPayload(req)
+  const forbidden = rejectForbiddenTelemetryFields(payload)
+  if (forbidden.length)
+    return json(res, { ok: false, errors: ['forbidden-telemetry-fields'], forbidden }, 400)
+  const event = {
+    ...payload,
+    repo,
+    source: 'runner',
+    receivedAt: new Date().toISOString(),
+    actor: session?.user?.login || 'token',
+  }
+  appendFileSync(join(config.dataDir, 'runner-events.jsonl'), `${JSON.stringify(event)}\n`)
+  return json(res, { ok: true })
+}
+
+async function replayPage(res, repo, number, session, markdown = false) {
+  const story = await loadGoalStoryFromGitHub({ client: github, repo, issueNumber: number })
+  if (markdown) return text(res, renderGoalStoryMarkdown(story), 'text/markdown; charset=utf-8')
+  return html(
+    res,
+    renderCockpitPage({
+      repo,
+      user: session?.user?.login || 'token',
+      body: renderGoalStory(story),
+    }),
+  )
+}
+
 async function authorizeRequest({ session, repo }) {
   if (!config.remote && config.github.token) return { ok: true, reasons: [] }
   const repoPermission = await loadRepositoryPermission({ client: github, repo })
@@ -175,7 +259,7 @@ function login(_req, res) {
       500,
     )
   const state = randomBytes(16).toString('hex')
-  sessions.set(state, { oauthState: true })
+  oauthStates.set(state, { createdAt: Date.now() })
   const redirectUri = `${config.publicUrl.replace(/\/$/, '')}/oauth/callback`
   const target = new URL('https://github.com/login/oauth/authorize')
   target.searchParams.set('client_id', config.github.clientId)
@@ -188,13 +272,13 @@ function login(_req, res) {
 async function oauthCallback(url, res) {
   const state = url.searchParams.get('state')
   const code = url.searchParams.get('code')
-  if (!state || !code || !sessions.get(state)?.oauthState)
+  if (!state || !code || !oauthStates.get(state))
     return html(
       res,
       renderCockpitPage({ body: '<section class="panel"><h1>Invalid OAuth state</h1></section>' }),
       400,
     )
-  sessions.delete(state)
+  oauthStates.delete(state)
   const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
     method: 'POST',
     headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
@@ -220,14 +304,14 @@ async function oauthCallback(url, res) {
     user: { login: user.login, orgs: orgs.map((org) => org.login) },
     token: tokenData.access_token,
   })
-  res.setHeader('Set-Cookie', `cockpit_session=${id}; HttpOnly; SameSite=Lax; Path=/`)
+  res.setHeader('Set-Cookie', secureSessionCookie({ id, remote: config.remote }))
   audit(createAuditEvent({ actor: user.login, action: 'login', allowed: true }))
   return redirect(res, '/')
 }
 
 function logout(req, res) {
   sessions.delete(readCookie(req, 'cockpit_session'))
-  res.setHeader('Set-Cookie', 'cockpit_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0')
+  res.setHeader('Set-Cookie', clearSessionCookie({ remote: config.remote }))
   return redirect(res, '/login')
 }
 
@@ -241,6 +325,14 @@ async function readBody(req) {
   return Buffer.concat(chunks).toString('utf8') || '{}'
 }
 
+async function readPayload(req) {
+  const body = await readBody(req)
+  const contentType = req.headers['content-type'] || ''
+  if (contentType.includes('application/x-www-form-urlencoded'))
+    return Object.fromEntries(new URLSearchParams(body))
+  return JSON.parse(body || '{}')
+}
+
 function readCookie(req, name) {
   return Object.fromEntries(
     (req.headers.cookie || '').split(';').map((part) => part.trim().split('=')),
@@ -248,16 +340,30 @@ function readCookie(req, name) {
 }
 
 function html(res, body, status = 200) {
-  res.writeHead(status, { 'Content-Type': 'text/html; charset=utf-8' })
+  res.writeHead(status, {
+    'Content-Type': 'text/html; charset=utf-8',
+    ...securityHeaders({ publicUrl: config.publicUrl }),
+  })
   res.end(body)
 }
 
 function json(res, body, status = 200) {
-  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' })
+  res.writeHead(status, {
+    'Content-Type': 'application/json; charset=utf-8',
+    ...securityHeaders({ publicUrl: config.publicUrl }),
+  })
   res.end(JSON.stringify(body))
 }
 
+function text(res, body, contentType = 'text/plain; charset=utf-8', status = 200) {
+  res.writeHead(status, {
+    'Content-Type': contentType,
+    ...securityHeaders({ publicUrl: config.publicUrl }),
+  })
+  res.end(body)
+}
+
 function redirect(res, location) {
-  res.writeHead(302, { Location: location })
+  res.writeHead(302, { Location: location, ...securityHeaders({ publicUrl: config.publicUrl }) })
   res.end()
 }
