@@ -1,6 +1,6 @@
 # AgentFlow SDLC
 
-Use AI more confidently in software delivery.
+Manage AI-assisted software delivery with consistency and durable evidence.
 
 AgentFlow SDLC is an open-source process layer for AI-assisted software delivery. It gives people and agents a shared path from idea to pull request with clear roles, durable evidence, practical review gates, and intelligent collaboration when it helps.
 
@@ -19,7 +19,7 @@ AgentFlow installs an opinionated SDLC around an existing project. It does not g
 
 ## Why teams use it
 
-- **Reviewable AI-assisted work:** PRs and issue comments carry scope, validation, review mode, docs decisions, and follow-up status.
+- **Manageable AI-assisted work:** PRs and issue comments carry scope, validation, review mode, docs decisions, and follow-up status.
 - **Resumable delivery:** another person or agent can continue without reconstructing a chat session.
 - **Less process memory:** hooks, templates, and validators catch workflow drift.
 - **Intelligent collaboration:** focused helper intelligence is available when uncertainty is high, while one accountable owner keeps evidence compact.
@@ -64,6 +64,33 @@ Already adopted AgentFlow? Use [`docs/assisted-update.md`](docs/assisted-update.
 ```bash
 node bin/cli.mjs update-prompt --target /path/to/your-project
 ```
+
+## Opinionated SDLC baseline
+
+AgentFlow SDLC encodes a baseline way to manage AI-assisted delivery. It is opinionated where consistency and safety matter, and extensible where teams need local fit.
+
+Core principles:
+
+- Durable evidence over private chat memory.
+- Manageable role flow with explicit ownership and handoffs.
+- Single-agent execution by default; more agents only when they improve a decision.
+- Human authority for high-assurance work.
+- Follow-up issues instead of hidden TODOs.
+- Harness adapters are generated surfaces, not product source.
+
+Baseline workflow:
+
+1. Product/JTBD framing.
+2. Analysis and acceptance criteria.
+3. Architecture and path selection.
+4. Developer planning.
+5. Implementation.
+6. Testing and validation evidence.
+7. Review.
+8. Documentation/release notes.
+9. PR readiness and follow-up closeout.
+
+Adopters can extend roles, workflow paths, labels, gates, validators, release policies, skills, and harness adapters while preserving provenance, readiness rules, high-assurance approval, and no-secret durable evidence.
 
 ## Cockpit Goal Command Center
 
