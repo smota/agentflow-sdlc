@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "source": "docs/sdlc-definition.md",
+      "target": "docs/sdlc-definition.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "docs/sdlc-packaging.md",
+      "target": "docs/sdlc-packaging.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "defaults/sdlc.config.json",
+      "target": "sdlc.config.json",
+      "ownership": "seed-once"
+    },
+    {
+      "source": "schemas/sdlc-config.schema.json",
+      "target": "schemas/sdlc-config.schema.json",
+      "ownership": "managed"
+    },
+    {
+      "source": "skills/sdlc-definition/SKILL.md",
+      "target": "skills/sdlc-definition/SKILL.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "skills/sdlc-migration/SKILL.md",
+      "target": "skills/sdlc-migration/SKILL.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "skills/sdlc-audit/SKILL.md",
+      "target": "skills/sdlc-audit/SKILL.md",
+      "ownership": "managed"
+    }
+  ]
+}
