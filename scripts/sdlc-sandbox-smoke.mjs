@@ -17,6 +17,11 @@ run(['sdlc', 'audit', '--json'])
 run(['sdlc', 'migrate', '--json'])
 run(['skills', 'sync', '--harness', 'all', '--apply'])
 run(['skills', 'status', '--harness', 'all', '--json'])
+run(['plugins', 'validate', '--harness', 'all', '--json'])
+run(['plugins', 'build', '--harness', 'all', '--apply'])
+run(['plugins', 'status', '--harness', 'all', '--json'])
+run(['settings', 'merge', '--harness', 'all', '--apply'])
+run(['settings', 'status', '--harness', 'all', '--json'])
 const expected = [
   'docs/sdlc-definition.md',
   'sdlc.config.json',
@@ -24,6 +29,14 @@ const expected = [
   '.claude/skills/sdlc-definition/SKILL.md',
   '.pi/skills/sdlc-audit/SKILL.md',
   '.agents/skills/sdlc-migration/SKILL.md',
+  '.claude/agentflow-sdlc.plugin.json',
+  '.agy/agentflow-sdlc.plugin.json',
+  '.codex/agentflow-sdlc.plugin.json',
+  '.pi/agentflow-sdlc.plugin.json',
+  '.claude/settings.json',
+  '.agy/settings.json',
+  '.codex/hooks.json',
+  '.pi/settings.json',
 ]
 const missing = expected.filter((item) => !existsSync(join(tmp, item)))
 const result = { ok: missing.length === 0, tmp, missing }

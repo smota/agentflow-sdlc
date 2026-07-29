@@ -1,0 +1,8 @@
+{
+  "name": "agentflow-sdlc-pi",
+  "version": "1.0.0",
+  "description": "AgentFlow SDLC skills, validators, and release governance for Pi.",
+  "author": "AgentFlow SDLC",
+  "entry": ".pi/skills",
+  "commands": ["agentflow-sdlc sdlc validate", "agentflow-sdlc skills sync --harness pi"]
+}

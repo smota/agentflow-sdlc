@@ -1,0 +1,8 @@
+{
+  "name": "agentflow-sdlc-codex",
+  "version": "1.0.0",
+  "description": "AgentFlow SDLC skills, validators, and release governance for Codex.",
+  "author": "AgentFlow SDLC",
+  "entry": ".agents/skills",
+  "commands": ["agentflow-sdlc sdlc validate", "agentflow-sdlc skills sync --harness codex"]
+}

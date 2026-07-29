@@ -5,6 +5,16 @@ import { fileURLToPath } from 'node:url'
 import { doctor, init, markMerged, sync } from '../lib/install.mjs'
 import { validateEnvironment } from '../lib/environment.mjs'
 import { adapterStatus, syncSkillAdapters } from '../lib/skill-adapters.mjs'
+import {
+  buildPluginManifests,
+  pluginStatus,
+  validatePluginManifests,
+} from '../lib/plugin-manifests.mjs'
+import {
+  harnessSettingsStatus,
+  mergeHarnessSettings,
+  validateSettingsManifest,
+} from '../lib/structural-merge.mjs'
 import { buildReleasePlan } from '../lib/release-versioning.mjs'
 import { migrateRename } from '../lib/rename-migration.mjs'
 import {
@@ -162,6 +172,103 @@ function handleSkills(rest, targetDir) {
   process.exit(2)
 }
 
+function handlePlugins(rest, targetDir) {
+  const [subcommand] = positionalArgs(rest)
+  const json = rest.includes('--json')
+  const harness = getFlag(rest, '--harness', 'all')
+  if (subcommand === 'build') {
+    const result = buildPluginManifests({
+      packageRoot,
+      targetDir,
+      harness,
+      write: rest.includes('--apply') && !rest.includes('--dry-run'),
+    })
+    if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+    else
+      printReport(`Plugin manifest build (${result.mode})`, {
+        entries: result.entries.map((entry) => `${entry.harness} -> ${entry.target}`),
+        findings: result.findings.map((item) => item.message),
+      })
+    process.exit(result.ok ? 0 : 1)
+  }
+  if (subcommand === 'validate') {
+    const result = validatePluginManifests({ packageRoot, harness })
+    if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+    else
+      printReport('Plugin manifest validation', {
+        manifests: result.manifests.map((item) => item.id),
+        findings: result.findings.map((item) => item.message),
+      })
+    process.exit(result.ok ? 0 : 1)
+  }
+  if (subcommand === 'status') {
+    const result = pluginStatus({ packageRoot, targetDir, harness })
+    if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+    else
+      printReport('Plugin manifest status', {
+        stale: result.stale.map((entry) => `${entry.harness}:${entry.status}`),
+      })
+    process.exit(result.stale.length || !result.ok ? 1 : 0)
+  }
+  process.stderr.write(
+    `Usage:\n  agentflow-sdlc plugins build [--harness all|claude-code,agy,codex,pi] [--dry-run|--apply] [--json]\n  agentflow-sdlc plugins validate [--harness all|claude-code,agy,codex,pi] [--json]\n  agentflow-sdlc plugins status [--target <dir>] [--harness all|claude-code,agy,codex,pi] [--json]\n`,
+  )
+  process.exit(2)
+}
+
+function handleSettings(rest, targetDir) {
+  const [subcommand] = positionalArgs(rest)
+  const json = rest.includes('--json')
+  const harness = getFlag(rest, '--harness', 'all')
+  const plugins = validatePluginManifests({ packageRoot, harness }).manifests
+  if (subcommand === 'merge') {
+    const result = mergeHarnessSettings({
+      packageRoot,
+      targetDir,
+      harness,
+      write: rest.includes('--apply') && !rest.includes('--dry-run'),
+      pluginManifests: plugins,
+    })
+    if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+    else
+      printReport(`Harness settings merge (${result.mode})`, {
+        entries: result.entries.map(
+          (entry) => `${entry.harness}:${entry.status} -> ${entry.target}`,
+        ),
+        findings: result.findings.map((item) => item.message),
+      })
+    process.exit(result.ok ? 0 : 1)
+  }
+  if (subcommand === 'status') {
+    const result = harnessSettingsStatus({
+      packageRoot,
+      targetDir,
+      harness,
+      pluginManifests: plugins,
+    })
+    if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+    else
+      printReport('Harness settings status', {
+        stale: result.stale.map((entry) => `${entry.harness}:${entry.status}`),
+        findings: result.findings.map((item) => item.message),
+      })
+    process.exit(result.stale.length || !result.ok ? 1 : 0)
+  }
+  if (subcommand === 'validate') {
+    const result = validateSettingsManifest({ packageRoot, pluginManifests: plugins })
+    if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+    else
+      printReport('Harness settings manifest validation', {
+        findings: result.findings.map((item) => item.message),
+      })
+    process.exit(result.ok ? 0 : 1)
+  }
+  process.stderr.write(
+    `Usage:\n  agentflow-sdlc settings merge [--harness all|claude-code,agy,codex,pi] [--dry-run|--apply] [--json]\n  agentflow-sdlc settings status [--target <dir>] [--harness all|claude-code,agy,codex,pi] [--json]\n  agentflow-sdlc settings validate [--harness all|claude-code,agy,codex,pi] [--json]\n`,
+  )
+  process.exit(2)
+}
+
 function handleExtensions(rest, targetDir) {
   const [subcommand, selector] = positionalArgs(rest)
   const json = rest.includes('--json')
@@ -266,6 +373,14 @@ function main() {
   const [command, ...rest] = process.argv.slice(2)
   const targetDir = resolve(getFlag(rest, '--target', process.cwd()))
 
+  if (command === 'plugins') {
+    handlePlugins(rest, targetDir)
+  }
+
+  if (command === 'settings') {
+    handleSettings(rest, targetDir)
+  }
+
   if (command === 'skills') {
     handleSkills(rest, targetDir)
   }
@@ -357,7 +472,7 @@ function main() {
   }
 
   process.stderr.write(
-    'Usage: agentflow-sdlc <init|sync|doctor|doctor-env|sdlc|skills|extensions|onboarding-prompt|update-prompt|migrate-rename|release-plan|mark-merged> [path] [--target <dir>] [--json]\n',
+    'Usage: agentflow-sdlc <init|sync|doctor|doctor-env|sdlc|skills|plugins|settings|extensions|onboarding-prompt|update-prompt|migrate-rename|release-plan|mark-merged> [path] [--target <dir>] [--json]\n',
   )
   process.exit(2)
 }

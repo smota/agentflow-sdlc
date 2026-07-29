@@ -1,9 +1,9 @@
 {
   "name": "agentflow-sdlc",
-  "private": true,
+  "private": false,
   "type": "module",
   "version": "0.7.0",
-  "description": "AgentFlow SDLC framework: role-based single-agent phases, branch discipline, PR/issue contracts, git hooks, and validators — extracted from Ativaly for reuse across projects.",
+  "description": "AgentFlow SDLC product: harness-neutral role-based SDLC definition, validators, skills, adapters, and release governance for multi-agent delivery.",
   "license": "Apache-2.0",
   "packageManager": "pnpm@9.6.0",
   "engines": {
@@ -19,10 +19,51 @@
     "validate:extensions": "node scripts/validate-extension-packs.mjs --allow-empty",
     "cockpit": "node scripts/cockpit-server.mjs",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "validate:npm": "node scripts/validate-npm-package.mjs",
+    "validate:release": "pnpm test && node scripts/sdlc-sandbox-smoke.mjs && node scripts/validate-npm-package.mjs"
   },
   "devDependencies": {
     "prettier": "^3.3.3",
     "vitest": "^2.0.4"
-  }
+  },
+  "keywords": [
+    "agentflow",
+    "sdlc",
+    "ai-agents",
+    "coding-agents",
+    "skills",
+    "claude",
+    "codex",
+    "antigravity",
+    "pi"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/smota/agentflow-sdlc.git"
+  },
+  "homepage": "https://github.com/smota/agentflow-sdlc#readme",
+  "bugs": {
+    "url": "https://github.com/smota/agentflow-sdlc/issues"
+  },
+  "files": [
+    "adapters/",
+    "agents/",
+    "bin/",
+    "defaults/",
+    "docs/",
+    "extensions/",
+    "lib/",
+    "manifests/",
+    "schemas/",
+    "scripts/",
+    "skills/",
+    "AGENTS.md",
+    "AGY.md",
+    "CLAUDE.md",
+    "CODEX.md",
+    "README.md",
+    "LICENSE",
+    "package.json"
+  ]
 }

@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "requiredPackageFields": [
+    "name",
+    "version",
+    "description",
+    "license",
+    "repository",
+    "homepage",
+    "bugs",
+    "bin",
+    "files"
+  ],
+  "requiredFiles": [
+    "bin/cli.mjs",
+    "docs/sdlc-definition.md",
+    "defaults/sdlc.config.json",
+    "schemas/sdlc-config.schema.json",
+    "lib/sdlc-state.mjs",
+    "lib/plugin-manifests.mjs",
+    "lib/structural-merge.mjs",
+    "skills/sdlc-definition/SKILL.md",
+    "skills/sdlc-migration/SKILL.md",
+    "skills/sdlc-audit/SKILL.md",
+    "manifests/product-payload.json",
+    "manifests/harness-settings.json",
+    "adapters/claude-code/manifest.json",
+    "adapters/agy/manifest.json",
+    "adapters/codex/manifest.json",
+    "adapters/pi/manifest.json",
+    "adapters/claude-code/.claude-plugin/plugin.json",
+    "adapters/agy/plugin.json",
+    "adapters/codex/plugin.json",
+    "adapters/pi/plugin.json"
+  ],
+  "forbiddenPathPrefixes": [
+    ".pi/",
+    ".claude/",
+    ".agy/",
+    ".codex/",
+    ".agent-runs/",
+    ".pi-subagents/"
+  ]
+}

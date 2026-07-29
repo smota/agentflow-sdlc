@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "settings": {
+    "claude-code": {
+      "path": ".claude/settings.json",
+      "merge": {
+        "agentflowSdlc": {
+          "managedBy": "agentflow-sdlc",
+          "commands": [
+            "agentflow-sdlc sdlc validate",
+            "agentflow-sdlc skills status --harness claude-code"
+          ]
+        }
+      }
+    },
+    "agy": {
+      "path": ".agy/settings.json",
+      "merge": {
+        "agentflowSdlc": {
+          "managedBy": "agentflow-sdlc",
+          "commands": ["agentflow-sdlc sdlc validate", "agentflow-sdlc skills status --harness agy"]
+        }
+      }
+    },
+    "codex": {
+      "path": ".codex/hooks.json",
+      "merge": {
+        "agentflowSdlc": {
+          "managedBy": "agentflow-sdlc",
+          "commands": [
+            "agentflow-sdlc sdlc validate",
+            "agentflow-sdlc skills status --harness codex"
+          ]
+        }
+      }
+    },
+    "pi": {
+      "path": ".pi/settings.json",
+      "merge": {
+        "agentflowSdlc": {
+          "managedBy": "agentflow-sdlc",
+          "commands": ["agentflow-sdlc sdlc validate", "agentflow-sdlc skills status --harness pi"]
+        }
+      }
+    }
+  }
+}

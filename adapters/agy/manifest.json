@@ -1,0 +1,10 @@
+{
+  "id": "agentflow-sdlc.agy",
+  "name": "AgentFlow SDLC for AGY / Antigravity",
+  "version": "1.0.0",
+  "harness": "agy",
+  "entry": ".agents/skills",
+  "skills": ["sdlc-definition", "sdlc-migration", "sdlc-audit"],
+  "commands": ["agentflow-sdlc sdlc validate", "agentflow-sdlc skills sync --harness agy"],
+  "settings": [".agy/settings.json"]
+}
