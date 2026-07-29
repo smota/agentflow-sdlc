@@ -1,0 +1,10 @@
+{
+  "id": "agentflow-sdlc.pi",
+  "name": "AgentFlow SDLC for Pi",
+  "version": "1.0.0",
+  "harness": "pi",
+  "entry": ".pi/skills",
+  "skills": ["sdlc-definition", "sdlc-migration", "sdlc-audit"],
+  "commands": ["agentflow-sdlc sdlc validate", "agentflow-sdlc skills sync --harness pi"],
+  "settings": [".pi/settings.json"]
+}

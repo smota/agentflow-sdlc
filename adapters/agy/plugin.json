@@ -1,0 +1,8 @@
+{
+  "name": "agentflow-sdlc-agy",
+  "version": "1.0.0",
+  "description": "AgentFlow SDLC skills, validators, and release governance for AGY / Antigravity.",
+  "author": "AgentFlow SDLC",
+  "entry": ".agents/skills",
+  "commands": ["agentflow-sdlc sdlc validate", "agentflow-sdlc skills sync --harness agy"]
+}

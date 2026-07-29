@@ -1,0 +1,10 @@
+{
+  "id": "agentflow-sdlc.codex",
+  "name": "AgentFlow SDLC for Codex",
+  "version": "1.0.0",
+  "harness": "codex",
+  "entry": ".agents/skills",
+  "skills": ["sdlc-definition", "sdlc-migration", "sdlc-audit"],
+  "commands": ["agentflow-sdlc sdlc validate", "agentflow-sdlc skills sync --harness codex"],
+  "settings": [".codex/hooks.json"]
+}

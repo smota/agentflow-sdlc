@@ -42,9 +42,13 @@ Generated files include a header identifying the canonical source and must be re
 agentflow-sdlc skills sync --harness all --dry-run
 agentflow-sdlc skills sync --harness claude-code,agy,codex,pi --apply
 agentflow-sdlc skills status --harness all --json
+agentflow-sdlc plugins validate --harness all --json
+agentflow-sdlc plugins build --harness all --dry-run
+agentflow-sdlc settings validate --harness all --json
+agentflow-sdlc settings merge --harness all --dry-run
 ```
 
-`skills status` fails when generated adapters are stale or missing.
+`skills status` fails when generated adapters are stale or missing. `plugins validate` checks canonical native manifests. `settings merge` preserves project-owned keys and refuses non-object JSON roots instead of overwriting harness config.
 
 ## Product rules
 

@@ -1,0 +1,10 @@
+{
+  "id": "agentflow-sdlc.claude-code",
+  "name": "AgentFlow SDLC for Claude Code",
+  "version": "1.0.0",
+  "harness": "claude-code",
+  "entry": ".claude/skills",
+  "skills": ["sdlc-definition", "sdlc-migration", "sdlc-audit"],
+  "commands": ["agentflow-sdlc sdlc validate", "agentflow-sdlc skills sync --harness claude-code"],
+  "settings": [".claude/settings.json"]
+}

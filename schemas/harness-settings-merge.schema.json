@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentflow.dev/schemas/harness-settings-merge.schema.json",
+  "title": "AgentFlow harness settings merge manifest",
+  "type": "object",
+  "required": ["version", "settings"],
+  "properties": {
+    "version": { "type": "integer", "const": 1 },
+    "settings": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["path", "merge"],
+        "properties": {
+          "path": { "type": "string" },
+          "merge": { "type": "object" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
