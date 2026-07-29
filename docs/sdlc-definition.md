@@ -13,21 +13,24 @@ Harness-specific directories such as `.pi`, `.claude`, `.agy`, and `.codex` are 
 
 ## Core concepts
 
-| Concept                | Meaning                                                 | Durable sources                             |
-| ---------------------- | ------------------------------------------------------- | ------------------------------------------- |
-| Workspace              | Configured repository/project boundary                  | config, Cockpit query state                 |
-| Goal Group             | Parent objective/epic                                   | issue body, relationships                   |
-| Goal                   | Delivery objective with acceptance                      | issue body, labels, comments                |
-| Delivery               | Implementation and PR activity                          | PR, commits, checks                         |
-| Role Flow              | Ordered role contributions and returns                  | role-pass, workflow-status, handover        |
-| Readiness              | Path-aware applicable quality state                     | issue/PR evidence, checks                   |
-| Release                | Target, impact, assignment, released/unreleased state   | issue fields, milestone, PR/release records |
-| Human approval gate    | Explicit human decision required by high-assurance work | PR review or gate record                    |
-| Follow-up              | Deferred work tracked as issue                          | follow-up issue links                       |
-| Source                 | External durable record link                            | GitHub issue/PR/comment/check URLs          |
-| Guided workflow action | Preview-first safe update to durable workflow records   | Cockpit/action audit                        |
+| Concept                | Meaning                                                                | Durable sources                             |
+| ---------------------- | ---------------------------------------------------------------------- | ------------------------------------------- |
+| Workspace              | Configured repository/project boundary                                 | config, Cockpit query state                 |
+| Goal Group             | Parent objective/epic                                                  | issue body, relationships                   |
+| Goal                   | Delivery objective with acceptance                                     | issue body, labels, comments                |
+| Delivery               | Implementation and PR activity                                         | PR, commits, checks                         |
+| Role Flow              | Ordered role contributions and returns                                 | role-pass, workflow-status, handover        |
+| Readiness              | Path-aware applicable quality state                                    | issue/PR evidence, checks                   |
+| Release                | Target, impact, assignment, released/unreleased state                  | issue fields, milestone, PR/release records |
+| Human approval gate    | Explicit human decision required by high-assurance work                | PR review or gate record                    |
+| Follow-up              | Deferred work tracked as issue                                         | follow-up issue links                       |
+| Source                 | External durable record link                                           | GitHub issue/PR/comment/check URLs          |
+| Guided workflow action | Preview-first safe update to durable workflow records                  | Cockpit/action audit                        |
+| Cockpit                | Optional first-class Goal Command Center projecting durable SDLC state | package runtime, GitHub/CLI records         |
 
 GitHub is current storage substrate. Product language leads with AgentFlow concepts.
+
+Cockpit is an official optional projection of this model. It may visualize goals, readiness, role flow, release state, replay, approvals, and follow-ups, but it must not own unique SDLC state or be required by `init`, `sync`, `doctor`, validators, skills, plugins, or settings merge.
 
 ## Paths
 

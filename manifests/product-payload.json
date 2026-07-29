@@ -35,6 +35,16 @@
       "source": "skills/sdlc-audit/SKILL.md",
       "target": "skills/sdlc-audit/SKILL.md",
       "ownership": "managed"
+    },
+    {
+      "source": "docs/cockpit.md",
+      "target": "docs/cockpit.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "docs/cockpit-concepts-and-rules.md",
+      "target": "docs/cockpit-concepts-and-rules.md",
+      "ownership": "managed"
     }
   ]
 }

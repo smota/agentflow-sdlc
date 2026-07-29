@@ -65,6 +65,19 @@ Already adopted AgentFlow? Use [`docs/assisted-update.md`](docs/assisted-update.
 node bin/cli.mjs update-prompt --target /path/to/your-project
 ```
 
+## Cockpit Goal Command Center
+
+Cockpit is the optional, first-class Goal Command Center for AgentFlow SDLC. CLI/GitHub workflow remains authoritative and fully usable without starting Cockpit; Cockpit reads durable SDLC records and presents goals, readiness, role flow, releases, approvals, replay, follow-ups, and safe workflow actions.
+
+Start it when you want visual operations:
+
+```bash
+AGENTFLOW_REPOSITORIES=owner/repo agentflow-sdlc cockpit
+agentflow-sdlc cockpit doctor --json
+```
+
+Read more: [`docs/cockpit.md`](docs/cockpit.md) and [`docs/cockpit-concepts-and-rules.md`](docs/cockpit-concepts-and-rules.md).
+
 ## Documentation map
 
 | Need                                   | Go here                                                                        |
@@ -74,6 +87,7 @@ node bin/cli.mjs update-prompt --target /path/to/your-project
 | Install or evaluate                    | [`docs/get-started.md`](docs/get-started.md)                                   |
 | Run issue work or contribute           | [`docs/guides/contribution-workflow.md`](docs/guides/contribution-workflow.md) |
 | Learn intelligent collaboration        | [`docs/intelligent-collaboration.md`](docs/intelligent-collaboration.md)       |
+| Use optional Goal Command Center       | [`docs/cockpit.md`](docs/cockpit.md)                                           |
 | Follow the workflow contract           | [`docs/agent-workflow.md`](docs/agent-workflow.md)                             |
 | Follow issue rules                     | [`docs/issue-standards.md`](docs/issue-standards.md)                           |
 | Configure a project                    | [`docs/project-config.md`](docs/project-config.md)                             |
@@ -88,6 +102,7 @@ node bin/cli.mjs update-prompt --target /path/to/your-project
 - Role-agent packages: `agents/roles/`.
 - Workflow skills: `agents/workflows/orchestrate/`, `scan/`, and `intelligent-collaboration/`.
 - Validators and helpers under `scripts/` and `lib/`.
+- Optional Cockpit Goal Command Center: `agentflow-sdlc cockpit`.
 - Examples and eval scaffolding under `docs/examples/` and `agents/evals/`.
 
 ## Contributing

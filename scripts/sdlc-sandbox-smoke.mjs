@@ -8,13 +8,17 @@ const repoRoot = resolve(process.cwd())
 const cli = join(repoRoot, 'bin', 'cli.mjs')
 const tmp = mkdtempSync(join(tmpdir(), 'agentflow-sdlc-smoke-'))
 function run(args) {
-  return execFileSync(process.execPath, [cli, ...args, '--target', tmp], { encoding: 'utf8' })
+  return execFileSync(process.execPath, [cli, ...args, '--target', tmp], {
+    encoding: 'utf8',
+    env: { ...process.env, AGENTFLOW_REPOSITORIES: 'smota/agentflow-sdlc' },
+  })
 }
 execFileSync('git', ['init'], { cwd: tmp, stdio: 'ignore' })
 run(['init'])
 run(['sdlc', 'validate', '--json'])
 run(['sdlc', 'audit', '--json'])
 run(['sdlc', 'migrate', '--json'])
+run(['cockpit', 'doctor', '--json'])
 run(['skills', 'sync', '--harness', 'all', '--apply'])
 run(['skills', 'status', '--harness', 'all', '--json'])
 run(['plugins', 'validate', '--harness', 'all', '--json'])

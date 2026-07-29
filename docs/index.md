@@ -4,26 +4,28 @@ This index maps the main concepts, defaults, roles, skills/workflows, templates,
 
 ## Start here
 
-1. [`../README.md`](../README.md) — concise front door: value, first steps, and document map.
-2. [`start-here.md`](start-here.md) — route humans and agents to the right document.
-3. [`agentflow-in-5-minutes.md`](agentflow-in-5-minutes.md) — short public explainer for the problem, lifecycle, primary evaluation path, and evidence model.
-4. [`get-started.md`](get-started.md) — assisted onboarding, install, configuration, sync, and verification path.
-5. [`assisted-onboarding.md`](assisted-onboarding.md) — LLM-assisted setup for existing projects with read-only inspection and explicit approval before changes.
-6. [`assisted-update.md`](assisted-update.md) — LLM-assisted update workflow for already-adopted projects using `agent-framework-lock.json`, `doctor`, `sync`, and `mark-merged`. [`deterministic-assisted-update.md`](deterministic-assisted-update.md) documents the proposed deterministic update-plan direction.
-7. [`environment-tools.md`](environment-tools.md) — required, recommended, and optional tools compatible with `doctor-env`.
-8. [`../AGENTS.md`](../AGENTS.md) — required first-read repository policy.
-9. [`project-setup.md`](project-setup.md) — guided setup choices for agents, execution mode, routing, branch strategy, validation, bounded work, and skill provenance.
-10. [`agent-workflow.md`](agent-workflow.md) — phase model, role-pass contract, durable evidence, branch strategy, review model, and PR readiness.
-11. [`issue-standards.md`](issue-standards.md) — issue titles, labels, body update rules, and lifecycle metadata.
-12. [`project-config.md`](project-config.md) — project-local `agent-workflow.config.json` contract.
-13. [`execution-targets.md`](execution-targets.md) — `executionTarget`, `transport`, `launcher`, `executor`, and `delegationBoundary` concepts that disambiguate `with claude`/`with agy`/`with pi` requests.
-14. [`capabilities.md`](capabilities.md) — portable PLAN/WORKFLOW/LOOP/SUB-AGENTS capability vocabulary, resolution modes, evidence, and adapter links.
-15. [`intelligent-collaboration.md`](intelligent-collaboration.md) — collaboration modes, decision budget, smallest-sufficient-collaboration rule, bounded helper intelligence, and compact evidence guidance.
-16. [`release-versioning.md`](release-versioning.md) — configurable release strategy, default `main.minor.fix`, release evidence, validators, and preview helpers.
-17. [`extension-packs.md`](extension-packs.md) — repository-level contrib-style overlays for opinionated engineering approaches, skills, tools, templates, and validators.
-18. [`examples/simple-bugfix-flow.md`](examples/simple-bugfix-flow.md), [`examples/multi-agent-review-flow.md`](examples/multi-agent-review-flow.md), [`examples/high-assurance-flow.md`](examples/high-assurance-flow.md), and [`examples/intelligent-collaboration-flow.md`](examples/intelligent-collaboration-flow.md) — public example flows and evidence excerpts.
-19. [`default-skills.md`](default-skills.md) — default skills, recommended companion skills, upstream repositories, and CCPM-sourced skill surfaces.
-20. [`../agents/agentflow-sdlc/README.md`](../agents/agentflow-sdlc/README.md) — canonical portable AgentFlow SDLC agent package with maturity, capability, handoff, eval, and improvement-loop contracts.
+1. [`../README.md`](../README.md) ï¿½ concise front door: value, first steps, and document map.
+2. [`start-here.md`](start-here.md) ï¿½ route humans and agents to the right document.
+3. [`agentflow-in-5-minutes.md`](agentflow-in-5-minutes.md) ï¿½ short public explainer for the problem, lifecycle, primary evaluation path, and evidence model.
+4. [`get-started.md`](get-started.md) ï¿½ assisted onboarding, install, configuration, sync, and verification path.
+5. [`assisted-onboarding.md`](assisted-onboarding.md) ï¿½ LLM-assisted setup for existing projects with read-only inspection and explicit approval before changes.
+6. [`assisted-update.md`](assisted-update.md) ï¿½ LLM-assisted update workflow for already-adopted projects using `agent-framework-lock.json`, `doctor`, `sync`, and `mark-merged`. [`deterministic-assisted-update.md`](deterministic-assisted-update.md) documents the proposed deterministic update-plan direction.
+7. [`environment-tools.md`](environment-tools.md) ï¿½ required, recommended, and optional tools compatible with `doctor-env`.
+8. [`../AGENTS.md`](../AGENTS.md) ï¿½ required first-read repository policy.
+9. [`project-setup.md`](project-setup.md) ï¿½ guided setup choices for agents, execution mode, routing, branch strategy, validation, bounded work, and skill provenance.
+10. [`agent-workflow.md`](agent-workflow.md) ï¿½ phase model, role-pass contract, durable evidence, branch strategy, review model, and PR readiness.
+11. [`issue-standards.md`](issue-standards.md) ï¿½ issue titles, labels, body update rules, and lifecycle metadata.
+12. [`project-config.md`](project-config.md) ï¿½ project-local `agent-workflow.config.json` contract.
+13. [`execution-targets.md`](execution-targets.md) ï¿½ `executionTarget`, `transport`, `launcher`, `executor`, and `delegationBoundary` concepts that disambiguate `with claude`/`with agy`/`with pi` requests.
+14. [`capabilities.md`](capabilities.md) ï¿½ portable PLAN/WORKFLOW/LOOP/SUB-AGENTS capability vocabulary, resolution modes, evidence, and adapter links.
+15. [`intelligent-collaboration.md`](intelligent-collaboration.md) ï¿½ collaboration modes, decision budget, smallest-sufficient-collaboration rule, bounded helper intelligence, and compact evidence guidance.
+16. [`release-versioning.md`](release-versioning.md) ï¿½ configurable release strategy, default `main.minor.fix`, release evidence, validators, and preview helpers.
+17. [`cockpit.md`](cockpit.md) ï¿½ optional first-class Goal Command Center for visual goal, readiness, release, replay, and approval operations.
+18. [`cockpit-concepts-and-rules.md`](cockpit-concepts-and-rules.md) ï¿½ Cockpit product language, safety, action, and support-boundary rules.
+19. [`extension-packs.md`](extension-packs.md) ï¿½ repository-level contrib-style overlays for opinionated engineering approaches, skills, tools, templates, and validators.
+20. [`examples/simple-bugfix-flow.md`](examples/simple-bugfix-flow.md), [`examples/multi-agent-review-flow.md`](examples/multi-agent-review-flow.md), [`examples/high-assurance-flow.md`](examples/high-assurance-flow.md), and [`examples/intelligent-collaboration-flow.md`](examples/intelligent-collaboration-flow.md) ï¿½ public example flows and evidence excerpts.
+21. [`default-skills.md`](default-skills.md) ï¿½ default skills, recommended companion skills, upstream repositories, and CCPM-sourced skill surfaces.
+22. [`../agents/agentflow-sdlc/README.md`](../agents/agentflow-sdlc/README.md) ï¿½ canonical portable AgentFlow SDLC agent package with maturity, capability, handoff, eval, and improvement-loop contracts.
 
 ## What it is
 
@@ -63,6 +65,8 @@ Canonical agent package: [`../agents/agentflow-sdlc/AGENT.md`](../agents/agentfl
 Intelligent collaboration: [`intelligent-collaboration.md`](intelligent-collaboration.md) and [`../agents/workflows/intelligent-collaboration/SKILL.md`](../agents/workflows/intelligent-collaboration/SKILL.md) define `auto-minimal`, `single-agent`, `advisory`, `council`, `parallel-discovery`, `spike`, and `human-gated` modes for harness leverage without cognitive-load drift.
 
 The framework also supports locally managed skills/tooling in consuming projects. Install workflow skills using your agent/skill manager, then use the sync CLI for hooks, templates, docs, and validators. See [`default-skills.md`](default-skills.md) for upstream source and provenance notes.
+
+Optional visual operations use Cockpit, the first-class Goal Command Center. Cockpit is package-owned and runtime opt-in; `init`, `sync`, `doctor`, validators, skills, plugins, and settings do not require starting it.
 
 ## Defaults
 

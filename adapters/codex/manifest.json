@@ -5,6 +5,10 @@
   "harness": "codex",
   "entry": ".agents/skills",
   "skills": ["sdlc-definition", "sdlc-migration", "sdlc-audit"],
-  "commands": ["agentflow-sdlc sdlc validate", "agentflow-sdlc skills sync --harness codex"],
+  "commands": [
+    "agentflow-sdlc sdlc validate",
+    "agentflow-sdlc skills sync --harness codex",
+    "agentflow-sdlc cockpit doctor --json"
+  ],
   "settings": [".codex/hooks.json"]
 }

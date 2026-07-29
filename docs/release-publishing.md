@@ -52,11 +52,23 @@ agentflow-sdlc settings status --harness all --json
 
 The merge engine preserves project-owned keys and only injects the `agentflowSdlc` managed object from `manifests/harness-settings.json`.
 
+## Cockpit gate
+
+Cockpit is optional at runtime and first-class in the product artifact. It must be packaged, documented, and smoke-tested, but default install must not start a server, require OAuth, or enable write actions.
+
+Run:
+
+```bash
+AGENTFLOW_REPOSITORIES=owner/repo agentflow-sdlc cockpit doctor --json
+node scripts/cockpit-smoke.mjs
+```
+
 ## Full v1 release gate
 
 ```bash
 pnpm test
 node scripts/sdlc-sandbox-smoke.mjs
+node scripts/cockpit-smoke.mjs
 node scripts/validate-npm-package.mjs
 agentflow-sdlc plugins validate --harness all --json
 agentflow-sdlc settings merge --harness all --dry-run

@@ -21,7 +21,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "validate:npm": "node scripts/validate-npm-package.mjs",
-    "validate:release": "pnpm test && node scripts/sdlc-sandbox-smoke.mjs && node scripts/validate-npm-package.mjs"
+    "validate:release": "pnpm test && node scripts/sdlc-sandbox-smoke.mjs && node scripts/cockpit-smoke.mjs && node scripts/validate-npm-package.mjs"
   },
   "devDependencies": {
     "prettier": "^3.3.3",
@@ -47,6 +47,7 @@
     "url": "https://github.com/smota/agentflow-sdlc/issues"
   },
   "files": [
+    "assets/",
     "adapters/",
     "agents/",
     "bin/",
