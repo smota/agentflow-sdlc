@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentflow.dev/schemas/sdlc-config.schema.json",
+  "title": "AgentFlow SDLC configuration",
+  "type": "object",
+  "required": [
+    "version",
+    "authority",
+    "roles",
+    "paths",
+    "labels",
+    "release",
+    "gateways",
+    "extensionPolicy"
+  ],
+  "properties": {
+    "version": { "type": "integer", "const": 1 },
+    "authority": {
+      "type": "object",
+      "required": ["human", "machine", "executionAdapter"],
+      "properties": {
+        "human": { "type": "string" },
+        "machine": { "type": "string" },
+        "executionAdapter": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "principles": { "type": "array", "items": { "type": "string" } },
+    "roles": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["phase", "slug", "label", "owns"],
+        "properties": {
+          "phase": { "type": "integer", "minimum": 0 },
+          "slug": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+          "label": { "type": "string" },
+          "owns": { "type": "array", "items": { "type": "string" } }
+        },
+        "additionalProperties": true
+      }
+    },
+    "paths": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": ["requiredRoles", "optionalRoles", "allowsSelfReview", "requiresHumanApproval"],
+        "properties": {
+          "requiredRoles": { "type": "array", "items": { "type": "string" } },
+          "optionalRoles": { "type": "array", "items": { "type": "string" } },
+          "allowsSelfReview": { "type": "boolean" },
+          "requiresHumanApproval": { "type": "boolean" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "transitions": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "minItems": 2,
+        "maxItems": 2,
+        "items": { "type": "string" }
+      }
+    },
+    "labels": { "type": "object" },
+    "release": { "type": "object" },
+    "gateways": { "type": "object" },
+    "extensionPolicy": { "type": "object" }
+  },
+  "additionalProperties": true
+}
