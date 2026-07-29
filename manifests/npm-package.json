@@ -31,7 +31,16 @@
     "adapters/claude-code/.claude-plugin/plugin.json",
     "adapters/agy/plugin.json",
     "adapters/codex/plugin.json",
-    "adapters/pi/plugin.json"
+    "adapters/pi/plugin.json",
+    "assets/cockpit/agentflow-logo.png",
+    "scripts/cockpit-server.mjs",
+    "scripts/cockpit-doctor.mjs",
+    "scripts/cockpit-smoke.mjs",
+    "lib/cockpit-ui.mjs",
+    "lib/cockpit-read-model.mjs",
+    "lib/cockpit-goal-model.mjs",
+    "docs/cockpit.md",
+    "docs/cockpit-concepts-and-rules.md"
   ],
   "forbiddenPathPrefixes": [
     ".pi/",

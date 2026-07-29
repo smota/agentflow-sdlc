@@ -5,6 +5,10 @@
   "harness": "pi",
   "entry": ".pi/skills",
   "skills": ["sdlc-definition", "sdlc-migration", "sdlc-audit"],
-  "commands": ["agentflow-sdlc sdlc validate", "agentflow-sdlc skills sync --harness pi"],
+  "commands": [
+    "agentflow-sdlc sdlc validate",
+    "agentflow-sdlc skills sync --harness pi",
+    "agentflow-sdlc cockpit doctor --json"
+  ],
   "settings": [".pi/settings.json"]
 }

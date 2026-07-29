@@ -5,6 +5,10 @@
   "harness": "claude-code",
   "entry": ".claude/skills",
   "skills": ["sdlc-definition", "sdlc-migration", "sdlc-audit"],
-  "commands": ["agentflow-sdlc sdlc validate", "agentflow-sdlc skills sync --harness claude-code"],
+  "commands": [
+    "agentflow-sdlc sdlc validate",
+    "agentflow-sdlc skills sync --harness claude-code",
+    "agentflow-sdlc cockpit doctor --json"
+  ],
   "settings": [".claude/settings.json"]
 }

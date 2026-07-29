@@ -2,7 +2,8 @@
 import { createServer } from 'node:http'
 import { randomBytes } from 'node:crypto'
 import { appendFileSync, mkdirSync, readFileSync } from 'node:fs'
-import { extname, join, normalize } from 'node:path'
+import { dirname, extname, join, normalize, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import {
   formatDurableActionBody,
   parseCockpitIntent,
@@ -30,7 +31,12 @@ import {
   renderIssueView,
 } from '../lib/cockpit-ui.mjs'
 
+const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const config = loadCockpitConfig()
+if (!config.enabled) {
+  console.log('AgentFlow Cockpit disabled by COCKPIT_ENABLED=false')
+  process.exit(0)
+}
 const validation = validateCockpitConfig(config)
 if (!validation.ok) {
   console.error(
@@ -392,10 +398,17 @@ function text(res, body, contentType = 'text/plain; charset=utf-8', status = 200
 
 function asset(res, pathname) {
   const relative = normalize(pathname.replace(/^\/assets\/cockpit\//, '')).replace(/^\.\.[/\\]/, '')
-  const fullPath = join('assets', 'cockpit', relative)
+  const fullPath = join(packageRoot, 'assets', 'cockpit', relative)
   const type = extname(fullPath) === '.png' ? 'image/png' : 'application/octet-stream'
-  res.writeHead(200, { 'Content-Type': type, ...securityHeaders({ publicUrl: config.publicUrl }) })
-  res.end(readFileSync(fullPath))
+  try {
+    res.writeHead(200, {
+      'Content-Type': type,
+      ...securityHeaders({ publicUrl: config.publicUrl }),
+    })
+    res.end(readFileSync(fullPath))
+  } catch {
+    return text(res, 'asset not found', 'text/plain; charset=utf-8', 404)
+  }
 }
 
 function redirect(res, location) {

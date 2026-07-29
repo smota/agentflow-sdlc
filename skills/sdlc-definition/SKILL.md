@@ -26,6 +26,7 @@ Use this skill to define and maintain the canonical AgentFlow SDLC model.
 - Keep product source harness-neutral. Never create canonical files under `.pi`, `.claude`, `.agy`, or `.codex`.
 - Preserve high-assurance human approval, role-pass provenance, readiness denominator rules, and no-secret/no-transcript evidence rules.
 - Use AgentFlow concepts: Goal, Role Flow, Readiness, Release, Human approval gate, Follow-up, Source.
+- Treat Cockpit as the optional first-class Goal Command Center: product artifact and release gates include it, runtime startup remains opt-in.
 - Define extensions only when owner, compatibility, migration behavior, and validator are clear.
 
 ## Workflow

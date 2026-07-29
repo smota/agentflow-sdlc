@@ -269,6 +269,31 @@ function handleSettings(rest, targetDir) {
   process.exit(2)
 }
 
+function handleCockpit(rest, targetDir) {
+  const [subcommand] = positionalArgs(rest)
+  const pass = rest.filter((arg) => arg !== subcommand)
+  if (subcommand === 'doctor') return runScript('scripts/cockpit-doctor.mjs', pass, targetDir)
+  if (!subcommand || subcommand === 'start') {
+    const result = spawnSync(
+      process.execPath,
+      [resolve(packageRoot, 'scripts/cockpit-server.mjs')],
+      {
+        stdio: 'inherit',
+        env: {
+          ...process.env,
+          AGENTFLOW_REPOSITORIES:
+            process.env.AGENTFLOW_REPOSITORIES || process.env.COCKPIT_REPOSITORIES || '',
+        },
+      },
+    )
+    process.exit(result.status ?? 1)
+  }
+  process.stderr.write(
+    `Usage:\n  agentflow-sdlc cockpit [start]\n  agentflow-sdlc cockpit doctor [--json]\n`,
+  )
+  process.exit(2)
+}
+
 function handleExtensions(rest, targetDir) {
   const [subcommand, selector] = positionalArgs(rest)
   const json = rest.includes('--json')
@@ -373,6 +398,10 @@ function main() {
   const [command, ...rest] = process.argv.slice(2)
   const targetDir = resolve(getFlag(rest, '--target', process.cwd()))
 
+  if (command === 'cockpit') {
+    handleCockpit(rest, targetDir)
+  }
+
   if (command === 'plugins') {
     handlePlugins(rest, targetDir)
   }
@@ -472,7 +501,7 @@ function main() {
   }
 
   process.stderr.write(
-    'Usage: agentflow-sdlc <init|sync|doctor|doctor-env|sdlc|skills|plugins|settings|extensions|onboarding-prompt|update-prompt|migrate-rename|release-plan|mark-merged> [path] [--target <dir>] [--json]\n',
+    'Usage: agentflow-sdlc <init|sync|doctor|doctor-env|sdlc|cockpit|skills|plugins|settings|extensions|onboarding-prompt|update-prompt|migrate-rename|release-plan|mark-merged> [path] [--target <dir>] [--json]\n',
   )
   process.exit(2)
 }

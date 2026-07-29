@@ -2,7 +2,7 @@
 
 AgentFlow Cockpit is the optional Goal Command Center for goal-oriented SDLC delivery. It turns GitHub issues, epics, comments, PRs, role-pass evidence, validation, and follow-ups into goals, evidence health, role flow contributions, graph navigation, next-best-actions, and replayable goal stories.
 
-Cockpit is optional. The CLI/GitHub workflow remains authoritative and fully usable without Cockpit.
+Cockpit is optional at runtime and first-class in the AgentFlow SDLC product. The CLI/GitHub workflow remains authoritative and fully usable without Cockpit. `init`, `sync`, `doctor`, validators, skills, plugins, and settings merge must not require a running Cockpit server.
 
 For the implemented product vocabulary and rules, see [`docs/cockpit-concepts-and-rules.md`](cockpit-concepts-and-rules.md). Use that document when reviewing SDLC roles, skills, and agents.
 
@@ -15,6 +15,16 @@ For the implemented product vocabulary and rules, see [`docs/cockpit-concepts-an
 - High-assurance work still requires human security/acceptance review.
 - Follow-up issues are first-class; hidden TODOs are not.
 - No raw model transcripts, prompts, tool inputs, secrets, or hidden runner state in the UI.
+
+## CLI
+
+```bash
+AGENTFLOW_REPOSITORIES=owner/repo agentflow-sdlc cockpit
+agentflow-sdlc cockpit doctor --json
+node scripts/cockpit-smoke.mjs
+```
+
+`cockpit doctor` validates package files and runtime configuration. `cockpit-smoke` is a release gate that starts the server, checks `/healthz`, and verifies packaged assets.
 
 ## MVP authentication
 

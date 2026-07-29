@@ -27,10 +27,12 @@ Use this skill for read-only SDLC compliance evaluation.
    node scripts/validate-sdlc-config.mjs --json
    node scripts/validate-sdlc-role-pass.mjs --path <file> --json
    node scripts/validate-sdlc-skill.mjs --path <skill>/SKILL.md --json
+   agentflow-sdlc cockpit doctor --json
    ```
 3. Inspect durable evidence only as needed.
-4. Return PASS/FAIL/WARN with fix recommendations.
-5. Suggest follow-up issues for non-trivial fixes.
+4. Treat Cockpit as optional but first-class: audit packaging, docs, and `cockpit doctor`, but do not require it to be running for SDLC compliance.
+5. Return PASS/FAIL/WARN with fix recommendations.
+6. Suggest follow-up issues for non-trivial fixes.
 
 ## Output
 

@@ -35,6 +35,7 @@ This page routes humans and agents to the right AgentFlow SDLC document without 
 | Portable capabilities     | [`capabilities.md`](capabilities.md)                           |
 | Project config            | [`project-config.md`](project-config.md)                       |
 | Release versioning        | [`release-versioning.md`](release-versioning.md)               |
+| Goal Command Center       | [`cockpit.md`](cockpit.md)                                     |
 
 ## If you are an agent
 
@@ -47,3 +48,14 @@ Use this deterministic entry sequence:
 5. active issue or `SPEC.md`
 
 Then use role packages under `agents/roles/` and workflow skills under `agents/workflows/` as needed.
+
+## If you want visual operations
+
+Use Cockpit as optional Goal Command Center:
+
+```bash
+AGENTFLOW_REPOSITORIES=owner/repo agentflow-sdlc cockpit
+agentflow-sdlc cockpit doctor --json
+```
+
+Cockpit is first-class in product docs and release gates, but runtime opt-in. Normal SDLC work does not require starting a service, opening a port, or configuring OAuth.

@@ -5,6 +5,10 @@
   "harness": "agy",
   "entry": ".agents/skills",
   "skills": ["sdlc-definition", "sdlc-migration", "sdlc-audit"],
-  "commands": ["agentflow-sdlc sdlc validate", "agentflow-sdlc skills sync --harness agy"],
+  "commands": [
+    "agentflow-sdlc sdlc validate",
+    "agentflow-sdlc skills sync --harness agy",
+    "agentflow-sdlc cockpit doctor --json"
+  ],
   "settings": [".agy/settings.json"]
 }
