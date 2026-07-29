@@ -4,6 +4,8 @@ AgentFlow Cockpit is the optional Goal Command Center for goal-oriented SDLC del
 
 Cockpit is optional. The CLI/GitHub workflow remains authoritative and fully usable without Cockpit.
 
+For the implemented product vocabulary and rules, see [`docs/cockpit-concepts-and-rules.md`](cockpit-concepts-and-rules.md). Use that document when reviewing SDLC roles, skills, and agents.
+
 ## Product principles
 
 - GitHub is durable truth: issues, comments, PR bodies, commits, closure metadata.
