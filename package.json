@@ -2,7 +2,7 @@
   "name": "agentflow-sdlc",
   "private": false,
   "type": "module",
-  "version": "0.7.0",
+  "version": "1.0.0",
   "description": "AgentFlow SDLC product: harness-neutral role-based SDLC definition, validators, skills, adapters, and release governance for multi-agent delivery.",
   "license": "Apache-2.0",
   "packageManager": "pnpm@9.6.0",
