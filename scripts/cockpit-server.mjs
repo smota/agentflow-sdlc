@@ -63,7 +63,17 @@ createServer(async (req, res) => {
     const session = sessions.get(readCookie(req, 'cockpit_session'))
     if (config.remote && !session) return redirect(res, '/login')
 
-    const repo = url.searchParams.get('repo') || config.repositories[0]
+    const repo = selectedRepository(url)
+    if (!repo)
+      return html(
+        res,
+        renderCockpitPage({
+          title: 'Unknown workspace',
+          repositories: config.repositories,
+          body: '<section class="panel"><h1>Unknown workspace</h1><p>Select a configured repository.</p></section>',
+        }),
+        404,
+      )
     const authz = await authorizeRequest({ session, repo })
     if (!authz.ok)
       return html(
@@ -79,7 +89,14 @@ createServer(async (req, res) => {
       return actionEndpoint(req, res, repo, session)
     if (url.pathname === '/telemetry' && req.method === 'POST')
       return telemetryEndpoint(req, res, repo, session)
-    if (url.pathname === '/') return home(res, repo, session)
+    if (url.pathname === '/')
+      return home(
+        res,
+        repo,
+        session,
+        url.searchParams.get('view') || 'goals',
+        url.searchParams.get('release') || 'unreleased',
+      )
     const replayMatch = url.pathname.match(/^\/issues\/(\d+)\/replay(\.md)?$/)
     if (replayMatch)
       return replayPage(res, repo, Number(replayMatch[1]), session, Boolean(replayMatch[2]))
@@ -104,7 +121,12 @@ createServer(async (req, res) => {
   console.log(`AgentFlow Cockpit listening on http://127.0.0.1:${config.port}`)
 })
 
-async function home(res, repo, session) {
+function selectedRepository(url) {
+  const requested = url.searchParams.get('repo') || config.repositories[0]
+  return config.repositories.includes(requested) ? requested : null
+}
+
+async function home(res, repo, session, view = 'goals', release = 'unreleased') {
   const issues = await github.issues(repo, { state: 'open', per_page: 50 })
   const board = buildGoalBoard({ issues: issues.filter((issue) => !issue.pull_request) })
   const sessionId = 'local-token'
@@ -112,12 +134,14 @@ async function home(res, repo, session) {
     res,
     renderCockpitPage({
       repo,
+      repositories: config.repositories,
+      view,
       user: session?.user?.login || 'token',
       csrfToken: createCsrfToken({
         sessionId,
         secret: config.sessionSecret || 'local-development-session-secret-32',
       }),
-      body: renderGoalBoard(board),
+      body: renderGoalBoard(board, { repo, view, release }),
     }),
   )
 }
@@ -133,12 +157,13 @@ async function issuePage(req, res, repo, number, session) {
     res,
     renderCockpitPage({
       repo,
+      repositories: config.repositories,
       user: session?.user?.login || 'token',
       csrfToken: createCsrfToken({
         sessionId,
         secret: config.sessionSecret || 'local-development-session-secret-32',
       }),
-      body: renderIssueView(view),
+      body: renderIssueView(view, { repo }),
     }),
   )
 }
@@ -232,8 +257,9 @@ async function replayPage(res, repo, number, session, markdown = false) {
     res,
     renderCockpitPage({
       repo,
+      repositories: config.repositories,
       user: session?.user?.login || 'token',
-      body: renderGoalStory(story),
+      body: renderGoalStory(story, { repo }),
     }),
   )
 }
