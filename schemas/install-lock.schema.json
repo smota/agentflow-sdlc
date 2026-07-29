@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentflow.dev/schemas/install-lock.schema.json",
+  "title": "AgentFlow install lock",
+  "type": "object",
+  "required": ["version", "entries"],
+  "properties": {
+    "version": { "type": "integer", "const": 1 },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["source", "target", "ownership", "hash"],
+        "properties": {
+          "source": { "type": "string" },
+          "target": { "type": "string" },
+          "ownership": {
+            "enum": [
+              "managed",
+              "seed-once",
+              "project-owned",
+              "structural-merge",
+              "generated-adapter"
+            ]
+          },
+          "hash": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,173 @@
+{
+  "version": 1,
+  "authority": {
+    "human": "docs/sdlc-definition.md",
+    "machine": "sdlc.config.json",
+    "executionAdapter": "agent-workflow.config.json"
+  },
+  "principles": [
+    "AgentFlow concepts lead; source systems are substrate.",
+    "Durable evidence is required for delivery claims.",
+    "Single-agent is default; multi-agent claims require attribution.",
+    "High-assurance work requires a human approval gate.",
+    "Skipped-by-path roles do not reduce readiness.",
+    "Follow-up issues replace hidden TODOs.",
+    "Harness directories contain generated adapters only."
+  ],
+  "roles": [
+    {
+      "phase": 0,
+      "slug": "product-manager-jtbd",
+      "label": "Product manager / JTBD",
+      "owns": ["goal", "job", "release-intent"]
+    },
+    {
+      "phase": 1,
+      "slug": "analyst",
+      "label": "Analyst",
+      "owns": ["requirements", "acceptance-criteria", "scope-boundary"]
+    },
+    {
+      "phase": 2,
+      "slug": "architect",
+      "label": "Architect",
+      "owns": ["technical-design", "risk", "path-selection"]
+    },
+    {
+      "phase": 3,
+      "slug": "developer-planning",
+      "label": "Developer planning",
+      "owns": ["implementation-plan", "validation-plan"]
+    },
+    {
+      "phase": 4,
+      "slug": "developer",
+      "label": "Developer",
+      "owns": ["implementation", "commit-evidence"]
+    },
+    {
+      "phase": 5,
+      "slug": "tester",
+      "label": "Tester",
+      "owns": ["validation-evidence", "coverage-notes"]
+    },
+    {
+      "phase": 6,
+      "slug": "review",
+      "label": "Review",
+      "owns": ["review-findings", "independence-boundary"]
+    },
+    {
+      "phase": 7,
+      "slug": "tech-writer",
+      "label": "Tech writer",
+      "owns": ["docs", "release-notes", "product-language"]
+    },
+    {
+      "phase": 8,
+      "slug": "pr-readiness",
+      "label": "PR readiness",
+      "owns": ["pr-manifest", "merge-readiness", "follow-up-status"]
+    }
+  ],
+  "paths": {
+    "bounded": {
+      "requiredRoles": [
+        "analyst",
+        "developer-planning",
+        "developer",
+        "tester",
+        "review",
+        "pr-readiness"
+      ],
+      "optionalRoles": ["product-manager-jtbd", "architect", "tech-writer"],
+      "allowsSelfReview": true,
+      "requiresHumanApproval": false
+    },
+    "standard": {
+      "requiredRoles": [
+        "analyst",
+        "architect",
+        "developer-planning",
+        "developer",
+        "tester",
+        "review",
+        "pr-readiness"
+      ],
+      "optionalRoles": ["product-manager-jtbd", "tech-writer"],
+      "allowsSelfReview": true,
+      "requiresHumanApproval": false
+    },
+    "high-assurance": {
+      "requiredRoles": [
+        "product-manager-jtbd",
+        "analyst",
+        "architect",
+        "developer-planning",
+        "developer",
+        "tester",
+        "review",
+        "tech-writer",
+        "pr-readiness"
+      ],
+      "optionalRoles": [],
+      "allowsSelfReview": false,
+      "requiresHumanApproval": true
+    },
+    "exploratory": {
+      "requiredRoles": ["product-manager-jtbd", "analyst", "architect", "review"],
+      "optionalRoles": ["developer-planning", "developer", "tester", "tech-writer", "pr-readiness"],
+      "allowsSelfReview": true,
+      "requiresHumanApproval": false
+    }
+  },
+  "transitions": [
+    ["product-manager-jtbd", "analyst"],
+    ["analyst", "architect"],
+    ["architect", "developer-planning"],
+    ["developer-planning", "developer"],
+    ["developer", "tester"],
+    ["tester", "review"],
+    ["review", "tech-writer"],
+    ["tech-writer", "pr-readiness"],
+    ["developer", "developer-planning"],
+    ["review", "developer"],
+    ["tech-writer", "developer"],
+    ["pr-readiness", "developer"]
+  ],
+  "labels": {
+    "type": ["epic", "feature", "bug", "dx", "tooling", "documentation", "qa", "exploratory"],
+    "routingPrefixes": ["for-implementation:"],
+    "lifecyclePrefixes": ["drafted-by:", "implemented-by:", "for-review:", "reviewed-by:"],
+    "forbiddenPrefixes": ["agent:"],
+    "release": ["awaiting-release"],
+    "integrationPrefixes": ["integrated:"]
+  },
+  "release": {
+    "candidateSources": ["issue-field", "milestone"],
+    "assignmentStates": ["assigned", "needs-assignment", "released", "no-release-impact"],
+    "impactStates": ["major", "minor", "patch", "docs-only", "none", "unknown"],
+    "filters": ["unreleased", "released", "all", "needs-assignment"],
+    "rejectIncidentalSemver": true
+  },
+  "gateways": {
+    "humanApproval": {
+      "requiredFor": ["high-assurance"],
+      "fields": ["Reviewer", "Scope", "Decision", "Notes"],
+      "decisions": ["approved", "changes-requested", "blocked"]
+    },
+    "guidedAction": {
+      "requires": ["preview", "auth", "csrf", "confirmation", "audit"]
+    }
+  },
+  "extensionPolicy": {
+    "mayAdd": ["roles", "labels", "gateways", "paths", "validators", "harnessAdapters"],
+    "mustPreserve": [
+      "role-pass-provenance",
+      "human-approval-for-high-assurance",
+      "readiness-denominator-rules",
+      "no-raw-secrets-or-transcripts",
+      "follow-ups-over-hidden-todos"
+    ]
+  }
+}

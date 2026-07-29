@@ -1,8 +1,10 @@
 #!/usr/bin/env node
+import { spawnSync } from 'node:child_process'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { doctor, init, markMerged, sync } from '../lib/install.mjs'
 import { validateEnvironment } from '../lib/environment.mjs'
+import { adapterStatus, syncSkillAdapters } from '../lib/skill-adapters.mjs'
 import { buildReleasePlan } from '../lib/release-versioning.mjs'
 import { migrateRename } from '../lib/rename-migration.mjs'
 import {
@@ -79,6 +81,90 @@ function printExtensionRegistry(registry) {
     process.stdout.write(`Duplicate ids:\n`)
     for (const item of registry.duplicateIds) process.stdout.write(`  - ${item}\n`)
   }
+}
+
+function runScript(script, args, targetDir) {
+  const result = spawnSync(
+    process.execPath,
+    [resolve(packageRoot, script), ...args, '--target', targetDir],
+    {
+      stdio: 'inherit',
+    },
+  )
+  process.exit(result.status ?? 1)
+}
+
+function handleSdlc(rest, targetDir) {
+  const [subcommand] = positionalArgs(rest)
+  const pass = rest.filter((arg) => arg !== subcommand)
+  if (subcommand === 'validate' || subcommand === 'validate-config')
+    return runScript('scripts/validate-sdlc-config.mjs', pass, targetDir)
+  if (subcommand === 'validate-issue')
+    return runScript('scripts/validate-sdlc-issue.mjs', pass, targetDir)
+  if (subcommand === 'validate-role-pass')
+    return runScript('scripts/validate-sdlc-role-pass.mjs', pass, targetDir)
+  if (subcommand === 'validate-pr')
+    return runScript('scripts/validate-sdlc-pr.mjs', pass, targetDir)
+  if (subcommand === 'validate-release')
+    return runScript('scripts/validate-sdlc-release.mjs', pass, targetDir)
+  if (subcommand === 'validate-skill')
+    return runScript('scripts/validate-sdlc-skill.mjs', pass, targetDir)
+  if (subcommand === 'validate-agent')
+    return runScript('scripts/validate-sdlc-agent.mjs', pass, targetDir)
+  if (subcommand === 'audit') return runScript('scripts/validate-sdlc-config.mjs', pass, targetDir)
+  if (subcommand === 'migrate') {
+    process.stdout.write(
+      'SDLC migration is preview-first. Initial v1 migrator validates config and reports no writes.\n',
+    )
+    return runScript('scripts/validate-sdlc-config.mjs', pass, targetDir)
+  }
+  process.stderr.write(`Usage:
+  agentflow-sdlc sdlc validate [--target <dir>] [--json]
+  agentflow-sdlc sdlc validate-issue --path <issue.json> [--json]
+  agentflow-sdlc sdlc validate-role-pass --path <role-pass.md> [--json]
+  agentflow-sdlc sdlc validate-pr --path <pr-body.md> [--json]
+  agentflow-sdlc sdlc validate-release --path <issue.json> [--json]
+  agentflow-sdlc sdlc validate-skill --path <SKILL.md> [--json]
+  agentflow-sdlc sdlc validate-agent --path <AGENT.md> [--json]
+  agentflow-sdlc sdlc audit [--json]
+  agentflow-sdlc sdlc migrate [--json]
+`)
+  process.exit(2)
+}
+
+function handleSkills(rest, targetDir) {
+  const [subcommand] = positionalArgs(rest)
+  const json = rest.includes('--json')
+  const harness = getFlag(rest, '--harness', 'all')
+  if (subcommand === 'sync') {
+    const result = syncSkillAdapters({
+      packageRoot,
+      targetDir,
+      harness,
+      write: rest.includes('--apply') || !rest.includes('--dry-run'),
+    })
+    if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+    else
+      printReport(`Skill adapter sync (${result.mode})`, {
+        entries: result.entries.map(
+          (entry) => `${entry.harness}:${entry.skill} -> ${entry.target}`,
+        ),
+      })
+    process.exit(0)
+  }
+  if (subcommand === 'status') {
+    const result = adapterStatus({ packageRoot, targetDir, harness })
+    if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+    else
+      printReport('Skill adapter status', {
+        stale: result.stale.map((entry) => `${entry.harness}:${entry.skill}`),
+      })
+    process.exit(result.stale.length ? 1 : 0)
+  }
+  process.stderr.write(
+    `Usage:\n  agentflow-sdlc skills sync [--target <dir>] [--harness all|claude-code,agy,codex,pi] [--dry-run|--apply] [--json]\n  agentflow-sdlc skills status [--target <dir>] [--harness all|claude-code,agy,codex,pi] [--json]\n`,
+  )
+  process.exit(2)
 }
 
 function handleExtensions(rest, targetDir) {
@@ -185,6 +271,14 @@ function main() {
   const [command, ...rest] = process.argv.slice(2)
   const targetDir = resolve(getFlag(rest, '--target', process.cwd()))
 
+  if (command === 'skills') {
+    handleSkills(rest, targetDir)
+  }
+
+  if (command === 'sdlc') {
+    handleSdlc(rest, targetDir)
+  }
+
   if (command === 'extensions') {
     try {
       handleExtensions(rest, targetDir)
@@ -268,7 +362,7 @@ function main() {
   }
 
   process.stderr.write(
-    'Usage: agentflow-sdlc <init|sync|doctor|doctor-env|extensions|onboarding-prompt|update-prompt|migrate-rename|release-plan|mark-merged> [path] [--target <dir>] [--json]\n',
+    'Usage: agentflow-sdlc <init|sync|doctor|doctor-env|sdlc|skills|extensions|onboarding-prompt|update-prompt|migrate-rename|release-plan|mark-merged> [path] [--target <dir>] [--json]\n',
   )
   process.exit(2)
 }
