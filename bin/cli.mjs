@@ -111,13 +111,8 @@ function handleSdlc(rest, targetDir) {
     return runScript('scripts/validate-sdlc-skill.mjs', pass, targetDir)
   if (subcommand === 'validate-agent')
     return runScript('scripts/validate-sdlc-agent.mjs', pass, targetDir)
-  if (subcommand === 'audit') return runScript('scripts/validate-sdlc-config.mjs', pass, targetDir)
-  if (subcommand === 'migrate') {
-    process.stdout.write(
-      'SDLC migration is preview-first. Initial v1 migrator validates config and reports no writes.\n',
-    )
-    return runScript('scripts/validate-sdlc-config.mjs', pass, targetDir)
-  }
+  if (subcommand === 'audit') return runScript('scripts/sdlc-audit.mjs', pass, targetDir)
+  if (subcommand === 'migrate') return runScript('scripts/sdlc-migrate.mjs', pass, targetDir)
   process.stderr.write(`Usage:
   agentflow-sdlc sdlc validate [--target <dir>] [--json]
   agentflow-sdlc sdlc validate-issue --path <issue.json> [--json]
