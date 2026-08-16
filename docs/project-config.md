@@ -76,9 +76,14 @@ never mark anything as bounded, and PR manifests will use placeholder CI command
   "extensions": {
     "enabledPacks": ["extensions/my-engineering-approach"]
   },
+- `platformRegistry.additionalPlatforms` — optional identity-only registry entries for future
+  harnesses/runtimes. Each entry has `slug`, `displayName`, `kind` (`agent-runtime | harness |
+  human`), and `routable: false`. Built-ins live in `manifests/runtime-platforms.json`; see
+  [`runtime-platforms.md`](runtime-platforms.md). Registering identity does not invent route adapter,
+  execution target, transport, or model.
 - `routing.defaultMode` — defaults to `single-agent`; routing is optional and missing routing config
   keeps role execution with the current executor.
-- `routing.agents.<slug>` — enables one supported local agent CLI (`agy`, `codex`, `claude`, or
+- `routing.agents.<slug>` — enables one routable registered platform (`agy`, `codex`, `claude`, or
   `pi`), names its setup/availability command, and points to its documented call/handover workflow.
   `doctor-env` uses `availabilityCommand` for read-only environment reporting and never executes
   installation commands.

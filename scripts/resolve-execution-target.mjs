@@ -9,7 +9,8 @@ function valueAfter(args, flag) {
 }
 
 function usage() {
-  return `Usage: node scripts/resolve-execution-target.mjs --agent <agy|codex|claude|pi> --requested <text> [--current-agent <agy|codex|claude|pi>] [--json]\n\nResolve an ambiguous mention such as "with claude" or "anthropic/claude-sonnet-4" into a\ndeterministic executionTarget/transport/delegationBoundary before launching work. Exits non-zero\nwhen the request requires clarification instead of guessing.\n`
+  const routable = AGENT_SLUGS.join('|')
+  return `Usage: node scripts/resolve-execution-target.mjs --agent <${routable}> --requested <text> [--current-agent <${routable}>] [--json]\n\nResolve an ambiguous mention such as "with claude" or "anthropic/claude-sonnet-4" into a\ndeterministic executionTarget/transport/delegationBoundary before launching work. Exits non-zero\nwhen the request requires clarification instead of guessing.\n`
 }
 
 export function main(argv = process.argv.slice(2)) {

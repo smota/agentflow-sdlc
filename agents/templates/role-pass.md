@@ -6,9 +6,9 @@
 **Role:** <product-manager | analyst | architect | developer-plan | developer | tester | review | techwriter | pr-readiness>
 **Status:** <pass | blocked | returned | skipped>
 **Workflow profile:** <bounded | standard | high-assurance>
-**Planned owner:** <agent slug from roleAlternationPlan; use "not-applicable:single-agent" only when Mode is single-agent and this pass will not feed a multi-agent role attribution matrix>
-**Executed by:** <human | claude | codex | agy | pi>
-**Launcher:** <human | claude | codex | agy | pi>
+**Planned owner:** <registered platform slug from roleAlternationPlan; use "not-applicable:single-agent" only when Mode is single-agent and this pass will not feed a multi-agent role attribution matrix>
+**Executed by:** <registered platform slug; see manifests/runtime-platforms.json>
+**Launcher:** <registered platform slug; see manifests/runtime-platforms.json>
 **Executor:** <claude-cli | anthropic-api | agy-cli | agy-session | pi-parent | pi-subagent | pi-session | pi-subagent-model | codex-cli | provider-api | human>
 **Transport:** <local-cli | provider-api | pi-subagent | intercom-session | orchestrated-worktree | manual>
 **Delegation boundary:** <current-session | child-subagent | separate-local-session | child-worktree | human-handoff>
@@ -57,7 +57,9 @@ Record intelligent collaboration evidence from `docs/intelligent-collaboration.m
 
 ---
 
-<!-- <agent> = the AI identity actually executing THIS pass right now (claude | codex | agy | pi | human) — never copied from a prior pass or template example. See docs/agent-workflow.md §4 (Provenance). Executor/Transport/Delegation boundary come from docs/execution-targets.md; resolve ambiguous "with <agent>" requests with scripts/resolve-execution-target.mjs before recording them. Planned owner/Context boundary/Independence boundary are the role-alternation concepts from docs/agent-workflow.md §4a and lib/role-attribution.mjs (issue #56); they feed the roleAttributionMatrix in the workflow-status comment and PR manifest. Capability evidence comes from docs/capabilities.md and can be checked with scripts/validate-capability-evidence.mjs. -->
+<!-- <platform> = registered runtime platform actually executing THIS pass right now — never copied from a prior pass or template example. Register built-in or project-specific slugs through manifests/runtime-platforms.json and agent-workflow.config.json; see docs/runtime-platforms.md. Executor/Transport/Delegation boundary remain distinct and come from docs/execution-targets.md. Planned owner/Context boundary/Independence boundary are role-alternation concepts from docs/agent-workflow.md §4a and lib/role-attribution.mjs; they feed roleAttributionMatrix in workflow-status comment and PR manifest. Capability evidence comes from docs/capabilities.md and can be checked with scripts/validate-capability-evidence.mjs. -->
 
-Signed-off-by: `<agent>` (`<role>`)
+<!-- Signature uses same registered platform slug as Executed by. -->
+
+Signed-off-by: `<platform>` (`<role>`)
 Timestamp: `YYYY-MM-DDTHH:MM:SSZ`

@@ -122,9 +122,10 @@ Each pass uses `agents/templates/role-pass.md`.
 - Workflow profile
 - Planned owner: the `roleAlternationPlan` owner for this role (`routing.roles.<role>.owner`), or
   `not-applicable:single-agent` when no routing config assigns this role — see §4a
-- Actual executor identity (`human | claude | codex | agy | pi`)
-- Launcher: the agent/runtime that initiated this pass (`human | claude | codex | agy | pi`); equal
-  to the actual executor identity in single-agent execution
+- Executed by: registered runtime platform slug that produced this pass (see
+  `manifests/runtime-platforms.json` and `docs/runtime-platforms.md`)
+- Launcher: registered runtime platform slug that initiated this pass; equal to `Executed by` in
+  single-platform execution
 - Executor: the resolved `executionTarget` that actually ran this pass (for example `claude-cli`,
   `anthropic-api`, `agy-cli`, `agy-session`, `pi-parent`, `pi-subagent`, `pi-session`,
   `pi-subagent-model`, `codex-cli`, `provider-api`, or `human`) — see `docs/execution-targets.md`
@@ -145,8 +146,9 @@ worktree | intercom-session`) — see §4a
 - Status: `pass | blocked | returned | skipped`
 - Signed-by and timestamp
 
-Record launcher, executor, transport, delegation boundary, and model as distinct fields — do not
-collapse them into "Actual executor identity" or "Model / runtime" alone. A bare agent-brand mention
+Record executed-by platform, launcher platform, executor, transport, delegation boundary, and model
+as distinct fields — do not collapse them into one identity or "Model / runtime" alone. A bare
+agent-brand mention
 (`claude`, `agy`, `pi`) is not an execution target: resolve it with
 `node scripts/resolve-execution-target.mjs` (see `docs/execution-targets.md`) before recording it as
 the executor, and never report a provider-API model call (`model: anthropic/claude-*` or any
@@ -154,14 +156,15 @@ the executor, and never report a provider-API model call (`model: anthropic/clau
 
 ### Provenance
 
-- `<agent>` is the AI identity actually executing this pass right now (`claude`, `codex`, `agy`,
-  `pi`, or `human`). Never copy `<agent>` from a prior pass, another issue, or a template example — record
-  whichever agent is producing this specific pass.
+- `<platform>` is the registered runtime platform actually producing this pass right now. Never
+  copy it from a prior pass, another issue, or a template example. Built-in identities include
+  `chatgpt`, `cowork`, `antigravity`, `pi`, `claude`, `codex`, `agy`, and `human`; projects may add
+  identity-only slugs through `platformRegistry.additionalPlatforms`.
 - `<role>` is the phase/role being performed (`analyst`, `architect`, ..., `orchestrator`) and is
-  independent of `<agent>`. The same agent performs every role in-session, but the signature still
-  names both separately.
-- The workflow-status comment's `**Implemented by:**` field must match the `<agent>` of the latest
-  role-pass signature, or `human` when a human performed the latest pass.
+  independent of `<platform>`. Same platform may perform every role in-session, but signature still
+  names role and platform separately.
+- Workflow-status comment `**Implemented by:**` must match `<platform>` in latest role-pass
+  signature.
 - Ambiguous requests such as `with claude`, `with agy`, or `with pi` must resolve to an explicit
   `executionTarget` from project config (`routing.agents.<slug>.defaultExecutionTarget`) or a
   clarifying question before any work launches — never by silently inheriting the launcher's current
@@ -181,9 +184,9 @@ independent intelligences, and is that alternation evidenced — not collapsed i
   starts. This is `routing.roles` in `agent-workflow.config.json` (see
   [`project-config.md`](project-config.md)) — not a new field, just the name for that existing plan
   when a run is evaluated for role alternation.
-- **`roleIntelligence`** — the actual intelligence source that executed a role. This reuses the
-  resolved `executionTarget` from `docs/execution-targets.md` (for example `claude-cli`, `agy-cli`,
-  `pi-parent`, `human`) rather than introducing a second identity field.
+- **`roleIntelligence`** — actual registered platform identity that produced a role. Matrix records
+  this under `Actual platform`; separate `Executor` records resolved `executionTarget` (for example
+  `claude-cli`, `agy-cli`, `pi-parent`, or `human`).
 - **`contextBoundary`** — a human-readable label for where a role ran: `current-session`,
   `fresh-session`, `forked-context`, `local-cli-child-process`, `provider-api-call`,
   `human-handoff`, `worktree`, or `intercom-session`. Derived from `transport` +
@@ -191,11 +194,11 @@ independent intelligences, and is that alternation evidenced — not collapsed i
   independent fact that could disagree with those two `docs/execution-targets.md` fields.
 - **`independenceBoundary`** — whether a role was cognitively independent from another role,
   especially developer vs. reviewer: `independent`, `self-review`, or `not-applicable`.
-- **`roleAttributionMatrix`** — the durable evidence table mapping phase, role, planned owner,
-  actual agent, executor, context boundary, independence boundary, and status. Required in the
+- **`roleAttributionMatrix`** — durable evidence table mapping phase, role, planned owner, actual
+  registered platform, executor, context boundary, independence boundary, and status. Required in
   workflow-status comment and PR manifest whenever a run's `Mode` is `multi-agent`; never required
-  for single-agent runs. In a multi-agent matrix, `Planned owner` must be an agent slug (`pi`,
-  `claude`, `codex`, `agy`, or `human`). If a role has no `routing.roles.<role>` entry but is still
+  for single-agent runs. In a multi-agent matrix, `Planned owner` must be a registered platform
+  slug. If a role has no `routing.roles.<role>` entry but is still
   included in a multi-agent run, record the planned owner as the agent intentionally assigned by the
   pre-execution roleAlternationPlan, usually the current orchestrator for that phase. Do not use
   `not-applicable:single-agent` inside a multi-agent matrix. See `agents/templates/pr-manifest.md`
@@ -453,7 +456,8 @@ a read-only preview and `node scripts/validate-release-versioning.mjs` for consi
 ### Role routing and handover comments
 
 A project may define role routing in `agent-workflow.config.json`; see `docs/project-config.md` and
-`docs/agent-routing.md`. Supported agent slugs are `agy`, `codex`, `claude`, and `pi`.
+`docs/agent-routing.md`. Routable registry slugs are currently `agy`, `codex`, `claude`, and `pi`;
+other registered platforms remain valid evidence identities without implying an execution adapter.
 
 Before starting a routed phase, resolve the role:
 

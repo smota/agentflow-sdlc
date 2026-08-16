@@ -1,7 +1,9 @@
 # Execution targets
 
-An agent slug (`agy`, `codex`, `claude`, `pi`) names **who** is being asked to do work. It does not
-say **how** that work runs. This document makes the "how" explicit so a bare mention such as `with
+A runtime platform slug names **who** produced workflow evidence. Registry lives in
+`manifests/runtime-platforms.json`; see `docs/runtime-platforms.md`. Role routing currently supports
+registry subset `agy`, `codex`, `claude`, and `pi`. Platform identity does not say **how** work runs.
+This document makes "how" explicit so a bare mention such as `with
 claude`, `with agy`, or `with pi` cannot silently resolve to the wrong runtime, transport, provider,
 or delegation boundary. `lib/execution-targets.mjs` implements the vocabulary and resolution rule
 defined here; `lib/role-routing.mjs` and `scripts/resolve-role-route.mjs` apply it to role routing.
@@ -24,8 +26,10 @@ names a provider-backed call, not a local CLI launch.
 
 ## Core concepts
 
-- **Agent slug** — which agent is being asked to work: `agy`, `codex`, `claude`, `pi`, or `human`.
-  See `docs/agent-routing.md` for the supported slugs.
+- **Runtime platform slug** — registered platform producing evidence, such as `cowork`,
+  `antigravity`, `pi`, `claude`, `codex`, `agy`, or `human`. See `docs/runtime-platforms.md`.
+- **Routable platform slug** — registry subset with built-in role-routing and execution-target
+  adapters: `agy`, `codex`, `claude`, and `pi`. See `docs/agent-routing.md`.
 - **`executionTarget`** — the specific runtime/API surface used to do the work for that agent slug.
   See the table below.
 - **`executor`** — the agent/runtime actually doing the work right now. In practice this is the
@@ -41,25 +45,26 @@ names a provider-backed call, not a local CLI launch.
   `openai-codex/gpt-5.5`. Recorded separately from `executionTarget` — the execution target says how
   the call was launched, the model says what generated the output.
 
-## Execution targets by agent
+## Execution targets by platform
 
-| Agent slug | Execution target    | Meaning                                                                                                              | Transport               | Default delegation boundary |
-| ---------- | ------------------- | -------------------------------------------------------------------------------------------------------------------- | ----------------------- | --------------------------- |
-| `claude`   | `claude-cli`        | Local Claude Code/CLI execution. Does not require an Anthropic API subscription.                                     | `local-cli`             | `current-session`           |
-| `claude`   | `anthropic-api`     | Anthropic Messages API execution. Requires configured API credentials and model access.                              | `provider-api`          | `current-session`           |
-| `agy`      | `agy-cli`           | Local Agy CLI/runtime execution, when available.                                                                     | `local-cli`             | `current-session`           |
-| `agy`      | `agy-session`       | Agy-owned session/worktree, or an external agent session reached through a documented handoff mechanism.             | `orchestrated-worktree` | `child-worktree`            |
-| `pi`       | `pi-parent`         | The current Pi session acting as orchestrator/decision-maker.                                                        | `local-cli`             | `current-session`           |
-| `pi`       | `pi-subagent`       | A child launched through Pi's subagent runtime.                                                                      | `pi-subagent`           | `child-subagent`            |
-| `pi`       | `pi-session`        | A separate Pi session reached through intercom/control-socket style coordination.                                    | `intercom-session`      | `separate-local-session`    |
-| `pi`       | `pi-subagent-model` | Pi subagent execution using Pi's configured model provider, e.g. `openai-codex/gpt-5.5`.                             | `provider-api`          | `child-subagent`            |
-| `codex`    | `codex-cli`         | Local Codex CLI execution, typically `codex exec` unless configured otherwise.                                       | `local-cli`             | `current-session`           |
-| `codex`    | `provider-api`      | Any provider-backed model call, distinct from local CLI execution even when the model brand matches the agent brand. | `provider-api`          | `current-session`           |
-| `human`    | `human`             | A human performs the work directly.                                                                                  | `manual`                | `human-handoff`             |
+| Platform slug | Execution target    | Meaning                                                                                                              | Transport               | Default delegation boundary |
+| ------------- | ------------------- | -------------------------------------------------------------------------------------------------------------------- | ----------------------- | --------------------------- |
+| `claude`      | `claude-cli`        | Local Claude Code/CLI execution. Does not require an Anthropic API subscription.                                     | `local-cli`             | `current-session`           |
+| `claude`      | `anthropic-api`     | Anthropic Messages API execution. Requires configured API credentials and model access.                              | `provider-api`          | `current-session`           |
+| `agy`         | `agy-cli`           | Local Agy CLI/runtime execution, when available.                                                                     | `local-cli`             | `current-session`           |
+| `agy`         | `agy-session`       | Agy-owned session/worktree, or an external agent session reached through a documented handoff mechanism.             | `orchestrated-worktree` | `child-worktree`            |
+| `pi`          | `pi-parent`         | The current Pi session acting as orchestrator/decision-maker.                                                        | `local-cli`             | `current-session`           |
+| `pi`          | `pi-subagent`       | A child launched through Pi's subagent runtime.                                                                      | `pi-subagent`           | `child-subagent`            |
+| `pi`          | `pi-session`        | A separate Pi session reached through intercom/control-socket style coordination.                                    | `intercom-session`      | `separate-local-session`    |
+| `pi`          | `pi-subagent-model` | Pi subagent execution using Pi's configured model provider, e.g. `openai-codex/gpt-5.5`.                             | `provider-api`          | `child-subagent`            |
+| `codex`       | `codex-cli`         | Local Codex CLI execution, typically `codex exec` unless configured otherwise.                                       | `local-cli`             | `current-session`           |
+| `codex`       | `provider-api`      | Any provider-backed model call, distinct from local CLI execution even when the model brand matches the agent brand. | `provider-api`          | `current-session`           |
+| `human`       | `human`             | A human performs the work directly.                                                                                  | `manual`                | `human-handoff`             |
 
 `lib/execution-targets.mjs` exports this table as `EXECUTION_TARGETS_BY_AGENT`,
-`EXECUTION_TARGET_TRANSPORT`, and `EXECUTION_TARGET_DELEGATION_BOUNDARY`. Treat that module as the
-source of truth if this table and the code ever disagree.
+`EXECUTION_TARGET_TRANSPORT`, and `EXECUTION_TARGET_DELEGATION_BOUNDARY`. Treat that module as source
+of truth for execution mechanics. `manifests/runtime-platforms.json` separately governs top-level
+identity; for example `cowork` can launch `pi-subagent-model` without either field being relabeled.
 
 The delegation boundary column is a **default**, not a fixed property of the target. A launcher must
 override it when the actual mechanism differs — for example, `codex` spawning `claude-cli` into a
