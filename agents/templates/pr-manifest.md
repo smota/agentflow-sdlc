@@ -41,18 +41,18 @@
 
 <!-- Required when Agent review's Mode is multi-agent. Omit or leave empty for single-agent PRs —
 role alternation is never forced. One row per executed phase; "Planned owner" is the
-roleAlternationPlan owner (routing.roles.<role>.owner), "Actual agent" and "Executor" are the
-roleIntelligence that actually ran the phase. See docs/agent-workflow.md §4a and
-lib/role-attribution.mjs. -->
+roleAlternationPlan owner (routing.roles.<role>.owner), "Actual platform" is registered through
+manifests/runtime-platforms.json, and "Executor" is the distinct execution target that actually ran
+the phase. See docs/agent-workflow.md §4a and lib/role-attribution.mjs. -->
 
-| Phase    | Role   | Planned owner | Actual agent | Executor          | Context boundary  | Independence boundary                          | Status                                   |
-| -------- | ------ | ------------- | ------------ | ----------------- | ----------------- | ---------------------------------------------- | ---------------------------------------- |
-| <number> | <role> | <agent>       | <agent>      | <executionTarget> | <contextBoundary> | <independent \| self-review \| not-applicable> | <pass \| blocked \| returned \| skipped> |
+| Phase    | Role   | Planned owner | Actual platform | Executor          | Context boundary  | Independence boundary                          | Status                                   |
+| -------- | ------ | ------------- | --------------- | ----------------- | ----------------- | ---------------------------------------------- | ---------------------------------------- |
+| <number> | <role> | <platform>    | <platform>      | <executionTarget> | <contextBoundary> | <independent \| self-review \| not-applicable> | <pass \| blocked \| returned \| skipped> |
 
 ## Agent review
 
-- Implemented by: human | claude | codex | agy | pi
-- Launcher: <human | claude | codex | agy | pi> <!-- who initiated the implementation work; equal to "Implemented by" in single-agent execution -->
+- Implemented by: <registered platform slug; see manifests/runtime-platforms.json>
+- Launcher: <registered platform slug; see manifests/runtime-platforms.json> <!-- who initiated implementation work; equal to "Implemented by" in single-agent execution -->
 - Executor: <claude-cli | anthropic-api | agy-cli | agy-session | pi-parent | pi-subagent | pi-session | pi-subagent-model | codex-cli | provider-api | human> <!-- see docs/execution-targets.md -->
 - Transport: <local-cli | provider-api | pi-subagent | intercom-session | orchestrated-worktree | manual>
 - Delegation boundary: <current-session | child-subagent | separate-local-session | child-worktree | human-handoff>
@@ -63,7 +63,7 @@ lib/role-attribution.mjs. -->
 - Fallback chain: none | original agent -> backup agent
 - Regression test: added | not-applicable:<reason> <!-- required for bug fixes; omit for non-bug PRs -->
 - Mode: single-agent | multi-agent <!-- multiAgentClaim; "multi-agent" requires >=2 distinct role intelligences in the Role attribution matrix above, verified by scripts/validate-pr-manifest.mjs -->
-- Self-review disclosure: not-applicable | <rationale for developer and review sharing the same intelligence> <!-- required when the Role attribution matrix's developer and review rows share the same Actual agent -->
+- Self-review disclosure: not-applicable | <rationale for developer and review sharing the same intelligence> <!-- required when Role attribution matrix developer and review rows share same Actual platform -->
 
 ## Follow-up issues
 

@@ -36,7 +36,7 @@ If this command fails, treat `agy` as unavailable and try the next configured fa
 1. Resolve the role route and confirm `selectedAgent` is `agy`.
 2. Post a ticket handover comment using `agents/templates/handover-comment.md` when control changes from another agent or when `agy` is selected as a fallback.
 3. Invoke Agy with the issue number, role, branch, previous role-pass summary, acceptance criteria, and expected return artifact, plus the resolved execution target (`agy-cli` or `agy-session`).
-4. Require Agy to sign the role-pass with `Actual executor identity: agy` and record `Executor: agy-cli` (or `agy-session`) with the matching `Transport` and `Delegation boundary`.
+4. Require Agy to sign role-pass with `Executed by: agy` and record `Executor: agy-cli` (or `agy-session`) with the matching `Transport` and `Delegation boundary`.
 
 ## Return contract
 

@@ -16,16 +16,17 @@ This index maps the main concepts, defaults, roles, skills/workflows, templates,
 10. [`agent-workflow.md`](agent-workflow.md) � phase model, role-pass contract, durable evidence, branch strategy, review model, and PR readiness.
 11. [`issue-standards.md`](issue-standards.md) � issue titles, labels, body update rules, and lifecycle metadata.
 12. [`project-config.md`](project-config.md) � project-local `agent-workflow.config.json` contract.
-13. [`execution-targets.md`](execution-targets.md) � `executionTarget`, `transport`, `launcher`, `executor`, and `delegationBoundary` concepts that disambiguate `with claude`/`with agy`/`with pi` requests.
-14. [`capabilities.md`](capabilities.md) � portable PLAN/WORKFLOW/LOOP/SUB-AGENTS capability vocabulary, resolution modes, evidence, and adapter links.
-15. [`intelligent-collaboration.md`](intelligent-collaboration.md) � collaboration modes, decision budget, smallest-sufficient-collaboration rule, bounded helper intelligence, and compact evidence guidance.
-16. [`release-versioning.md`](release-versioning.md) � configurable release strategy, default `main.minor.fix`, release evidence, validators, and preview helpers.
-17. [`cockpit.md`](cockpit.md) � optional first-class Goal Command Center for visual goal, readiness, release, replay, and approval operations.
-18. [`cockpit-concepts-and-rules.md`](cockpit-concepts-and-rules.md) � Cockpit product language, safety, action, and support-boundary rules.
-19. [`extension-packs.md`](extension-packs.md) � repository-level contrib-style overlays for opinionated engineering approaches, skills, tools, templates, and validators.
-20. [`examples/simple-bugfix-flow.md`](examples/simple-bugfix-flow.md), [`examples/multi-agent-review-flow.md`](examples/multi-agent-review-flow.md), [`examples/high-assurance-flow.md`](examples/high-assurance-flow.md), and [`examples/intelligent-collaboration-flow.md`](examples/intelligent-collaboration-flow.md) � public example flows and evidence excerpts.
-21. [`default-skills.md`](default-skills.md) � default skills, recommended companion skills, upstream repositories, and CCPM-sourced skill surfaces.
-22. [`../agents/agentflow-sdlc/README.md`](../agents/agentflow-sdlc/README.md) � canonical portable AgentFlow SDLC agent package with maturity, capability, handoff, eval, and improvement-loop contracts.
+13. [`runtime-platforms.md`](runtime-platforms.md) � registry-backed platform identity for ChatGPT, Cowork, Antigravity, Pi, Claude, Codex, Agy, human, and future runtimes.
+14. [`execution-targets.md`](execution-targets.md) � `executionTarget`, `transport`, `launcher`, `executor`, and `delegationBoundary` concepts that disambiguate `with claude`/`with agy`/`with pi` requests.
+15. [`capabilities.md`](capabilities.md) � portable PLAN/WORKFLOW/LOOP/SUB-AGENTS capability vocabulary, resolution modes, evidence, and adapter links.
+16. [`intelligent-collaboration.md`](intelligent-collaboration.md) � collaboration modes, decision budget, smallest-sufficient-collaboration rule, bounded helper intelligence, and compact evidence guidance.
+17. [`release-versioning.md`](release-versioning.md) � configurable release strategy, default `main.minor.fix`, release evidence, validators, and preview helpers.
+18. [`cockpit.md`](cockpit.md) � optional first-class Goal Command Center for visual goal, readiness, release, replay, and approval operations.
+19. [`cockpit-concepts-and-rules.md`](cockpit-concepts-and-rules.md) � Cockpit product language, safety, action, and support-boundary rules.
+20. [`extension-packs.md`](extension-packs.md) � repository-level contrib-style overlays for opinionated engineering approaches, skills, tools, templates, and validators.
+21. [`examples/simple-bugfix-flow.md`](examples/simple-bugfix-flow.md), [`examples/multi-agent-review-flow.md`](examples/multi-agent-review-flow.md), [`examples/high-assurance-flow.md`](examples/high-assurance-flow.md), and [`examples/intelligent-collaboration-flow.md`](examples/intelligent-collaboration-flow.md) � public example flows and evidence excerpts.
+22. [`default-skills.md`](default-skills.md) � default skills, recommended companion skills, upstream repositories, and CCPM-sourced skill surfaces.
+23. [`../agents/agentflow-sdlc/README.md`](../agents/agentflow-sdlc/README.md) � canonical portable AgentFlow SDLC agent package with maturity, capability, handoff, eval, and improvement-loop contracts.
 
 ## What it is
 
@@ -74,6 +75,7 @@ Optional visual operations use Cockpit, the first-class Goal Command Center. Coc
 | --------------------- | ---------------------------------------------------------------------------------------------- |
 | Execution             | Single-agent role execution                                                                    |
 | Multi-agent           | Optional, only when useful or when project routing selects another agent                       |
+| Registered platforms  | `chatgpt`, `cowork`, `antigravity`, `pi`, `claude`, `codex`, `agy`, `human`, project additions |
 | Supported route slugs | `agy`, `codex`, `claude`, `pi`                                                                 |
 | Evidence              | GitHub issue comments and PR bodies are durable; `.agent-runs/` is local scratch               |
 | Handover              | Orchestrator-owned issue comments for role transitions                                         |
@@ -92,6 +94,7 @@ Main sections:
 - `ciCommands` — commands copied into PR manifests as CI-equivalent validation.
 - `bounded` — path and diff limits for bounded self-reviewable work.
 - `branching` — trunk, integration, protected branch, PR target, and work branch rules.
+- `platformRegistry` — identity-only additions to built-in runtime platform registry.
 - `capabilities` — optional policy for portable PLAN/WORKFLOW/LOOP/SUB-AGENTS behavior and fallbacks.
 - `extensions` — repository-level extension packs for opinionated engineering approaches, required skills/capabilities, templates, helper tools, and validators. This repository enables `extensions/evidence-driven-engineering` and `extensions/agent-handoff-governance` as reference packs.
   node bin/cli.mjs doctor-env --json
@@ -106,7 +109,11 @@ Routing lets a project choose a core owner and fallback list for each role. The 
 
 Handover comments use [`../agents/templates/handover-comment.md`](../agents/templates/handover-comment.md). They document phase-to-phase continuity, routing/fallback details, blockers, and the next-role contract.
 
-An agent slug names who owns a role, not how it runs. See [`execution-targets.md`](execution-targets.md) for the `executionTarget`, `transport`, `launcher`, `executor`, and `delegationBoundary` vocabulary, and `scripts/resolve-execution-target.mjs` for resolving an ambiguous `with claude`/`with agy`/`with pi` request before launching work.
+A registered platform slug names who produced evidence; routable subset may own configured roles.
+See [`runtime-platforms.md`](runtime-platforms.md) for identity and
+[`execution-targets.md`](execution-targets.md) for `executionTarget`, `transport`, launcher,
+executor, and `delegationBoundary`. Use `scripts/resolve-execution-target.mjs` for ambiguous
+`with claude`/`with agy`/`with pi` requests before launch.
 
 ## Templates
 

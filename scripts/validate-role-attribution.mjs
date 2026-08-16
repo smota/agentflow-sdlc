@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { extractSection, fieldValue, parseMarkdownTable } from '../lib/markdown-sections.mjs'
 import { rowsFromTable, validateRoleAttributionMatrix } from '../lib/role-attribution.mjs'
+import { loadProjectConfig } from '../lib/role-routing.mjs'
 
 // Standalone role-attribution check for any markdown evidence surface (PR manifest,
 // workflow-status comment export, or handover-comment export) — not only PR manifests, which
@@ -33,6 +34,7 @@ export function validateRoleAttributionFile(path) {
     multiAgentClaim,
     workflowProfile: fieldValue(agentReview, 'Workflow profile'),
     selfReviewDisclosure: fieldValue(agentReview, 'Self-review disclosure'),
+    platformConfig: loadProjectConfig(),
   })
 }
 

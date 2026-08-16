@@ -216,7 +216,11 @@ Examples:
 - `for-review:claude`
 - `reviewed-by:codex`
 
-Use lowercase agent slugs. Keep labels specific: prefer one routing label and one lifecycle label over a generic ownership label. Provenance labels are factual audit metadata: never use `drafted-by:claude`, `drafted-by:codex`, `drafted-by:agy`, or `drafted-by:pi` unless that agent/runtime actually drafted the issue.
+Use lowercase registered platform slugs for provenance labels and routable platform slugs for
+routing labels. Keep labels specific: prefer one routing label and one lifecycle label over generic
+ownership. Provenance labels are factual audit metadata: never name Claude, Codex, Agy, Pi,
+ChatGPT/Cowork, Antigravity, human, or future registered runtime unless that platform actually
+drafted or performed work.
 Update one workflow-status issue comment as work progresses. Do not create a comment for every
 internal phase or evidence role.
 

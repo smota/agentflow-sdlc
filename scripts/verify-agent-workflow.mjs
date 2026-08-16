@@ -60,8 +60,8 @@ try {
   writeFileSync(
     manifestPath,
     manifestTemplate
-      .replace('Implemented by: human | claude | codex | agy | pi', 'Implemented by: codex')
-      .replace('Launcher: human | claude | codex | agy | pi', 'Launcher: codex')
+      .replace('Implemented by: <registered platform slug>', 'Implemented by: cowork')
+      .replace('Launcher: <registered platform slug>', 'Launcher: cowork')
       .replace(
         'Executor: claude-cli | anthropic-api | agy-cli | agy-session | pi-parent | pi-subagent | pi-session | pi-subagent-model | codex-cli | provider-api | human',
         'Executor: codex-cli',

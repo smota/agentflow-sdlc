@@ -114,6 +114,7 @@ Read more: [`docs/cockpit.md`](docs/cockpit.md) and [`docs/cockpit-concepts-and-
 | Install or evaluate                    | [`docs/get-started.md`](docs/get-started.md)                                   |
 | Run issue work or contribute           | [`docs/guides/contribution-workflow.md`](docs/guides/contribution-workflow.md) |
 | Learn intelligent collaboration        | [`docs/intelligent-collaboration.md`](docs/intelligent-collaboration.md)       |
+| Register truthful runtime identities   | [`docs/runtime-platforms.md`](docs/runtime-platforms.md)                       |
 | Use optional Goal Command Center       | [`docs/cockpit.md`](docs/cockpit.md)                                           |
 | Follow the workflow contract           | [`docs/agent-workflow.md`](docs/agent-workflow.md)                             |
 | Follow issue rules                     | [`docs/issue-standards.md`](docs/issue-standards.md)                           |

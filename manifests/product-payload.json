@@ -2,6 +2,26 @@
   "version": 1,
   "entries": [
     {
+      "source": "manifests/runtime-platforms.json",
+      "target": "manifests/runtime-platforms.json",
+      "ownership": "managed"
+    },
+    {
+      "source": "schemas/runtime-platform-registry.schema.json",
+      "target": "schemas/runtime-platform-registry.schema.json",
+      "ownership": "managed"
+    },
+    {
+      "source": "docs/runtime-platforms.md",
+      "target": "docs/runtime-platforms.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/runtime-platforms.mjs",
+      "target": "lib/runtime-platforms.mjs",
+      "ownership": "managed"
+    },
+    {
       "source": "docs/sdlc-definition.md",
       "target": "docs/sdlc-definition.md",
       "ownership": "managed"

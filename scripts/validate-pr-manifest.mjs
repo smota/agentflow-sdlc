@@ -7,6 +7,13 @@ import {
   parseMarkdownTable,
 } from '../lib/markdown-sections.mjs'
 import { rowsFromTable, validateRoleAttributionMatrix } from '../lib/role-attribution.mjs'
+import {
+  ALL_EXECUTION_TARGETS,
+  DELEGATION_BOUNDARIES,
+  TRANSPORTS,
+} from '../lib/execution-targets.mjs'
+import { loadProjectConfig } from '../lib/role-routing.mjs'
+import { runtimePlatformSlugs } from '../lib/runtime-platforms.mjs'
 
 function getArg(name) {
   const index = process.argv.indexOf(name)
@@ -26,21 +33,30 @@ const content = readFileSync(path, 'utf8')
 const workflowEvidence = extractSection(content, 'Workflow evidence')
 const agentReview = extractSection(content, 'Agent review')
 const ciValidation = extractSection(content, 'CI-equivalent validation')
+const projectConfig = loadProjectConfig()
+let registeredPlatforms = []
+let platformRegistryError = null
+try {
+  registeredPlatforms = runtimePlatformSlugs(projectConfig)
+} catch (error) {
+  platformRegistryError = error.message
+}
 
+const matches = (pattern) => (value) => pattern.test(value)
+const isOneOf = (values) => (value) => values.includes(value)
 const agentReviewFields = {
-  'Implemented by': /^(human|claude|codex|agy|pi)$/,
-  Launcher: /^(human|claude|codex|agy|pi)$/,
-  Executor:
-    /^(claude-cli|anthropic-api|agy-cli|agy-session|pi-parent|pi-subagent|pi-session|pi-subagent-model|codex-cli|provider-api|human)$/,
-  Transport: /^(local-cli|provider-api|pi-subagent|intercom-session|orchestrated-worktree|manual)$/,
-  'Delegation boundary':
-    /^(current-session|child-subagent|separate-local-session|child-worktree|human-handoff)$/,
-  'Model / runtime': /^(?!<freeform identifier>$).+/,
-  Review: /^(self-review|human-review-requested|human-reviewed)$/,
-  'Workflow profile': /^(bounded|standard|high-assurance)$/,
-  'Merge owner':
+  'Implemented by': isOneOf(registeredPlatforms),
+  Launcher: isOneOf(registeredPlatforms),
+  Executor: isOneOf(ALL_EXECUTION_TARGETS),
+  Transport: isOneOf(TRANSPORTS),
+  'Delegation boundary': isOneOf(DELEGATION_BOUNDARIES),
+  'Model / runtime': matches(/^(?!<freeform identifier>$).+/),
+  Review: matches(/^(self-review|human-review-requested|human-reviewed)$/),
+  'Workflow profile': matches(/^(bounded|standard|high-assurance)$/),
+  'Merge owner': matches(
     /^(human\/operator|auto-merge-requested:`gh pr merge --squash --delete-branch --auto`)$/,
-  Mode: /^(single-agent|multi-agent)$/,
+  ),
+  Mode: matches(/^(single-agent|multi-agent)$/),
 }
 
 // When a "Regression test:" field is present in Agent review, it must have a valid value.
@@ -53,12 +69,16 @@ const regressionTestValid =
 
 const missingAgentFields = []
 const invalidAgentFields = []
-for (const [label, pattern] of Object.entries(agentReviewFields)) {
+for (const [label, validate] of Object.entries(agentReviewFields)) {
   const value = fieldValue(agentReview, label)
   if (value === null) {
     missingAgentFields.push(label)
-  } else if (!pattern.test(value)) {
-    invalidAgentFields.push(`${label}="${value}"`)
+  } else if (!validate(value)) {
+    invalidAgentFields.push(
+      ['Implemented by', 'Launcher'].includes(label)
+        ? `${label}="${value}" is not a registered platform slug; use manifests/runtime-platforms.json or platformRegistry.additionalPlatforms`
+        : `${label}="${value}"`,
+    )
   }
 }
 
@@ -81,9 +101,15 @@ const roleAttribution = validateRoleAttributionMatrix({
   multiAgentClaim,
   workflowProfile: fieldValue(agentReview, 'Workflow profile'),
   selfReviewDisclosure: fieldValue(agentReview, 'Self-review disclosure'),
+  platformConfig: projectConfig,
 })
 
 const checks = [
+  {
+    name: 'runtime-platform-registry',
+    ok: platformRegistryError === null,
+    detail: platformRegistryError ?? `${registeredPlatforms.length} registered platform slug(s)`,
+  },
   {
     name: 'implemented-issues',
     ok: /## Implemented issues\s+[\s\S]*(Closes|Implements) #\d+/m.test(content),

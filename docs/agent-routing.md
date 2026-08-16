@@ -9,22 +9,25 @@ the full role-alternation and attribution concepts (`roleIntelligence`, `context
 `independenceBoundary`, `roleAttributionMatrix`, `multiAgentClaim`, `selfReviewDisclosure`) that
 turn this plan into evidenced, machine-checkable multi-agent claims.
 
-An agent slug names _who_ owns a role. It does not say _how_ that role runs. See
-[`execution-targets.md`](execution-targets.md) for the `executionTarget`, `transport`,
-`launcher`, `executor`, and `delegationBoundary` concepts that make the "how" explicit — required
+A routable platform slug names _who_ owns a configured role. It is registry-backed but does not say
+_how_ that role runs. See [`runtime-platforms.md`](runtime-platforms.md) for identity registry and
+[`execution-targets.md`](execution-targets.md) for `executionTarget`, `transport`, launcher,
+executor, and `delegationBoundary` concepts that make "how" explicit — required
 reading before treating a bare mention like `with claude`, `with agy`, or `with pi` as sufficient to
 launch work.
 
-## Supported agent slugs
+## Routable platform slugs
 
-The initial supported agent CLI slugs are:
+Built-in role-routing adapter slugs are:
 
 - `agy`
 - `codex`
 - `claude`
 - `pi`
 
-Use these exact lowercase slugs in `agent-workflow.config.json`, role-pass artifacts, workflow-status comments, and handover comments.
+Use these exact lowercase slugs under `routing.agents`. Evidence fields accept any registered
+platform slug, including `chatgpt`, `cowork`, `antigravity`, and `human`; identity-only platforms do
+not imply route adapters or execution targets.
 
 ## Route resolution
 
@@ -66,7 +69,9 @@ Validate project routing config with:
 node scripts/validate-role-routing.mjs
 ```
 
-Validation checks supported agent slugs, owner/fallback shape, duplicate fallbacks, owner duplication, referenced handover docs, and — when set — that `routing.agents.<slug>.defaultExecutionTarget` is a valid execution target for that agent slug.
+Validation checks routable platform slugs, owner/fallback shape, duplicate fallbacks, owner
+duplication, referenced handover docs, runtime platform registry additions, and — when set — that
+`routing.agents.<slug>.defaultExecutionTarget` is valid for that routable platform.
 
 Validate that a run's evidence backs up its `multiAgentClaim` with `node scripts/validate-pr-manifest.mjs --path <manifest>` (checks the `## Role attribution matrix` whenever `Mode: multi-agent`) or, for a non-PR-manifest evidence surface, `node scripts/validate-role-attribution.mjs --path <file>`. See [`agent-workflow.md` §4a](agent-workflow.md#4a-role-alternation-and-attribution-multi-agent-mode).
 
