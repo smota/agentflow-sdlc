@@ -2,7 +2,7 @@
 
 AgentFlow SDLC is an open-source process layer for AI-assisted software delivery. It helps teams use AI more confidently while keeping work understandable, reviewable, resumable, and safe to ship through GitHub.
 
-The development source is preparing version 1.0.0. The latest published GitHub release may lag the source branch; use the live release badge and status note in the [README](../README.md#release-status) when choosing a version.
+Version 1.0.0 is the current release line. Use the live release badge and status note in the [README](../README.md#release-status) to confirm GitHub availability, and read the [v1.0.0 release notes](releases/v1.0.0.md) for the complete capability set.
 
 ## The problem it solves
 
