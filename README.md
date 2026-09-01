@@ -78,7 +78,7 @@ flowchart TB
 
 ### Release status
 
-The current development source is version **1.0.0** and requires Node.js 20 or newer. It is not yet the latest published release. The latest published GitHub release is [v0.7.0](https://github.com/smota/agentflow-sdlc/releases/tag/v0.7.0), and no `agentflow-sdlc` package is currently published on npm. Use the source-based setup above; the release badge always resolves to the newest published release.
+The current release line is **1.0.0** and requires Node.js 20 or newer. Read the [v1.0.0 release notes](docs/releases/v1.0.0.md) for the complete user-facing capability set. No `agentflow-sdlc` package is currently published on npm, so use the source-based setup above; the release badge always resolves to the newest published GitHub release.
 
 ## Choose your path
 

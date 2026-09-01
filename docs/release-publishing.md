@@ -1,6 +1,6 @@
 # AgentFlow SDLC release publishing
 
-AgentFlow SDLC v1 is publish-grade only when tests, executable evals, npm packaging, native harness manifests, and structural harness settings merge all validate. This document defines a release gate; it does not imply that version 1.0.0 or the npm package has already been published.
+AgentFlow SDLC v1 is publish-grade only when tests, executable evals, npm packaging, native harness manifests, and structural harness settings merge all validate. This document defines the maintained release gate. Passing it validates the package payload but does not publish the npm package; npm publication remains a separate explicit action.
 
 ## NPM package gate
 
