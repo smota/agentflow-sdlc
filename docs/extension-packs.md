@@ -74,10 +74,13 @@ documentation:
   - README.md
 requiredSkills:
   - context-mode
-requiredCapabilities:
+requiredWorkflowCapabilities: []
+requiredToolPermissions:
   - shell
   - read
   - edit
+controlRequirements:
+  - branch-protection
 templates:
   - templates/design-note.md
 tools:
@@ -86,6 +89,14 @@ tools:
 validators:
   - path: validators/check-required-sections.mjs
     command: node validators/check-required-sections.mjs
+plays:
+  - id: evidence-analysis
+    role: analyst
+    appliesWhen: non-trivial work needs evidence-backed scope
+    requiredInputs: [goal]
+    expectedOutputs: [acceptance-criteria]
+    evidenceFields: [assumptions]
+    validators: []
 ```
 
 Supported `kind` values:
@@ -98,6 +109,13 @@ Supported `kind` values:
 - `workflow-overlay`
 
 ## Role-pass guardrails
+
+`plays` attach optional, declarative guidance to an existing canonical role. Each play declares
+when it applies, its inputs, outputs, evidence fields, and validators. A play cannot add or skip a
+core transition, transfer role ownership, change the readiness denominator, or weaken approvals.
+Workflow capabilities request behavior, tool permissions allow operations, and control requirements
+need independent enforcement or evidence. Legacy `requiredCapabilities` is input-compatible but
+deprecated.
 
 A configured extension pack may add requirements to each role pass:
 

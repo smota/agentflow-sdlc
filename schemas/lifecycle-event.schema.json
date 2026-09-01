@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentflow.dev/schemas/lifecycle-event.schema.json",
+  "title": "AgentFlow Lifecycle Event",
+  "type": "object",
+  "required": ["id", "subject", "type", "timestamp"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "subject": { "type": "string", "minLength": 1 },
+    "type": { "type": "string", "minLength": 1 },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "outcome": { "enum": ["pass", "fail", "blocked"] },
+    "sourceRef": { "$ref": "artifact-ref.schema.json" }
+  },
+  "additionalProperties": false
+}

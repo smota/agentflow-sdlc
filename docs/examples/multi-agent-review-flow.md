@@ -11,12 +11,12 @@ A platform team updates workflow routing behavior and wants implementation by on
 A multi-agent run records a role attribution matrix instead of making a vague claim that "agents collaborated."
 
 ```markdown
-| Phase | Role      | Planned owner | Actual agent | Executor   | Context boundary        | Independence   | Status |
-| ----- | --------- | ------------- | ------------ | ---------- | ----------------------- | -------------- | ------ |
-| 1     | analyst   | pi            | pi           | pi-parent  | current-session         | not-applicable | pass   |
-| 2     | architect | pi            | pi           | pi-parent  | current-session         | not-applicable | pass   |
-| 4     | developer | codex         | codex        | codex-cli  | local-cli-child-process | not-applicable | pass   |
-| 6     | review    | claude        | claude       | claude-cli | local-cli-child-process | independent    | pass   |
+| Phase | Role      | Planned owner | Actual platform | Executor   | Context boundary        | Independence   | Status |
+| ----- | --------- | ------------- | --------------- | ---------- | ----------------------- | -------------- | ------ |
+| 1     | analyst   | pi            | pi              | pi-parent  | current-session         | not-applicable | pass   |
+| 2     | architect | pi            | pi              | pi-parent  | current-session         | not-applicable | pass   |
+| 4     | developer | codex         | codex           | codex-cli  | local-cli-child-process | not-applicable | pass   |
+| 6     | review    | claude        | claude          | claude-cli | local-cli-child-process | independent    | pass   |
 ```
 
 ## Rules illustrated

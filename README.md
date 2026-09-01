@@ -1,141 +1,121 @@
-# AgentFlow SDLC
+<div align="center">
+  <img src="assets/cockpit/agentflow-logo-transparent.png" alt="AgentFlow SDLC workflow mark" width="96" />
+  <br />
+  <img src="assets/agentflow-docs-banner.svg" alt="AgentFlow SDLC — Reviewable AI-assisted software delivery" width="760" />
+  <h1>AgentFlow SDLC</h1>
+  <p><strong>Turn AI-assisted coding into reviewable, resumable software delivery.</strong></p>
+  <p>
+    <a href="LICENSE"><img src="https://img.shields.io/github/license/smota/agentflow-sdlc" alt="Apache-2.0 license" /></a>
+    <a href="https://github.com/smota/agentflow-sdlc/stargazers"><img src="https://img.shields.io/github/stars/smota/agentflow-sdlc?style=flat" alt="GitHub stars" /></a>
+    <a href="https://github.com/smota/agentflow-sdlc/releases/latest"><img src="https://img.shields.io/github/v/release/smota/agentflow-sdlc?display_name=tag" alt="Latest GitHub release" /></a>
+    <a href="https://github.com/smota/agentflow-sdlc/actions/workflows/validate-pr.yml"><img src="https://github.com/smota/agentflow-sdlc/actions/workflows/validate-pr.yml/badge.svg?branch=development" alt="Validation status" /></a>
+    <img src="https://img.shields.io/badge/Node.js-%3E%3D20-339933?logo=node.js&logoColor=white" alt="Node.js 20 or newer" />
+  </p>
+</div>
 
-Manage AI-assisted software delivery with consistency and durable evidence.
+AgentFlow SDLC is an open-source process layer for software projects that use AI coding agents. It keeps requirements, decisions, validation, review, and handoffs visible in GitHub instead of trapped in one chat session.
 
-AgentFlow SDLC is an open-source process layer for AI-assisted software delivery. It gives people and agents a shared path from idea to pull request with clear roles, durable evidence, practical review gates, and intelligent collaboration when it helps.
+It adds delivery governance around your existing repository. It does **not** generate an application, replace GitHub, or dictate your technology stack.
 
-AgentFlow SDLC 1.0 is the first mature release of this framework: stable enough for teams that want AI speed without losing clarity, review, or control.
+## Understand it in 30 seconds
 
-## What this is
+| Question                        | Answer                                                                                                                                                                                                 |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **What is it?**                 | A role-based path from request to pull request, backed by templates, validators, and durable evidence.                                                                                                 |
+| **What problem does it solve?** | AI can produce code faster than teams can understand, review, resume, and govern the work around it.                                                                                                   |
+| **What is the value?**          | Clear scope, reproducible checks, explicit review boundaries, safer handoffs, and less process memory.                                                                                                 |
+| **Who is it for?**              | Solo maintainers and teams using AI coding agents in GitHub-based delivery. Agy, Claude, Codex, and Pi have built-in routing; other registered platforms can still provide truthful evidence identity. |
 
-AgentFlow installs an opinionated SDLC around an existing project. It does not generate an app or replace your stack. It helps teams keep the surrounding delivery system clear:
-
-- what was requested;
-- why decisions were made;
-- what changed;
-- what was validated;
-- who reviewed it;
-- what should happen next.
-
-## Why teams use it
-
-- **Manageable AI-assisted work:** PRs and issue comments carry scope, validation, review mode, docs decisions, and follow-up status.
-- **Resumable delivery:** another person or agent can continue without reconstructing a chat session.
-- **Less process memory:** hooks, templates, and validators catch workflow drift.
-- **Intelligent collaboration:** focused helper intelligence is available when uncertainty is high, while one accountable owner keeps evidence compact.
-- **Human authority where it matters:** high-assurance decisions keep explicit human review.
-
-## How it works
-
-1. Clarify the request into acceptance criteria.
-2. Choose the simplest safe path for the work.
-3. Plan architecture, tests, docs, branch, and PR evidence before edits.
-4. Implement within scope and branch rules.
-5. Run validation and record results.
-6. Open a PR with durable workflow evidence and follow-up status.
-
-## Intelligent collaboration
-
-The default remains one executor carrying context end to end. AgentFlow uses more AI intelligence only when it improves the decision: focused advisors for uncertainty, bounded discovery for broad context, isolated experiments for unclear strategy, and human gates for consequential choices.
-
-> Increase intelligence per decision, not agents per task.
-
-See [`docs/intelligent-collaboration.md`](docs/intelligent-collaboration.md).
-
-## Try it
-
-Start with the LLM-assisted onboarding guide. It inspects your project read-only, preserves existing instructions, asks for workflow choices, and proposes setup commands before anything changes.
-
-```text
-Use the AgentFlow SDLC assisted onboarding guide:
-https://github.com/smota/agentflow-sdlc/blob/main/docs/assisted-onboarding.md
-
-Apply it to this existing project. First inspect existing agent instructions and project docs. Validate the environment read-only. Ask me to choose agents, execution mode, branch strategy, validation commands, and GitHub automation. Propose install/setup commands but do not execute them without explicit approval. Preserve or merge existing instructions instead of overwriting them.
-```
-
-Prefer command output?
+The safest first look is read-only:
 
 ```bash
+git clone https://github.com/smota/agentflow-sdlc.git
+cd agentflow-sdlc
+pnpm install
 node bin/cli.mjs onboarding-prompt --target /path/to/your-project
 ```
 
-Already adopted AgentFlow? Use [`docs/assisted-update.md`](docs/assisted-update.md) or:
+The last command prints an assistant-ready onboarding prompt. It does not change the target project. Ready to continue? Follow [Get started](docs/get-started.md), or give your assistant the [assisted onboarding guide](docs/assisted-onboarding.md).
 
-```bash
-node bin/cli.mjs update-prompt --target /path/to/your-project
+## How it works
+
+```mermaid
+flowchart LR
+  Request["Request"] --> Scope["Scope & design"]
+  Scope --> Build["Implement"]
+  Build --> Verify["Test & review"]
+  Verify --> PR["Evidence-backed PR"]
+  PR --> Resume["Ship or resume with context"]
 ```
 
-## Opinionated SDLC baseline
+One accountable executor normally carries the work through explicit roles. Focused advisers or routed agents are optional when they improve a decision; sensitive work retains human approval.
 
-AgentFlow SDLC encodes a baseline way to manage AI-assisted delivery. It is opinionated where consistency and safety matter, and extensible where teams need local fit.
+```mermaid
+flowchart TB
+  Project["Your existing repository"]
+  Guardrails["Policy · roles · branch rules"]
+  Tools["Templates · CLI · validators"]
+  Evidence["Issues · handovers · commits · PRs"]
 
-Core principles:
+  Project --> Guardrails
+  Guardrails --> Tools
+  Tools --> Evidence
+```
+
+## What is available now
+
+| Capability                                | What it provides                                                                          | Where to start                                              |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| Assisted adoption and updates             | Read-only inspection first, approval before writes, lockfile-aware sync                   | [Get started](docs/get-started.md)                          |
+| Role-based delivery                       | Analyst through PR-readiness phases with explicit handoffs                                | [Workflow](docs/agent-workflow.md)                          |
+| Durable evidence                          | Portable artifact references, transition envelopes, lifecycle boundaries, and PR evidence | [Evidence contracts](docs/evidence-contracts.md)            |
+| Deterministic validation                  | Issue, config, role-pass, PR, release, skill, agent, evidence, lifecycle, and eval checks | [CLI reference](docs/index.md#cli-and-validation-reference) |
+| Intelligent collaboration                 | Single-agent default plus bounded advisory, discovery, spike, and human-gated modes       | [Collaboration](docs/intelligent-collaboration.md)          |
+| Runtime identity and routing              | Truthful platform attribution separated from execution target and transport               | [Runtime platforms](docs/runtime-platforms.md)              |
+| Skills, plugins, settings, and extensions | Portable skills plus project-selected overlays and harness adapters                       | [Extension packs](docs/extension-packs.md)                  |
+| Optional visual operations                | Cockpit goal, readiness, release, replay, approval, and follow-up views                   | [Cockpit](docs/cockpit.md)                                  |
+| Executable quality model                  | Agent eval manifests, multi-agent acceptance checks, and derived outcome metrics          | [Agent evals](docs/agent-evals.md)                          |
+
+### Release status
+
+The current release line is **1.0.0** and requires Node.js 20 or newer. Read the [v1.0.0 release notes](docs/releases/v1.0.0.md) for the complete user-facing capability set. No `agentflow-sdlc` package is currently published on npm, so use the source-based setup above; the release badge always resolves to the newest published GitHub release.
+
+## Choose your path
+
+| I want to…                              | Read this                                                     |
+| --------------------------------------- | ------------------------------------------------------------- |
+| Evaluate the product quickly            | [AgentFlow in 5 minutes](docs/agentflow-in-5-minutes.md)      |
+| Adopt it in a repository                | [Get started](docs/get-started.md)                            |
+| Find the right guide for my role        | [Start here](docs/start-here.md)                              |
+| Understand every document and tool      | [Documentation index](docs/index.md)                          |
+| Configure branches, checks, and routing | [Project setup](docs/project-setup.md)                        |
+| Run or contribute issue work            | [Contribution workflow](docs/guides/contribution-workflow.md) |
+| Extend or integrate the framework       | [SDLC packaging](docs/sdlc-packaging.md)                      |
+
+## Core principles
 
 - Durable evidence over private chat memory.
-- Manageable role flow with explicit ownership and handoffs.
-- Single-agent execution by default; more agents only when they improve a decision.
+- One accountable executor by default; more intelligence only when it improves a decision.
+- Humans and agents follow the same public contribution contract.
 - Human authority for high-assurance work.
-- Follow-up issues instead of hidden TODOs.
-- Harness adapters are generated surfaces, not product source.
+- Follow-up issues instead of hidden TODOs or silent scope drift.
+- Generated harness adapters are distribution surfaces, not the source of product truth.
 
-Baseline workflow:
+## Repository layout
 
-1. Product/JTBD framing.
-2. Analysis and acceptance criteria.
-3. Architecture and path selection.
-4. Developer planning.
-5. Implementation.
-6. Testing and validation evidence.
-7. Review.
-8. Documentation/release notes.
-9. PR readiness and follow-up closeout.
-
-Adopters can extend roles, workflow paths, labels, gates, validators, release policies, skills, and harness adapters while preserving provenance, readiness rules, high-assurance approval, and no-secret durable evidence.
-
-## Cockpit Goal Command Center
-
-Cockpit is the optional, first-class Goal Command Center for AgentFlow SDLC. CLI/GitHub workflow remains authoritative and fully usable without starting Cockpit; Cockpit reads durable SDLC records and presents goals, readiness, role flow, releases, approvals, replay, follow-ups, and safe workflow actions.
-
-Start it when you want visual operations:
-
-```bash
-AGENTFLOW_REPOSITORIES=owner/repo agentflow-sdlc cockpit
-agentflow-sdlc cockpit doctor --json
-```
-
-Read more: [`docs/cockpit.md`](docs/cockpit.md) and [`docs/cockpit-concepts-and-rules.md`](docs/cockpit-concepts-and-rules.md).
-
-## Documentation map
-
-| Need                                   | Go here                                                                        |
-| -------------------------------------- | ------------------------------------------------------------------------------ |
-| Understand the product in five minutes | [`docs/agentflow-in-5-minutes.md`](docs/agentflow-in-5-minutes.md)             |
-| Pick the right doc                     | [`docs/start-here.md`](docs/start-here.md)                                     |
-| Install or evaluate                    | [`docs/get-started.md`](docs/get-started.md)                                   |
-| Run issue work or contribute           | [`docs/guides/contribution-workflow.md`](docs/guides/contribution-workflow.md) |
-| Learn intelligent collaboration        | [`docs/intelligent-collaboration.md`](docs/intelligent-collaboration.md)       |
-| Use optional Goal Command Center       | [`docs/cockpit.md`](docs/cockpit.md)                                           |
-| Follow the workflow contract           | [`docs/agent-workflow.md`](docs/agent-workflow.md)                             |
-| Follow issue rules                     | [`docs/issue-standards.md`](docs/issue-standards.md)                           |
-| Configure a project                    | [`docs/project-config.md`](docs/project-config.md)                             |
-| See examples                           | [`docs/examples/`](docs/examples/)                                             |
-| Review 1.0 release notes               | [`docs/releases/v1.0.0.md`](docs/releases/v1.0.0.md)                           |
-
-## What is included
-
-- Repository policy: `AGENTS.md`, `CLAUDE.md`, `CODEX.md`, `AGY.md`.
-- Workflow docs and templates under `docs/` and `agents/templates/`.
-- Agent package: `agents/agentflow-sdlc/`.
-- Role-agent packages: `agents/roles/`.
-- Workflow skills: `agents/workflows/orchestrate/`, `scan/`, and `intelligent-collaboration/`.
-- Validators and helpers under `scripts/` and `lib/`.
-- Optional Cockpit Goal Command Center: `agentflow-sdlc cockpit`.
-- Examples and eval scaffolding under `docs/examples/` and `agents/evals/`.
+| Area               | Contents                                                                        |
+| ------------------ | ------------------------------------------------------------------------------- |
+| Policy             | `AGENTS.md` and executor adapters such as `CODEX.md`, `CLAUDE.md`, and `AGY.md` |
+| Workflow           | `agents/roles/`, `agents/workflows/`, and `agents/templates/`                   |
+| Documentation      | `docs/`, organized by audience in the [documentation index](docs/index.md)      |
+| CLI and validators | `bin/`, `scripts/`, `lib/`, and `schemas/`                                      |
+| Distribution       | `adapters/`, `skills/`, `extensions/`, and `manifests/`                         |
+| Optional interface | Cockpit assets and runtime commands                                             |
 
 ## Contributing
 
-Start from a GitHub issue or explicit maintainer direction. Read `AGENTS.md` first, then use [`docs/guides/contribution-workflow.md`](docs/guides/contribution-workflow.md).
+Start from a GitHub issue or explicit maintainer direction. Read [`AGENTS.md`](AGENTS.md) first, then follow the [contribution workflow](docs/guides/contribution-workflow.md). Keep changes issue-scoped, run the relevant validators, and use the project PR manifest.
 
 ## License
 
-Licensed under the Apache License, Version 2.0. See [`LICENSE`](LICENSE).
+Licensed under the [Apache License 2.0](LICENSE).

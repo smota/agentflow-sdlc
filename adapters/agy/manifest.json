@@ -1,6 +1,6 @@
 {
   "id": "agentflow-sdlc.agy",
-  "name": "AgentFlow SDLC for AGY / Antigravity",
+  "name": "AgentFlow SDLC for AGY",
   "version": "1.0.0",
   "harness": "agy",
   "entry": ".agents/skills",

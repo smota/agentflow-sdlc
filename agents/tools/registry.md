@@ -1,18 +1,34 @@
 # Agent Tools Registry
 
-Inventory of CLIs and MCP integrations available to Claude, Codex, and Agy when running the
-role-based single-agent workflow (`AGENTS.md` §23). Each agent invokes these directly within its
-own session — there is no shared dispatcher.
+Inventory of CLIs, identity registry, and MCP integrations used by registered runtime platforms in
+role-based workflow. Runtime platform identity is separate from tool/executor used; see
+`manifests/runtime-platforms.json` and `docs/runtime-platforms.md`. Each runtime invokes tools within
+its own session — there is no shared dispatcher.
 
 ---
 
+## Runtime platform identity registry
+
+| Registry/tool                                   | Purpose                                                                                 |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `manifests/runtime-platforms.json`              | Built-in ChatGPT, Cowork, Antigravity, Pi, Claude, Codex, Agy, and human identity slugs |
+| `lib/runtime-platforms.mjs`                     | Registry validation, project extension merge, identity lookup                           |
+| `schemas/runtime-platform-registry.schema.json` | Portable registry shape                                                                 |
+| `scripts/validate-pr-manifest.mjs`              | Registry-backed PR identity validation                                                  |
+| `scripts/validate-role-attribution.mjs`         | Registry-backed multi-agent attribution validation                                      |
+| `scripts/validate-sdlc-role-pass.mjs`           | Registry-backed role-pass identity validation                                           |
+
 ## Headless CLIs
 
-| Model  | CLI command  | Notes                                            |
-| ------ | ------------ | ------------------------------------------------ |
-| Claude | `claude -p`  | Non-interactive prompt mode                      |
-| Codex  | `codex exec` | Resolve from `PATH`; set `CODEX_CLI` to override |
-| Agy    | `agy -p`     | Cross-platform Go binary; no path prefix needed  |
+| Model  | CLI command  | Notes                                                    |
+| ------ | ------------ | -------------------------------------------------------- |
+| Claude | `claude -p`  | Non-interactive prompt mode                              |
+| Codex  | `codex exec` | Resolve from `PATH`; set `CODEX_CLI` to override         |
+| Agy    | `agy -p`     | Cross-platform Go binary; no path prefix needed          |
+| Pi     | `pi`         | Parent/session runtime; subagent targets remain distinct |
+
+ChatGPT, Cowork, Antigravity, and human may be truthful platform identities without a matching
+headless CLI entry. Record actual executor, transport, delegation boundary, and model separately.
 
 Headless Codex invocations disable project hooks to prevent repeated hook output from consuming
 the review context window.

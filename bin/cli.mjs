@@ -121,6 +121,15 @@ function handleSdlc(rest, targetDir) {
     return runScript('scripts/validate-sdlc-skill.mjs', pass, targetDir)
   if (subcommand === 'validate-agent')
     return runScript('scripts/validate-sdlc-agent.mjs', pass, targetDir)
+  if (subcommand === 'validate-evidence')
+    return runScript('scripts/validate-evidence-contract.mjs', pass, targetDir)
+  if (subcommand === 'validate-lifecycle')
+    return runScript('scripts/validate-lifecycle-contract.mjs', pass, targetDir)
+  if (subcommand === 'derive-metrics')
+    return runScript('scripts/derive-outcome-metrics.mjs', pass, targetDir)
+  if (subcommand === 'run-evals') return runScript('scripts/run-agent-evals.mjs', pass, targetDir)
+  if (subcommand === 'validate-multi-agent')
+    return runScript('scripts/validate-multi-agent-acceptance.mjs', pass, targetDir)
   if (subcommand === 'audit') return runScript('scripts/sdlc-audit.mjs', pass, targetDir)
   if (subcommand === 'migrate') return runScript('scripts/sdlc-migrate.mjs', pass, targetDir)
   process.stderr.write(`Usage:
@@ -131,6 +140,11 @@ function handleSdlc(rest, targetDir) {
   agentflow-sdlc sdlc validate-release --path <issue.json> [--json]
   agentflow-sdlc sdlc validate-skill --path <SKILL.md> [--json]
   agentflow-sdlc sdlc validate-agent --path <AGENT.md> [--json]
+  agentflow-sdlc sdlc validate-evidence --type <contract> --path <json> [--json]
+  agentflow-sdlc sdlc validate-lifecycle --type <contract> --path <json> [--json]
+  agentflow-sdlc sdlc derive-metrics --path <events.json> [--json]
+  agentflow-sdlc sdlc run-evals --manifest <manifest.json> [--actual-dir <dir>] [--json]
+  agentflow-sdlc sdlc validate-multi-agent [--actual-dir <dir>] [--json]
   agentflow-sdlc sdlc audit [--json]
   agentflow-sdlc sdlc migrate [--json]
 `)

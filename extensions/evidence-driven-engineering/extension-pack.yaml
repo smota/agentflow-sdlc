@@ -6,9 +6,12 @@ principles: principles.md
 documentation:
   - README.md
 requiredSkills: []
-requiredCapabilities:
+requiredToolPermissions:
   - read
   - shell
+requiredWorkflowCapabilities: []
+controlRequirements:
+  - branch-protection
 templates:
   - templates/adr-template.md
   - templates/analysis-guardrails.md
@@ -22,3 +25,11 @@ validators:
     command: node validators/validate-no-hidden-todos.mjs
   - path: validators/validate-evidence-sections.mjs
     command: node validators/validate-evidence-sections.mjs
+plays:
+  - id: evidence-analysis
+    role: analyst
+    appliesWhen: non-trivial work needs evidence-backed scope
+    requiredInputs: [goal]
+    expectedOutputs: [acceptance-criteria]
+    evidenceFields: [assumptions, open-questions, evidence-needed]
+    validators: [validators/validate-evidence-sections.mjs]

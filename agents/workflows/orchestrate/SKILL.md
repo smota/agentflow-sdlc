@@ -39,7 +39,7 @@ Record all three dimensions before implementation:
 ```json
 {
   "issueNumber": 123,
-  "profile": "bounded | standard | high-assurance",
+  "profile": "bounded | standard | high-assurance | exploratory",
   "risk": "low | medium | high",
   "effort": "low | medium | high",
   "changeSurface": ["docs | ui | service | api | data | infra | security"],
@@ -98,6 +98,11 @@ Every issue must leave evidence for:
 9. PR-readiness decision
 
 The selected profile changes who signs the evidence, not whether the evidence exists.
+
+The workflow profile and action boundary are orthogonal. Classify the profile from risk and scope,
+then resolve the maximum effective boundary (`observe`, `propose`, `mutate-worktree`, `open-pr`, or
+`external-action`). Delegation may narrow but never widen the parent boundary. `external-action`
+requires the owning role and applicable human approval evidence.
 
 ## Review policy
 

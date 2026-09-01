@@ -144,7 +144,7 @@ if (openQuestions === null) {
 }
 
 const CLASSIFICATION_PLACEHOLDERS = {
-  Profile: 'bounded | standard | high-assurance',
+  Profile: 'bounded | standard | high-assurance | exploratory',
   Risk: 'low | medium | high',
   Effort: 'low | medium | high',
   'Change surfaces': 'docs | UI | service | API | data | infra | security',

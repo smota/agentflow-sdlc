@@ -60,8 +60,8 @@ try {
   writeFileSync(
     manifestPath,
     manifestTemplate
-      .replace('Implemented by: human | claude | codex | agy | pi', 'Implemented by: codex')
-      .replace('Launcher: human | claude | codex | agy | pi', 'Launcher: codex')
+      .replace('Implemented by: <registered platform slug>', 'Implemented by: cowork')
+      .replace('Launcher: <registered platform slug>', 'Launcher: cowork')
       .replace(
         'Executor: claude-cli | anthropic-api | agy-cli | agy-session | pi-parent | pi-subagent | pi-session | pi-subagent-model | codex-cli | provider-api | human',
         'Executor: codex-cli',
@@ -80,7 +80,7 @@ try {
         'https://github.com/example/example-repo/issues/496#issuecomment-2',
       )
       .replace('self-review | human-review-requested | human-reviewed', 'self-review')
-      .replace('bounded | standard | high-assurance', 'bounded')
+      .replace('bounded | standard | high-assurance | exploratory', 'bounded')
       .replace('single-agent | multi-agent', 'single-agent')
       .replace(
         'human/operator | auto-merge-requested:`gh pr merge --squash --delete-branch --auto`',

@@ -3,12 +3,13 @@
 **Issue:** #<number> — <title>
 **Branch:** <branch>
 **Phase:** <number>
-**Role:** <product-manager | analyst | architect | developer-plan | developer | tester | review | techwriter | pr-readiness>
+**Role:** <product-manager-jtbd | analyst | architect | developer-planning | developer | tester | review | tech-writer | pr-readiness>
 **Status:** <pass | blocked | returned | skipped>
-**Workflow profile:** <bounded | standard | high-assurance>
-**Planned owner:** <agent slug from roleAlternationPlan; use "not-applicable:single-agent" only when Mode is single-agent and this pass will not feed a multi-agent role attribution matrix>
-**Executed by:** <human | claude | codex | agy | pi>
-**Launcher:** <human | claude | codex | agy | pi>
+**Workflow profile:** <bounded | standard | high-assurance | exploratory>
+**Action boundary:** <observe | propose | mutate-worktree | open-pr | external-action>
+**Planned owner:** <registered platform slug from roleAlternationPlan; use "not-applicable:single-agent" only when Mode is single-agent and this pass will not feed a multi-agent role attribution matrix>
+**Executed by:** <registered platform slug; see manifests/runtime-platforms.json>
+**Launcher:** <registered platform slug; see manifests/runtime-platforms.json>
 **Executor:** <claude-cli | anthropic-api | agy-cli | agy-session | pi-parent | pi-subagent | pi-session | pi-subagent-model | codex-cli | provider-api | human>
 **Transport:** <local-cli | provider-api | pi-subagent | intercom-session | orchestrated-worktree | manual>
 **Delegation boundary:** <current-session | child-subagent | separate-local-session | child-worktree | human-handoff>
@@ -19,6 +20,15 @@
 ### Inputs read
 
 - <issue, spec, ADR, prior pass, diff, test output>
+
+### Artifact references
+
+```json
+[]
+```
+
+Use portable `ArtifactRef` objects from `schemas/artifact-ref.schema.json`. A reference identifies
+the authoritative source; it does not copy raw source content into workflow evidence.
 
 ### Decisions / findings
 
@@ -55,9 +65,45 @@ Record intelligent collaboration evidence from `docs/intelligent-collaboration.m
 
 - <what the next role must do>
 
+### Transition envelope
+
+```json
+{
+  "version": 1,
+  "subject": "issue:<number>",
+  "fromRole": "<canonical role slug>",
+  "toRole": "<canonical role slug>",
+  "decision": "pass",
+  "nextContract": "<what the next role must do>",
+  "timestamp": "YYYY-MM-DDTHH:MM:SSZ",
+  "profile": "<bounded | standard | high-assurance | exploratory>",
+  "actionBoundary": {
+    "version": 1,
+    "profile": "<bounded | standard | high-assurance | exploratory>",
+    "requested": "<boundary>",
+    "effective": "<boundary>",
+    "parent": "<boundary or omit>",
+    "enforcementRefs": []
+  },
+  "inputRefs": [],
+  "outputRefs": [],
+  "validationRefs": [],
+  "openQuestions": [],
+  "extensionPlays": [],
+  "provenance": {
+    "platform": "<platform>",
+    "executor": "<execution target>",
+    "transport": "<transport>",
+    "delegationBoundary": "<boundary>"
+  }
+}
+```
+
 ---
 
-<!-- <agent> = the AI identity actually executing THIS pass right now (claude | codex | agy | pi | human) — never copied from a prior pass or template example. See docs/agent-workflow.md §4 (Provenance). Executor/Transport/Delegation boundary come from docs/execution-targets.md; resolve ambiguous "with <agent>" requests with scripts/resolve-execution-target.mjs before recording them. Planned owner/Context boundary/Independence boundary are the role-alternation concepts from docs/agent-workflow.md §4a and lib/role-attribution.mjs (issue #56); they feed the roleAttributionMatrix in the workflow-status comment and PR manifest. Capability evidence comes from docs/capabilities.md and can be checked with scripts/validate-capability-evidence.mjs. -->
+<!-- <platform> = registered runtime platform actually executing THIS pass right now — never copied from a prior pass or template example. Register built-in or project-specific slugs through manifests/runtime-platforms.json and agent-workflow.config.json; see docs/runtime-platforms.md. Executor/Transport/Delegation boundary remain distinct and come from docs/execution-targets.md. Planned owner/Context boundary/Independence boundary are role-alternation concepts from docs/agent-workflow.md §4a and lib/role-attribution.mjs; they feed roleAttributionMatrix in workflow-status comment and PR manifest. Capability evidence comes from docs/capabilities.md and can be checked with scripts/validate-capability-evidence.mjs. -->
 
-Signed-off-by: `<agent>` (`<role>`)
+<!-- Signature uses same registered platform slug as Executed by. -->
+
+Signed-off-by: `<platform>` (`<role>`)
 Timestamp: `YYYY-MM-DDTHH:MM:SSZ`

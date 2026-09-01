@@ -1,5 +1,9 @@
 # Evidence-driven engineering
 
+This pack requests `read` and `shell` as tool permissions, requires branch-protection evidence as a
+control, and contributes an Analyst-bound play. It augments evidence and validators; it does not
+change the core graph, ownership, readiness, or approvals.
+
 This extension pack adds reusable engineering discipline to the core AgentFlow SDLC workflow. It is intentionally stack-neutral: it defines how a team analyzes work, records decisions, validates outcomes, and prepares reviewable PRs without naming any application framework, cloud provider, database, or product domain.
 
 ## Use this pack when

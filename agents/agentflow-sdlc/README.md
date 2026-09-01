@@ -2,7 +2,7 @@
 
 This package is the portable agent definition for **AgentFlow SDLC**, an open-source process layer for reviewable AI-assisted software delivery.
 
-AgentFlow SDLC 1.0 is the first mature release of this package shape: a stable agent contract for teams that want AI speed without losing clarity, review, or control.
+The 1.0 development baseline defines a stable candidate package shape for teams that want AI speed without losing clarity, review, or control. It is not evidence that version 1.0.0 has been published.
 
 Use it when another project needs a copyable agent contract for issue-driven SDLC work, intelligent collaboration, capability mapping, validation, and continuous improvement.
 
@@ -23,7 +23,7 @@ Use it when another project needs a copyable agent contract for issue-driven SDL
 | `continuous-improvement-plan.md`   | Feedback, regression, changelog, and maturity loop.                 |
 | `CHANGELOG.md`                     | Package-level change log.                                           |
 
-## 1.0 collaboration stance
+## 1.0 development collaboration stance
 
 AgentFlow can use focused helper intelligence when it improves a decision, but it does not make multi-agent activity the goal. The default remains a simple, reviewable SDLC path with one accountable owner and compact durable evidence.
 

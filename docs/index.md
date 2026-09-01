@@ -1,176 +1,167 @@
-# Framework documentation index
+<div align="center">
+  <img src="../assets/cockpit/agentflow-logo-transparent.png" alt="AgentFlow SDLC workflow mark" width="72" />
+  <br />
+  <img src="../assets/agentflow-docs-banner.svg" alt="AgentFlow SDLC — Reviewable AI-assisted software delivery" width="640" />
+  <h1>AgentFlow SDLC documentation</h1>
+  <p>Start quickly, then go as deep as your role requires.</p>
+  <p>
+    <a href="../LICENSE"><img src="https://img.shields.io/github/license/smota/agentflow-sdlc" alt="Apache-2.0 license" /></a>
+    <a href="https://github.com/smota/agentflow-sdlc/stargazers"><img src="https://img.shields.io/github/stars/smota/agentflow-sdlc?style=flat" alt="GitHub stars" /></a>
+    <a href="https://github.com/smota/agentflow-sdlc/releases/latest"><img src="https://img.shields.io/github/v/release/smota/agentflow-sdlc?display_name=tag" alt="Latest GitHub release" /></a>
+    <a href="https://github.com/smota/agentflow-sdlc/actions/workflows/validate-pr.yml"><img src="https://github.com/smota/agentflow-sdlc/actions/workflows/validate-pr.yml/badge.svg?branch=development" alt="Validation status" /></a>
+  </p>
+</div>
 
-This index maps the main concepts, defaults, roles, skills/workflows, templates, hooks, validators, and configuration surfaces in `agentflow-sdlc`.
+This is the complete map of maintained product, adoption, architecture, operations, and contributor documentation. For a role-based route, use [Start here](start-here.md).
 
-## Start here
+## Getting started
 
-1. [`../README.md`](../README.md) � concise front door: value, first steps, and document map.
-2. [`start-here.md`](start-here.md) � route humans and agents to the right document.
-3. [`agentflow-in-5-minutes.md`](agentflow-in-5-minutes.md) � short public explainer for the problem, lifecycle, primary evaluation path, and evidence model.
-4. [`get-started.md`](get-started.md) � assisted onboarding, install, configuration, sync, and verification path.
-5. [`assisted-onboarding.md`](assisted-onboarding.md) � LLM-assisted setup for existing projects with read-only inspection and explicit approval before changes.
-6. [`assisted-update.md`](assisted-update.md) � LLM-assisted update workflow for already-adopted projects using `agent-framework-lock.json`, `doctor`, `sync`, and `mark-merged`. [`deterministic-assisted-update.md`](deterministic-assisted-update.md) documents the proposed deterministic update-plan direction.
-7. [`environment-tools.md`](environment-tools.md) � required, recommended, and optional tools compatible with `doctor-env`.
-8. [`../AGENTS.md`](../AGENTS.md) � required first-read repository policy.
-9. [`project-setup.md`](project-setup.md) � guided setup choices for agents, execution mode, routing, branch strategy, validation, bounded work, and skill provenance.
-10. [`agent-workflow.md`](agent-workflow.md) � phase model, role-pass contract, durable evidence, branch strategy, review model, and PR readiness.
-11. [`issue-standards.md`](issue-standards.md) � issue titles, labels, body update rules, and lifecycle metadata.
-12. [`project-config.md`](project-config.md) � project-local `agent-workflow.config.json` contract.
-13. [`execution-targets.md`](execution-targets.md) � `executionTarget`, `transport`, `launcher`, `executor`, and `delegationBoundary` concepts that disambiguate `with claude`/`with agy`/`with pi` requests.
-14. [`capabilities.md`](capabilities.md) � portable PLAN/WORKFLOW/LOOP/SUB-AGENTS capability vocabulary, resolution modes, evidence, and adapter links.
-15. [`intelligent-collaboration.md`](intelligent-collaboration.md) � collaboration modes, decision budget, smallest-sufficient-collaboration rule, bounded helper intelligence, and compact evidence guidance.
-16. [`release-versioning.md`](release-versioning.md) � configurable release strategy, default `main.minor.fix`, release evidence, validators, and preview helpers.
-17. [`cockpit.md`](cockpit.md) � optional first-class Goal Command Center for visual goal, readiness, release, replay, and approval operations.
-18. [`cockpit-concepts-and-rules.md`](cockpit-concepts-and-rules.md) � Cockpit product language, safety, action, and support-boundary rules.
-19. [`extension-packs.md`](extension-packs.md) � repository-level contrib-style overlays for opinionated engineering approaches, skills, tools, templates, and validators.
-20. [`examples/simple-bugfix-flow.md`](examples/simple-bugfix-flow.md), [`examples/multi-agent-review-flow.md`](examples/multi-agent-review-flow.md), [`examples/high-assurance-flow.md`](examples/high-assurance-flow.md), and [`examples/intelligent-collaboration-flow.md`](examples/intelligent-collaboration-flow.md) � public example flows and evidence excerpts.
-21. [`default-skills.md`](default-skills.md) � default skills, recommended companion skills, upstream repositories, and CCPM-sourced skill surfaces.
-22. [`../agents/agentflow-sdlc/README.md`](../agents/agentflow-sdlc/README.md) � canonical portable AgentFlow SDLC agent package with maturity, capability, handoff, eval, and improvement-loop contracts.
+| Document                                            | Use it for                                                              |
+| --------------------------------------------------- | ----------------------------------------------------------------------- |
+| [README](../README.md)                              | 30-second product orientation, current status, and quickest safe action |
+| [Start here](start-here.md)                         | Route by audience or job                                                |
+| [AgentFlow in 5 minutes](agentflow-in-5-minutes.md) | Understand the problem, model, and evidence flow                        |
+| [Get started](get-started.md)                       | Follow the current source-based adoption path                           |
+| [Assisted onboarding](assisted-onboarding.md)       | Give an assistant a read-only-first setup contract                      |
+| [Assisted update](assisted-update.md)               | Update an adopted project with lockfile-aware review and approval       |
+| [Environment tools](environment-tools.md)           | Understand required and optional tooling                                |
 
-## What it is
+## Core model and governance
 
-**AgentFlow SDLC** is an open-source process layer for AI-assisted software delivery. It installs process guardrails around an existing project instead of creating a new app. The default model is a single agent moving through explicit roles; optional routing can hand a role to another supported agent CLI.
+```mermaid
+flowchart LR
+  Define["Define"] --> Configure["Configure"]
+  Configure --> Execute["Execute roles"]
+  Execute --> Evidence["Record evidence"]
+  Evidence --> Validate["Validate & review"]
+  Validate --> Release["PR, release, or follow-up"]
+```
 
-## Roles and phases
+| Document                                                 | Authority                                                                             |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| [`AGENTS.md`](../AGENTS.md)                              | Required first-read repository policy                                                 |
+| [Agent workflow](agent-workflow.md)                      | Phase state machine, role-pass contract, branches, handoffs, review, and PR readiness |
+| [Issue standards](issue-standards.md)                    | Issue structure, labels, lifecycle metadata, and body updates                         |
+| [SDLC definition](sdlc-definition.md)                    | Portable product vocabulary and state model                                           |
+| [Project setup](project-setup.md)                        | Guided project decisions                                                              |
+| [Project configuration](project-config.md)               | Complete `agent-workflow.config.json` contract                                        |
+| [Contribution workflow](guides/contribution-workflow.md) | Repository contribution sequence                                                      |
 
-The default phase sequence is defined in [`agent-workflow.md`](agent-workflow.md):
+## Evidence, lifecycle, and quality
 
-| Phase | Role                   | Default purpose                                                  |
-| ----- | ---------------------- | ---------------------------------------------------------------- |
-| 0     | Product manager / JTBD | Optional framing and decomposition                               |
-| 1     | Analyst                | Refine the issue into testable acceptance criteria               |
-| 2     | Architect              | Select workflow profile and approach                             |
-| 3     | Developer planning     | Confirm files, tests, docs, branch, and PR expectations          |
-| 4     | Developer              | Implement the agreed change                                      |
-| 5     | Tester                 | Run verification and record evidence                             |
-| 6     | Review                 | Self-review or request human review depending on assurance level |
-| 7     | Tech writer            | Confirm docs and screenshot decisions                            |
-| 8     | PR readiness           | Confirm merge contract and closeout evidence                     |
+| Document                                                                     | Use it for                                                              |
+| ---------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| [Evidence contracts](evidence-contracts.md)                                  | `ArtifactRef`, transition envelope, handoff, and audit result contracts |
+| [Lifecycle boundaries](lifecycle-boundaries.md)                              | External signals, proposals, action authority, and lifecycle events     |
+| [Agent evals](agent-evals.md)                                                | Executable evaluation manifests and runner behavior                     |
+| [Outcome metrics](outcome-metrics.md)                                        | Derive projections from evidence events without inventing claims        |
+| [Simple bug-fix flow](examples/simple-bugfix-flow.md)                        | See a compact issue-to-PR evidence path                                 |
+| [Multi-agent review flow](examples/multi-agent-review-flow.md)               | See explicit role attribution and independent review                    |
+| [High-assurance flow](examples/high-assurance-flow.md)                       | See human security and acceptance gates                                 |
+| [Intelligent-collaboration flow](examples/intelligent-collaboration-flow.md) | See smallest-sufficient collaboration and compact synthesis             |
 
-Each phase writes a role-pass artifact based on [`../agents/templates/role-pass.md`](../agents/templates/role-pass.md). Local role-pass files live under `.agent-runs/` and are not committed; summaries are durable in GitHub issue comments and PR bodies.
+## Runtime, routing, and collaboration
 
-Optional sidecar role:
+| Document                                                  | Use it for                                                                |
+| --------------------------------------------------------- | ------------------------------------------------------------------------- |
+| [Runtime platforms](runtime-platforms.md)                 | Registered evidence identities                                            |
+| [Execution targets](execution-targets.md)                 | Distinguish launcher, executor, transport, model, and delegation boundary |
+| [Agent routing](agent-routing.md)                         | Configure owners, fallbacks, and role alternation                         |
+| [Capabilities](capabilities.md)                           | Resolve PLAN, WORKFLOW, LOOP, and SUB-AGENTS portably                     |
+| [Intelligent collaboration](intelligent-collaboration.md) | Choose the smallest sufficient collaboration mode                         |
 
-- [`qa-expert`](agents/qa-expert.md) — exploratory QA outside the main deterministic sequence; complements the `tester` role by finding negative-path, boundary, and UX issues that later become deterministic regression coverage.
+Runtime-specific references:
 
-## Skills and workflows
+| Runtime        | Routing                                    | Capability adapter                                      |
+| -------------- | ------------------------------------------ | ------------------------------------------------------- |
+| Agy            | [Agy routing](agents/agy-routing.md)       | [Agy capabilities](capabilities/agy.md)                 |
+| Claude Code    | [Claude routing](agents/claude-routing.md) | [Claude Code capabilities](capabilities/claude-code.md) |
+| Codex          | [Codex routing](agents/codex-routing.md)   | [Codex CLI capabilities](capabilities/codex-cli.md)     |
+| Pi             | [Pi routing](agents/pi-routing.md)         | [Pi capabilities](capabilities/pi.md)                   |
+| Manual/human   | —                                          | [Manual capabilities](capabilities/manual.md)           |
+| Exploratory QA | [QA expert](agents/qa-expert.md)           | —                                                       |
 
-| Workflow skill                                            | Use it for                                                          |
-| --------------------------------------------------------- | ------------------------------------------------------------------- |
-| [`orchestrate`](../agents/workflows/orchestrate/SKILL.md) | Running an issue end-to-end through the phase model                 |
-| [`scan`](../agents/workflows/scan/SKILL.md)               | Broad-context architecture/security scans that feed review evidence |
+## Extensions and distribution
 
-Canonical agent package: [`../agents/agentflow-sdlc/AGENT.md`](../agents/agentflow-sdlc/AGENT.md). Use it when a consuming project needs a portable agent definition, runtime capability matrix, sub-agent handoff rules, validation checklist, eval plan, and continuous-improvement loop.
+| Document                              | Use it for                                                              |
+| ------------------------------------- | ----------------------------------------------------------------------- |
+| [Default skills](default-skills.md)   | Skill inventory, provenance, and companion skills                       |
+| [Extension packs](extension-packs.md) | Add repository-level engineering approaches and validators              |
+| [SDLC packaging](sdlc-packaging.md)   | Understand source, adapters, manifests, and future package distribution |
 
-Intelligent collaboration: [`intelligent-collaboration.md`](intelligent-collaboration.md) and [`../agents/workflows/intelligent-collaboration/SKILL.md`](../agents/workflows/intelligent-collaboration/SKILL.md) define `auto-minimal`, `single-agent`, `advisory`, `council`, `parallel-discovery`, `spike`, and `human-gated` modes for harness leverage without cognitive-load drift.
+## Cockpit operations
 
-The framework also supports locally managed skills/tooling in consuming projects. Install workflow skills using your agent/skill manager, then use the sync CLI for hooks, templates, docs, and validators. See [`default-skills.md`](default-skills.md) for upstream source and provenance notes.
+Cockpit is optional. CLI and GitHub evidence remain authoritative without it.
 
-Optional visual operations use Cockpit, the first-class Goal Command Center. Cockpit is package-owned and runtime opt-in; `init`, `sync`, `doctor`, validators, skills, plugins, and settings do not require starting it.
+| Document                                                    | Use it for                                       |
+| ----------------------------------------------------------- | ------------------------------------------------ |
+| [Cockpit](cockpit.md)                                       | Goal Command Center setup and features           |
+| [Cockpit concepts and rules](cockpit-concepts-and-rules.md) | Product language, safety, and support boundaries |
+| [Cockpit QA](cockpit-qa.md)                                 | Operational and exploratory checks               |
 
-## Defaults
+## Release operations
 
-| Area                  | Default                                                                                        |
-| --------------------- | ---------------------------------------------------------------------------------------------- |
-| Execution             | Single-agent role execution                                                                    |
-| Multi-agent           | Optional, only when useful or when project routing selects another agent                       |
-| Supported route slugs | `agy`, `codex`, `claude`, `pi`                                                                 |
-| Evidence              | GitHub issue comments and PR bodies are durable; `.agent-runs/` is local scratch               |
-| Handover              | Orchestrator-owned issue comments for role transitions                                         |
-| Review                | Bounded/standard may self-review; high-assurance requires human review before merge            |
-| PR creation           | Orchestration defaults to commit, push, and PR creation at the end                             |
-| Merge                 | Human/operator merges by default; explicit auto-merge uses the standard `gh pr merge` command  |
-| Follow-ups            | Create issues instead of hidden TODOs                                                          |
-| Config                | Missing project config fails closed where safety-sensitive, otherwise uses documented defaults |
+| Document                                    | Use it for                                           |
+| ------------------------------------------- | ---------------------------------------------------- |
+| [Release versioning](release-versioning.md) | Plan versions, tags, approval, and closeout evidence |
+| [Release publishing](release-publishing.md) | Run the maintained publication gate                  |
 
-## Configuration
+The current release is [v1.0.0](releases/v1.0.0.md). Published history is intentionally retained as an archive: [v0.4.0](releases/v0.4.0.md), [v0.4.1](releases/v0.4.1.md), [v0.5.0](releases/v0.5.0.md), [v0.6.0](releases/v0.6.0.md), and [v0.7.0](releases/v0.7.0.md).
 
-Project-specific settings live in root-level `agent-workflow.config.json` in the consuming project. Start with the guided checklist in [`project-setup.md`](project-setup.md), then use [`project-config.md`](project-config.md) for the complete field contract.
+## Architecture decisions
 
-Main sections:
+The [ADR index](adr/) records accepted, proposed, and superseded decisions. ADRs are historical decision evidence, not onboarding instructions.
 
-- `ciCommands` — commands copied into PR manifests as CI-equivalent validation.
-- `bounded` — path and diff limits for bounded self-reviewable work.
-- `branching` — trunk, integration, protected branch, PR target, and work branch rules.
-- `capabilities` — optional policy for portable PLAN/WORKFLOW/LOOP/SUB-AGENTS behavior and fallbacks.
-- `extensions` — repository-level extension packs for opinionated engineering approaches, required skills/capabilities, templates, helper tools, and validators. This repository enables `extensions/evidence-driven-engineering` and `extensions/agent-handoff-governance` as reference packs.
-  node bin/cli.mjs doctor-env --json
+## Roadmap and proposals
 
-````
+[Deterministic assisted update](deterministic-assisted-update.md) is a proposal for a future machine-readable `update-plan` flow. The current CLI does not implement `update-plan`; use [Assisted update](assisted-update.md) today.
 
-## Routing and handovers
+## CLI and validation reference
 
-See [`agent-routing.md`](agent-routing.md).
+The source CLI exposes these top-level command groups:
 
-Routing lets a project choose a core owner and fallback list for each role. The default remains single-agent execution when routing is absent or when the selected role owner is the active executor.
+```text
+agentflow-sdlc <init|sync|doctor|doctor-env|sdlc|cockpit|skills|plugins|settings|extensions|onboarding-prompt|update-prompt|migrate-rename|release-plan|mark-merged>
+```
 
-Handover comments use [`../agents/templates/handover-comment.md`](../agents/templates/handover-comment.md). They document phase-to-phase continuity, routing/fallback details, blockers, and the next-role contract.
+Use the source checkout form until an npm package is published:
 
-An agent slug names who owns a role, not how it runs. See [`execution-targets.md`](execution-targets.md) for the `executionTarget`, `transport`, `launcher`, `executor`, and `delegationBoundary` vocabulary, and `scripts/resolve-execution-target.mjs` for resolving an ambiguous `with claude`/`with agy`/`with pi` request before launching work.
+```bash
+node bin/cli.mjs <command> --target /path/to/project
+```
 
-## Templates
+The `sdlc` group includes configuration, issue, role-pass, PR, release, skill, agent, evidence, lifecycle, eval, multi-agent, audit, migration, and metrics commands. Run an incomplete group command to print its exact usage, for example:
 
-| Template                                                                       | Purpose                                                                                        |
-| ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
-| [`role-pass.md`](../agents/templates/role-pass.md)                             | Local phase evidence contract, including planned owner/context/independence boundary           |
-| [`workflow-status-comment.md`](../agents/templates/workflow-status-comment.md) | Signed issue status comment, with a role attribution matrix when `Mode: multi-agent`           |
-| [`handover-comment.md`](../agents/templates/handover-comment.md)               | Issue-visible role handover evidence, including planned/actual owner and independence boundary |
-| [`pr-manifest.md`](../agents/templates/pr-manifest.md)                         | PR body structure, merge evidence, and role attribution matrix                                 |
-| [`stack-conventions.md`](../agents/templates/stack-conventions.md)             | Seed-once project stack/domain checklist template                                              |
+```bash
+node bin/cli.mjs sdlc
+node bin/cli.mjs skills
+node bin/cli.mjs plugins
+node bin/cli.mjs settings
+node bin/cli.mjs extensions
+```
 
-## Hooks and validators
-
-| File                                                                                         | Purpose                                                                                                                      |
-| -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| [`../.github/hooks/check-issue-branch.mjs`](../.github/hooks/check-issue-branch.mjs)         | Blocks direct work on protected branches and invalid branch names                                                            |
-| [`../.github/hooks/pre-commit`](../.github/hooks/pre-commit)                                 | Local commit guardrails                                                                                                      |
-| [`../.github/hooks/pre-push`](../.github/hooks/pre-push)                                     | Blocks direct pushes to protected branches                                                                                   |
-| [`../.github/hooks/session-status.mjs`](../.github/hooks/session-status.mjs)                 | Summarizes branch/spec/session state                                                                                         |
-| [`../scripts/validate-spec.mjs`](../scripts/validate-spec.mjs)                               | Checks `SPEC.md` readiness                                                                                                   |
-| [`../scripts/validate-bounded.mjs`](../scripts/validate-bounded.mjs)                         | Checks bounded-work eligibility                                                                                              |
-| [`../scripts/validate-pr-manifest.mjs`](../scripts/validate-pr-manifest.mjs)                 | Checks PR body/manifest readiness                                                                                            |
-| [`../scripts/ensure-workflow-artifacts.mjs`](../scripts/ensure-workflow-artifacts.mjs)       | Scaffolds local `.agent-runs/` issue files                                                                                   |
-| [`../scripts/branch-cleanup-report.mjs`](../scripts/branch-cleanup-report.mjs)               | Reports merged branch cleanup candidates                                                                                     |
-| [`../scripts/issue-markdown.mjs`](../scripts/issue-markdown.mjs)                             | Updates issue body sections deterministically                                                                                |
-| [`../scripts/resolve-execution-target.mjs`](../scripts/resolve-execution-target.mjs)         | Resolves an ambiguous agent-brand mention or model id to a deterministic `executionTarget`, or fails requiring clarification |
-| [`../scripts/resolve-capability.mjs`](../scripts/resolve-capability.mjs)                     | Resolves portable advanced capability requests for a selected execution target                                               |
-| [`../scripts/validate-capability-evidence.mjs`](../scripts/validate-capability-evidence.mjs) | Checks role-pass/manifest capability evidence for required modes and LOOP/SUB-AGENTS guardrails                              |
-| [`../scripts/validate-role-attribution.mjs`](../scripts/validate-role-attribution.mjs)       | Checks a `multiAgentClaim`'s role attribution matrix (also run automatically by `validate-pr-manifest.mjs`)                  |
-| [`../scripts/validate-release-closeout.mjs`](../scripts/validate-release-closeout.mjs)       | Verifies a published GitHub Release/tag and user-facing release-note wording after release PR merge                          |
-| [`../scripts/extension-pack.mjs`](../scripts/extension-pack.mjs)                             | Lists, inspects, and scaffolds repository extension packs                                                                    |
-| [`../scripts/validate-extension-packs.mjs`](../scripts/validate-extension-packs.mjs)         | Validates configured extension pack manifests, docs, tools, templates, required skills/capabilities, and optional validators |
 Repository self-checks:
 
 ```bash
 pnpm test
 pnpm test:workflow
+pnpm test:evals
 pnpm format:check
 node scripts/verify-hooks.mjs
-````
-
-## Distribution and sync
-
-The CLI in [`../bin/cli.mjs`](../bin/cli.mjs) supports:
-
-```bash
-node bin/cli.mjs init --target /path/to/project
-node bin/cli.mjs sync --target /path/to/project
-node bin/cli.mjs doctor --target /path/to/project
-node bin/cli.mjs update-prompt --target /path/to/project
-node bin/cli.mjs mark-merged CLAUDE.md --target /path/to/project
+node scripts/validate-npm-package.mjs
 ```
 
-The file list is maintained in [`../lib/framework-files.mjs`](../lib/framework-files.mjs). `init` installs framework files and seeds project-owned files once. `sync` updates only files that are unchanged since the last install/sync and seeds missing seed-once files without overwriting existing project-owned content. `update-prompt` prints the assisted update handoff for already-adopted projects before any writes occur. `mark-merged` records a hand-merged framework file as permanently project-managed so future syncs never fast-forward over local additions.
+## Templates and implementation reference
 
-## Live example
+| Surface                                       | Location                                              |
+| --------------------------------------------- | ----------------------------------------------------- |
+| Role packages                                 | [`agents/roles/`](../agents/roles/)                   |
+| Workflow skills                               | [`agents/workflows/`](../agents/workflows/)           |
+| Portable agent package                        | [`agents/agentflow-sdlc/`](../agents/agentflow-sdlc/) |
+| Role pass, status, handover, and PR templates | [`agents/templates/`](../agents/templates/)           |
+| Schemas                                       | [`schemas/`](../schemas/)                             |
+| Validators and helpers                        | [`scripts/`](../scripts/) and [`lib/`](../lib/)       |
+| Harness adapters                              | [`adapters/`](../adapters/)                           |
+| Product manifests                             | [`manifests/`](../manifests/)                         |
 
-This repository is a live example. Its issues and PRs show:
-
-- feature/chore requests with acceptance criteria;
-- workflow-status comments;
-- handover comments;
-- PR manifests with validation evidence;
-- issue closure via explicit `Closes #...` lines;
-- follow-up issues for deferred work.
-
-Use the repository history as a reference when teaching another project how to adopt the framework.
+The distributable framework-file catalog is maintained in [`lib/framework-files.mjs`](../lib/framework-files.mjs).

@@ -6,7 +6,8 @@ The safe default is **single-agent**, multi-role execution: one executor moves t
 
 ## Quick checklist
 
-1. **Choose enabled agents** — decide which local CLIs are available: `claude`, `codex`, `agy`, and/or `pi`.
+1. **Choose routable platforms** — decide which built-in local adapters are available: `claude`,
+   `codex`, `agy`, and/or `pi`. Evidence may use any identity from runtime platform registry.
 2. **Choose execution mode** — keep `single-agent` unless role routing adds clear value.
 3. **Choose role owners/fallbacks** — if multi-agent routing is allowed, assign owners and fallbacks per role.
 4. **Choose branch strategy** — set trunk, integration, protected branches, and allowed work branch prefixes.
@@ -97,11 +98,13 @@ for how planned ownership becomes evidenced multi-agent claims.
       "claude": {
         "enabled": true,
         "availabilityCommand": "claude --version",
+        "defaultExecutionTarget": "claude-cli",
         "callWorkflowDoc": "docs/agents/claude-routing.md"
       },
       "agy": {
         "enabled": true,
         "availabilityCommand": "agy --version",
+        "defaultExecutionTarget": "agy-cli",
         "callWorkflowDoc": "docs/agents/agy-routing.md"
       },
       "codex": {

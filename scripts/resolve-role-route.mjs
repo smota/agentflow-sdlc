@@ -8,7 +8,7 @@ function valueAfter(args, flag) {
 }
 
 function usage() {
-  return `Usage: node scripts/resolve-role-route.mjs --role <role> --current <agy|codex|claude|pi> [--json] [--no-availability-check]\n`
+  return `Usage: node scripts/resolve-role-route.mjs --role <role> --current <${SUPPORTED_AGENT_SLUGS.join('|')}> [--json] [--no-availability-check]\n`
 }
 
 export function main(argv = process.argv.slice(2)) {

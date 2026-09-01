@@ -7,6 +7,9 @@ description: Migrate existing projects to AgentFlow SDLC with dry-run inventory,
 
 Canonical source: `skills/sdlc-migration/SKILL.md`.
 
+Preserve role-pass v1 and legacy input aliases while migrating new output to canonical roles,
+portable evidence contracts, and separate capability/permission/control namespaces.
+
 Default to preview-first. Preserve existing project policy and harness settings. Run:
 
 ```bash

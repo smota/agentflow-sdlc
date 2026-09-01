@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "id": "claude-agy-handoff",
+  "owner": "review",
+  "subject": { "kind": "multi-agent-chain", "path": "agents/evals/prompts/claude-agy-handoff.md" },
+  "threshold": 1,
+  "cases": [
+    {
+      "id": "claude-analyst",
+      "actual": "../fixtures/claude-analyst.txt",
+      "assertions": [
+        { "type": "json-valid" },
+        { "type": "contains", "value": "\"platform\": \"claude\"" },
+        { "type": "contains", "value": "\"toRole\": \"architect\"" },
+        { "type": "not-contains", "value": "developer-plan\"" }
+      ]
+    },
+    {
+      "id": "agy-architect",
+      "actual": "../fixtures/agy-architect.txt",
+      "assertions": [
+        { "type": "json-valid" },
+        { "type": "contains", "value": "\"platform\": \"agy\"" },
+        { "type": "contains", "value": "\"toRole\": \"developer-planning\"" },
+        { "type": "not-contains", "value": "\"platform\": \"antigravity\"" }
+      ]
+    }
+  ]
+}

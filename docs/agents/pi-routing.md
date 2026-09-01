@@ -41,7 +41,7 @@ If this command fails, treat `pi` as unavailable and try the next configured fal
 2. Post a ticket handover comment using `agents/templates/handover-comment.md` when control changes from another agent or when `pi` is selected as a fallback.
 3. Invoke Pi through the project's approved local workflow, such as a pi session, pi subagent, or pi intercom handoff.
 4. Include the issue number, role, branch, previous role-pass summary, acceptance criteria, expected return artifact, and the resolved execution target (`pi-parent`, `pi-subagent`, `pi-session`, or `pi-subagent-model`).
-5. Require Pi to sign the role-pass with `Actual executor identity: pi` and record `Executor: <execution target>` with the matching `Transport`, `Delegation boundary`, and `Model / runtime` when `pi-subagent-model` is used.
+5. Require Pi to sign role-pass with `Executed by: pi` and record `Executor: <execution target>` with the matching `Transport`, `Delegation boundary`, and `Model / runtime` when `pi-subagent-model` is used.
 
 ## Return contract
 

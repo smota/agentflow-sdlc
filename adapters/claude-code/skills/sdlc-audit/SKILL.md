@@ -7,6 +7,9 @@ description: Audit AgentFlow SDLC compliance for project, issue, PR, release, ro
 
 Canonical source: `skills/sdlc-audit/SKILL.md`.
 
+Audit canonical vocabulary, portable source authority, transition validity, action-boundary
+non-escalation, requirement namespaces, eval provenance, and derived-only outcome metrics.
+
 Use deterministic commands first:
 
 ```bash

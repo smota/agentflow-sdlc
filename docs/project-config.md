@@ -8,7 +8,7 @@ never mark anything as bounded, and PR manifests will use placeholder CI command
 
 ## Shape
 
-````json
+```json
 {
   "ciCommands": [
     "pnpm lint",
@@ -76,9 +76,27 @@ never mark anything as bounded, and PR manifests will use placeholder CI command
   "extensions": {
     "enabledPacks": ["extensions/my-engineering-approach"]
   },
+  "platformRegistry": {
+    "additionalPlatforms": []
+  },
+  "routing": {
+    "defaultMode": "single-agent",
+    "agents": {},
+    "roles": {}
+  }
+}
+```
+
+Key routing and identity fields:
+
+- `platformRegistry.additionalPlatforms` — optional identity-only registry entries for future
+  harnesses/runtimes. Each entry has `slug`, `displayName`, `kind` (`agent-runtime | harness |
+human`), and `routable: false`. Built-ins live in `manifests/runtime-platforms.json`; see
+  [`runtime-platforms.md`](runtime-platforms.md). Registering identity does not invent route adapter,
+  execution target, transport, or model.
 - `routing.defaultMode` — defaults to `single-agent`; routing is optional and missing routing config
   keeps role execution with the current executor.
-- `routing.agents.<slug>` — enables one supported local agent CLI (`agy`, `codex`, `claude`, or
+- `routing.agents.<slug>` — enables one routable registered platform (`agy`, `codex`, `claude`, or
   `pi`), names its setup/availability command, and points to its documented call/handover workflow.
   `doctor-env` uses `availabilityCommand` for read-only environment reporting and never executes
   installation commands.
@@ -104,9 +122,10 @@ node scripts/validate-role-routing.mjs
 node scripts/resolve-role-route.mjs --role developer --current claude --json
 node scripts/resolve-execution-target.mjs --agent claude --requested "with claude" --current-agent pi --json
 node scripts/resolve-capability.mjs --capability plan-before-edit --execution-target claude-cli --required --json
-node scripts/validate-extension-packs.mjs --allow-emptynode scripts/integration-lifecycle.mjs --event path/to/pull_request_event.json
+node scripts/validate-extension-packs.mjs --allow-empty
+node scripts/integration-lifecycle.mjs --event path/to/pull_request_event.json
 node bin/cli.mjs doctor-env --json
-````
+```
 
 See `docs/agent-routing.md` for the route-resolution and ticket handover comment workflow. See
 `agents/templates/stack-conventions.md` for the companion doc that carries a project's role-persona

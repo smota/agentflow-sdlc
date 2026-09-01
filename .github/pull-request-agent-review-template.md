@@ -1,9 +1,9 @@
 ## Agent Review
 
-**Implemented by:** human | claude | codex | agy
+**Implemented by:** <registered platform slug>
 **Executor:** claude-cli | anthropic-api | agy-cli | agy-session | pi-parent | pi-subagent | pi-session | pi-subagent-model | codex-cli | provider-api | human <!-- see docs/execution-targets.md -->
 **Model / runtime:** <freeform identifier>
-**Reviewed by:** human | claude | codex | agy
+**Reviewed by:** <registered platform slug>
 **Independent reviewer:** YES | NO
 **Workflow profile:** bounded | standard | high-assurance
 **Fallback chain:** none | original model -> backup model

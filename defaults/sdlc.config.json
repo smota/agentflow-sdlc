@@ -14,6 +14,31 @@
     "Follow-up issues replace hidden TODOs.",
     "Harness directories contain generated adapters only."
   ],
+  "vocabulary": {
+    "rolePassStatuses": ["pass", "blocked", "returned", "skipped"],
+    "artifactKinds": [
+      "goal",
+      "requirement",
+      "design",
+      "plan",
+      "implementation",
+      "validation",
+      "review",
+      "release",
+      "incident",
+      "other"
+    ],
+    "sourceAuthorities": ["authoritative", "working-copy", "mirror"],
+    "artifactRelationships": [
+      "input",
+      "output",
+      "supersedes",
+      "verifies",
+      "implements",
+      "observes"
+    ],
+    "actionBoundaries": ["observe", "propose", "mutate-worktree", "open-pr", "external-action"]
+  },
   "roles": [
     {
       "phase": 0,
@@ -160,8 +185,29 @@
       "requires": ["preview", "auth", "csrf", "confirmation", "audit"]
     }
   },
+  "actionPolicy": {
+    "profileMaximums": {
+      "bounded": "open-pr",
+      "standard": "open-pr",
+      "high-assurance": "open-pr",
+      "exploratory": "propose"
+    },
+    "externalActionRequiresHumanApproval": true,
+    "delegationMayNotWidenBoundary": true
+  },
   "extensionPolicy": {
-    "mayAdd": ["roles", "labels", "gateways", "paths", "validators", "harnessAdapters"],
+    "mayAdd": [
+      "roles",
+      "roleBoundPlays",
+      "labels",
+      "gateways",
+      "paths",
+      "validators",
+      "toolPermissions",
+      "controlRequirements",
+      "evals",
+      "harnessAdapters"
+    ],
     "mustPreserve": [
       "role-pass-provenance",
       "human-approval-for-high-assurance",

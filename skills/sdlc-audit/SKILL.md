@@ -18,6 +18,11 @@ Use this skill for read-only SDLC compliance evaluation.
 - Report severity, source, evidence, and fix recommendation.
 - Do not expose secrets, raw prompts, transcripts, full logs, or tool payloads.
 - Do not mutate issues, PRs, files, labels, or adapters unless explicitly switched to migration/remediation.
+- Validate canonical output vocabulary while allowing documented legacy aliases only at input
+  boundaries. Confirm `exploratory` wherever profiles are enumerated.
+- Audit `ArtifactRef` authority/revision/digest semantics, transition graph validity, action-boundary
+  non-escalation, and the separation of capabilities, permissions, and controls.
+- Treat eval and outcome reports as derived evidence, never policy or telemetry authority.
 
 ## Workflow
 
@@ -28,6 +33,8 @@ Use this skill for read-only SDLC compliance evaluation.
    node scripts/validate-sdlc-role-pass.mjs --path <file> --json
    node scripts/validate-sdlc-skill.mjs --path <skill>/SKILL.md --json
    agentflow-sdlc cockpit doctor --json
+   node scripts/validate-extension-packs.mjs --allow-empty
+   node scripts/run-agent-evals.mjs --manifest agents/evals/manifests/framework-contracts.json
    ```
 3. Inspect durable evidence only as needed.
 4. Treat Cockpit as optional but first-class: audit packaging, docs, and `cockpit doctor`, but do not require it to be running for SDLC compliance.

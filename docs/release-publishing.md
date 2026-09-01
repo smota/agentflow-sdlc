@@ -1,6 +1,6 @@
 # AgentFlow SDLC release publishing
 
-AgentFlow SDLC v1 is publish-grade only when npm packaging, native harness manifests, and structural harness settings merge all validate.
+AgentFlow SDLC v1 is publish-grade only when tests, executable evals, npm packaging, native harness manifests, and structural harness settings merge all validate. This document defines the maintained release gate. Passing it validates the package payload but does not publish the npm package; npm publication remains a separate explicit action.
 
 ## NPM package gate
 
@@ -28,8 +28,8 @@ npm pack --dry-run
 Run:
 
 ```bash
-agentflow-sdlc plugins validate --harness all --json
-agentflow-sdlc plugins build --harness all --dry-run
+node bin/cli.mjs plugins validate --harness all --json
+node bin/cli.mjs plugins build --harness all --dry-run
 ```
 
 Canonical manifests live in:
@@ -46,8 +46,8 @@ Generated plugin files belong in harness folders only and are not canonical sour
 Run:
 
 ```bash
-agentflow-sdlc settings merge --harness all --dry-run
-agentflow-sdlc settings status --harness all --json
+node bin/cli.mjs settings merge --harness all --dry-run
+node bin/cli.mjs settings status --harness all --json
 ```
 
 The merge engine preserves project-owned keys and only injects the `agentflowSdlc` managed object from `manifests/harness-settings.json`.
@@ -59,7 +59,7 @@ Cockpit is optional at runtime and first-class in the product artifact. It must 
 Run:
 
 ```bash
-AGENTFLOW_REPOSITORIES=owner/repo agentflow-sdlc cockpit doctor --json
+AGENTFLOW_REPOSITORIES=owner/repo node bin/cli.mjs cockpit doctor --json
 node scripts/cockpit-smoke.mjs
 ```
 
@@ -67,9 +67,16 @@ node scripts/cockpit-smoke.mjs
 
 ```bash
 pnpm test
+pnpm test:evals
 node scripts/sdlc-sandbox-smoke.mjs
 node scripts/cockpit-smoke.mjs
 node scripts/validate-npm-package.mjs
-agentflow-sdlc plugins validate --harness all --json
-agentflow-sdlc settings merge --harness all --dry-run
+node bin/cli.mjs plugins validate --harness all --json
+node bin/cli.mjs settings merge --harness all --dry-run
+```
+
+The canonical package script runs the same core gate:
+
+```bash
+pnpm validate:release
 ```

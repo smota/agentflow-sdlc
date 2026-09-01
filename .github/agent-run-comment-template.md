@@ -1,14 +1,14 @@
 ## Agent Run
 
-**Agent:** human | claude | codex | agy
+**Platform:** <registered platform slug>
 **Executor:** claude-cli | anthropic-api | agy-cli | agy-session | pi-parent | pi-subagent | pi-session | pi-subagent-model | codex-cli | provider-api | human <!-- see docs/execution-targets.md -->
 **Model / runtime:** <freeform identifier>
 **Role:** orchestrator | developer | consolidated-review | security-review | acceptance | scanner | techwriter
 **Step:** workflow evidence or delegated step
 **Status:** PASS | FAIL | BLOCKED
 **Fallback chain:** none | original model -> backup model
-**Implemented by:** not applicable | human | claude | codex | agy
-**Required reviewer:** not applicable | human | claude | codex | agy
+**Implemented by:** not applicable | <registered platform slug>
+**Required reviewer:** not applicable | <registered platform slug>
 
 ## Input
 

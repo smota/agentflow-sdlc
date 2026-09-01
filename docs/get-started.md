@@ -1,79 +1,113 @@
 # Get started
 
-AgentFlow SDLC is easiest to evaluate with an assistant. The recommended path is read-only first: inspect the project, preserve existing instructions, ask for choices, then propose setup commands before running anything.
+You can evaluate AgentFlow without changing your project. The recommended path is read-only inspection, an explicit setup proposal, then an approved installation.
 
-## 1. Assisted onboarding
+## Prerequisites
 
-Copy this prompt into your agent:
+- Node.js 20 or newer
+- Git
+- pnpm for working from this source repository
+- GitHub CLI only when you want issue, PR, or release automation
 
-```text
-Use the AgentFlow SDLC assisted onboarding guide:
-https://github.com/smota/agentflow-sdlc/blob/main/docs/assisted-onboarding.md
+The current documented distribution path is a source checkout. The package is not yet published on npm.
 
-Apply it to this existing project. First inspect existing agent instructions and project docs. Validate the environment read-only. Ask me to choose agents, execution mode, branch strategy, validation commands, and GitHub automation. Propose install/setup commands but do not execute them without explicit approval. Preserve or merge existing instructions instead of overwriting them.
-```
-
-Or print the prompt locally:
-
-```bash
-node bin/cli.mjs onboarding-prompt --target /path/to/your-project
-```
-
-## 2. Install framework files
-
-From a checkout of this repository:
+## 1. Check the environment read-only
 
 ```bash
 git clone https://github.com/smota/agentflow-sdlc.git
 cd agentflow-sdlc
 pnpm install
+node bin/cli.mjs doctor-env --target /path/to/your/project
+```
+
+`doctor-env` reports required and optional tools. It does not install software or change the target. Tool probes depend on the local executables returning normally; if a package manager hangs, stop the command and verify that tool directly before continuing.
+
+## 2. Generate the onboarding prompt
+
+```bash
+node bin/cli.mjs onboarding-prompt --target /path/to/your-project
+```
+
+Give the output to your assistant. It asks the assistant to:
+
+- inspect existing instructions and project docs;
+- preserve local conventions;
+- ask for branch, validation, routing, and automation choices;
+- propose exact setup commands;
+- wait for approval before writing.
+
+You can also copy the maintained prompt directly from [assisted onboarding](assisted-onboarding.md).
+
+## 3. Review the proposed setup
+
+Before approving writes, confirm:
+
+| Decision              | Typical safe default                                                                        |
+| --------------------- | ------------------------------------------------------------------------------------------- |
+| Execution             | One agent moving through explicit roles                                                     |
+| Durable evidence      | GitHub issues, comments, commits, and PR bodies                                             |
+| Local scratch         | `.agent-runs/`, never committed                                                             |
+| Branching             | Work branch into the configured integration branch                                          |
+| Review                | Evidence-backed self-review for bounded/standard work; human review for high-assurance work |
+| Existing instructions | Merge or preserve; never overwrite silently                                                 |
+
+Use [project setup](project-setup.md) for the decision checklist and [project config](project-config.md) for every field.
+
+## 4. Initialize after approval
+
+From the AgentFlow checkout:
+
+```bash
 node bin/cli.mjs init --target /path/to/your-project
 ```
 
-`init` installs framework-owned files and seeds project-owned files once. Existing project-owned files are not overwritten silently.
+`init` installs framework-owned files and seeds project-owned files once. Review the diff before committing. Existing project-owned policy is not silently overwritten.
 
-## 3. Configure the project
+In the target repository, commit the generated `agent-framework-lock.json` with the approved files. The lock lets future syncs distinguish safe framework updates from project-owned content.
 
-Use [`project-setup.md`](project-setup.md) and [`project-config.md`](project-config.md) to set:
+## 5. Verify the installation
 
-- validation commands;
-- branch strategy;
-- bounded-work rules;
-- role routing;
-- execution targets;
-- extension packs.
+```bash
+node /path/to/agentflow-sdlc/bin/cli.mjs doctor --target /path/to/your-project
+node /path/to/agentflow-sdlc/bin/cli.mjs sdlc validate --target /path/to/your-project
+```
 
-## 4. Commit the lockfile
+Then run the target repository's configured validation commands.
 
-In the consuming project, review and commit the generated `agent-framework-lock.json` with the installed files. This lets `sync` distinguish framework-owned files from project-owned policy.
+## Existing installations
 
-## 5. Sync or update later
-
-For already adopted projects, start with the assisted update flow:
+Plan updates before syncing:
 
 ```bash
 node bin/cli.mjs update-prompt --target /path/to/your-project
+node bin/cli.mjs doctor --target /path/to/your-project
 ```
 
-Then run sync only after review/approval:
+After reviewing and approving the plan:
 
 ```bash
 node bin/cli.mjs sync --target /path/to/your-project
 ```
 
-Use `mark-merged` for files that were hand-merged and should remain project-managed:
+If a framework file was intentionally hand-merged and should remain project-managed:
 
 ```bash
-node bin/cli.mjs mark-merged CLAUDE.md --target /path/to/project
+node bin/cli.mjs mark-merged CLAUDE.md --target /path/to/your-project
 ```
 
-## 6. Verify this repository
+See [assisted update](assisted-update.md) for conflict classifications and the approval boundary.
 
-From this repository:
+## Verify this framework checkout
+
+Contributors and maintainers run:
 
 ```bash
 pnpm test
 pnpm test:workflow
+pnpm test:evals
 pnpm format:check
 node scripts/verify-hooks.mjs
+node scripts/validate-npm-package.mjs
 ```
+
+Next: choose a route in [Start here](start-here.md), or browse the complete [documentation index](index.md).
