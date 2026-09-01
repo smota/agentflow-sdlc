@@ -15,6 +15,8 @@ A handoff preserves continuity between SDLC roles, sessions, agents, or sub-agen
 - open questions and blockers;
 - next-role contract;
 - validation or artifacts produced.
+- canonical role/profile vocabulary, effective action boundary, portable `ArtifactRef` values, and
+  the version-1 transition envelope from `schemas/transition-envelope.schema.json`.
 
 Use `../../agents/templates/handover-comment.md` for GitHub-visible handovers and `../../agents/templates/role-pass.md` for local role-pass evidence.
 
@@ -31,6 +33,8 @@ When routing or delegated sub-agents are used:
 - keep reviewers read-only by default;
 - validate delegated output before incorporating it;
 - parent agent owns synthesis and PR evidence.
+- delegated action authority is the minimum of request, profile, parent, and runtime boundaries;
+  delegation never widens it.
 
 ## No false claims
 

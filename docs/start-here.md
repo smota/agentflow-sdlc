@@ -1,61 +1,53 @@
 # Start here
 
-This page routes humans and agents to the right AgentFlow SDLC document without making the README carry every detail.
+Use this page to reach the right depth without reading the documentation front to back.
 
-## If you are evaluating AgentFlow
+## Pick your path
 
-1. Read [`agentflow-in-5-minutes.md`](agentflow-in-5-minutes.md).
-2. Use [`get-started.md`](get-started.md) for the onboarding path.
-3. Review examples in [`examples/`](examples/).
+| You are…                       | Start with                                               | Then use                                                                                                                 |
+| ------------------------------ | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Evaluating AgentFlow           | [AgentFlow in 5 minutes](agentflow-in-5-minutes.md)      | [Get started](get-started.md) and the [examples](examples/)                                                              |
+| Adding it to a repository      | [Get started](get-started.md)                            | [Assisted onboarding](assisted-onboarding.md), [project setup](project-setup.md), and [configuration](project-config.md) |
+| Updating an adopted repository | [Assisted update](assisted-update.md)                    | [Release/versioning](release-versioning.md) and the [CLI reference](index.md#cli-and-validation-reference)               |
+| Running issue work             | [`AGENTS.md`](../AGENTS.md)                              | The active adapter, [workflow](agent-workflow.md), [issue standards](issue-standards.md), and active issue or `SPEC.md`  |
+| Designing integrations         | [SDLC definition](sdlc-definition.md)                    | [Capabilities](capabilities.md), [evidence contracts](evidence-contracts.md), and [packaging](sdlc-packaging.md)         |
+| Operating visually             | [Cockpit](cockpit.md)                                    | [Cockpit concepts and rules](cockpit-concepts-and-rules.md) and [Cockpit QA](cockpit-qa.md)                              |
+| Contributing to AgentFlow      | [Contribution workflow](guides/contribution-workflow.md) | [Documentation index](index.md) and [ADRs](adr/)                                                                         |
 
-## If you are installing AgentFlow in a project
+## The model at a glance
 
-1. Start with [`assisted-onboarding.md`](assisted-onboarding.md).
-2. Check environment expectations in [`environment-tools.md`](environment-tools.md).
-3. Use [`project-setup.md`](project-setup.md) and [`project-config.md`](project-config.md) to choose branch, validation, and routing defaults.
-4. Use [`assisted-update.md`](assisted-update.md) for existing installations.
-
-## If you are doing issue work
-
-1. Read [`../AGENTS.md`](../AGENTS.md).
-2. Read the active adapter file for your executor.
-3. Read [`agent-workflow.md`](agent-workflow.md).
-4. Read [`issue-standards.md`](issue-standards.md).
-5. Read the active issue or `SPEC.md`.
-6. Use [`guides/contribution-workflow.md`](guides/contribution-workflow.md).
-
-## If you are learning the model
-
-| Concept                   | Doc                                                            |
-| ------------------------- | -------------------------------------------------------------- |
-| Product overview          | [`agentflow-in-5-minutes.md`](agentflow-in-5-minutes.md)       |
-| Workflow phases           | [`agent-workflow.md`](agent-workflow.md)                       |
-| Intelligent collaboration | [`intelligent-collaboration.md`](intelligent-collaboration.md) |
-| Execution targets         | [`execution-targets.md`](execution-targets.md)                 |
-| Portable capabilities     | [`capabilities.md`](capabilities.md)                           |
-| Project config            | [`project-config.md`](project-config.md)                       |
-| Release versioning        | [`release-versioning.md`](release-versioning.md)               |
-| Goal Command Center       | [`cockpit.md`](cockpit.md)                                     |
-
-## If you are an agent
-
-Use this deterministic entry sequence:
-
-1. `AGENTS.md`
-2. active adapter (`CLAUDE.md`, `CODEX.md`, `AGY.md`, or equivalent)
-3. `docs/agent-workflow.md`
-4. `docs/issue-standards.md`
-5. active issue or `SPEC.md`
-
-Then use role packages under `agents/roles/` and workflow skills under `agents/workflows/` as needed.
-
-## If you want visual operations
-
-Use Cockpit as optional Goal Command Center:
-
-```bash
-AGENTFLOW_REPOSITORIES=owner/repo agentflow-sdlc cockpit
-agentflow-sdlc cockpit doctor --json
+```mermaid
+flowchart LR
+  Need["Need"] --> Issue["Issue / acceptance criteria"]
+  Issue --> Roles["Role-based delivery"]
+  Roles --> Checks["Validation & review"]
+  Checks --> PR["Evidence-backed PR"]
+  PR --> FollowUp["Release or follow-up"]
 ```
 
-Cockpit is first-class in product docs and release gates, but runtime opt-in. Normal SDLC work does not require starting a service, opening a port, or configuring OAuth.
+## New-user essentials
+
+You only need four ideas to begin:
+
+1. AgentFlow wraps your existing project; it does not generate or replace it.
+2. One agent normally carries the work through explicit roles.
+3. Issues and PRs hold durable evidence; `.agent-runs/` remains local scratch.
+4. High-assurance work keeps human review before merge.
+
+Start with the read-only command in [Get started](get-started.md#1-check-the-environment-read-only).
+
+## Advanced-user map
+
+| Concern                                            | Canonical document                                                                                             |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Phase transitions and role-pass contract           | [Agent workflow](agent-workflow.md)                                                                            |
+| Platform identity, execution target, and transport | [Runtime platforms](runtime-platforms.md) and [execution targets](execution-targets.md)                        |
+| Role routing and independent review                | [Agent routing](agent-routing.md)                                                                              |
+| PLAN, WORKFLOW, LOOP, and SUB-AGENTS               | [Capabilities](capabilities.md)                                                                                |
+| Collaboration modes and decision budget            | [Intelligent collaboration](intelligent-collaboration.md)                                                      |
+| Artifact and lifecycle schemas                     | [Evidence contracts](evidence-contracts.md) and [lifecycle boundaries](lifecycle-boundaries.md)                |
+| Extension and adapter distribution                 | [Extension packs](extension-packs.md), [default skills](default-skills.md), and [packaging](sdlc-packaging.md) |
+| Release governance                                 | [Release versioning](release-versioning.md) and [publishing](release-publishing.md)                            |
+| Evals and metrics                                  | [Agent evals](agent-evals.md) and [outcome metrics](outcome-metrics.md)                                        |
+
+For the complete categorized inventory, use the [documentation index](index.md).

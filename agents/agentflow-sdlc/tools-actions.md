@@ -11,6 +11,12 @@
 | Capability resolution      | `resolve-execution-target`, `resolve-capability`, `validate-capability-evidence` | Required when advanced capabilities or routed agents are used.         | Stop or ask when required capability is unavailable.                                      |
 | External integrations      | MCP, OpenAPI tools, provider APIs, local CLIs                                    | Use only when configured in consuming environment.                     | Never store credentials or private data in committed files/evidence.                      |
 
+Workflow capabilities, tool permissions, and control requirements are separate namespaces.
+Workflow profile selects evidence rigor; action boundary selects allowed effects. The effective
+boundary is the minimum of request, profile maximum, parent/delegation limit, and runtime
+enforcement. `external-action` requires the owning role and applicable human approval evidence;
+implementation never implies merge, deployment, or production mutation.
+
 ## Safe mutation rules
 
 - Do not edit protected branches directly.
@@ -19,6 +25,8 @@
 - High-assurance gates require human review.
 - Prefer follow-up issues over scope drift.
 - Record rollback/audit notes for mutating GitHub or file operations when relevant.
+- Record external signals and delivery handoffs as portable evidence contracts rather than owning
+  or automating their external systems.
 
 ## Fallbacks
 

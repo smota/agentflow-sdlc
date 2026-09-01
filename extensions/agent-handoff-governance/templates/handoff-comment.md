@@ -27,7 +27,14 @@
 - Executor:
 - Transport:
 - Delegation boundary:
+- Action boundary:
 - Model / runtime:
+
+### Portable contract
+
+- ArtifactRefs:
+- Transition envelope:
+- Applied role-bound plays: none
 
 ### Open questions
 

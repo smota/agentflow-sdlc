@@ -1,0 +1,4 @@
+Role: product-manager-jtbd
+Profile: exploratory
+Action boundary: propose
+Transition evidence uses ArtifactRef and a versioned transition envelope.

@@ -6,6 +6,11 @@ making the workflow state machine, role-pass contract, branch strategy, and PR m
 explicit and machine-checkable. If `AGENTS.md` is missing, stop before implementation or gate
 decisions unless the active issue is specifically restoring that file.
 
+Use canonical role/profile vocabulary and the portable `ArtifactRef` plus transition envelope in
+[evidence-contracts.md](evidence-contracts.md). Workflow profile and action authority are separate;
+see [lifecycle-boundaries.md](lifecycle-boundaries.md). These interfaces extend evidence before and
+after the core graph without adding mandatory phases.
+
 ## 1. Operating principles
 
 - **Single-agent execution by default.** The normal path is one executor working end to end.

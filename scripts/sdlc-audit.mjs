@@ -36,7 +36,14 @@ for (const skill of ['sdlc-definition', 'sdlc-migration', 'sdlc-audit']) {
     findings.push(finding('high', 'skill.missing', `missing ${skill} skill`, { source: skillPath }))
 }
 
-for (const path of ['docs/sdlc-definition.md', 'schemas/sdlc-config.schema.json']) {
+for (const path of [
+  'docs/sdlc-definition.md',
+  'schemas/sdlc-config.schema.json',
+  'docs/evidence-contracts.md',
+  'docs/lifecycle-boundaries.md',
+  'schemas/artifact-ref.schema.json',
+  'schemas/transition-envelope.schema.json',
+]) {
   if (!existsSync(join(target, path)))
     findings.push(finding('blocker', 'sdlc.required-file', `missing ${path}`, { source: path }))
 }

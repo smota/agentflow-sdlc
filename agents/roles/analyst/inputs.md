@@ -1,5 +1,7 @@
 # Inputs
 
+- Triaged external signals and their evidence references, when applicable.
+
 - Active issue or `SPEC.md`.
 - Required policy docs.
 - Prior pass/handover.

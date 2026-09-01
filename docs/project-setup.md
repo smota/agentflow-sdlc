@@ -98,11 +98,13 @@ for how planned ownership becomes evidenced multi-agent claims.
       "claude": {
         "enabled": true,
         "availabilityCommand": "claude --version",
+        "defaultExecutionTarget": "claude-cli",
         "callWorkflowDoc": "docs/agents/claude-routing.md"
       },
       "agy": {
         "enabled": true,
         "availabilityCommand": "agy --version",
+        "defaultExecutionTarget": "agy-cli",
         "callWorkflowDoc": "docs/agents/agy-routing.md"
       },
       "codex": {

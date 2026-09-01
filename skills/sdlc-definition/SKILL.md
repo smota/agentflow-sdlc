@@ -19,6 +19,8 @@ Use this skill to define and maintain the canonical AgentFlow SDLC model.
 3. `docs/agent-workflow.md`
 4. `docs/issue-standards.md`
 5. `docs/execution-targets.md`
+6. `docs/evidence-contracts.md`
+7. `docs/lifecycle-boundaries.md`
 
 ## Rules
 
@@ -28,6 +30,12 @@ Use this skill to define and maintain the canonical AgentFlow SDLC model.
 - Use AgentFlow concepts: Goal, Role Flow, Readiness, Release, Human approval gate, Follow-up, Source.
 - Treat Cockpit as the optional first-class Goal Command Center: product artifact and release gates include it, runtime startup remains opt-in.
 - Define extensions only when owner, compatibility, migration behavior, and validator are clear.
+- Emit canonical role/profile vocabulary. Keep workflow capabilities, tool permissions, and control
+  requirements in separate namespaces.
+- Treat `ArtifactRef`, transition envelopes, external signals, delivery handoffs, and action
+  boundaries as versioned portable evidence contracts. They do not transfer external-system
+  authority or add mandatory phases.
+- Keep eval-driven improvements owner-reviewed; never mutate policy automatically from an eval.
 
 ## Workflow
 
@@ -37,6 +45,8 @@ Use this skill to define and maintain the canonical AgentFlow SDLC model.
 4. Run deterministic validation:
    ```bash
    node scripts/validate-sdlc-config.mjs
+   node scripts/validate-extension-packs.mjs --allow-empty
+   node scripts/run-agent-evals.mjs --manifest agents/evals/manifests/framework-contracts.json
    ```
 5. Record remaining gaps as follow-up issues, not hidden TODOs.
 

@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentflow.dev/schemas/eval-manifest.schema.json",
+  "title": "AgentFlow Eval Manifest",
+  "type": "object",
+  "required": ["version", "id", "owner", "subject", "cases"],
+  "properties": {
+    "version": { "const": 1 },
+    "id": { "type": "string", "minLength": 1 },
+    "owner": { "type": "string", "minLength": 1 },
+    "subject": {
+      "type": "object",
+      "required": ["kind", "path"],
+      "properties": {
+        "kind": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "revision": { "type": "string" },
+        "digest": { "type": "string" }
+      }
+    },
+    "threshold": { "type": "number", "minimum": 0, "maximum": 1 },
+    "cases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "actual", "assertions"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "actual": { "type": "string", "minLength": 1 },
+          "assertions": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["type"],
+              "properties": {
+                "id": { "type": "string" },
+                "type": { "enum": ["contains", "not-contains", "regex", "json-valid"] },
+                "value": { "type": "string" },
+                "flags": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": true
+}

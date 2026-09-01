@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentflow.dev/schemas/delivery-handoff.schema.json",
+  "title": "AgentFlow Delivery Handoff",
+  "type": "object",
+  "required": [
+    "version",
+    "id",
+    "state",
+    "sourceRole",
+    "artifactRefs",
+    "validationRefs",
+    "approvalRefs"
+  ],
+  "properties": {
+    "version": { "const": 1 },
+    "id": { "type": "string", "minLength": 1 },
+    "state": { "enum": ["proposed", "ready", "accepted", "completed", "blocked"] },
+    "previousState": { "enum": ["proposed", "ready", "accepted", "completed", "blocked"] },
+    "sourceRole": { "type": "string", "minLength": 1 },
+    "externalOwner": { "type": "string" },
+    "artifactRefs": { "type": "array", "items": { "$ref": "artifact-ref.schema.json" } },
+    "validationRefs": { "type": "array", "items": { "$ref": "artifact-ref.schema.json" } },
+    "approvalRefs": { "type": "array", "items": { "$ref": "artifact-ref.schema.json" } },
+    "rollbackRef": { "$ref": "artifact-ref.schema.json" },
+    "rollbackNotApplicableReason": { "type": "string" }
+  },
+  "additionalProperties": true
+}

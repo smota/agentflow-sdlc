@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "subject": "acceptance:claude-agy-chain",
+  "fromRole": "analyst",
+  "toRole": "architect",
+  "decision": "pass",
+  "nextContract": "Select a technical design and return a developer-planning contract.",
+  "timestamp": "2026-08-31T12:00:00Z",
+  "profile": "standard",
+  "actionBoundary": {
+    "version": 1,
+    "profile": "standard",
+    "requested": "observe",
+    "effective": "observe",
+    "parent": "observe",
+    "enforcementRefs": []
+  },
+  "inputRefs": [
+    {
+      "kind": "goal",
+      "system": "fixture",
+      "uri": "repo:agents/evals/prompts/claude-agy-handoff.md",
+      "authority": "authoritative",
+      "relationship": "input",
+      "revision": "v1"
+    }
+  ],
+  "outputRefs": [
+    {
+      "kind": "requirement",
+      "system": "fixture",
+      "uri": "repo:agents/evals/fixtures/claude-analyst.txt",
+      "authority": "working-copy",
+      "relationship": "output",
+      "revision": "v1"
+    }
+  ],
+  "validationRefs": [],
+  "openQuestions": [],
+  "extensionPlays": ["evidence-analysis"],
+  "refusals": {
+    "directExternalSignalToDeveloper": true,
+    "highAssuranceSelfReview": true,
+    "boundaryWidening": true
+  },
+  "provenance": {
+    "platform": "claude",
+    "executor": "claude-cli",
+    "transport": "local-cli",
+    "delegationBoundary": "current-session"
+  }
+}

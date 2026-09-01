@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="240" viewBox="0 0 1200 240" role="img" aria-labelledby="title desc">
+  <title id="title">AgentFlow SDLC</title>
+  <desc id="desc">Reviewable AI-assisted software delivery from request to evidence-backed pull request.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#061943" />
+      <stop offset="0.58" stop-color="#0b2f61" />
+      <stop offset="1" stop-color="#0b796f" />
+    </linearGradient>
+    <linearGradient id="flow" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.42" />
+      <stop offset="1" stop-color="#36c7b2" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="240" rx="28" fill="url(#background)" />
+  <path d="M66 76h208c35 0 35 88 0 88H112c-54 0-54-88 0-88" fill="none" stroke="url(#flow)" stroke-width="16" stroke-linecap="round" />
+  <circle cx="112" cy="76" r="30" fill="#ffffff" />
+  <path d="M101 92V59m0 3c13-8 22 9 38 0v18c-16 9-25-8-38 0" fill="none" stroke="#092458" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" />
+  <circle cx="222" cy="164" r="30" fill="#ffffff" />
+  <path d="m207 164 10 10 21-23" fill="none" stroke="#159e8f" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="m284 76 15 15-15 15M285 164l15 15-15 15" fill="none" stroke="#ffffff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" />
+  <text x="380" y="112" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="58" font-weight="700" letter-spacing="1">AgentFlow SDLC</text>
+  <text x="382" y="157" fill="#d8f6f1" font-family="Arial, Helvetica, sans-serif" font-size="25">Reviewable AI-assisted software delivery</text>
+  <circle cx="1110" cy="120" r="42" fill="#ff674d" />
+  <circle cx="1110" cy="120" r="29" fill="#ffffff" />
+  <path d="m1095 120 11 11 22-25" fill="none" stroke="#ff674d" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
+</svg>

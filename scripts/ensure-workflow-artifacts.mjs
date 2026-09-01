@@ -50,6 +50,10 @@ function resolveIssueNumber() {
 }
 
 function ensureFile(path, content) {
+  content = content.replace(
+    'Workflow profile: bounded | standard | high-assurance\n',
+    'Workflow profile: bounded | standard | high-assurance | exploratory\n',
+  )
   mkdirSync(dirname(path), { recursive: true })
   if (!existsSync(path)) {
     writeFileSync(path, content)
@@ -96,7 +100,7 @@ mkdirSync(passesDir, { recursive: true })
 
 const workflowResult = ensureFile(
   join(issueDir, 'workflow.md'),
-  `# Issue #${issueNumber} Workflow Ledger\n\n- Profile: <bounded | standard | high-assurance>\n- Risk: <low | medium | high>\n- Effort: <low | medium | high>\n- Change surface: <docs | ui | service | api | data | infra | security>\n- Branch: ${branch || '<branch>'}\n- State: planning\n\n## Passes\n\n1. Analyst — pending\n2. Architect — pending\n3. Developer planning — pending\n4. Developer — pending\n5. Tester — pending\n6. Review — pending\n7. Tech writer — pending\n8. PR readiness — pending\n\n## Notes\n\n- Issue: #${issueNumber} — ${title}\n`,
+  `# Issue #${issueNumber} Workflow Ledger\n\n- Profile: <bounded | standard | high-assurance | exploratory>\n- Action boundary: <observe | propose | mutate-worktree | open-pr | external-action>\n- Risk: <low | medium | high>\n- Effort: <low | medium | high>\n- Change surface: <docs | ui | service | api | data | infra | security>\n- Branch: ${branch || '<branch>'}\n- State: planning\n\n## Passes\n\n0. Product manager / JTBD — pending or skipped\n1. Analyst — pending\n2. Architect — pending\n3. Developer planning — pending\n4. Developer — pending\n5. Tester — pending\n6. Review — pending\n7. Tech writer — pending\n8. PR readiness — pending\n\n## Notes\n\n- Issue: #${issueNumber} — ${title}\n`,
 )
 
 const ciCommandsBlock = loadCiCommands()

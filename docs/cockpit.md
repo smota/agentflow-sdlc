@@ -19,12 +19,13 @@ For the implemented product vocabulary and rules, see [`docs/cockpit-concepts-an
 ## CLI
 
 ```bash
-AGENTFLOW_REPOSITORIES=owner/repo agentflow-sdlc cockpit
-agentflow-sdlc cockpit doctor --json
-node scripts/cockpit-smoke.mjs
+AGENTFLOW_REPOSITORIES=owner/repo node bin/cli.mjs cockpit
+node bin/cli.mjs cockpit doctor --json
 ```
 
-`cockpit doctor` validates package files and runtime configuration. `cockpit-smoke` is a release gate that starts the server, checks `/healthz`, and verifies packaged assets.
+`cockpit doctor` validates package files and runtime configuration. AgentFlow maintainers run
+`node scripts/cockpit-smoke.mjs` from the AgentFlow package checkout as a release gate; that
+package-only script is not installed into consuming repositories.
 
 ## MVP authentication
 

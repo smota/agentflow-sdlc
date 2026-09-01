@@ -1,6 +1,8 @@
 # AgentFlow SDLC in 5 minutes
 
-AgentFlow SDLC is an open-source process layer for AI-assisted software delivery. Version 1.0 is the first mature release: a stable way for teams to use AI more confidently while keeping work understandable, reviewable, resumable, and safe to ship through GitHub.
+AgentFlow SDLC is an open-source process layer for AI-assisted software delivery. It helps teams use AI more confidently while keeping work understandable, reviewable, resumable, and safe to ship through GitHub.
+
+The development source is preparing version 1.0.0. The latest published GitHub release may lag the source branch; use the live release badge and status note in the [README](../README.md#release-status) when choosing a version.
 
 ## The problem it solves
 
@@ -39,7 +41,7 @@ AgentFlow is **single-agent by default**. One executor can carry context end to 
 
 ## Intelligent collaboration when it helps
 
-AgentFlow 1.0 can use more AI intelligence without asking people to manage more agents. Clear work stays single-agent. Uncertain work can invite focused advisors. Broad work can use bounded discovery. Sensitive work keeps human approval. In every case, the parent workflow owns synthesis and leaves compact evidence.
+AgentFlow can use more AI intelligence without asking people to manage more agents. Clear work stays single-agent. Uncertain work can invite focused advisors. Broad work can use bounded discovery. Sensitive work keeps human approval. In every case, the parent workflow owns synthesis and leaves compact evidence.
 
 The guiding rule is: **increase intelligence per decision, not agents per task**.
 
