@@ -7,12 +7,16 @@
 - validator failures from `pnpm test:workflow`, role routing, branch strategy, extension packs, and capability evidence;
 - downstream adopter reports from assisted onboarding/update runs;
 - release closeout notes and changelog entries.
+- executable eval results and derived lifecycle outcome projections (never raw transcripts or
+  authoritative telemetry).
 
 ## Triage loop
 
 1. Classify feedback as defect, docs gap, eval gap, adapter gap, or validator gap.
 2. Create or update a GitHub issue using `../../docs/issue-standards.md`.
 3. Add regression fixture or eval assertion when behavior should never regress.
+   Eval findings remain proposals until the accountable owner approves a change; they never mutate
+   policy, prompts, permissions, or controls automatically.
 4. Update package docs only after confirming canonical authority sources.
 5. Record validation and release-note impact in PR manifest.
 

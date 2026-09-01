@@ -80,7 +80,7 @@ try {
         'https://github.com/example/example-repo/issues/496#issuecomment-2',
       )
       .replace('self-review | human-review-requested | human-reviewed', 'self-review')
-      .replace('bounded | standard | high-assurance', 'bounded')
+      .replace('bounded | standard | high-assurance | exploratory', 'bounded')
       .replace('single-agent | multi-agent', 'single-agent')
       .replace(
         'human/operator | auto-merge-requested:`gh pr merge --squash --delete-branch --auto`',

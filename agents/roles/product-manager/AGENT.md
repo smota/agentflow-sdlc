@@ -6,9 +6,9 @@ Frame JTBD, value, decomposition, and user outcome before analysis.
 
 ## Activation triggers
 
-- The AgentFlow phase model selects `product-manager`.
-- A collaboration plan delegates a bounded product-manager perspective.
-- A human explicitly requests product-manager analysis.
+- The AgentFlow phase model selects `product-manager-jtbd`.
+- A collaboration plan delegates a bounded product-manager-jtbd perspective.
+- A human explicitly requests product-manager-jtbd analysis.
 
 ## Must not activate when
 

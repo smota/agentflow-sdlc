@@ -1,5 +1,9 @@
 # Agent handoff governance
 
+This pack requests workflow orchestration plus read/shell permissions and requires single-writer
+and review-independence controls. Its Review-bound play adds handoff evidence only; it cannot
+transfer core decision authority or alter a transition.
+
 This extension pack defines how work moves safely between agents, subagents, sessions, and humans. It is stack-neutral and complements the core SDLC workflow by adding stricter handoff, provenance, delegation, and review-boundary evidence.
 
 ## Use this pack when

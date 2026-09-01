@@ -12,6 +12,13 @@ for (const path of [
   'docs/sdlc-definition.md',
   'sdlc.config.json',
   'schemas/sdlc-config.schema.json',
+  'docs/evidence-contracts.md',
+  'docs/lifecycle-boundaries.md',
+  'docs/agent-evals.md',
+  'docs/outcome-metrics.md',
+  'schemas/artifact-ref.schema.json',
+  'schemas/transition-envelope.schema.json',
+  'schemas/action-boundary.schema.json',
 ]) {
   if (!existsSync(join(target, path)))
     changes.push({ action: 'install', path, reason: 'required SDLC product file missing' })

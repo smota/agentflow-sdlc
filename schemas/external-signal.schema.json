@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentflow.dev/schemas/external-signal.schema.json",
+  "title": "AgentFlow External Signal",
+  "type": "object",
+  "required": ["version", "id", "state", "summary", "evidenceRefs"],
+  "properties": {
+    "version": { "const": 1 },
+    "id": { "type": "string", "minLength": 1 },
+    "state": { "enum": ["observed", "proposed", "triaged", "accepted", "rejected"] },
+    "previousState": {
+      "enum": ["observed", "proposed", "triaged", "accepted", "rejected"]
+    },
+    "summary": { "type": "string", "minLength": 1 },
+    "triageRole": { "type": "string" },
+    "goalRef": { "$ref": "artifact-ref.schema.json" },
+    "nextRole": { "type": "string" },
+    "evidenceRefs": { "type": "array", "items": { "$ref": "artifact-ref.schema.json" } }
+  },
+  "additionalProperties": true
+}

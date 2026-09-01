@@ -3,7 +3,7 @@
 ## Workflow Status
 
 **Issue:** #N
-**Profile:** bounded | standard | high-assurance
+**Profile:** bounded | standard | high-assurance | exploratory
 **Risk:** low | medium | high
 **Effort:** low | medium | high
 **Change surfaces:** docs | UI | service | API | data | infra | security
@@ -12,6 +12,7 @@
 **Executor:** pending | claude-cli | anthropic-api | agy-cli | agy-session | pi-parent | pi-subagent | pi-session | pi-subagent-model | codex-cli | provider-api | human <!-- see docs/execution-targets.md -->
 **Transport:** pending | local-cli | provider-api | pi-subagent | intercom-session | orchestrated-worktree | manual
 **Delegation boundary:** pending | current-session | child-subagent | separate-local-session | child-worktree | human-handoff
+**Action boundary:** pending | observe | propose | mutate-worktree | open-pr | external-action
 **Model / runtime:** freeform identifier | pending
 **Review:** pending | self-review | human-review-requested | human-reviewed
 **CI-equivalent validation:** pending | passed | not-run-with-reason | expected-fail-with-follow-up
@@ -30,6 +31,13 @@
 - [ ] Acceptance decision
 - [ ] Documentation decision
 - [ ] PR-readiness decision
+
+### Contract references
+
+- ArtifactRefs: pending
+- Transition envelope: pending
+- External signal: not-applicable
+- Delivery handoff: not-applicable
 
 ### CI Parity
 

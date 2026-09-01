@@ -5,3 +5,4 @@
 - Open questions/blockers.
 - Evidence paths.
 - Next-role contract.
+- Portable `ArtifactRef` values and a version-1 transition envelope (`schemas/transition-envelope.schema.json`).

@@ -1,5 +1,10 @@
 # Evals
 
+Executable manifests use `schemas/eval-manifest.schema.json` and
+`scripts/run-agent-evals.mjs`; see `docs/agent-evals.md`. Store live harness outputs only under
+ignored `.agent-runs/`. Findings require owner review and a regression case before policy changes;
+the improvement loop never self-mutates prompts, permissions, or controls.
+
 AgentFlow SDLC evals detect behavioral drift in agent instructions, workflow evidence, routing, and package completeness. They complement code tests and PR review.
 
 | Suite                       | Fixture/source                                         | Assertion type   | Pass condition                                                                                                          |
@@ -13,8 +18,8 @@ AgentFlow SDLC evals detect behavioral drift in agent instructions, workflow evi
 
 ## Benchmark direction
 
-Initial benchmarks should use static fixtures in `../../agents/evals/datasets/` and assertions in `../../agents/evals/suites/`. No hosted infrastructure is required. Results should write to `.agent-runs/evals/` and stay uncommitted.
+Benchmarks use static fixtures, prompts, and manifests under `../../agents/evals/`. No hosted infrastructure is required. Results write to `.agent-runs/evals/` and stay uncommitted.
 
 ## Current maturity
 
-Eval contracts exist here, but executable suites remain future work. Level 5 maturity is partial until those suites run in CI or documented release validation.
+Executable manifests cover framework contracts and a Claude/Agy handoff scenario, and the release gate runs them through `pnpm test:evals`. This remains a focused regression set rather than a claim of exhaustive behavioral coverage; add a fixture and manifest assertion whenever a reviewed finding should become durable.

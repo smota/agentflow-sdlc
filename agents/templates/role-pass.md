@@ -3,9 +3,10 @@
 **Issue:** #<number> — <title>
 **Branch:** <branch>
 **Phase:** <number>
-**Role:** <product-manager | analyst | architect | developer-plan | developer | tester | review | techwriter | pr-readiness>
+**Role:** <product-manager-jtbd | analyst | architect | developer-planning | developer | tester | review | tech-writer | pr-readiness>
 **Status:** <pass | blocked | returned | skipped>
-**Workflow profile:** <bounded | standard | high-assurance>
+**Workflow profile:** <bounded | standard | high-assurance | exploratory>
+**Action boundary:** <observe | propose | mutate-worktree | open-pr | external-action>
 **Planned owner:** <registered platform slug from roleAlternationPlan; use "not-applicable:single-agent" only when Mode is single-agent and this pass will not feed a multi-agent role attribution matrix>
 **Executed by:** <registered platform slug; see manifests/runtime-platforms.json>
 **Launcher:** <registered platform slug; see manifests/runtime-platforms.json>
@@ -19,6 +20,15 @@
 ### Inputs read
 
 - <issue, spec, ADR, prior pass, diff, test output>
+
+### Artifact references
+
+```json
+[]
+```
+
+Use portable `ArtifactRef` objects from `schemas/artifact-ref.schema.json`. A reference identifies
+the authoritative source; it does not copy raw source content into workflow evidence.
 
 ### Decisions / findings
 
@@ -54,6 +64,40 @@ Record intelligent collaboration evidence from `docs/intelligent-collaboration.m
 ### Next-phase contract
 
 - <what the next role must do>
+
+### Transition envelope
+
+```json
+{
+  "version": 1,
+  "subject": "issue:<number>",
+  "fromRole": "<canonical role slug>",
+  "toRole": "<canonical role slug>",
+  "decision": "pass",
+  "nextContract": "<what the next role must do>",
+  "timestamp": "YYYY-MM-DDTHH:MM:SSZ",
+  "profile": "<bounded | standard | high-assurance | exploratory>",
+  "actionBoundary": {
+    "version": 1,
+    "profile": "<bounded | standard | high-assurance | exploratory>",
+    "requested": "<boundary>",
+    "effective": "<boundary>",
+    "parent": "<boundary or omit>",
+    "enforcementRefs": []
+  },
+  "inputRefs": [],
+  "outputRefs": [],
+  "validationRefs": [],
+  "openQuestions": [],
+  "extensionPlays": [],
+  "provenance": {
+    "platform": "<platform>",
+    "executor": "<execution target>",
+    "transport": "<transport>",
+    "delegationBoundary": "<boundary>"
+  }
+}
+```
 
 ---
 

@@ -10,6 +10,7 @@ import {
 import { CONTEXT_BOUNDARIES } from '../lib/role-attribution.mjs'
 import { loadProjectConfig } from '../lib/role-routing.mjs'
 import { runtimePlatformSlugs } from '../lib/runtime-platforms.mjs'
+import { normalizeRole } from '../lib/sdlc-vocabulary.mjs'
 
 const args = process.argv.slice(2)
 const json = args.includes('--json')
@@ -90,8 +91,13 @@ if (
       'high-assurance cannot rely on self-review',
     ),
   )
-if (role && !config.roles?.some((item) => item.slug === role || item.label === role))
+const roleIdentity = normalizeRole(role, config)
+if (role && !roleIdentity.canonical)
   findings.push(finding('medium', 'role-pass.role', `role not in SDLC config: ${role}`))
+if (roleIdentity.deprecated)
+  findings.push(
+    finding('low', 'role-pass.role-alias', `deprecated role alias; emit ${roleIdentity.canonical}`),
+  )
 const result = report(findings, 'role-pass')
 if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
 else {

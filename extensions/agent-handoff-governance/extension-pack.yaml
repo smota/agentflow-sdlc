@@ -6,9 +6,14 @@ principles: principles.md
 documentation:
   - README.md
 requiredSkills: []
-requiredCapabilities:
+requiredToolPermissions:
   - read
   - shell
+requiredWorkflowCapabilities:
+  - workflow-orchestration
+controlRequirements:
+  - single-writer
+  - review-independence
 templates:
   - templates/handoff-comment.md
   - templates/role-pass-handoff-addendum.md
@@ -22,3 +27,11 @@ validators:
     command: node validators/validate-provenance-fields.mjs
   - path: validators/validate-review-boundary.mjs
     command: node validators/validate-review-boundary.mjs
+plays:
+  - id: governed-review-handoff
+    role: review
+    appliesWhen: review transfers findings or approval responsibility
+    requiredInputs: [implementation, validation]
+    expectedOutputs: [review-findings, next-role-contract]
+    evidenceFields: [provenance, independence-boundary, open-questions]
+    validators: [validators/validate-review-boundary.mjs]

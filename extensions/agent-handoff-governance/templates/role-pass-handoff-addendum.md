@@ -8,6 +8,7 @@
 - Executor:
 - Transport:
 - Delegation boundary:
+- Action boundary:
 - Model / runtime:
 - Writer owner: <agent/human/worktree>
 - Reviewer owner: none | <agent/human>
@@ -15,3 +16,6 @@
 - Async/cross-session: yes | no — <resume artifact or reason>
 - Stop conditions:
 - Receiver acknowledgement: pending | acknowledged:<link>
+- ArtifactRefs:
+- Transition envelope:
+- Applied role-bound plays: none

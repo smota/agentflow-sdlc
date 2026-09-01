@@ -27,6 +27,26 @@
       "ownership": "managed"
     },
     {
+      "source": "docs/evidence-contracts.md",
+      "target": "docs/evidence-contracts.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "docs/lifecycle-boundaries.md",
+      "target": "docs/lifecycle-boundaries.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "docs/agent-evals.md",
+      "target": "docs/agent-evals.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "docs/outcome-metrics.md",
+      "target": "docs/outcome-metrics.md",
+      "ownership": "managed"
+    },
+    {
       "source": "docs/sdlc-packaging.md",
       "target": "docs/sdlc-packaging.md",
       "ownership": "managed"
@@ -39,6 +59,131 @@
     {
       "source": "schemas/sdlc-config.schema.json",
       "target": "schemas/sdlc-config.schema.json",
+      "ownership": "managed"
+    },
+    {
+      "source": "schemas/artifact-ref.schema.json",
+      "target": "schemas/artifact-ref.schema.json",
+      "ownership": "managed"
+    },
+    {
+      "source": "schemas/transition-envelope.schema.json",
+      "target": "schemas/transition-envelope.schema.json",
+      "ownership": "managed"
+    },
+    {
+      "source": "schemas/transition-envelope.cli.schema.json",
+      "target": "schemas/transition-envelope.cli.schema.json",
+      "ownership": "managed"
+    },
+    {
+      "source": "schemas/external-signal.schema.json",
+      "target": "schemas/external-signal.schema.json",
+      "ownership": "managed"
+    },
+    {
+      "source": "schemas/delivery-handoff.schema.json",
+      "target": "schemas/delivery-handoff.schema.json",
+      "ownership": "managed"
+    },
+    {
+      "source": "schemas/action-boundary.schema.json",
+      "target": "schemas/action-boundary.schema.json",
+      "ownership": "managed"
+    },
+    {
+      "source": "schemas/lifecycle-event.schema.json",
+      "target": "schemas/lifecycle-event.schema.json",
+      "ownership": "managed"
+    },
+    {
+      "source": "schemas/eval-manifest.schema.json",
+      "target": "schemas/eval-manifest.schema.json",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/sdlc-vocabulary.mjs",
+      "target": "lib/sdlc-vocabulary.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/evidence-contracts.mjs",
+      "target": "lib/evidence-contracts.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/lifecycle-contracts.mjs",
+      "target": "lib/lifecycle-contracts.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/outcome-metrics.mjs",
+      "target": "lib/outcome-metrics.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/agent-evals.mjs",
+      "target": "lib/agent-evals.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/multi-agent-acceptance.mjs",
+      "target": "lib/multi-agent-acceptance.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "scripts/validate-evidence-contract.mjs",
+      "target": "scripts/validate-evidence-contract.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "scripts/validate-lifecycle-contract.mjs",
+      "target": "scripts/validate-lifecycle-contract.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "scripts/derive-outcome-metrics.mjs",
+      "target": "scripts/derive-outcome-metrics.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "scripts/run-agent-evals.mjs",
+      "target": "scripts/run-agent-evals.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "scripts/validate-multi-agent-acceptance.mjs",
+      "target": "scripts/validate-multi-agent-acceptance.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "agents/evals/manifests/framework-contracts.json",
+      "target": "agents/evals/manifests/framework-contracts.json",
+      "ownership": "managed"
+    },
+    {
+      "source": "agents/evals/fixtures/canonical-output.txt",
+      "target": "agents/evals/fixtures/canonical-output.txt",
+      "ownership": "managed"
+    },
+    {
+      "source": "agents/evals/manifests/claude-agy-handoff.json",
+      "target": "agents/evals/manifests/claude-agy-handoff.json",
+      "ownership": "managed"
+    },
+    {
+      "source": "agents/evals/fixtures/claude-analyst.txt",
+      "target": "agents/evals/fixtures/claude-analyst.txt",
+      "ownership": "managed"
+    },
+    {
+      "source": "agents/evals/fixtures/agy-architect.txt",
+      "target": "agents/evals/fixtures/agy-architect.txt",
+      "ownership": "managed"
+    },
+    {
+      "source": "agents/evals/prompts/claude-agy-handoff.md",
+      "target": "agents/evals/prompts/claude-agy-handoff.md",
       "ownership": "managed"
     },
     {

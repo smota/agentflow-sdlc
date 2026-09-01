@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "subject": "acceptance:claude-agy-chain",
+  "fromRole": "architect",
+  "toRole": "developer-planning",
+  "decision": "pass",
+  "nextContract": "Produce an implementation and validation plan without mutating the worktree.",
+  "timestamp": "2026-08-31T12:01:00Z",
+  "profile": "standard",
+  "actionBoundary": {
+    "version": 1,
+    "profile": "standard",
+    "requested": "observe",
+    "effective": "observe",
+    "parent": "observe",
+    "enforcementRefs": []
+  },
+  "inputRefs": [
+    {
+      "kind": "requirement",
+      "system": "fixture",
+      "uri": "repo:agents/evals/fixtures/claude-analyst.txt",
+      "authority": "authoritative",
+      "relationship": "input",
+      "revision": "v1"
+    }
+  ],
+  "outputRefs": [
+    {
+      "kind": "design",
+      "system": "fixture",
+      "uri": "repo:agents/evals/fixtures/agy-architect.txt",
+      "authority": "working-copy",
+      "relationship": "output",
+      "revision": "v1"
+    }
+  ],
+  "validationRefs": [],
+  "openQuestions": [],
+  "extensionPlays": [],
+  "refusals": {
+    "directExternalSignalToDeveloper": true,
+    "highAssuranceSelfReview": true,
+    "boundaryWidening": true
+  },
+  "provenance": {
+    "platform": "agy",
+    "executor": "agy-cli",
+    "transport": "local-cli",
+    "delegationBoundary": "current-session"
+  }
+}

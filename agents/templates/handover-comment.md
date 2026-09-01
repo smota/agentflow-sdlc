@@ -14,6 +14,7 @@
 **Delegation boundary:** <current-session | child-subagent | separate-local-session | child-worktree | human-handoff>
 **Context boundary:** <current-session | fresh-session | forked-context | local-cli-child-process | provider-api-call | human-handoff | worktree | intercom-session> <!-- derived from Transport + Delegation boundary; see lib/role-attribution.mjs#deriveContextBoundary -->
 **Independence boundary:** <independent | self-review | not-applicable> <!-- required when "To" is the review role; see docs/agent-workflow.md §4a -->
+**Action boundary:** <observe | propose | mutate-worktree | open-pr | external-action>
 **Branch:** <branch>
 
 ### Context already established
@@ -27,6 +28,12 @@
 - <specific next action>
 - <expected artifact/comment/update>
 - <tests or checks to run>
+
+### Portable evidence
+
+- ArtifactRefs: <paths/URLs or none>
+- Transition envelope: <path/URL to validated version-1 JSON>
+- Extension plays: <applied play ids or none>
 
 ### Open questions / blockers
 

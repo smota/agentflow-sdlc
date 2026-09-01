@@ -16,6 +16,8 @@
 - Capability evidence: <PLAN/WORKFLOW/LOOP/SUB-AGENTS capabilities used, resolution modes, fallbacks, and artifacts; use `not-applicable:<reason>` when none were requested>
 - Collaboration evidence: <collaboration mode, smallest-sufficient reason, helpers/gates used, synthesis/dissent summary, or `single-agent:<reason>`>
 - Validation evidence: <commands and results>
+- Evidence contracts: <ArtifactRef and transition-envelope paths/URLs>
+- Action boundary: <effective boundary and approval reference when external-action>
 
 ## CI-equivalent validation
 
@@ -58,7 +60,7 @@ the phase. See docs/agent-workflow.md §4a and lib/role-attribution.mjs. -->
 - Delegation boundary: <current-session | child-subagent | separate-local-session | child-worktree | human-handoff>
 - Model / runtime: <freeform identifier>
 - Review: self-review | human-review-requested | human-reviewed
-- Workflow profile: bounded | standard | high-assurance
+- Workflow profile: bounded | standard | high-assurance | exploratory
 - Merge owner: human/operator | auto-merge-requested:`gh pr merge --squash --delete-branch --auto`
 - Fallback chain: none | original agent -> backup agent
 - Regression test: added | not-applicable:<reason> <!-- required for bug fixes; omit for non-bug PRs -->

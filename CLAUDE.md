@@ -22,6 +22,8 @@ workflow and recording machine-checkable evidence for each phase.
 - Write a new role-pass artifact after every completed phase
 - Record the actual executor name in every artifact and the model / runtime when known; never default to another adapter name
 - Keep the workflow-status comment aligned with the latest phase state
+- Emit canonical role/profile values, the effective action boundary, portable `ArtifactRef` values,
+  and a version-1 transition envelope for cross-harness handoffs; validate them before return
 
 ## Review model
 

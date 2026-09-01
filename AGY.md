@@ -21,6 +21,8 @@ but that preference does not change the default single-agent operating model.
 - Write a new role-pass artifact after every completed phase
 - Record the actual executor name in every artifact and the model / runtime when known; never default to another adapter name
 - Keep the workflow-status comment aligned with the latest phase state
+- Emit canonical role/profile values, the effective action boundary, portable `ArtifactRef` values,
+  and a version-1 transition envelope for cross-harness handoffs; validate them before return
 
 ## Review model
 
@@ -36,7 +38,9 @@ but that preference does not change the default single-agent operating model.
 
 ## CLI
 
-The headless CLI is `agy -p`. Set `AGY_CLI` to override it.
+The headless CLI is `agy -p`. Set `AGY_CLI` to override it. Evidence emitted by this adapter uses
+platform `agy`; Antigravity is a separate registered platform identity and must not be used as an
+alias in provenance.
 
 ## Backup rules
 

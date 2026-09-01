@@ -1,5 +1,10 @@
 # Advanced agent capabilities
 
+Capabilities describe requested workflow behavior. They are not tool permissions or controls.
+Extension manifests record allowed operations under `requiredToolPermissions` and independently
+enforced/evidenced boundaries under `controlRequirements`; see
+[`evidence-contracts.md`](evidence-contracts.md). An adapter cannot satisfy a control in prose.
+
 **AgentFlow SDLC** is a reusable SDLC governance framework, not a single agent harness. Advanced features such as PLAN, WORKFLOW, LOOP, and SUB-AGENTS are therefore modeled as **portable capabilities**: a skill or workflow requests an intent, and the active execution target resolves that intent through a platform-specific adapter.
 
 This keeps framework-owned skills portable across Claude, Codex, Agy, Pi, humans, and future executors while preserving the existing role, routing, evidence, GitHub issue, and PR contracts.

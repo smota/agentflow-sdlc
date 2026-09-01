@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 import { existsSync, readFileSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import {
   extractSection,
   fieldValue,
@@ -14,6 +16,7 @@ import {
 } from '../lib/execution-targets.mjs'
 import { loadProjectConfig } from '../lib/role-routing.mjs'
 import { runtimePlatformSlugs } from '../lib/runtime-platforms.mjs'
+import { loadSdlcConfig } from '../lib/sdlc-state.mjs'
 
 function getArg(name) {
   const index = process.argv.indexOf(name)
@@ -34,6 +37,12 @@ const workflowEvidence = extractSection(content, 'Workflow evidence')
 const agentReview = extractSection(content, 'Agent review')
 const ciValidation = extractSection(content, 'CI-equivalent validation')
 const projectConfig = loadProjectConfig()
+const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const workflowConfigRoot =
+  existsSync('sdlc.config.json') || existsSync('defaults/sdlc.config.json')
+    ? process.cwd()
+    : packageRoot
+const workflowProfiles = Object.keys(loadSdlcConfig(workflowConfigRoot).paths ?? {})
 let registeredPlatforms = []
 let platformRegistryError = null
 try {
@@ -52,7 +61,7 @@ const agentReviewFields = {
   'Delegation boundary': isOneOf(DELEGATION_BOUNDARIES),
   'Model / runtime': matches(/^(?!<freeform identifier>$).+/),
   Review: matches(/^(self-review|human-review-requested|human-reviewed)$/),
-  'Workflow profile': matches(/^(bounded|standard|high-assurance)$/),
+  'Workflow profile': isOneOf(workflowProfiles),
   'Merge owner': matches(
     /^(human\/operator|auto-merge-requested:`gh pr merge --squash --delete-branch --auto`)$/,
   ),

@@ -16,24 +16,30 @@ Agent evaluations verify that:
 Evaluations are not a replacement for code review or CI — they complement them by catching
 behavioral drift that unit tests cannot observe.
 
-## Directory Structure
+## Directory structure
 
 ```
 agents/evals/
 ├── README.md          ← this file
-├── datasets/          ← input fixtures (issue specs, diffs, role invocations)
-│   └── .gitkeep
-└── suites/            ← evaluation suites (assertions on agent output)
-    └── .gitkeep
+├── datasets/          ← input fixtures for behavioral scenarios
+├── fixtures/          ← expected and actual output fixtures
+├── manifests/         ← executable eval manifests
+├── prompts/           ← harness prompts used by manifests
+└── suites/            ← human-readable suite contracts
 ```
 
-## Roadmap
+## Running evaluations
 
-Population of `datasets/` and `suites/` is tracked in a separate issue. This scaffold
-establishes the directory contract so future evaluation tooling has a stable home.
+Run the maintained framework suites and multi-agent acceptance checks:
 
-## Running Evaluations
+```bash
+pnpm test:evals
+```
 
-Evaluation runner TBD — tracked in a separate issue.
+Run one manifest directly while developing a focused scenario:
+
+```bash
+node scripts/run-agent-evals.mjs --manifest agents/evals/manifests/framework-contracts.json --json
+```
 
 Results are written to `.agent-runs/evals/` (gitignored).

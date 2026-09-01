@@ -3,7 +3,7 @@
   "private": false,
   "type": "module",
   "version": "1.0.0",
-  "description": "AgentFlow SDLC product: harness-neutral role-based SDLC definition, validators, skills, adapters, and release governance for multi-agent delivery.",
+  "description": "Harness-neutral roles, evidence, validators, skills, adapters, and release governance for AI-assisted software delivery.",
   "license": "Apache-2.0",
   "packageManager": "pnpm@9.6.0",
   "engines": {
@@ -17,11 +17,12 @@
     "test:hooks": "node scripts/verify-hooks.mjs",
     "test:workflow": "node scripts/verify-agent-workflow.mjs",
     "validate:extensions": "node scripts/validate-extension-packs.mjs --allow-empty",
+    "test:evals": "node scripts/run-agent-evals.mjs --manifest agents/evals/manifests/framework-contracts.json --json && node scripts/run-agent-evals.mjs --manifest agents/evals/manifests/claude-agy-handoff.json --json && node scripts/validate-multi-agent-acceptance.mjs --json",
     "cockpit": "node scripts/cockpit-server.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "validate:npm": "node scripts/validate-npm-package.mjs",
-    "validate:release": "pnpm test && node scripts/sdlc-sandbox-smoke.mjs && node scripts/cockpit-smoke.mjs && node scripts/validate-npm-package.mjs"
+    "validate:release": "pnpm test && pnpm test:evals && node scripts/sdlc-sandbox-smoke.mjs && node scripts/cockpit-smoke.mjs && node scripts/validate-npm-package.mjs"
   },
   "devDependencies": {
     "prettier": "^3.3.3",

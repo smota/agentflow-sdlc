@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "id": "framework-contracts",
+  "owner": "review",
+  "subject": { "kind": "framework", "path": "defaults/sdlc.config.json" },
+  "threshold": 1,
+  "cases": [
+    {
+      "id": "canonical-output",
+      "actual": "../fixtures/canonical-output.txt",
+      "assertions": [
+        { "id": "canonical-role", "type": "contains", "value": "product-manager-jtbd" },
+        { "id": "exploratory-profile", "type": "contains", "value": "Profile: exploratory" },
+        { "id": "no-legacy-role", "type": "not-contains", "value": "techwriter" }
+      ]
+    }
+  ]
+}

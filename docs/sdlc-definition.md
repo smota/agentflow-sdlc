@@ -2,6 +2,12 @@
 
 AgentFlow SDLC Definition is the product authority for agentic delivery. It defines the shared model used by roles, agents, skills, validators, migrations, audits, and Cockpit.
 
+Machine-readable vocabulary lives in `sdlc.config.json`. Portable evidence and boundary contracts
+are defined in [evidence-contracts.md](evidence-contracts.md) and
+[lifecycle-boundaries.md](lifecycle-boundaries.md). Executable behavioral checks and derived,
+non-authoritative outcome projections are defined in [agent-evals.md](agent-evals.md) and
+[outcome-metrics.md](outcome-metrics.md).
+
 ## Authority model
 
 - Human authority: `docs/sdlc-definition.md`.
@@ -168,10 +174,8 @@ Cross-harness state should use deterministic markdown envelopes when recording s
   "status": "pass"
 }
 ```
-````
 
 <!-- [/AGENTFLOW-ROLE-PASS-v1] -->
-
 ````
 
 Rules:
@@ -216,7 +220,7 @@ Every harness follows:
 
 ```text
 hydrate -> act -> validate -> flush
-````
+```
 
 - Hydrate latest durable state.
 - Act within selected path and role ownership.
