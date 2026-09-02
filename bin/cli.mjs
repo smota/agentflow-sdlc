@@ -119,7 +119,7 @@ function runScript(script, args, targetDir) {
       stdio: 'inherit',
     },
   )
-  process.exit(result.status ?? 1)
+  return result.status ?? 1
 }
 
 function handleSdlc(rest, targetDir) {
@@ -172,7 +172,7 @@ function handleSdlc(rest, targetDir) {
   agentflow-sdlc sdlc audit [--json]
   agentflow-sdlc sdlc migrate [--json]
 `)
-  process.exit(2)
+  return 2
 }
 
 function outsideTarget(targetDir, candidate) {
@@ -196,7 +196,7 @@ function handleAdoption(rest, targetDir) {
         process.stdout.write(`  - ${id}: ${item.description}\n`)
       }
     }
-    process.exit(0)
+    return 0
   }
   if (subcommand === 'plan') {
     const plan = planAdoption(packageRoot, targetDir, { profile })
@@ -207,7 +207,7 @@ function handleAdoption(rest, targetDir) {
         conflicts: plan.conflicts,
         approvalToken: [plan.token],
       })
-    process.exit(plan.blocked ? 1 : 0)
+    return plan.blocked ? 1 : 0
   }
   if (subcommand === 'apply') {
     const confirm = getFlag(rest, '--confirm', '')
@@ -216,7 +216,7 @@ function handleAdoption(rest, targetDir) {
       process.stderr.write(
         'Usage: agentflow-sdlc adopt apply --confirm <plan-token> --receipt <outside-file> [--profile <id>] [--target <dir>] [--json]\n',
       )
-      process.exit(2)
+      return 2
     }
     const receiptPath = resolve(receiptInput)
     if (!outsideTarget(targetDir, receiptPath)) {
@@ -250,7 +250,7 @@ function handleAdoption(rest, targetDir) {
         changed: result.changed,
         receipt: [receiptPath],
       })
-    process.exit(0)
+    return 0
   }
   if (subcommand === 'rollback') {
     const confirm = getFlag(rest, '--confirm', '')
@@ -259,7 +259,7 @@ function handleAdoption(rest, targetDir) {
       process.stderr.write(
         'Usage: agentflow-sdlc adopt rollback --confirm <receipt-token> --receipt <outside-file> [--target <dir>] [--json]\n',
       )
-      process.exit(2)
+      return 2
     }
     const receiptPath = resolve(receiptInput)
     if (!outsideTarget(targetDir, receiptPath)) {
@@ -270,7 +270,7 @@ function handleAdoption(rest, targetDir) {
     unlinkSync(receiptPath)
     if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
     else process.stdout.write(`Rolled back adoption plan ${result.planToken}\n`)
-    process.exit(0)
+    return 0
   }
   if (subcommand === 'recover') {
     const confirm = getFlag(rest, '--confirm', '')
@@ -278,17 +278,17 @@ function handleAdoption(rest, targetDir) {
       process.stderr.write(
         'Usage: agentflow-sdlc adopt recover --confirm <recovery-token> [--target <dir>] [--json]\n',
       )
-      process.exit(2)
+      return 2
     }
     const result = recoverAdoption(targetDir, { confirm })
     if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
     else process.stdout.write(`Recovered unfinished adoption ${result.planToken ?? ''}\n`)
-    process.exit(0)
+    return 0
   }
   process.stderr.write(
     'Usage: agentflow-sdlc adopt <profiles|plan|apply|rollback|recover> [--profile <id>] [--target <dir>] [--json]\n',
   )
-  process.exit(2)
+  return 2
 }
 
 function handleSkills(rest, targetDir) {
@@ -302,7 +302,7 @@ function handleSkills(rest, targetDir) {
       printReport('AgentFlow skill catalog', {
         skills: result.skills.map((skill) => `${skill.qualifiedName}: ${skill.owns.join(', ')}`),
       })
-    process.exit(0)
+    return 0
   }
   if (subcommand === 'validate') {
     const result = validateSkillCatalog({ packageRoot })
@@ -311,7 +311,7 @@ function handleSkills(rest, targetDir) {
       printReport(`AgentFlow skill catalog (${result.ok ? 'READY' : 'FAILED'})`, {
         findings: result.findings.map((item) => `${item.severity} ${item.code}: ${item.message}`),
       })
-    process.exit(result.ok ? 0 : 1)
+    return result.ok ? 0 : 1
   }
   if (subcommand === 'sync') {
     const result = syncSkillAdapters({
@@ -327,7 +327,7 @@ function handleSkills(rest, targetDir) {
           (entry) => `${entry.harness}:${entry.skill} -> ${entry.target}`,
         ),
       })
-    process.exit(0)
+    return 0
   }
   if (subcommand === 'status') {
     const result = adapterStatus({ packageRoot, targetDir, harness })
@@ -336,12 +336,12 @@ function handleSkills(rest, targetDir) {
       printReport('Skill adapter status', {
         stale: result.stale.map((entry) => `${entry.harness}:${entry.skill}`),
       })
-    process.exit(result.stale.length ? 1 : 0)
+    return result.stale.length ? 1 : 0
   }
   process.stderr.write(
     `Usage:\n  agentflow-sdlc skills catalog [--json]\n  agentflow-sdlc skills validate [--json]\n  agentflow-sdlc skills sync [--target <dir>] [--harness all|claude-code,agy,codex,pi] [--dry-run|--apply] [--json]\n  agentflow-sdlc skills status [--target <dir>] [--harness all|claude-code,agy,codex,pi] [--json]\n`,
   )
-  process.exit(2)
+  return 2
 }
 
 function handleRoles(rest, targetDir) {
@@ -359,14 +359,14 @@ function handleRoles(rest, targetDir) {
             `${role.qualifiedName} (${role.kind}${role.phase === null ? '' : ` phase ${role.phase}`}): ${role.purpose}`,
         ),
       })
-    process.exit(0)
+    return 0
   }
   if (subcommand === 'inspect') {
     const role = roleByIdentity(identity, catalog)
     if (!role) throw new Error(`Unknown role: ${identity ?? ''}`)
     if (json) process.stdout.write(`${JSON.stringify(role, null, 2)}\n`)
     else printReport(role.qualifiedName, { owns: role.owns, doesNotOwn: role.doesNotOwn })
-    process.exit(0)
+    return 0
   }
   if (subcommand === 'validate') {
     const result = validateRoleCatalog({ packageRoot })
@@ -384,7 +384,7 @@ function handleRoles(rest, targetDir) {
       printReport(`AgentFlow role catalog (${result.ok ? 'READY' : 'FAILED'})`, {
         findings: result.findings.map((item) => `${item.severity} ${item.code}: ${item.message}`),
       })
-    process.exit(result.ok ? 0 : 1)
+    return result.ok ? 0 : 1
   }
   if (subcommand === 'resolve') {
     const configPath = getFlag(rest, '--config', null)
@@ -410,7 +410,7 @@ function handleRoles(rest, targetDir) {
         inputs: result.role.inputs,
         outputs: result.role.outputs,
       })
-    process.exit(0)
+    return 0
   }
   if (subcommand === 'sync') {
     const result = syncRoleAdapters({
@@ -426,13 +426,13 @@ function handleRoles(rest, targetDir) {
           (entry) => `${entry.harness}:${entry.role ?? 'catalog'} -> ${entry.target}`,
         ),
       })
-    process.exit(0)
+    return 0
   }
   if (subcommand === 'status') {
     const result = roleAdapterStatus({ packageRoot, targetDir, harness })
     if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
     else printReport('Role adapter status', { stale: result.stale.map((entry) => entry.target) })
-    process.exit(result.stale.length ? 1 : 0)
+    return result.stale.length ? 1 : 0
   }
   if (subcommand === 'validate-handoff') {
     const path = getFlag(rest, '--path', null)
@@ -444,12 +444,12 @@ function handleRoles(rest, targetDir) {
       printReport(`Role handoff (${result.ok ? 'READY' : 'FAILED'})`, {
         findings: result.findings.map((item) => item.message),
       })
-    process.exit(result.ok ? 0 : 1)
+    return result.ok ? 0 : 1
   }
   process.stderr.write(
     'Usage: agentflow-sdlc roles <catalog|inspect|validate|resolve|sync|status|validate-handoff> [role] [--target <dir>] [--json]\n',
   )
-  process.exit(2)
+  return 2
 }
 
 function handleMethods(rest) {
@@ -463,7 +463,7 @@ function handleMethods(rest) {
       printReport('AgentFlow method catalog', {
         methods: methodCatalog.methods.map((method) => `${method.id} -> ${method.role}`),
       })
-    process.exit(0)
+    return 0
   }
   if (subcommand === 'validate') {
     const result = validateMethodCatalog({ catalog: roleCatalog, methodCatalog })
@@ -472,10 +472,10 @@ function handleMethods(rest) {
       printReport(`AgentFlow method catalog (${result.ok ? 'READY' : 'FAILED'})`, {
         findings: result.findings.map((item) => item.message),
       })
-    process.exit(result.ok ? 0 : 1)
+    return result.ok ? 0 : 1
   }
   process.stderr.write('Usage: agentflow-sdlc methods <catalog|validate> [--json]\n')
-  process.exit(2)
+  return 2
 }
 
 function replacerWithoutCatalogs(key, value) {
@@ -501,7 +501,7 @@ function handlePlugins(rest, targetDir) {
         entries: result.entries.map((entry) => `${entry.harness} -> ${entry.target}`),
         findings: result.findings.map((item) => item.message),
       })
-    process.exit(result.ok ? 0 : 1)
+    return result.ok ? 0 : 1
   }
   if (subcommand === 'validate') {
     const result = validatePluginManifests({ packageRoot, harness })
@@ -511,7 +511,7 @@ function handlePlugins(rest, targetDir) {
         manifests: result.manifests.map((item) => item.id),
         findings: result.findings.map((item) => item.message),
       })
-    process.exit(result.ok ? 0 : 1)
+    return result.ok ? 0 : 1
   }
   if (subcommand === 'status') {
     const result = pluginStatus({ packageRoot, targetDir, harness })
@@ -520,12 +520,12 @@ function handlePlugins(rest, targetDir) {
       printReport('Plugin manifest status', {
         stale: result.stale.map((entry) => `${entry.harness}:${entry.status}`),
       })
-    process.exit(result.stale.length || !result.ok ? 1 : 0)
+    return result.stale.length || !result.ok ? 1 : 0
   }
   process.stderr.write(
     `Usage:\n  agentflow-sdlc plugins build [--harness all|claude-code,agy,codex,pi] [--dry-run|--apply] [--json]\n  agentflow-sdlc plugins validate [--harness all|claude-code,agy,codex,pi] [--json]\n  agentflow-sdlc plugins status [--target <dir>] [--harness all|claude-code,agy,codex,pi] [--json]\n`,
   )
-  process.exit(2)
+  return 2
 }
 
 function handleSettings(rest, targetDir) {
@@ -549,7 +549,7 @@ function handleSettings(rest, targetDir) {
         ),
         findings: result.findings.map((item) => item.message),
       })
-    process.exit(result.ok ? 0 : 1)
+    return result.ok ? 0 : 1
   }
   if (subcommand === 'status') {
     const result = harnessSettingsStatus({
@@ -564,7 +564,7 @@ function handleSettings(rest, targetDir) {
         stale: result.stale.map((entry) => `${entry.harness}:${entry.status}`),
         findings: result.findings.map((item) => item.message),
       })
-    process.exit(result.stale.length || !result.ok ? 1 : 0)
+    return result.stale.length || !result.ok ? 1 : 0
   }
   if (subcommand === 'validate') {
     const result = validateSettingsManifest({ packageRoot, pluginManifests: plugins })
@@ -573,12 +573,12 @@ function handleSettings(rest, targetDir) {
       printReport('Harness settings manifest validation', {
         findings: result.findings.map((item) => item.message),
       })
-    process.exit(result.ok ? 0 : 1)
+    return result.ok ? 0 : 1
   }
   process.stderr.write(
     `Usage:\n  agentflow-sdlc settings merge [--harness all|claude-code,agy,codex,pi] [--dry-run|--apply] [--json]\n  agentflow-sdlc settings status [--target <dir>] [--harness all|claude-code,agy,codex,pi] [--json]\n  agentflow-sdlc settings validate [--harness all|claude-code,agy,codex,pi] [--json]\n`,
   )
-  process.exit(2)
+  return 2
 }
 
 function handleCockpit(rest, targetDir) {
@@ -598,12 +598,12 @@ function handleCockpit(rest, targetDir) {
         },
       },
     )
-    process.exit(result.status ?? 1)
+    return result.status ?? 1
   }
   process.stderr.write(
     `Usage:\n  agentflow-sdlc cockpit [start]\n  agentflow-sdlc cockpit doctor [--json]\n`,
   )
-  process.exit(2)
+  return 2
 }
 
 function handleExtensions(rest, targetDir) {
@@ -615,7 +615,7 @@ function handleExtensions(rest, targetDir) {
     const registry = buildExtensionRegistry(targetDir)
     if (json) process.stdout.write(`${JSON.stringify(registry, null, 2)}\n`)
     else printExtensionRegistry(registry)
-    process.exit(0)
+    return 0
   }
 
   if (subcommand === 'inspect') {
@@ -623,13 +623,13 @@ function handleExtensions(rest, targetDir) {
       process.stderr.write(
         'Usage: agentflow-sdlc extensions inspect <pack> [--target <dir>] [--json]\n',
       )
-      process.exit(2)
+      return 2
     }
     const pack = resolveExtensionPack(targetDir, selector)
     const output = { dir: pack.relativeDir, manifest: pack.manifest }
     if (json) process.stdout.write(`${JSON.stringify(output, null, 2)}\n`)
     else process.stdout.write(`${JSON.stringify(output, null, 2)}\n`)
-    process.exit(0)
+    return 0
   }
 
   if (subcommand === 'enable' || subcommand === 'disable') {
@@ -637,7 +637,7 @@ function handleExtensions(rest, targetDir) {
       process.stderr.write(
         `Usage: agentflow-sdlc extensions ${subcommand} <pack> [--target <dir>] [--json]\n`,
       )
-      process.exit(2)
+      return 2
     }
     const result = setExtensionPackEnabled(targetDir, selector, subcommand === 'enable')
     if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
@@ -645,7 +645,7 @@ function handleExtensions(rest, targetDir) {
       process.stdout.write(
         `${subcommand === 'enable' ? 'Enabled' : 'Disabled'} ${result.pack}${result.changed ? '' : ' (unchanged)'}\n`,
       )
-    process.exit(0)
+    return 0
   }
 
   if (subcommand === 'validate') {
@@ -659,7 +659,7 @@ function handleExtensions(rest, targetDir) {
         errors: result.results.flatMap((item) => item.errors),
       })
     const failures = result.results.reduce((count, item) => count + item.errors.length, 0)
-    process.exit(failures > 0 ? 1 : 0)
+    return failures > 0 ? 1 : 0
   }
 
   process.stderr.write(`Usage:
@@ -669,7 +669,7 @@ function handleExtensions(rest, targetDir) {
   agentflow-sdlc extensions disable <pack> [--target <dir>] [--json]
   agentflow-sdlc extensions validate [--target <dir>] [--run-validators] [--json]
 `)
-  process.exit(2)
+  return 2
 }
 
 function printOnboardingPrompt(targetDir) {
@@ -720,76 +720,76 @@ function main() {
 
   if (!command || command === '--help' || command === '-h') {
     process.stdout.write(ROOT_USAGE)
-    process.exit(0)
+    return 0
   }
   if (requestedHelp(rest)) {
     process.stdout.write(COMMAND_USAGE[command] ?? ROOT_USAGE)
-    process.exit(0)
+    return 0
   }
 
   const targetDir = resolve(getFlag(rest, '--target', process.cwd()))
 
   if (command === 'cockpit') {
-    handleCockpit(rest, targetDir)
+    return handleCockpit(rest, targetDir)
   }
 
   if (command === 'adopt') {
     try {
-      handleAdoption(rest, targetDir)
+      return handleAdoption(rest, targetDir)
     } catch (error) {
       process.stderr.write(`${error.message}\n`)
-      process.exit(1)
+      return 1
     }
   }
 
   if (command === 'providers') {
-    runScript('scripts/provider-status.mjs', rest, targetDir)
+    return runScript('scripts/provider-status.mjs', rest, targetDir)
   }
 
   if (command === 'collaboration') {
-    runScript('scripts/role-collaboration.mjs', rest, targetDir)
+    return runScript('scripts/role-collaboration.mjs', rest, targetDir)
   }
 
   if (command === 'plugins') {
-    handlePlugins(rest, targetDir)
+    return handlePlugins(rest, targetDir)
   }
 
   if (command === 'settings') {
-    handleSettings(rest, targetDir)
+    return handleSettings(rest, targetDir)
   }
 
   if (command === 'skills') {
-    handleSkills(rest, targetDir)
+    return handleSkills(rest, targetDir)
   }
 
   if (command === 'roles') {
     try {
-      handleRoles(rest, targetDir)
+      return handleRoles(rest, targetDir)
     } catch (error) {
       process.stderr.write(`${error.message}\n`)
-      process.exit(1)
+      return 1
     }
   }
 
   if (command === 'methods') {
     try {
-      handleMethods(rest)
+      return handleMethods(rest)
     } catch (error) {
       process.stderr.write(`${error.message}\n`)
-      process.exit(1)
+      return 1
     }
   }
 
   if (command === 'sdlc') {
-    handleSdlc(rest, targetDir)
+    return handleSdlc(rest, targetDir)
   }
 
   if (command === 'extensions') {
     try {
-      handleExtensions(rest, targetDir)
+      return handleExtensions(rest, targetDir)
     } catch (error) {
       process.stderr.write(`${error.message}\n`)
-      process.exit(1)
+      return 1
     }
   }
 
@@ -797,12 +797,12 @@ function main() {
     const report = validateEnvironment(targetDir)
     if (rest.includes('--json')) process.stdout.write(`${JSON.stringify(report, null, 2)}\n`)
     else printEnvironmentReport(report)
-    process.exit(report.ok ? 0 : 1)
+    return report.ok ? 0 : 1
   }
 
   if (command === 'onboarding-prompt') {
     printOnboardingPrompt(targetDir)
-    process.exit(0)
+    return 0
   }
 
   if (command === 'release-plan') {
@@ -814,11 +814,12 @@ function main() {
     })
     if (rest.includes('--json')) process.stdout.write(`${JSON.stringify(plan, null, 2)}\n`)
     else printReleasePlan(plan)
-    process.exit(0)
+    return 0
   }
 
   process.stderr.write(ROOT_USAGE)
-  process.exit(2)
+  return 2
 }
 
-main()
+// Let pending stdout/stderr writes drain before Node exits.
+process.exitCode = main()
