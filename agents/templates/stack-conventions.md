@@ -40,7 +40,7 @@ rules, error handling, naming conventions -->
 <!-- Mandatory test categories for this project (e.g. tenant isolation, billing, localization),
 file naming conventions, coverage thresholds -->
 
-## Domain checklist — Tech writer
+## Domain checklist - Technical writer
 
 <!-- Where user docs and screenshots live, and any localization/format requirements -->
 

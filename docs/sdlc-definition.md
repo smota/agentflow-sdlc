@@ -13,7 +13,9 @@ non-authoritative outcome projections are defined in [agent-evals.md](agent-eval
 - Human authority: `docs/sdlc-definition.md`.
 - Machine authority: `sdlc.config.json`.
 - Schema contract: `schemas/sdlc-config.schema.json`.
-- Execution/routing adapter: `agent-workflow.config.json` remains responsible for branch strategy, role routing, and execution-target settings until a future explicit migration absorbs it.
+- Execution adapter: `agent-workflow.config.json` owns branch strategy, validation commands, routing,
+  provider/source bindings, enabled extensions, and adoption preferences. It does not own domain
+  vocabulary.
 
 Harness-specific directories such as `.pi`, `.claude`, `.agy`, and `.codex` are generated adapter surfaces only. They are never canonical product source.
 
@@ -30,13 +32,14 @@ Harness-specific directories such as `.pi`, `.claude`, `.agy`, and `.codex` are 
 | Release                | Target, impact, assignment, released/unreleased state                  | issue fields, milestone, PR/release records |
 | Human approval gate    | Explicit human decision required by high-assurance work                | PR review or gate record                    |
 | Follow-up              | Deferred work tracked as issue                                         | follow-up issue links                       |
-| Source                 | External durable record link                                           | GitHub issue/PR/comment/check URLs          |
+| Source                 | External durable record link                                           | `SourceAdapter` artifact references         |
 | Guided workflow action | Preview-first safe update to durable workflow records                  | Cockpit/action audit                        |
-| Cockpit                | Optional first-class Goal Command Center projecting durable SDLC state | package runtime, GitHub/CLI records         |
+| Cockpit                | Optional first-class Goal Command Center projecting durable SDLC state | source adapter and CLI records              |
 
-GitHub is current storage substrate. Product language leads with AgentFlow concepts.
+GitHub is the first and default `SourceAdapter`. AgentFlow core remains source-neutral, and product
+language leads with AgentFlow concepts.
 
-Cockpit is an official optional projection of this model. It may visualize goals, readiness, role flow, release state, replay, approvals, and follow-ups, but it must not own unique SDLC state or be required by `init`, `sync`, `doctor`, validators, skills, plugins, or settings merge.
+Cockpit is an official optional projection of this model. It may visualize goals, readiness, role flow, release state, replay, approvals, and follow-ups, but it must not own unique SDLC state or be required by adoption, validators, skills, plugins, or settings merge.
 
 ## Paths
 
@@ -56,40 +59,46 @@ Rules:
 
 ## Role flow
 
+The product catalog maps the workflow slugs to qualified identities such as
+`agentflow:product-manager`, `agentflow:implementation-planner`, `agentflow:reviewer`, and
+`agentflow:technical-writer`. See
+[`roles/index.md`](roles/index.md). Roles are accountability contracts; actors execute them, skills
+supply capabilities, and method plays customize how they operate.
+
 Canonical sequence:
 
-0. Product manager / JTBD
+0. Product manager
 1. Analyst
 2. Architect
-3. Developer planning
+3. Implementation planner
 4. Developer
 5. Tester
-6. Review
-7. Tech writer
+6. Reviewer
+7. Technical writer
 8. PR readiness
 
 Allowed returns:
 
-- Developer → Developer planning for planning defect.
-- Review → Developer for review findings.
-- Tech writer → Developer for docs remediation.
+- Developer -> Implementation planner for planning defect.
+- Reviewer -> Developer for review findings.
+- Technical writer -> Developer for docs remediation.
 - PR readiness → Developer for merge blocker.
 
 Each role pass records issue, branch, role, profile, owner/executor/provenance, inputs read, decisions, uncertainty, validation, next-role contract, status, and signature.
 
 ## Role ownership registry
 
-| Role                   | Owns                                           | Reads                          | Writes                                 | Handoff                                 |
-| ---------------------- | ---------------------------------------------- | ------------------------------ | -------------------------------------- | --------------------------------------- |
-| Product manager / JTBD | goal purpose, user/job framing, release intent | user request, product docs     | goal/epic framing                      | clear job/problem to Analyst            |
-| Analyst                | requirements, acceptance, scope boundary       | goal framing, comments         | acceptance criteria, open questions    | testable scope to Architect             |
-| Architect              | path selection, technical design, risk         | requirements, constraints      | design, risk, profile                  | plan-ready design to Developer planning |
-| Developer planning     | implementation and validation plan             | design, repo context           | file/test/doc plan                     | executable plan to Developer            |
-| Developer              | code/docs implementation                       | plan, design, tests            | commits, implementation evidence       | changed implementation to Tester        |
-| Tester                 | validation evidence                            | acceptance, implementation     | test results, coverage notes           | pass/fail evidence to Review            |
-| Review                 | findings, independence, approval request       | diff, evidence, role passes    | review findings, gate decision request | accepted/returned work to next role     |
-| Tech writer            | docs, release notes, language consistency      | implementation, release impact | docs/release note evidence             | docs-ready state to PR readiness        |
-| PR readiness           | manifest, issue closure, merge readiness       | all evidence                   | PR body, follow-up status              | merge-ready PR or return reason         |
+| Role                   | Owns                                           | Reads                          | Writes                                 | Handoff                                     |
+| ---------------------- | ---------------------------------------------- | ------------------------------ | -------------------------------------- | ------------------------------------------- |
+| Product manager        | goal purpose, user/job framing, release intent | user request, product docs     | goal/epic framing                      | clear job/problem to Analyst                |
+| Analyst                | requirements, acceptance, scope boundary       | goal framing, comments         | acceptance criteria, open questions    | testable scope to Architect                 |
+| Architect              | path selection, technical design, risk         | requirements, constraints      | design, risk, profile                  | plan-ready design to Implementation planner |
+| Implementation planner | implementation and validation plan             | design, repo context           | file/test/doc plan                     | executable plan to Developer                |
+| Developer              | code/docs implementation                       | plan, design, tests            | commits, implementation evidence       | changed implementation to Tester            |
+| Tester                 | validation evidence                            | acceptance, implementation     | test results, coverage notes           | pass/fail evidence to Review                |
+| Reviewer               | findings, independence, approval request       | diff, evidence, role passes    | review findings, gate decision request | accepted/returned work to next role         |
+| Technical writer       | docs, release notes, language consistency      | implementation, release impact | docs/release note evidence             | docs-ready state to PR readiness            |
+| PR readiness           | manifest, issue closure, merge readiness       | all evidence                   | PR body, follow-up status              | merge-ready PR or return reason             |
 
 ## Labels and lifecycle
 
@@ -110,16 +119,16 @@ Rules:
 
 ## Gateways
 
-| Gate                | Owner                    | Required evidence                        |
-| ------------------- | ------------------------ | ---------------------------------------- |
-| Issue readiness     | PM/Analyst               | title, labels, acceptance, scope         |
-| Phase transition    | current role             | role-pass + allowed transition           |
-| Validation          | Tester                   | command/manual validation evidence       |
-| Review              | Reviewer                 | findings, independence boundary          |
-| Human approval      | human/reviewer           | reviewer, scope, decision, notes         |
-| PR readiness        | PR readiness             | manifest, validation, review, follow-ups |
-| Release readiness   | Tech writer/PR readiness | release assignment, notes, blockers      |
-| Guided action write | action gateway           | preview, auth, CSRF, confirmation, audit |
+| Gate                | Owner                         | Required evidence                        |
+| ------------------- | ----------------------------- | ---------------------------------------- |
+| Issue readiness     | PM/Analyst                    | title, labels, acceptance, scope         |
+| Phase transition    | current role                  | role-pass + allowed transition           |
+| Validation          | Tester                        | command/manual validation evidence       |
+| Review              | Reviewer                      | findings, independence boundary          |
+| Human approval      | human/reviewer                | reviewer, scope, decision, notes         |
+| PR readiness        | PR readiness                  | manifest, validation, review, follow-ups |
+| Release readiness   | Technical writer/PR readiness | release assignment, notes, blockers      |
+| Guided action write | action gateway                | preview, auth, CSRF, confirmation, audit |
 
 Human approval gate record:
 

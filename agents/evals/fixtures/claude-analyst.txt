@@ -4,7 +4,7 @@
   "fromRole": "analyst",
   "toRole": "architect",
   "decision": "pass",
-  "nextContract": "Select a technical design and return a developer-planning contract.",
+  "nextContract": "Select a technical design and return an implementation-planner contract.",
   "timestamp": "2026-08-31T12:00:00Z",
   "profile": "standard",
   "actionBoundary": {

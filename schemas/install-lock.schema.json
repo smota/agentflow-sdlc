@@ -3,31 +3,35 @@
   "$id": "https://agentflow.dev/schemas/install-lock.schema.json",
   "title": "AgentFlow install lock",
   "type": "object",
-  "required": ["version", "entries"],
+  "required": ["version", "profile", "package", "planToken", "entries"],
   "properties": {
-    "version": { "type": "integer", "const": 1 },
+    "version": { "const": 2 },
+    "profile": { "type": "string", "minLength": 1 },
+    "package": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "planToken": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
     "entries": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["source", "target", "ownership", "hash"],
+        "required": ["source", "target", "ownership", "state"],
         "properties": {
-          "source": { "type": "string" },
-          "target": { "type": "string" },
-          "ownership": {
-            "enum": [
-              "managed",
-              "seed-once",
-              "project-owned",
-              "structural-merge",
-              "generated-adapter"
-            ]
-          },
-          "hash": { "type": "string" }
+          "source": { "type": "string", "minLength": 1 },
+          "target": { "type": "string", "minLength": 1 },
+          "ownership": { "enum": ["managed", "seed-once"] },
+          "state": { "enum": ["managed", "merged", "removed"] },
+          "hash": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" }
         },
-        "additionalProperties": true
+        "additionalProperties": false
       }
     }
   },
-  "additionalProperties": true
+  "additionalProperties": false
 }

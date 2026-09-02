@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import { existsSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { loadSkillCatalog } from '../lib/skill-catalog.mjs'
 import {
   loadSdlcConfig,
   validateSdlcConfigShape,
@@ -13,6 +15,7 @@ const args = process.argv.slice(2)
 const json = args.includes('--json')
 const target = args.includes('--target') ? args[args.indexOf('--target') + 1] : process.cwd()
 const findings = []
+const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
 const config = loadSdlcConfig(target)
 findings.push(...validateSdlcConfigShape(config).findings)
@@ -30,10 +33,19 @@ for (const dir of ['.pi', '.claude', '.agy', '.codex']) {
   }
 }
 
-for (const skill of ['sdlc-definition', 'sdlc-migration', 'sdlc-audit']) {
-  const skillPath = join(target, 'skills', skill, 'SKILL.md')
+const requiredSkills = loadSkillCatalog(packageRoot).skills.map((skill) => ({
+  name: skill.qualifiedName,
+  source: skill.source,
+}))
+
+for (const skill of requiredSkills) {
+  const skillPath = join(target, skill.source, 'SKILL.md')
   if (!existsSync(skillPath))
-    findings.push(finding('high', 'skill.missing', `missing ${skill} skill`, { source: skillPath }))
+    findings.push(
+      finding('high', 'skill.missing', `missing ${skill.name} skill`, {
+        source: skillPath,
+      }),
+    )
 }
 
 for (const path of [

@@ -109,7 +109,7 @@ Write release notes so they:
 - explain what users can now do, configure, validate, or update;
 - group changes by capability area when useful;
 - mention issue or PR numbers only as supporting references;
-- include upgrade/update guidance such as `sync`, `doctor`, or assisted update when consumers need it;
+- include current `adopt plan`/`adopt apply` upgrade guidance when consumers need it;
 - state validation confidence and compatibility or migration notes;
 - avoid headings or bullets such as `Implemented #123` or `Issue #123` as the primary narrative.
 

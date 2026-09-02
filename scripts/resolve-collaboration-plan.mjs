@@ -12,9 +12,9 @@ function flag(name) {
 }
 
 try {
-  const result = resolveCollaborationPlan({
+  const result = await resolveCollaborationPlan({
     issueNumber: arg('issue') ? Number(arg('issue')) : null,
-    requestedMode: arg('mode', 'auto-minimal'),
+    requestedMode: arg('mode', null),
     profile: arg('profile', 'standard'),
     risk: arg('risk', 'medium'),
     effort: arg('effort', 'medium'),
@@ -22,7 +22,7 @@ try {
     changeSurface: arg('change-surface', ''),
     broadDiscovery: flag('broad-discovery'),
     isolatedSpike: flag('isolated-spike'),
-    executionTarget: arg('execution-target', 'pi-parent'),
+    preferredProvider: arg('provider', null),
   })
   if (flag('json')) {
     console.log(JSON.stringify(result, null, 2))
@@ -30,6 +30,8 @@ try {
     console.log(`[resolve-collaboration-plan] ${result.ok ? 'READY' : 'BLOCKED'}`)
     console.log(`mode: ${result.plan.collaborationMode}`)
     console.log(`reason: ${result.plan.reason}`)
+    console.log(`provider: ${result.plan.binding.provider ?? 'none'}`)
+    console.log(`strategy: ${result.plan.executionStrategy}`)
     console.log(`helpers: ${result.plan.helpers.map((helper) => helper.role).join(', ') || 'none'}`)
     if (result.errors.length) console.log(`errors: ${result.errors.join('; ')}`)
   }

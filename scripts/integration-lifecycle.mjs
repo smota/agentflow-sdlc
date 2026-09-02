@@ -1,7 +1,8 @@
-import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { createGitHubCliSourceAdapter } from '../lib/sources/github-cli.mjs'
+import { createFileSourceReceiptStore } from '../lib/sources/receipt-store.mjs'
 
 const DEFAULT_CONFIG = {
   integrationBranch: 'development',
@@ -75,14 +76,6 @@ export function buildIntegrationComment({
   ].join('\n')
 }
 
-function gh(args, options = {}) {
-  return execFileSync('gh', args, {
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-    ...options,
-  })
-}
-
 function parseArgs(argv) {
   const args = { apply: false, eventPath: process.env.GITHUB_EVENT_PATH }
   for (let index = 0; index < argv.length; index += 1) {
@@ -91,6 +84,7 @@ function parseArgs(argv) {
     else if (arg === '--event') args.eventPath = argv[++index]
     else if (arg === '--repo') args.repo = argv[++index]
     else if (arg === '--pr') args.pr = argv[++index]
+    else if (arg === '--receipt') args.receiptPath = argv[++index]
   }
   return args
 }
@@ -99,19 +93,6 @@ function loadPrFromEvent(eventPath) {
   if (!eventPath) throw new Error('Missing --event or GITHUB_EVENT_PATH')
   const event = JSON.parse(readFileSync(eventPath, 'utf8'))
   return event.pull_request
-}
-
-function loadPrFromGh(repo, number) {
-  const out = gh([
-    'pr',
-    'view',
-    number,
-    '--repo',
-    repo,
-    '--json',
-    'number,url,body,baseRefName,merged,mergeCommit',
-  ])
-  return JSON.parse(out)
 }
 
 function normalizePr(pr) {
@@ -154,45 +135,43 @@ export function planIntegrationLifecycle(pr, config) {
   }
 }
 
-function ensureLabel(repo, label) {
-  try {
-    gh([
-      'label',
-      'create',
-      label,
-      '--repo',
-      repo,
-      '--color',
-      '5319e7',
-      '--description',
-      'Managed by agentflow-sdlc integration lifecycle automation',
-    ])
-  } catch {
-    // Existing labels are fine; continue so adopting repositories do not need manual setup.
+export async function applyIntegrationPlan(plan, source) {
+  const actionBoundary = { effective: 'external-action' }
+  const apply = async (operation, parameters) => {
+    const preview = await source.previewMutation({ operation, parameters, actionBoundary })
+    const receipt = await source.applyMutation(preview, { confirm: preview.token })
+    await source.flushReceipt(receipt)
   }
-}
-
-function applyPlan(plan, repo) {
-  for (const label of plan.labels) ensureLabel(repo, label)
+  for (const label of plan.labels) await apply('ensure-label', { label })
   for (const issue of plan.issues) {
     const number = issue.slice(1)
-    gh(['issue', 'comment', number, '--repo', repo, '--body', plan.comment])
-    for (const label of plan.labels) {
-      gh(['issue', 'edit', number, '--repo', repo, '--add-label', label])
-    }
-    if (plan.close) gh(['issue', 'close', number, '--repo', repo, '--reason', 'completed'])
+    await apply('add-comment', { number, body: plan.comment })
+    await apply('add-labels', { number, labels: plan.labels })
+    if (plan.close) await apply('close-artifact', { number })
   }
 }
 
-function main() {
+async function main() {
   const args = parseArgs(process.argv.slice(2))
   const config = loadIntegrationLifecycleConfig()
+  const repo = args.repo ?? process.env.GITHUB_REPOSITORY
+  const receiptPath = args.receiptPath ?? process.env.AGENTFLOW_SOURCE_RECEIPT
+  if (args.apply && !receiptPath) {
+    throw new Error('Lifecycle apply requires --receipt <durable-file>')
+  }
+  const receiptStore = receiptPath ? createFileSourceReceiptStore(receiptPath) : null
+  const source = repo ? createGitHubCliSourceAdapter({ repo, receiptStore }) : null
   const pr = normalizePr(
-    args.pr ? loadPrFromGh(args.repo, args.pr) : loadPrFromEvent(args.eventPath),
+    args.pr
+      ? await source.readArtifact({ kind: 'pull-request', number: args.pr })
+      : loadPrFromEvent(args.eventPath),
   )
   const plan = planIntegrationLifecycle(pr, config)
   process.stdout.write(`${JSON.stringify(plan, null, 2)}\n`)
-  if (args.apply && !plan.skipped) applyPlan(plan, args.repo ?? process.env.GITHUB_REPOSITORY)
+  if (args.apply && !plan.skipped) {
+    if (!source) throw new Error('GitHub repository is required for lifecycle mutation')
+    await applyIntegrationPlan(plan, source)
+  }
 }
 
 const invokedPath = process.argv[1]?.replace(/\\/g, '/')
@@ -203,5 +182,8 @@ if (
   invokedDirectly &&
   import.meta.url === pathToFileURL(process.argv[1]).href
 ) {
-  main()
+  main().catch((error) => {
+    process.stderr.write(`${error.message}\n`)
+    process.exit(1)
+  })
 }

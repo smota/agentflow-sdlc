@@ -2,9 +2,21 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "AgentFlow Collaboration Plan",
   "type": "object",
-  "required": ["collaborationMode", "reason", "writer", "helpers", "humanGate"],
+  "required": [
+    "version",
+    "intent",
+    "collaborationMode",
+    "reason",
+    "binding",
+    "executionStrategy",
+    "writer",
+    "helpers",
+    "humanGate"
+  ],
   "properties": {
+    "version": { "const": 1 },
     "issueNumber": { "type": ["integer", "null"] },
+    "intent": { "$ref": "collaboration-intent.schema.json" },
     "collaborationMode": {
       "enum": [
         "auto-minimal",
@@ -17,7 +29,8 @@
       ]
     },
     "reason": { "type": "string", "minLength": 1 },
-    "capabilities": { "type": "array", "items": { "type": "string" } },
+    "binding": { "$ref": "provider-binding.schema.json" },
+    "executionStrategy": { "enum": ["provider-native-or-adapter", "fallback"] },
     "environment": {
       "enum": [
         "current-session",

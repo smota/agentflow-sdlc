@@ -1,0 +1,25 @@
+Scenario: deliver issue work end to end
+Route: agentflow:orchestrator
+Rejects: canonical policy authorship, migration execution, compliance verdict
+
+Scenario: choose whether a council is warranted
+Route: agentflow:collaborator
+Rejects: phase ownership, implementation, acceptance verdict
+
+Scenario: map tenant-isolation queries without changing code
+Route: agentflow:scanner
+Rejects: remediation, PASS or FAIL decision, workflow coordination
+
+Scenario: change the canonical role and evidence schema
+Route: agentflow:designer
+Rejects: consuming-repository migration, self-audit, phase state
+
+Scenario: adopt AgentFlow into an existing repository
+Route: agentflow:migrator
+Rejects: canonical policy redefinition, independent certification
+
+Scenario: verify a migration receipt and issue a verdict
+Route: agentflow:auditor
+Rejects: mutation, implementation, phase coordination
+
+Handoff: agentflow:orchestrator -> agentflow:scanner -> agentflow:auditor -> agentflow:orchestrator

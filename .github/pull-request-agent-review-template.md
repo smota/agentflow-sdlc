@@ -1,7 +1,7 @@
 ## Agent Review
 
 **Implemented by:** <registered platform slug>
-**Executor:** claude-cli | anthropic-api | agy-cli | agy-session | pi-parent | pi-subagent | pi-session | pi-subagent-model | codex-cli | provider-api | human <!-- see docs/execution-targets.md -->
+**Executor:** claude-cli | anthropic-api | agy-cli | agy-session | pi-parent | pi-subagent | pi-session | pi-subagent-model | codex-cli | provider-api | grok-cli | xai-api | human <!-- see docs/execution-targets.md -->
 **Model / runtime:** <freeform identifier>
 **Reviewed by:** <registered platform slug>
 **Independent reviewer:** YES | NO

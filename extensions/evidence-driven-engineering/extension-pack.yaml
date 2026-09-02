@@ -9,7 +9,7 @@ requiredSkills: []
 requiredToolPermissions:
   - read
   - shell
-requiredWorkflowCapabilities: []
+requiredExecutionIntents: []
 controlRequirements:
   - branch-protection
 templates:

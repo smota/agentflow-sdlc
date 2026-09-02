@@ -16,13 +16,19 @@
     "test": "vitest run",
     "test:hooks": "node scripts/verify-hooks.mjs",
     "test:workflow": "node scripts/verify-agent-workflow.mjs",
+    "test:package": "node scripts/package-parity-smoke.mjs",
+    "test:collaboration": "node scripts/role-collaboration-smoke.mjs",
     "validate:extensions": "node scripts/validate-extension-packs.mjs --allow-empty",
-    "test:evals": "node scripts/run-agent-evals.mjs --manifest agents/evals/manifests/framework-contracts.json --json && node scripts/run-agent-evals.mjs --manifest agents/evals/manifests/claude-agy-handoff.json --json && node scripts/validate-multi-agent-acceptance.mjs --json",
+    "validate:skills": "node scripts/validate-skill-catalog.mjs",
+    "validate:roles": "node scripts/validate-role-catalog.mjs",
+    "validate:authority": "node scripts/validate-config-authority.mjs",
+    "validate:docs": "node scripts/validate-docs.mjs",
+    "test:evals": "node scripts/run-agent-evals.mjs --manifest agents/evals/manifests/framework-contracts.json --json && node scripts/run-agent-evals.mjs --manifest agents/evals/manifests/claude-agy-handoff.json --json && node scripts/run-agent-evals.mjs --manifest agents/evals/manifests/skill-family.json --json && node scripts/run-agent-evals.mjs --manifest agents/evals/manifests/role-product.json --json && node scripts/validate-multi-agent-acceptance.mjs --json",
     "cockpit": "node scripts/cockpit-server.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "validate:npm": "node scripts/validate-npm-package.mjs",
-    "validate:release": "pnpm test && pnpm test:evals && node scripts/sdlc-sandbox-smoke.mjs && node scripts/cockpit-smoke.mjs && node scripts/validate-npm-package.mjs"
+    "validate:release": "pnpm format:check && pnpm test && pnpm test:hooks && pnpm test:workflow && pnpm validate:authority && pnpm validate:extensions && pnpm validate:skills && pnpm validate:roles && pnpm validate:docs && pnpm test:evals && pnpm test:collaboration && pnpm test:package && node scripts/sdlc-sandbox-smoke.mjs && node scripts/cockpit-smoke.mjs && node scripts/validate-npm-package.mjs"
   },
   "devDependencies": {
     "prettier": "^3.3.3",
@@ -36,6 +42,7 @@
     "skills",
     "claude",
     "codex",
+    "grok",
     "antigravity",
     "pi"
   ],
@@ -48,6 +55,8 @@
     "url": "https://github.com/smota/agentflow-sdlc/issues"
   },
   "files": [
+    ".github/",
+    ".gitattributes",
     "assets/",
     "adapters/",
     "agents/",
@@ -60,6 +69,7 @@
     "schemas/",
     "scripts/",
     "skills/",
+    "roles/",
     "AGENTS.md",
     "AGY.md",
     "CLAUDE.md",

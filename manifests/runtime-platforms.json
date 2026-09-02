@@ -44,6 +44,12 @@
       "routable": false
     },
     {
+      "slug": "grok",
+      "displayName": "Grok",
+      "kind": "agent-runtime",
+      "routable": true
+    },
+    {
       "slug": "pi",
       "displayName": "Pi",
       "kind": "agent-runtime",

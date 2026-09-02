@@ -65,7 +65,7 @@ the phase. See docs/agent-workflow.md §4a and lib/role-attribution.mjs. -->
 - Fallback chain: none | original agent -> backup agent
 - Regression test: added | not-applicable:<reason> <!-- required for bug fixes; omit for non-bug PRs -->
 - Mode: single-agent | multi-agent <!-- multiAgentClaim; "multi-agent" requires >=2 distinct role intelligences in the Role attribution matrix above, verified by scripts/validate-pr-manifest.mjs -->
-- Self-review disclosure: not-applicable | <rationale for developer and review sharing the same intelligence> <!-- required when Role attribution matrix developer and review rows share same Actual platform -->
+- Self-review disclosure: not-applicable | <rationale for developer and reviewer sharing the same intelligence> <!-- required when Role attribution matrix developer and reviewer rows share same Actual platform -->
 
 ## Follow-up issues
 

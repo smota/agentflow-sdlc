@@ -6,7 +6,9 @@ This document defines the Cockpit product concepts and implemented rules. Use it
 
 AgentFlow Cockpit is the Goal Command Center for AgentFlow-managed delivery. It turns durable workflow records into a navigable operational view of goals, releases, role flow, readiness, approval gates, follow-ups, and safe workflow actions.
 
-Cockpit is not a GitHub dashboard. GitHub is the current storage and sync substrate. Product language should lead with AgentFlow concepts; source links remain secondary.
+Cockpit is not a source-system dashboard. It consumes a `SourceAdapter`; GitHub is the implemented
+default storage and sync substrate. Product language leads with AgentFlow concepts, and source links
+remain secondary.
 
 ## Primary navigation axes
 

@@ -2,7 +2,7 @@
 
 This page documents default and recommended skills/workflows used with **AgentFlow SDLC**, where they come from, and how consuming projects should track local changes. Skills are local workflow capabilities: they make agent behavior repeatable, but they do not replace `AGENTS.md`, `docs/agent-workflow.md`, issue comments, commits, PR bodies, or validators as durable evidence.
 
-Skills should request portable advanced capabilities such as `plan-before-edit`, `workflow-orchestration`, `bounded-loop`, and `delegated-subagents` instead of hard-coding platform-specific mechanisms such as Claude subagents, Codex profiles, or Pi package commands. See [`capabilities.md`](capabilities.md) for the capability vocabulary and resolver model.
+Skills should request portable execution intents such as `plan-before-edit`, `workflow-orchestration`, `bounded-loop`, and `delegated-work` instead of hard-coding platform-specific mechanisms. See [`capabilities.md`](capabilities.md) for the negotiation model.
 
 ## Why provenance matters
 
@@ -15,10 +15,33 @@ Documenting skills makes agent-assisted work easier to audit:
 
 ## Framework-owned skills
 
-| Skill / workflow | Purpose                                                                                         | When to use                                                                                   | Local source                                                                        | Upstream repository                       | Website / docs                                |
-| ---------------- | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ----------------------------------------- | --------------------------------------------- |
-| `orchestrate`    | Run one issue through the role-based SDLC phases, create evidence, commit, push, and open a PR. | Issue implementation, chores, fixes, and workstreams that need the formal role-pass workflow. | [`agents/workflows/orchestrate/SKILL.md`](../agents/workflows/orchestrate/SKILL.md) | <https://github.com/smota/agentflow-sdlc> | [`docs/agent-workflow.md`](agent-workflow.md) |
-| `scan`           | Perform broad-context scans that feed planning, review, or security evidence.                   | Architecture, security, risk, or cross-cutting discovery before implementation or review.     | [`agents/workflows/scan/SKILL.md`](../agents/workflows/scan/SKILL.md)               | <https://github.com/smota/agentflow-sdlc> | [`docs/index.md`](index.md)                   |
+AgentFlow ships one namespaced family. Use the qualified identity in user-facing routing and
+handoffs. Canonical folder and frontmatter names use the role slug because portable skill names are
+lowercase and hyphen-safe; the plugin namespace supplies `agentflow:`. Flat adapters without a
+plugin namespace use `agentflow-<role>`.
+
+| Qualified skill          | Owns                                                                    | Does not own                                      | Local source                                      |
+| ------------------------ | ----------------------------------------------------------------------- | ------------------------------------------------- | ------------------------------------------------- |
+| `agentflow:orchestrator` | Phase state, transition and acceptance evidence, PR-readiness synthesis | Policy, migration, scans, collaboration, verdicts | [`skills/orchestrator/`](../skills/orchestrator/) |
+| `agentflow:collaborator` | Complexity routing, mode, council policy, helper bounds, synthesis      | Phase state, implementation, acceptance verdict   | [`skills/collaborator/`](../skills/collaborator/) |
+| `agentflow:scanner`      | Read-only discovery scope, findings, evidence maps                      | Remediation, audit verdicts, coordination         | [`skills/scanner/`](../skills/scanner/)           |
+| `agentflow:designer`     | Canonical policy, schemas, role boundaries                              | Consumer migration, orchestration, self-audit     | [`skills/designer/`](../skills/designer/)         |
+| `agentflow:migrator`     | Adoption inventory, mutation plans, transactions                        | Canonical policy, independent certification       | [`skills/migrator/`](../skills/migrator/)         |
+| `agentflow:auditor`      | Validation, compliance verdict, remediation advice                      | Mutation, implementation, phase coordination      | [`skills/auditor/`](../skills/auditor/)           |
+
+`manifests/skill-catalog.json` is the machine authority for identity, ownership, peer recognition,
+and typed handoffs. Run `agentflow-sdlc skills catalog --json` to inspect it and
+`agentflow-sdlc skills validate --json` to enforce it.
+
+### How the skills collaborate
+
+1. The orchestrator sends a typed brief to the role that owns the requested decision or artifact.
+2. The receiving skill keeps its action boundary and returns the catalog-declared artifact.
+3. The orchestrator validates and incorporates the result without changing its provenance.
+4. The auditor remains independent and read-only; the scanner supplies evidence but never verdicts.
+
+Only catalog identities are supported. Use the qualified names in routing and handoffs and the
+matching canonical source directories for local inspection.
 
 ## Metaskills companion source
 
@@ -34,19 +57,19 @@ AgentFlow's own direction stays portable: local skills and agents should be easy
 
 ## Capability-aware skill authoring
 
-Framework-owned skills should describe advanced behavior as capability requirements:
+Framework-owned skills should describe advanced behavior as execution-intent requirements:
 
 ```yaml
-capabilities:
+executionIntents:
   requires:
     - plan-before-edit
   optional:
     - workflow-orchestration
     - bounded-loop
-    - delegated-subagents
+    - delegated-work
 fallbacks:
   plan-before-edit: framework-emulated
-  delegated-subagents: inline-parent-work
+  delegated-work: sequential-role-lens
 ```
 
 Use the skill body to state constraints and evidence, for example:
@@ -54,9 +77,9 @@ Use the skill body to state constraints and evidence, for example:
 - PLAN: write or cite the plan artifact before edits.
 - WORKFLOW: map any native/package workflow back to the SDLC phase model.
 - LOOP: set max iterations and stop conditions.
-- SUB-AGENTS: default reviewers/researchers to read-only, keep one writer per worktree, and record launcher/executor/transport/delegation/context/independence boundaries.
+- DELEGATION: default reviewers/researchers to read-only, keep one writer per worktree, and record launcher/executor/transport/delegation/context/independence boundaries.
 
-A skill may be intentionally platform-specific, but it must say so explicitly in its description and should still record capability evidence in role passes and PR manifests.
+A skill may be intentionally platform-specific, but it must say so explicitly and still record execution-intent evidence in role passes and PR manifests.
 
 ## Recommended companion skills/tooling
 
@@ -68,7 +91,7 @@ These are not vendored by this repository, but they are common local companions 
 | `ccpm`                 | Spec-driven project management using PRDs, epics, GitHub Issues, worktrees, and agent execution.                               | <https://github.com/automazeio/ccpm>      | <https://github.com/automazeio/ccpm>        | Useful reference source for issue/epic management patterns.                            |
 | Agent CLI routing docs | Explain how `agy`, `codex`, `claude`, and `pi` hand work off when project routing selects them.                                | <https://github.com/smota/agentflow-sdlc> | [`docs/agent-routing.md`](agent-routing.md) | Project-configured; validate with `node scripts/validate-role-routing.mjs`.            |
 | Vibium                 | Default browser QA skill/tool for optional `qa-expert` exploratory sessions.                                                   | <https://github.com/VibiumDev/vibium>     | <https://vibium.com>                        | Opinionated default for `qa-expert`; projects may override with a documented QA stack. |
-| Project sync CLI       | Installs and syncs hooks, docs, validators, templates, and seed-once files.                                                    | <https://github.com/smota/agentflow-sdlc> | [`get-started.md`](get-started.md)          | Run `node bin/cli.mjs init`, `sync`, `doctor`, or `mark-merged`.                       |
+| Adoption CLI           | Previews and transactionally applies profiles, including managed and seed-once files.                                          | <https://github.com/smota/agentflow-sdlc> | [`get-started.md`](get-started.md)          | Run `node bin/cli.mjs adopt plan`, then an approved `adopt apply`.                     |
 
 ## Original CCPM-sourced skill surfaces
 

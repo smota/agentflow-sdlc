@@ -22,4 +22,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-        run: node scripts/integration-lifecycle.mjs --apply
+        run: node scripts/integration-lifecycle.mjs --apply --receipt "${{ runner.temp }}/agentflow-source-receipts.json"
+      - name: Upload source mutation receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agentflow-source-receipts-${{ github.run_id }}
+          path: ${{ runner.temp }}/agentflow-source-receipts.json
+          if-no-files-found: warn

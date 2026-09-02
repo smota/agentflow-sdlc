@@ -8,6 +8,11 @@ Increase intelligence per decision, not agents per task.
 
 Agent tools may run temporary helper intelligence behind stable SDLC roles, but the visible workflow remains the same: issue, role phases, evidence, validation, PR manifest, and follow-up issues.
 
+Core planning emits a versioned `CollaborationIntent`: desired mode, participant roles, risk/profile,
+single-writer policy, human gate, portable execution intents, and permitted fallback. It does not choose a
+provider, executable, model, transport, or worktree. A later `ProviderBinding` resolves those details
+from inspected provider facets and intent support.
+
 ## Decision budget
 
 ```text
@@ -24,7 +29,8 @@ Use the least coordination that reduces meaningful risk:
 - If one advisory helper is enough, do not create a council.
 - If read-only is enough, do not allocate a child worktree.
 - If compact evidence is enough, do not publish raw transcripts.
-- If a required capability is unavailable, fail closed or request a human decision.
+- If a required intent is unavailable, fail closed. If the intent explicitly permits fallback
+  and the required controls remain enforceable, record a sequential/manual degradation.
 
 ## Collaboration modes
 
@@ -50,6 +56,23 @@ Examples:
 - review: security reviewer, maintainability reviewer, evidence reviewer;
 - PR readiness: manifest auditor, issue-link auditor.
 
+## Acceptance between roles
+
+Collaboration continues across a transition. The sending role issues the handover together with an
+`AcceptanceContract`; the receiving role returns a `DeliveryReceipt`; deterministic checks run
+before the sending role records an `AcceptanceDecision` or `ReworkRequest`.
+
+The sender accepts only conformance to its contract. It does not take ownership of the receiver's
+specialist verdict. Complexity routing selects `linear`, `bilateral`, `council`, or `human-gated`
+acceptance. See [Role collaboration](role-collaboration.md).
+
+## Council decision model
+
+Councils are role-local advisory exchanges. All seats receive the same evidence digest and return
+structured advice. The accountable role synthesizes the advice and dispositions blocking
+objections; no majority vote or helper becomes a new lifecycle owner. Providers may run council
+seats concurrently or sequentially without changing the evidence contract.
+
 ## Evidence model
 
 Durable evidence should be compact:
@@ -61,8 +84,11 @@ Durable evidence should be compact:
 - accepted/rejected/deferred critiques;
 - follow-up issues;
 - validation results.
+- handover contract, delivery receipt, deterministic report, and acceptance decision;
+- council objections and their dispositions when a council was required.
 
-Raw helper output stays local under `.agent-runs/` by default and is summarized into GitHub evidence only when useful and safe.
+Raw helper output stays local under `.agent-runs/` by default and is summarized into the configured
+durable source only when useful and safe.
 
 ## Human-facing output
 

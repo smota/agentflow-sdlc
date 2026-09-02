@@ -9,7 +9,7 @@
       "id": "canonical-output",
       "actual": "../fixtures/canonical-output.txt",
       "assertions": [
-        { "id": "canonical-role", "type": "contains", "value": "product-manager-jtbd" },
+        { "id": "canonical-role", "type": "contains", "value": "product-manager" },
         { "id": "exploratory-profile", "type": "contains", "value": "Profile: exploratory" },
         { "id": "no-legacy-role", "type": "not-contains", "value": "techwriter" }
       ]

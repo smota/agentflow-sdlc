@@ -4,6 +4,8 @@ import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
+import { createRoleHandoff } from '../../lib/role-catalog.mjs'
+import { createAcceptanceContract } from '../../lib/core/role-collaboration.mjs'
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const cli = join(repoRoot, 'bin', 'cli.mjs')
@@ -53,6 +55,68 @@ describe('contract CLI surfaces', () => {
     ).toBe(true)
   })
 
+  it('validates digest-bound role handoffs relative to --target', () => {
+    const target = fixture()
+    mkdirSync(join(target, 'manifests'), { recursive: true })
+    cpSync(
+      join(repoRoot, 'manifests', 'role-catalog.json'),
+      join(target, 'manifests', 'role-catalog.json'),
+    )
+    const handoff = createRoleHandoff({
+      id: 'handoff-1',
+      subject: 'issue:188',
+      state: 'issued',
+      fromRole: 'agentflow:developer',
+      toRole: 'agentflow:tester',
+      rolePassId: 'phase-4',
+      profile: 'standard',
+      actionBoundary: 'observe',
+      inputRefs: [],
+      outputRefs: [
+        {
+          kind: 'implementation',
+          system: 'git',
+          uri: 'working-copy',
+          authority: 'authoritative',
+          relationship: 'implements',
+        },
+      ],
+      validationRefs: [],
+      expectedAction: 'run deterministic validation',
+      acceptanceCriteria: ['implementation evidence is readable'],
+      acceptanceContract: createAcceptanceContract({
+        id: 'acceptance-1',
+        subject: 'issue:188',
+        ownerRole: 'agentflow:developer',
+        deliveryRole: 'agentflow:tester',
+        collaborationClass: 'bilateral',
+        candidateDigest: 'a'.repeat(64),
+        criteria: [
+          {
+            id: 'evidence-readable',
+            description: 'implementation evidence is readable',
+            verification: 'deterministic',
+            required: true,
+          },
+        ],
+        councilPolicy: { required: false, seats: [], decisionOwner: 'agentflow:developer' },
+      }),
+      openQuestions: [],
+      methodPlays: [],
+      provenance: {
+        platform: 'codex',
+        executor: 'codex-cli',
+        transport: 'local-cli',
+        delegationBoundary: 'current-session',
+      },
+    })
+    writeFileSync(join(target, 'role-handoff.json'), JSON.stringify(handoff))
+    expect(
+      run(target, ['validate-evidence', '--type', 'role-handoff', '--path', 'role-handoff.json'])
+        .ok,
+    ).toBe(true)
+  })
+
   it('runs evals and metrics relative to --target', () => {
     const target = fixture()
     const manifestDir = join(target, 'agents', 'evals', 'manifests')
@@ -65,7 +129,7 @@ describe('contract CLI surfaces', () => {
       JSON.stringify({
         version: 1,
         id: 'cli',
-        owner: 'review',
+        owner: 'reviewer',
         subject: { kind: 'fixture', path: 'output.txt' },
         cases: [
           {

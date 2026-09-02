@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 import { execFileSync } from 'node:child_process'
-import { existsSync, mkdtempSync } from 'node:fs'
+import { existsSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 
 const repoRoot = resolve(process.cwd())
 const cli = join(repoRoot, 'bin', 'cli.mjs')
 const tmp = mkdtempSync(join(tmpdir(), 'agentflow-sdlc-smoke-'))
+const receipt = `${tmp}-receipt.json`
 function run(args) {
   return execFileSync(process.execPath, [cli, ...args, '--target', tmp], {
     encoding: 'utf8',
@@ -14,7 +15,18 @@ function run(args) {
   })
 }
 execFileSync('git', ['init'], { cwd: tmp, stdio: 'ignore' })
-run(['init'])
+const plan = JSON.parse(run(['adopt', 'plan', '--profile', 'cockpit', '--json']))
+run([
+  'adopt',
+  'apply',
+  '--profile',
+  'cockpit',
+  '--confirm',
+  plan.token,
+  '--receipt',
+  receipt,
+  '--json',
+])
 run(['sdlc', 'validate', '--json'])
 run(['sdlc', 'audit', '--json'])
 run(['sdlc', 'migrate', '--json'])
@@ -30,9 +42,10 @@ const expected = [
   'docs/sdlc-definition.md',
   'sdlc.config.json',
   'schemas/sdlc-config.schema.json',
-  '.claude/skills/sdlc-definition/SKILL.md',
-  '.pi/skills/sdlc-audit/SKILL.md',
-  '.agents/skills/sdlc-migration/SKILL.md',
+  '.claude/skills/agentflow-orchestrator/SKILL.md',
+  '.pi/skills/agentflow-auditor/SKILL.md',
+  '.agents/skills/agentflow-migrator/SKILL.md',
+  '.claude/skills/agentflow-collaborator/references/collaboration-modes.md',
   '.claude/agentflow-sdlc.plugin.json',
   '.agy/agentflow-sdlc.plugin.json',
   '.codex/agentflow-sdlc.plugin.json',
@@ -43,6 +56,8 @@ const expected = [
   '.pi/settings.json',
 ]
 const missing = expected.filter((item) => !existsSync(join(tmp, item)))
-const result = { ok: missing.length === 0, tmp, missing }
+const result = { ok: missing.length === 0, missing }
+rmSync(tmp, { recursive: true, force: true })
+rmSync(receipt, { force: true })
 process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
 process.exit(result.ok ? 0 : 1)

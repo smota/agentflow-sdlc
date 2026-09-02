@@ -9,7 +9,7 @@ requiredSkills: []
 requiredToolPermissions:
   - read
   - shell
-requiredWorkflowCapabilities:
+requiredExecutionIntents:
   - workflow-orchestration
 controlRequirements:
   - single-writer
@@ -29,7 +29,7 @@ validators:
     command: node validators/validate-review-boundary.mjs
 plays:
   - id: governed-review-handoff
-    role: review
+    role: reviewer
     appliesWhen: review transfers findings or approval responsibility
     requiredInputs: [implementation, validation]
     expectedOutputs: [review-findings, next-role-contract]
