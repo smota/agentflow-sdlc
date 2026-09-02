@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentflow.dev/schemas/source-mutation-plan.schema.json",
+  "title": "AgentFlow SourceMutationPlan",
+  "type": "object",
+  "required": [
+    "version",
+    "adapter",
+    "scope",
+    "capability",
+    "operation",
+    "parameters",
+    "actionBoundary",
+    "expectedRevision",
+    "idempotencyKey",
+    "token"
+  ],
+  "properties": {
+    "version": { "const": 1 },
+    "adapter": { "type": "string", "minLength": 1 },
+    "scope": { "type": "string", "minLength": 1 },
+    "capability": { "type": "string", "pattern": "^mutate-" },
+    "operation": { "type": "string", "minLength": 1 },
+    "parameters": { "type": "object" },
+    "actionBoundary": { "type": "object" },
+    "expectedRevision": { "type": "string", "minLength": 1 },
+    "idempotencyKey": { "type": "string", "minLength": 1 },
+    "token": { "type": "string", "pattern": "^[a-fA-F0-9]{64}$" }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "id": "agentflow-role-product",
+  "owner": "reviewer",
+  "subject": { "kind": "role-catalog", "path": "manifests/role-catalog.json" },
+  "threshold": 1,
+  "cases": [
+    {
+      "id": "role-product-routing",
+      "actual": "../fixtures/role-product-routing.txt",
+      "assertions": [
+        {
+          "id": "qualified-lifecycle",
+          "type": "contains",
+          "value": "agentflow:product-manager -> agentflow:analyst -> agentflow:architect"
+        },
+        {
+          "id": "nine-role-tail",
+          "type": "contains",
+          "value": "agentflow:reviewer -> agentflow:technical-writer -> agentflow:pr-readiness"
+        },
+        {
+          "id": "sidecar-bounded",
+          "type": "contains",
+          "value": "without owning the tester verdict"
+        },
+        {
+          "id": "method-additive",
+          "type": "contains",
+          "value": "cannot replace role ownership, authority, transitions, or completion criteria"
+        },
+        {
+          "id": "compatibility-alias",
+          "type": "contains",
+          "value": "implementation-planner -> agentflow:implementation-planner"
+        },
+        {
+          "id": "handoff-contract",
+          "type": "contains",
+          "value": "digest-bound, typed artifact references"
+        }
+      ]
+    }
+  ]
+}

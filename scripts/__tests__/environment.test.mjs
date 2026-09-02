@@ -30,14 +30,17 @@ describe('environment validation', () => {
     expect(run.calls.some((call) => /install|brew|winget|corepack/.test(call))).toBe(false)
   })
 
-  it('checks configured optional agent availability commands', () => {
+  it('checks configured optional agent availability probes', () => {
     const dir = mkdtempSync(join(tmpdir(), 'sdlc-env-'))
     writeFileSync(
       join(dir, 'agent-workflow.config.json'),
       JSON.stringify({
         routing: {
           agents: {
-            omnigent: { enabled: true, availabilityCommand: 'omnigent --version' },
+            omnigent: {
+              enabled: true,
+              availabilityProbe: { executable: 'omnigent', args: ['--version'] },
+            },
           },
         },
       }),

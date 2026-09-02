@@ -3,11 +3,26 @@
   "name": "AgentFlow SDLC for Claude Code",
   "version": "1.0.0",
   "harness": "claude-code",
+  "namespace": "agentflow",
   "entry": ".claude/skills",
-  "skills": ["sdlc-definition", "sdlc-migration", "sdlc-audit"],
+  "roleEntry": ".agentflow/roles/claude-code",
+  "skills": ["orchestrator", "collaborator", "scanner", "designer", "migrator", "auditor"],
+  "roles": [
+    "product-manager",
+    "analyst",
+    "architect",
+    "implementation-planner",
+    "developer",
+    "tester",
+    "reviewer",
+    "technical-writer",
+    "pr-readiness",
+    "qa-expert"
+  ],
   "commands": [
     "agentflow-sdlc sdlc validate",
     "agentflow-sdlc skills sync --harness claude-code",
+    "agentflow-sdlc roles sync --harness claude-code --apply",
     "agentflow-sdlc cockpit doctor --json"
   ],
   "settings": [".claude/settings.json"]

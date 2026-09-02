@@ -14,6 +14,15 @@
 
 This is the complete map of maintained product, adoption, architecture, operations, and contributor documentation. For a role-based route, use [Start here](start-here.md).
 
+## Role routes
+
+| Role            | Shortest maintained path                                                                   |
+| --------------- | ------------------------------------------------------------------------------------------ |
+| Adopter         | [Evaluate, preview, adopt, and recover](adopters/index.md)                                 |
+| Maintainer      | [Protect architecture, compatibility, validation, and release truth](maintainers/index.md) |
+| Provider author | [Implement and prove a capability-based provider](providers/index.md)                      |
+| Operator        | [Inspect health, availability, evidence, and recovery](operators/index.md)                 |
+
 ## Getting started
 
 | Document                                            | Use it for                                                              |
@@ -23,7 +32,6 @@ This is the complete map of maintained product, adoption, architecture, operatio
 | [AgentFlow in 5 minutes](agentflow-in-5-minutes.md) | Understand the problem, model, and evidence flow                        |
 | [Get started](get-started.md)                       | Follow the current source-based adoption path                           |
 | [Assisted onboarding](assisted-onboarding.md)       | Give an assistant a read-only-first setup contract                      |
-| [Assisted update](assisted-update.md)               | Update an adopted project with lockfile-aware review and approval       |
 | [Environment tools](environment-tools.md)           | Understand required and optional tooling                                |
 
 ## Core model and governance
@@ -43,8 +51,11 @@ flowchart LR
 | [Agent workflow](agent-workflow.md)                      | Phase state machine, role-pass contract, branches, handoffs, review, and PR readiness |
 | [Issue standards](issue-standards.md)                    | Issue structure, labels, lifecycle metadata, and body updates                         |
 | [SDLC definition](sdlc-definition.md)                    | Portable product vocabulary and state model                                           |
+| [Lifecycle roles](roles/index.md)                        | Versioned role taxonomy, ownership, authority, and handoffs                           |
+| [Role methods](roles/methods.md)                         | Configurable analysis, engineering, quality, and documentation approaches             |
 | [Project setup](project-setup.md)                        | Guided project decisions                                                              |
 | [Project configuration](project-config.md)               | Complete `agent-workflow.config.json` contract                                        |
+| [Modular architecture](modular-architecture.md)          | Core, provider, source, adoption, Cockpit, and configuration ownership                |
 | [Contribution workflow](guides/contribution-workflow.md) | Repository contribution sequence                                                      |
 
 ## Evidence, lifecycle, and quality
@@ -55,6 +66,8 @@ flowchart LR
 | [Lifecycle boundaries](lifecycle-boundaries.md)                              | External signals, proposals, action authority, and lifecycle events     |
 | [Agent evals](agent-evals.md)                                                | Executable evaluation manifests and runner behavior                     |
 | [Outcome metrics](outcome-metrics.md)                                        | Derive projections from evidence events without inventing claims        |
+| [Provider matrix](providers/provider-matrix.md)                              | Declared provider facets and honest limitations                         |
+| [GitHub source adapter](sources/github.md)                                   | Default source implementation and mutation boundary                     |
 | [Simple bug-fix flow](examples/simple-bugfix-flow.md)                        | See a compact issue-to-PR evidence path                                 |
 | [Multi-agent review flow](examples/multi-agent-review-flow.md)               | See explicit role attribution and independent review                    |
 | [High-assurance flow](examples/high-assurance-flow.md)                       | See human security and acceptance gates                                 |
@@ -69,17 +82,18 @@ flowchart LR
 | [Agent routing](agent-routing.md)                         | Configure owners, fallbacks, and role alternation                         |
 | [Capabilities](capabilities.md)                           | Resolve PLAN, WORKFLOW, LOOP, and SUB-AGENTS portably                     |
 | [Intelligent collaboration](intelligent-collaboration.md) | Choose the smallest sufficient collaboration mode                         |
+| [Role collaboration](role-collaboration.md)               | Define deterministic handover acceptance, rework, and councils            |
 
 Runtime-specific references:
 
-| Runtime        | Routing                                    | Capability adapter                                      |
-| -------------- | ------------------------------------------ | ------------------------------------------------------- |
-| Agy            | [Agy routing](agents/agy-routing.md)       | [Agy capabilities](capabilities/agy.md)                 |
-| Claude Code    | [Claude routing](agents/claude-routing.md) | [Claude Code capabilities](capabilities/claude-code.md) |
-| Codex          | [Codex routing](agents/codex-routing.md)   | [Codex CLI capabilities](capabilities/codex-cli.md)     |
-| Pi             | [Pi routing](agents/pi-routing.md)         | [Pi capabilities](capabilities/pi.md)                   |
-| Manual/human   | —                                          | [Manual capabilities](capabilities/manual.md)           |
-| Exploratory QA | [QA expert](agents/qa-expert.md)           | —                                                       |
+| Runtime        | Routing                                    | Runtime negotiation                         |
+| -------------- | ------------------------------------------ | ------------------------------------------- |
+| Agy            | [Agy routing](agents/agy-routing.md)       | [Provider inspection](providers/index.md)   |
+| Claude Code    | [Claude routing](agents/claude-routing.md) | [Provider inspection](providers/index.md)   |
+| Codex          | [Codex routing](agents/codex-routing.md)   | [Provider inspection](providers/index.md)   |
+| Pi             | [Pi routing](agents/pi-routing.md)         | [Provider inspection](providers/index.md)   |
+| Manual/human   | —                                          | [Provider inspection](providers/index.md)   |
+| Exploratory QA | [QA expert](agents/qa-expert.md)           | [Role collaboration](role-collaboration.md) |
 
 ## Extensions and distribution
 
@@ -112,16 +126,12 @@ The current release is [v1.0.0](releases/v1.0.0.md). Published history is intent
 
 The [ADR index](adr/) records accepted, proposed, and superseded decisions. ADRs are historical decision evidence, not onboarding instructions.
 
-## Roadmap and proposals
-
-[Deterministic assisted update](deterministic-assisted-update.md) is a proposal for a future machine-readable `update-plan` flow. The current CLI does not implement `update-plan`; use [Assisted update](assisted-update.md) today.
-
 ## CLI and validation reference
 
 The source CLI exposes these top-level command groups:
 
 ```text
-agentflow-sdlc <init|sync|doctor|doctor-env|sdlc|cockpit|skills|plugins|settings|extensions|onboarding-prompt|update-prompt|migrate-rename|release-plan|mark-merged>
+agentflow-sdlc <doctor-env|adopt|providers|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|onboarding-prompt|release-plan>
 ```
 
 Use the source checkout form until an npm package is published:
@@ -155,8 +165,8 @@ node scripts/validate-npm-package.mjs
 
 | Surface                                       | Location                                              |
 | --------------------------------------------- | ----------------------------------------------------- |
-| Role packages                                 | [`agents/roles/`](../agents/roles/)                   |
-| Workflow skills                               | [`agents/workflows/`](../agents/workflows/)           |
+| Lifecycle role packages                       | [`roles/`](../roles/)                                 |
+| Productized skill family                      | [`default-skills.md`](default-skills.md)              |
 | Portable agent package                        | [`agents/agentflow-sdlc/`](../agents/agentflow-sdlc/) |
 | Role pass, status, handover, and PR templates | [`agents/templates/`](../agents/templates/)           |
 | Schemas                                       | [`schemas/`](../schemas/)                             |
@@ -164,4 +174,4 @@ node scripts/validate-npm-package.mjs
 | Harness adapters                              | [`adapters/`](../adapters/)                           |
 | Product manifests                             | [`manifests/`](../manifests/)                         |
 
-The distributable framework-file catalog is maintained in [`lib/framework-files.mjs`](../lib/framework-files.mjs).
+The distributable payload and profiles are maintained in [`product-payload.json`](../manifests/product-payload.json) and [`composition-profiles.json`](../manifests/composition-profiles.json).

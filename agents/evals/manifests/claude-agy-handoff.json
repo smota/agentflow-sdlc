@@ -21,7 +21,7 @@
       "assertions": [
         { "type": "json-valid" },
         { "type": "contains", "value": "\"platform\": \"agy\"" },
-        { "type": "contains", "value": "\"toRole\": \"developer-planning\"" },
+        { "type": "contains", "value": "\"toRole\": \"implementation-planner\"" },
         { "type": "not-contains", "value": "\"platform\": \"antigravity\"" }
       ]
     }

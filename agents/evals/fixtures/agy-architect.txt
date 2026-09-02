@@ -2,7 +2,7 @@
   "version": 1,
   "subject": "acceptance:claude-agy-chain",
   "fromRole": "architect",
-  "toRole": "developer-planning",
+  "toRole": "implementation-planner",
   "decision": "pass",
   "nextContract": "Produce an implementation and validation plan without mutating the worktree.",
   "timestamp": "2026-08-31T12:01:00Z",

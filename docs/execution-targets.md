@@ -59,12 +59,17 @@ names a provider-backed call, not a local CLI launch.
 | `pi`          | `pi-subagent-model` | Pi subagent execution using Pi's configured model provider, e.g. `openai-codex/gpt-5.5`.                             | `provider-api`          | `child-subagent`            |
 | `codex`       | `codex-cli`         | Local Codex CLI execution, typically `codex exec` unless configured otherwise.                                       | `local-cli`             | `current-session`           |
 | `codex`       | `provider-api`      | Any provider-backed model call, distinct from local CLI execution even when the model brand matches the agent brand. | `provider-api`          | `current-session`           |
+| `grok`        | `grok-cli`          | Local Grok CLI execution through the explicit Grok provider.                                                         | `local-cli`             | `current-session`           |
+| `grok`        | `xai-api`           | xAI provider API execution, distinct from local Grok CLI execution.                                                  | `provider-api`          | `current-session`           |
 | `human`       | `human`             | A human performs the work directly.                                                                                  | `manual`                | `human-handoff`             |
 
 `lib/execution-targets.mjs` exports this table as `EXECUTION_TARGETS_BY_AGENT`,
-`EXECUTION_TARGET_TRANSPORT`, and `EXECUTION_TARGET_DELEGATION_BOUNDARY`. Treat that module as source
-of truth for execution mechanics. `manifests/runtime-platforms.json` separately governs top-level
-identity; for example `cowork` can launch `pi-subagent-model` without either field being relabeled.
+`EXECUTION_TARGET_TRANSPORT`, and `EXECUTION_TARGET_DELEGATION_BOUNDARY`. It is the compatibility
+source of truth for built-in v1 role-routing mechanics. It is not a closed enum for the modular
+provider SPI: a provider descriptor registers its own `targets` and `transports`, and the binder
+accepts those descriptor-owned values without modifying this table. `manifests/runtime-platforms.json`
+separately governs top-level identity; for example `cowork` can launch `pi-subagent-model` without
+either field being relabeled.
 
 The delegation boundary column is a **default**, not a fixed property of the target. A launcher must
 override it when the actual mechanism differs — for example, `codex` spawning `claude-cli` into a
@@ -82,7 +87,7 @@ launcher's current model or provider:
    depending on chat context every time.
 2. Otherwise, if the agent is resolving a bare mention of **itself** (the current executor asking
    what "claude" means when it _is_ Claude), it defaults to that agent's built-in local-CLI target
-   (`claude-cli`, `agy-cli`, `codex-cli`, or `pi-parent`).
+   (`claude-cli`, `agy-cli`, `codex-cli`, `grok-cli`, or `pi-parent`).
 3. Otherwise — a different agent asking to launch/hand off to a bare-mentioned agent, with no
    configured default — the request is ambiguous. Ask a clarifying question before launching work.
    Do not guess, and do not silently reuse the launcher's own model/provider for the target agent.

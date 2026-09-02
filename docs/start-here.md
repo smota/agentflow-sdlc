@@ -4,15 +4,12 @@ Use this page to reach the right depth without reading the documentation front t
 
 ## Pick your path
 
-| You are…                       | Start with                                               | Then use                                                                                                                 |
-| ------------------------------ | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Evaluating AgentFlow           | [AgentFlow in 5 minutes](agentflow-in-5-minutes.md)      | [Get started](get-started.md) and the [examples](examples/)                                                              |
-| Adding it to a repository      | [Get started](get-started.md)                            | [Assisted onboarding](assisted-onboarding.md), [project setup](project-setup.md), and [configuration](project-config.md) |
-| Updating an adopted repository | [Assisted update](assisted-update.md)                    | [Release/versioning](release-versioning.md) and the [CLI reference](index.md#cli-and-validation-reference)               |
-| Running issue work             | [`AGENTS.md`](../AGENTS.md)                              | The active adapter, [workflow](agent-workflow.md), [issue standards](issue-standards.md), and active issue or `SPEC.md`  |
-| Designing integrations         | [SDLC definition](sdlc-definition.md)                    | [Capabilities](capabilities.md), [evidence contracts](evidence-contracts.md), and [packaging](sdlc-packaging.md)         |
-| Operating visually             | [Cockpit](cockpit.md)                                    | [Cockpit concepts and rules](cockpit-concepts-and-rules.md) and [Cockpit QA](cockpit-qa.md)                              |
-| Contributing to AgentFlow      | [Contribution workflow](guides/contribution-workflow.md) | [Documentation index](index.md) and [ADRs](adr/)                                                                         |
+| You are…                  | Start with                                 | Then use                                                                                                                  |
+| ------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| Adopting or evaluating    | [Adopter path](adopters/index.md)          | [Get started](get-started.md), [profiles](adopters/profiles.md), and [upgrade/rollback](adopters/upgrade-and-rollback.md) |
+| Maintaining AgentFlow     | [Maintainer path](maintainers/index.md)    | [Modular architecture](modular-architecture.md), [workflow](agent-workflow.md), and [ADRs](adr/)                          |
+| Authoring a provider      | [Provider author path](providers/index.md) | [Provider matrix](providers/provider-matrix.md) and [authoring contract](providers/authoring.md)                          |
+| Operating an installation | [Operator path](operators/index.md)        | [Troubleshooting](operators/troubleshooting.md), [Cockpit](cockpit.md), and [evidence contracts](evidence-contracts.md)   |
 
 ## The model at a glance
 
@@ -43,10 +40,12 @@ Start with the read-only command in [Get started](get-started.md#1-check-the-env
 | Phase transitions and role-pass contract           | [Agent workflow](agent-workflow.md)                                                                            |
 | Platform identity, execution target, and transport | [Runtime platforms](runtime-platforms.md) and [execution targets](execution-targets.md)                        |
 | Role routing and independent review                | [Agent routing](agent-routing.md)                                                                              |
-| PLAN, WORKFLOW, LOOP, and SUB-AGENTS               | [Capabilities](capabilities.md)                                                                                |
+| Portable execution intents and provider inspection | [Capabilities](capabilities.md)                                                                                |
 | Collaboration modes and decision budget            | [Intelligent collaboration](intelligent-collaboration.md)                                                      |
+| Handover acceptance, rework, and councils          | [Role collaboration](role-collaboration.md)                                                                    |
 | Artifact and lifecycle schemas                     | [Evidence contracts](evidence-contracts.md) and [lifecycle boundaries](lifecycle-boundaries.md)                |
 | Extension and adapter distribution                 | [Extension packs](extension-packs.md), [default skills](default-skills.md), and [packaging](sdlc-packaging.md) |
+| Lifecycle roles and configurable methods           | [Lifecycle roles](roles/index.md) and [role methods](roles/methods.md)                                         |
 | Release governance                                 | [Release versioning](release-versioning.md) and [publishing](release-publishing.md)                            |
 | Evals and metrics                                  | [Agent evals](agent-evals.md) and [outcome metrics](outcome-metrics.md)                                        |
 

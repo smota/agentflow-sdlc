@@ -12,12 +12,14 @@ implicit persona switching alone.
 
 ## Execution model
 
-- Run the issue via `agents/workflows/orchestrate/SKILL.md`
+- Run the issue via `skills/orchestrator/SKILL.md` (`agentflow:orchestrator`).
 - Execute one formal phase at a time
 - Read the previous role-pass before starting the next one
 - Write a new role-pass artifact after every completed phase
 - Record the actual executor name in every artifact and the model / runtime when known; never default to another adapter name
 - Keep the workflow-status comment aligned with the latest phase state
+- Emit canonical role/profile values, the effective action boundary, portable `ArtifactRef` values,
+  and a version-1 transition envelope for cross-harness handoffs; validate them before return
 
 ## Review model
 

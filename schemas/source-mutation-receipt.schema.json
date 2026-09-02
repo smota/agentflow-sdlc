@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentflow.dev/schemas/source-mutation-receipt.schema.json",
+  "title": "AgentFlow SourceMutationReceipt",
+  "type": "object",
+  "required": [
+    "version",
+    "adapter",
+    "scope",
+    "operation",
+    "planToken",
+    "idempotencyKey",
+    "expectedRevision",
+    "observedRevision",
+    "result",
+    "status",
+    "receiptToken"
+  ],
+  "properties": {
+    "version": { "const": 1 },
+    "adapter": { "type": "string", "minLength": 1 },
+    "scope": { "type": "string", "minLength": 1 },
+    "operation": { "type": "string", "minLength": 1 },
+    "planToken": { "type": "string", "pattern": "^[a-fA-F0-9]{64}$" },
+    "idempotencyKey": { "type": "string", "minLength": 1 },
+    "expectedRevision": { "type": "string", "minLength": 1 },
+    "observedRevision": { "type": "string", "minLength": 1 },
+    "result": {},
+    "status": { "const": "applied" },
+    "receiptToken": { "type": "string", "pattern": "^[a-fA-F0-9]{64}$" }
+  },
+  "additionalProperties": false
+}

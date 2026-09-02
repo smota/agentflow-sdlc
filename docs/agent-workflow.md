@@ -48,14 +48,14 @@ that skip is recorded with a reason.
 
 | Phase | Role                   | Purpose                                                  | Required output |
 | ----- | ---------------------- | -------------------------------------------------------- | --------------- |
-| 0     | Product manager / JTBD | Optional feature framing and decomposition               | role-pass       |
+| 0     | Product manager        | Optional feature framing and decomposition               | role-pass       |
 | 1     | Analyst                | Refine issue into testable acceptance criteria           | role-pass       |
 | 2     | Architect              | Select workflow profile and implementation approach      | role-pass       |
-| 3     | Developer planning     | Confirm files, tests, docs, branch/PR expectations       | role-pass       |
+| 3     | Implementation planner | Confirm files, tests, docs, branch/PR expectations       | role-pass       |
 | 4     | Developer              | Implement the agreed change                              | role-pass       |
 | 5     | Tester                 | Execute verification and record evidence                 | role-pass       |
-| 6     | Review                 | Self-review for bounded/standard or request human review | role-pass       |
-| 7     | Tech writer            | Confirm technical/user docs and screenshot decisions     | role-pass       |
+| 6     | Reviewer               | Self-review for bounded/standard or request human review | role-pass       |
+| 7     | Technical writer       | Confirm technical/user docs and screenshot decisions     | role-pass       |
 | 8     | PR readiness           | Confirm merge contract and closeout state                | role-pass       |
 
 `qa-expert` is an optional exploratory QA sidecar role, not a numbered phase in the deterministic sequence. Use it when exploratory/manual testing can add value beyond Phase 5 `tester` evidence. See [`docs/agents/qa-expert.md`](agents/qa-expert.md).
@@ -71,19 +71,37 @@ that skip is recorded with a reason.
 
 Any other transition is a workflow defect and must be logged in the workflow artifact.
 
+### Bilateral handover acceptance
+
+Every executed transition issues an immutable `RoleHandoff` with an embedded
+`AcceptanceContract`. The next role returns a `DeliveryReceipt`; deterministic validation runs
+before the sending role records an `AcceptanceDecision` or a bounded `ReworkRequest`. The sender
+accepts only the criteria it handed over and does not replace the receiver's specialist ownership.
+
+Complexity rules select `linear`, `bilateral`, `council`, or `human-gated` collaboration. Councils
+are advisory role perspectives over one evidence digest. The current accountable role dispositions
+objections and owns the synthesis; helpers never become extra lifecycle phases. See
+[`role-collaboration.md`](role-collaboration.md).
+
+Before phase advancement, the orchestrator must run `collaboration advance` against the current
+handoff, delivery, owner decision, council evidence when required, and explicit open-rework ledger.
+Rejected, returned, conditional, or stale decisions block advancement. A review return to
+implementation must carry the review findings in its rework contract; it cannot silently skip
+the rework gate.
+
 ### Phase diagram
 
 This diagram illustrates the allowed state machine. The table and transition bullets above remain the authoritative contract.
 
 ```mermaid
 flowchart LR
-  P0["0 Product manager / JTBD"] --> P1["1 Analyst"]
+  P0["0 Product manager"] --> P1["1 Analyst"]
   P1 --> P2["2 Architect"]
-  P2 --> P3["3 Developer planning"]
+  P2 --> P3["3 Implementation planner"]
   P3 --> P4["4 Developer"]
   P4 --> P5["5 Tester"]
-  P5 --> P6["6 Review"]
-  P6 --> P7["7 Tech writer"]
+  P5 --> P6["6 Reviewer"]
+  P6 --> P7["7 Technical writer"]
   P7 --> P8["8 PR readiness"]
 
   P4 -. planning defect .-> P3
@@ -116,6 +134,7 @@ Every pass must answer the same questions:
 2. **What did I decide?**
 3. **What remains uncertain?**
 4. **What must the next role do?**
+5. **How will the current role accept that delivery?**
 
 Each pass uses `agents/templates/role-pass.md`.
 
@@ -148,6 +167,7 @@ worktree | intercom-session`) — see §4a
 - Decisions / findings
 - Open questions or `none`
 - Next-phase contract
+- Acceptance contract, collaboration class, deterministic criteria, and council policy
 - Status: `pass | blocked | returned | skipped`
 - Signed-by and timestamp
 
@@ -212,14 +232,14 @@ independent intelligences, and is that alternation evidenced — not collapsed i
   `Mode: single-agent | multi-agent` field in the workflow-status comment and the PR manifest's
   `## Agent review` section.
 - **`selfReviewDisclosure`** — the explicit rationale recorded in `## Agent review`
-  (`Self-review disclosure:`) when the developer and review rows in the matrix share the same
+  (`Self-review disclosure:`) when the developer and reviewer rows in the matrix share the same
   `roleIntelligence`.
 
 ### Deterministic requirements when `multiAgentClaim` is true
 
 1. Record a `roleAlternationPlan` (`routing.roles`) before implementation starts.
 2. Every executed phase's role-pass records both `Planned owner` and the actual `roleIntelligence`.
-3. Developer and review rows must use different `roleIntelligence` values, unless the review row's
+3. Developer and reviewer rows must use different `roleIntelligence` values, unless the reviewer row's
    independence boundary is `self-review` and `Self-review disclosure` carries a rationale.
    `high-assurance` workflow profile forbids self-review outright, disclosed or not.
 4. Tester/validation evidence names the agent that selected and ran checks (`Executed by` on the
@@ -399,7 +419,7 @@ Every PR must include:
 - CI-equivalent validation status (`passed`, `not-run-with-reason`, or `expected-fail-with-follow-up`)
 - a `## Role attribution matrix` when `## Agent review`'s `Mode` is `multi-agent` — see §4a
 - agent review fields under `## Agent review`, including `Mode` (`single-agent | multi-agent`) and,
-  when developer/review share a `roleIntelligence`, `Self-review disclosure`
+  when developer/reviewer share a `roleIntelligence`, `Self-review disclosure`
 - follow-up issues created during implementation
 
 The PR body should mirror this structure explicitly: one `Implements #<issue>` line per implemented
@@ -497,7 +517,7 @@ when no role transition occurred.
 Review roles are read-only by default. If a review finds a defect, it returns the work to the
 implementation phase instead of patching code inside the review pass.
 
-When a run's `Mode` is `multi-agent`, the review role's `independenceBoundary` must be
+When a run's `Mode` is `multi-agent`, the reviewer role's `independenceBoundary` must be
 `independent` from the developer role unless self-review is explicitly disclosed (§4a). A
 single-agent run is exempt — the same executor performing every role is the expected shape, not a
 disclosed exception.

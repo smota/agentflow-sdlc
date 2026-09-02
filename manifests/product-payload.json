@@ -52,6 +52,16 @@
       "ownership": "managed"
     },
     {
+      "source": "AGENTS.md",
+      "target": "AGENTS.md",
+      "ownership": "seed-once"
+    },
+    {
+      "source": "agents/templates/stack-conventions.md",
+      "target": "docs/stack-conventions.md",
+      "ownership": "seed-once"
+    },
+    {
       "source": "defaults/sdlc.config.json",
       "target": "sdlc.config.json",
       "ownership": "seed-once"
@@ -187,18 +197,163 @@
       "ownership": "managed"
     },
     {
-      "source": "skills/sdlc-definition/SKILL.md",
-      "target": "skills/sdlc-definition/SKILL.md",
+      "source": "manifests/skill-catalog.json",
+      "target": "manifests/skill-catalog.json",
       "ownership": "managed"
     },
     {
-      "source": "skills/sdlc-migration/SKILL.md",
-      "target": "skills/sdlc-migration/SKILL.md",
+      "source": "schemas/skill-catalog.schema.json",
+      "target": "schemas/skill-catalog.schema.json",
       "ownership": "managed"
     },
     {
-      "source": "skills/sdlc-audit/SKILL.md",
-      "target": "skills/sdlc-audit/SKILL.md",
+      "source": "manifests/role-catalog.json",
+      "target": "manifests/role-catalog.json",
+      "ownership": "managed"
+    },
+    {
+      "source": "manifests/method-catalog.json",
+      "target": "manifests/method-catalog.json",
+      "ownership": "managed"
+    },
+    {
+      "source": "schemas/role-catalog.schema.json",
+      "target": "schemas/role-catalog.schema.json",
+      "ownership": "managed"
+    },
+    {
+      "source": "schemas/role-definition.schema.json",
+      "target": "schemas/role-definition.schema.json",
+      "ownership": "managed"
+    },
+    {
+      "source": "schemas/method-catalog.schema.json",
+      "target": "schemas/method-catalog.schema.json",
+      "ownership": "managed"
+    },
+    {
+      "source": "schemas/role-handoff.schema.json",
+      "target": "schemas/role-handoff.schema.json",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/role-catalog.mjs",
+      "target": "lib/role-catalog.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/role-adapters.mjs",
+      "target": "lib/role-adapters.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "scripts/validate-role-catalog.mjs",
+      "target": "scripts/validate-role-catalog.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "roles/product-manager/ROLE.md",
+      "target": "roles/product-manager/ROLE.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "roles/analyst/ROLE.md",
+      "target": "roles/analyst/ROLE.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "roles/architect/ROLE.md",
+      "target": "roles/architect/ROLE.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "roles/implementation-planner/ROLE.md",
+      "target": "roles/implementation-planner/ROLE.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "roles/developer/ROLE.md",
+      "target": "roles/developer/ROLE.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "roles/tester/ROLE.md",
+      "target": "roles/tester/ROLE.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "roles/reviewer/ROLE.md",
+      "target": "roles/reviewer/ROLE.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "roles/technical-writer/ROLE.md",
+      "target": "roles/technical-writer/ROLE.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "roles/pr-readiness/ROLE.md",
+      "target": "roles/pr-readiness/ROLE.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "roles/qa-expert/ROLE.md",
+      "target": "roles/qa-expert/ROLE.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "skills/orchestrator/SKILL.md",
+      "target": "skills/orchestrator/SKILL.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "skills/collaborator/SKILL.md",
+      "target": "skills/collaborator/SKILL.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "skills/collaborator/references/collaboration-modes.md",
+      "target": "skills/collaborator/references/collaboration-modes.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "skills/collaborator/references/bounded-environments.md",
+      "target": "skills/collaborator/references/bounded-environments.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "skills/scanner/SKILL.md",
+      "target": "skills/scanner/SKILL.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "skills/designer/SKILL.md",
+      "target": "skills/designer/SKILL.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "skills/designer/references/definition-completeness.md",
+      "target": "skills/designer/references/definition-completeness.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "skills/migrator/SKILL.md",
+      "target": "skills/migrator/SKILL.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "skills/migrator/references/preflight.md",
+      "target": "skills/migrator/references/preflight.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "skills/auditor/SKILL.md",
+      "target": "skills/auditor/SKILL.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "skills/auditor/references/workflow-compliance.md",
+      "target": "skills/auditor/references/workflow-compliance.md",
       "ownership": "managed"
     },
     {
@@ -207,8 +362,108 @@
       "ownership": "managed"
     },
     {
+      "source": "docs/roles/index.md",
+      "target": "docs/roles/index.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "docs/roles/methods.md",
+      "target": "docs/roles/methods.md",
+      "ownership": "managed"
+    },
+    {
       "source": "docs/cockpit-concepts-and-rules.md",
       "target": "docs/cockpit-concepts-and-rules.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "docs/cockpit-qa.md",
+      "target": "docs/cockpit-qa.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "assets/cockpit/agentflow-logo.png",
+      "target": "assets/cockpit/agentflow-logo.png",
+      "ownership": "managed"
+    },
+    {
+      "source": "assets/cockpit/agentflow-logo-transparent.png",
+      "target": "assets/cockpit/agentflow-logo-transparent.png",
+      "ownership": "managed"
+    },
+    {
+      "source": "assets/cockpit/agentflow-icon-192.png",
+      "target": "assets/cockpit/agentflow-icon-192.png",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/cockpit-actions.mjs",
+      "target": "lib/cockpit-actions.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/cockpit-auth.mjs",
+      "target": "lib/cockpit-auth.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/cockpit-config.mjs",
+      "target": "lib/cockpit-config.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/cockpit-domain.mjs",
+      "target": "lib/cockpit-domain.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/cockpit-graph.mjs",
+      "target": "lib/cockpit-graph.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/cockpit-markdown.mjs",
+      "target": "lib/cockpit-markdown.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/cockpit-goal-model.mjs",
+      "target": "lib/cockpit-goal-model.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/cockpit-read-model.mjs",
+      "target": "lib/cockpit-read-model.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/cockpit-replay.mjs",
+      "target": "lib/cockpit-replay.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/cockpit-replay-github.mjs",
+      "target": "lib/cockpit-replay-github.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/cockpit-security.mjs",
+      "target": "lib/cockpit-security.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/cockpit-ui.mjs",
+      "target": "lib/cockpit-ui.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "scripts/cockpit-server.mjs",
+      "target": "scripts/cockpit-server.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "scripts/cockpit-doctor.mjs",
+      "target": "scripts/cockpit-doctor.mjs",
       "ownership": "managed"
     }
   ]

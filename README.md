@@ -13,18 +13,18 @@
   </p>
 </div>
 
-AgentFlow SDLC is an open-source process layer for software projects that use AI coding agents. It keeps requirements, decisions, validation, review, and handoffs visible in GitHub instead of trapped in one chat session.
+AgentFlow SDLC is an open-source process layer for software projects that use AI coding agents. It keeps requirements, decisions, validation, review, and handoffs in durable source records instead of trapped in one chat session. GitHub is the first source adapter.
 
-It adds delivery governance around your existing repository. It does **not** generate an application, replace GitHub, or dictate your technology stack.
+It adds delivery governance around your existing repository. It does **not** generate an application, replace your source system or harness, or dictate your technology stack.
 
 ## Understand it in 30 seconds
 
-| Question                        | Answer                                                                                                                                                                                                 |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **What is it?**                 | A role-based path from request to pull request, backed by templates, validators, and durable evidence.                                                                                                 |
-| **What problem does it solve?** | AI can produce code faster than teams can understand, review, resume, and govern the work around it.                                                                                                   |
-| **What is the value?**          | Clear scope, reproducible checks, explicit review boundaries, safer handoffs, and less process memory.                                                                                                 |
-| **Who is it for?**              | Solo maintainers and teams using AI coding agents in GitHub-based delivery. Agy, Claude, Codex, and Pi have built-in routing; other registered platforms can still provide truthful evidence identity. |
+| Question                        | Answer                                                                                                                                                                        |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **What is it?**                 | A role-based path from request to pull request, backed by templates, validators, and durable evidence.                                                                        |
+| **What problem does it solve?** | AI can produce code faster than teams can understand, review, resume, and govern the work around it.                                                                          |
+| **What is the value?**          | Clear scope, reproducible checks, explicit review boundaries, safer handoffs, and less process memory.                                                                        |
+| **Who is it for?**              | Adopters, maintainers, provider authors, and operators who need reviewable AI-assisted delivery. Manual, CLI, and extensible provider bindings keep the core harness-neutral. |
 
 The safest first look is read-only:
 
@@ -64,17 +64,20 @@ flowchart TB
 
 ## What is available now
 
-| Capability                                | What it provides                                                                          | Where to start                                              |
-| ----------------------------------------- | ----------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| Assisted adoption and updates             | Read-only inspection first, approval before writes, lockfile-aware sync                   | [Get started](docs/get-started.md)                          |
-| Role-based delivery                       | Analyst through PR-readiness phases with explicit handoffs                                | [Workflow](docs/agent-workflow.md)                          |
-| Durable evidence                          | Portable artifact references, transition envelopes, lifecycle boundaries, and PR evidence | [Evidence contracts](docs/evidence-contracts.md)            |
-| Deterministic validation                  | Issue, config, role-pass, PR, release, skill, agent, evidence, lifecycle, and eval checks | [CLI reference](docs/index.md#cli-and-validation-reference) |
-| Intelligent collaboration                 | Single-agent default plus bounded advisory, discovery, spike, and human-gated modes       | [Collaboration](docs/intelligent-collaboration.md)          |
-| Runtime identity and routing              | Truthful platform attribution separated from execution target and transport               | [Runtime platforms](docs/runtime-platforms.md)              |
-| Skills, plugins, settings, and extensions | Portable skills plus project-selected overlays and harness adapters                       | [Extension packs](docs/extension-packs.md)                  |
-| Optional visual operations                | Cockpit goal, readiness, release, replay, approval, and follow-up views                   | [Cockpit](docs/cockpit.md)                                  |
-| Executable quality model                  | Agent eval manifests, multi-agent acceptance checks, and derived outcome metrics          | [Agent evals](docs/agent-evals.md)                          |
+| Capability                                | What it provides                                                                           | Where to start                                              |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------- |
+| Preview-first adoption and updates        | Content-bound plan, transactional apply, lockfile v2, and external rollback receipt        | [Adopter path](docs/adopters/index.md)                      |
+| Role-based delivery                       | Analyst through PR-readiness phases with explicit handoffs                                 | [Workflow](docs/agent-workflow.md)                          |
+| Durable evidence                          | Portable artifact references, transition envelopes, lifecycle boundaries, and PR evidence  | [Evidence contracts](docs/evidence-contracts.md)            |
+| Deterministic validation                  | Issue, config, role-pass, PR, release, skill, agent, evidence, lifecycle, and eval checks  | [CLI reference](docs/index.md#cli-and-validation-reference) |
+| Intelligent collaboration                 | Provider-neutral intent plus bounded advisory, discovery, spike, and human-gated modes     | [Collaboration](docs/intelligent-collaboration.md)          |
+| Role acceptance and councils              | Digest-bound handovers, deterministic checks, accountable acceptance, and bounded rework   | [Role collaboration](docs/role-collaboration.md)            |
+| Providers and runtime identity            | Capability-based manual, CLI, Grok, and optional AFD facets with truthful attribution      | [Provider matrix](docs/providers/provider-matrix.md)        |
+| Source adapters                           | Source-neutral core with GitHub as the first read/mutation adapter                         | [Source adapters](docs/sources/index.md)                    |
+| Skills, plugins, settings, and extensions | Portable skills plus project-selected overlays and harness adapters                        | [Extension packs](docs/extension-packs.md)                  |
+| Lifecycle roles and methods               | Productized accountability contracts with configurable analysis and engineering approaches | [Lifecycle roles](docs/roles/index.md)                      |
+| Optional visual operations                | Cockpit goal, readiness, release, replay, approval, and follow-up views                    | [Cockpit](docs/cockpit.md)                                  |
+| Executable quality model                  | Agent eval manifests, multi-agent acceptance checks, and derived outcome metrics           | [Agent evals](docs/agent-evals.md)                          |
 
 ### Release status
 
@@ -82,15 +85,17 @@ The current release line is **1.0.0** and requires Node.js 20 or newer. Read the
 
 ## Choose your path
 
-| I want to…                              | Read this                                                     |
-| --------------------------------------- | ------------------------------------------------------------- |
-| Evaluate the product quickly            | [AgentFlow in 5 minutes](docs/agentflow-in-5-minutes.md)      |
-| Adopt it in a repository                | [Get started](docs/get-started.md)                            |
-| Find the right guide for my role        | [Start here](docs/start-here.md)                              |
-| Understand every document and tool      | [Documentation index](docs/index.md)                          |
-| Configure branches, checks, and routing | [Project setup](docs/project-setup.md)                        |
-| Run or contribute issue work            | [Contribution workflow](docs/guides/contribution-workflow.md) |
-| Extend or integrate the framework       | [SDLC packaging](docs/sdlc-packaging.md)                      |
+| I want to…                                | Read this                                                     |
+| ----------------------------------------- | ------------------------------------------------------------- |
+| Evaluate the product quickly              | [AgentFlow in 5 minutes](docs/agentflow-in-5-minutes.md)      |
+| Adopt it in a repository                  | [Get started](docs/get-started.md)                            |
+| Find the right guide for my role          | [Start here](docs/start-here.md)                              |
+| Author or integrate an execution provider | [Provider author path](docs/providers/index.md)               |
+| Operate and troubleshoot an installation  | [Operator path](docs/operators/index.md)                      |
+| Understand every document and tool        | [Documentation index](docs/index.md)                          |
+| Configure branches, checks, and routing   | [Project setup](docs/project-setup.md)                        |
+| Run or contribute issue work              | [Contribution workflow](docs/guides/contribution-workflow.md) |
+| Extend or integrate the framework         | [Modular architecture](docs/modular-architecture.md)          |
 
 ## Core principles
 
@@ -106,7 +111,7 @@ The current release line is **1.0.0** and requires Node.js 20 or newer. Read the
 | Area               | Contents                                                                        |
 | ------------------ | ------------------------------------------------------------------------------- |
 | Policy             | `AGENTS.md` and executor adapters such as `CODEX.md`, `CLAUDE.md`, and `AGY.md` |
-| Workflow           | `agents/roles/`, `agents/workflows/`, and `agents/templates/`                   |
+| Workflow           | `roles/`, `skills/`, and `agents/templates/`                                    |
 | Documentation      | `docs/`, organized by audience in the [documentation index](docs/index.md)      |
 | CLI and validators | `bin/`, `scripts/`, `lib/`, and `schemas/`                                      |
 | Distribution       | `adapters/`, `skills/`, `extensions/`, and `manifests/`                         |

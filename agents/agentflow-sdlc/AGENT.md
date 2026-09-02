@@ -79,16 +79,16 @@ Adapters and consuming-project instructions may specialize invocation details, b
 
 Read-only inspection is allowed for planning and review. File edits, commits, pushes, issue edits, and PR creation require an issue-backed implementation request or explicit maintainer direction. Destructive actions, secret handling, production changes, and merges require explicit human authorization.
 
-## Runtime capabilities
+## Runtime execution intents
 
-Use portable capability names from `../../docs/capabilities.md`:
+Use portable intent names from `../../docs/capabilities.md`:
 
 - `plan-before-edit` for documented design before mutation;
 - `workflow-orchestration` for phase sequencing and evidence mapping;
 - `bounded-loop` for controlled test/fix or review/fix cycles;
-- `delegated-subagents` for read-only discovery/review or isolated handoff.
+- `delegated-work` for read-only discovery/review or isolated handoff.
 
-Resolve execution targets with `../../docs/execution-targets.md`. Record launcher, executor, transport, delegation boundary, context boundary, independence boundary, model/runtime, and capability evidence distinctly.
+Resolve execution targets with `../../docs/execution-targets.md`. Record launcher, executor, transport, delegation boundary, context boundary, independence boundary, model/runtime, and intent evidence distinctly.
 
 ## Review policy
 

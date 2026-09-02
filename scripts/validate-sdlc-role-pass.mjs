@@ -94,10 +94,6 @@ if (
 const roleIdentity = normalizeRole(role, config)
 if (role && !roleIdentity.canonical)
   findings.push(finding('medium', 'role-pass.role', `role not in SDLC config: ${role}`))
-if (roleIdentity.deprecated)
-  findings.push(
-    finding('low', 'role-pass.role-alias', `deprecated role alias; emit ${roleIdentity.canonical}`),
-  )
 const result = report(findings, 'role-pass')
 if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
 else {

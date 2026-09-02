@@ -26,18 +26,18 @@ AgentFlow SDLC adds role-based workflow phases, GitHub evidence contracts, and l
 flowchart LR
   Request["Request or GitHub issue"] --> Analyze["Analyst: acceptance criteria"]
   Analyze --> Architect["Architect: approach and risk"]
-  Architect --> Plan["Developer planning: files and checks"]
+  Architect --> Plan["Implementation planner: files and checks"]
   Plan --> Build["Developer: scoped implementation"]
   Build --> Test["Tester: verification evidence"]
-  Test --> Review["Review: self-review or human gate"]
-  Review --> Docs["Tech writer: docs decision"]
+  Test --> Review["Reviewer: self-review or human gate"]
+  Review --> Docs["Technical writer: docs decision"]
   Docs --> PR["PR readiness: manifest and merge contract"]
   PR --> GitHub["Durable GitHub evidence"]
 ```
 
 ## Default: one agent, clear roles
 
-AgentFlow is **single-agent by default**. One executor can carry context end to end while switching through explicit roles: analyst, architect, developer, tester, reviewer, tech writer, and PR-readiness.
+AgentFlow is **single-agent by default**. One executor can carry context end to end while switching through explicit roles: product manager, analyst, architect, implementation planner, developer, tester, reviewer, technical writer, and PR readiness.
 
 ## Intelligent collaboration when it helps
 
@@ -46,6 +46,20 @@ AgentFlow can use more AI intelligence without asking people to manage more agen
 The guiding rule is: **increase intelligence per decision, not agents per task**.
 
 Optional multi-agent routing is available when it adds value, but it is explicit and evidenced. A multi-agent claim must show which intelligence executed which role, how it was reached, and whether review was independent.
+
+Each role transition is also bilateral: the sending role issues acceptance criteria, the receiving
+role returns a digest-bound delivery receipt, deterministic checks run first, and the sender accepts
+or requests concrete rework. Complex changes can request a targeted role council, while one named
+owner retains the decision. See [`role-collaboration.md`](role-collaboration.md).
+
+Before relying on advanced planning, delegation, isolation, or structured-output features, inspect
+the selected provider. AgentFlow resolves portable execution intents against what that provider
+reports at runtime and records any explicit degraded fallback:
+
+```bash
+node bin/cli.mjs providers inspect claude-cli --json
+node bin/cli.mjs collaboration plan --mode council --provider claude-cli --json
+```
 
 ## The primary way to evaluate it
 
@@ -57,13 +71,8 @@ Use the prompt in [`assisted-onboarding.md`](assisted-onboarding.md), or print i
 node bin/cli.mjs onboarding-prompt --target /path/to/your-project
 ```
 
-Already using AgentFlow? Use [`assisted-update.md`](assisted-update.md), or print the update prompt:
-
-```bash
-node bin/cli.mjs update-prompt --target /path/to/your-project
-```
-
-Both flows are read-only first and approval-gated before setup or sync commands run.
+For an existing installation, use `adopt plan` with its current profile. Both first adoption and
+updates are read-only first and approval-gated before `adopt apply` writes.
 
 ## What you see vs. what AgentFlow may coordinate
 

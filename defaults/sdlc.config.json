@@ -42,7 +42,7 @@
   "roles": [
     {
       "phase": 0,
-      "slug": "product-manager-jtbd",
+      "slug": "product-manager",
       "label": "Product manager / JTBD",
       "owns": ["goal", "job", "release-intent"]
     },
@@ -60,7 +60,7 @@
     },
     {
       "phase": 3,
-      "slug": "developer-planning",
+      "slug": "implementation-planner",
       "label": "Developer planning",
       "owns": ["implementation-plan", "validation-plan"]
     },
@@ -78,14 +78,14 @@
     },
     {
       "phase": 6,
-      "slug": "review",
-      "label": "Review",
+      "slug": "reviewer",
+      "label": "Reviewer",
       "owns": ["review-findings", "independence-boundary"]
     },
     {
       "phase": 7,
-      "slug": "tech-writer",
-      "label": "Tech writer",
+      "slug": "technical-writer",
+      "label": "Technical writer",
       "owns": ["docs", "release-notes", "product-language"]
     },
     {
@@ -99,13 +99,13 @@
     "bounded": {
       "requiredRoles": [
         "analyst",
-        "developer-planning",
+        "implementation-planner",
         "developer",
         "tester",
-        "review",
+        "reviewer",
         "pr-readiness"
       ],
-      "optionalRoles": ["product-manager-jtbd", "architect", "tech-writer"],
+      "optionalRoles": ["product-manager", "architect", "technical-writer"],
       "allowsSelfReview": true,
       "requiresHumanApproval": false
     },
@@ -113,26 +113,26 @@
       "requiredRoles": [
         "analyst",
         "architect",
-        "developer-planning",
+        "implementation-planner",
         "developer",
         "tester",
-        "review",
+        "reviewer",
         "pr-readiness"
       ],
-      "optionalRoles": ["product-manager-jtbd", "tech-writer"],
+      "optionalRoles": ["product-manager", "technical-writer"],
       "allowsSelfReview": true,
       "requiresHumanApproval": false
     },
     "high-assurance": {
       "requiredRoles": [
-        "product-manager-jtbd",
+        "product-manager",
         "analyst",
         "architect",
-        "developer-planning",
+        "implementation-planner",
         "developer",
         "tester",
-        "review",
-        "tech-writer",
+        "reviewer",
+        "technical-writer",
         "pr-readiness"
       ],
       "optionalRoles": [],
@@ -140,24 +140,30 @@
       "requiresHumanApproval": true
     },
     "exploratory": {
-      "requiredRoles": ["product-manager-jtbd", "analyst", "architect", "review"],
-      "optionalRoles": ["developer-planning", "developer", "tester", "tech-writer", "pr-readiness"],
+      "requiredRoles": ["product-manager", "analyst", "architect", "reviewer"],
+      "optionalRoles": [
+        "implementation-planner",
+        "developer",
+        "tester",
+        "technical-writer",
+        "pr-readiness"
+      ],
       "allowsSelfReview": true,
       "requiresHumanApproval": false
     }
   },
   "transitions": [
-    ["product-manager-jtbd", "analyst"],
+    ["product-manager", "analyst"],
     ["analyst", "architect"],
-    ["architect", "developer-planning"],
-    ["developer-planning", "developer"],
+    ["architect", "implementation-planner"],
+    ["implementation-planner", "developer"],
     ["developer", "tester"],
-    ["tester", "review"],
-    ["review", "tech-writer"],
-    ["tech-writer", "pr-readiness"],
-    ["developer", "developer-planning"],
-    ["review", "developer"],
-    ["tech-writer", "developer"],
+    ["tester", "reviewer"],
+    ["reviewer", "technical-writer"],
+    ["technical-writer", "pr-readiness"],
+    ["developer", "implementation-planner"],
+    ["reviewer", "developer"],
+    ["technical-writer", "developer"],
     ["pr-readiness", "developer"]
   ],
   "labels": {

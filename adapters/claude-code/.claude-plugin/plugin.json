@@ -1,11 +1,18 @@
 {
   "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
-  "name": "agentflow-sdlc",
+  "name": "agentflow",
   "version": "1.0.0",
   "description": "AgentFlow SDLC skills, validators, and release governance for Claude Code.",
   "author": {
     "name": "AgentFlow SDLC",
     "url": "https://github.com/smota/agentflow-sdlc"
   },
-  "skills": ["./skills/sdlc-definition", "./skills/sdlc-migration", "./skills/sdlc-audit"]
+  "skills": [
+    "./skills/orchestrator",
+    "./skills/collaborator",
+    "./skills/scanner",
+    "./skills/designer",
+    "./skills/migrator",
+    "./skills/auditor"
+  ]
 }

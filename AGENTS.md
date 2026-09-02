@@ -25,7 +25,7 @@ Before issue work, architecture proposals, file writes, commits, or gate decisio
   execution target. Routable platforms are the registry subset with built-in adapters. Resolve the
   execution target (`claude-cli` vs `anthropic-api`, `agy-cli` vs
   `agy-session`, `pi-parent` vs `pi-subagent`/`pi-session`/`pi-subagent-model`, `codex-cli` vs
-  `provider-api`) from project config or a clarifying question before launching work — never by
+  `provider-api`, `grok-cli` vs `xai-api`) from project config or a clarifying question before launching work — never by
   inheriting the launcher's current model or provider. See `docs/execution-targets.md`.
 - Every completed phase records role-pass evidence, including launcher, executor, transport, and
   delegation boundary as distinct fields.

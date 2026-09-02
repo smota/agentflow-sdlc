@@ -53,11 +53,11 @@ If you use Claude, Codex, Agy, Omnigent, or another harness, use the same prompt
 
    Use [`environment-tools.md`](environment-tools.md) to explain missing tools and install options.
 
-3. **Install or sync framework files only with approval**
+3. **Preview and apply framework files only with approval**
 
    ```bash
-   node /path/to/agentflow-sdlc/bin/cli.mjs init --target /path/to/project
-   node /path/to/agentflow-sdlc/bin/cli.mjs sync --target /path/to/project
+   node /path/to/agentflow-sdlc/bin/cli.mjs adopt plan --profile standard --target /path/to/project --json
+   node /path/to/agentflow-sdlc/bin/cli.mjs adopt apply --profile standard --target /path/to/project --confirm <plan-token> --receipt /outside/project/agentflow-receipt.json --json
    ```
 
    Existing instructions must be preserved or merged. Do not overwrite project-owned content without a reviewed plan.

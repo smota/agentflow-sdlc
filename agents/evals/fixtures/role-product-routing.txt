@@ -1,0 +1,5 @@
+Lifecycle: agentflow:product-manager -> agentflow:analyst -> agentflow:architect -> agentflow:implementation-planner -> agentflow:developer -> agentflow:tester -> agentflow:reviewer -> agentflow:technical-writer -> agentflow:pr-readiness
+Sidecar: agentflow:qa-expert contributes exploratory evidence without owning the tester verdict.
+Method: agentflow:method:event-storming augments agentflow:analyst and cannot replace role ownership, authority, transitions, or completion criteria.
+Short identities: implementation-planner -> agentflow:implementation-planner; reviewer -> agentflow:reviewer; technical-writer -> agentflow:technical-writer.
+Handoff: digest-bound, typed artifact references, explicit acceptance criteria, provenance, action boundary, and single-writer ownership.

@@ -95,11 +95,11 @@ is recorded:
     "roles": {
       "analyst": { "owner": "pi", "fallbacks": ["claude", "agy", "codex"] },
       "architect": { "owner": "agy", "fallbacks": ["pi", "claude", "codex"] },
-      "developer-planning": { "owner": "pi", "fallbacks": ["claude", "agy", "codex"] },
+      "implementation-planner": { "owner": "pi", "fallbacks": ["claude", "agy", "codex"] },
       "developer": { "owner": "claude", "fallbacks": ["codex", "agy", "pi"] },
       "tester": { "owner": "pi", "fallbacks": ["claude", "codex"] },
       "review": { "owner": "agy", "fallbacks": ["codex", "pi"] },
-      "tech-writer": { "owner": "claude", "fallbacks": ["agy", "codex", "pi"] },
+      "technical-writer": { "owner": "claude", "fallbacks": ["agy", "codex", "pi"] },
       "pr-readiness": { "owner": "pi", "fallbacks": ["agy", "codex"] }
     }
   }

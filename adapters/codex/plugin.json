@@ -1,5 +1,5 @@
 {
-  "name": "agentflow-sdlc-codex",
+  "name": "agentflow",
   "version": "1.0.0",
   "description": "AgentFlow SDLC skills, validators, and release governance for Codex.",
   "author": "AgentFlow SDLC",
