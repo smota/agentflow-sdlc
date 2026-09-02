@@ -53,22 +53,39 @@ Before approving writes, confirm:
 
 Use [project setup](project-setup.md) for the decision checklist and [project config](project-config.md) for every field.
 
-## 4. Initialize after approval
+## 4. Preview the exact adoption
 
 From the AgentFlow checkout:
 
 ```bash
-node bin/cli.mjs init --target /path/to/your-project
+node bin/cli.mjs adopt profiles --json
+node bin/cli.mjs adopt plan --profile standard --target /path/to/your-project --json
 ```
 
-`init` installs framework-owned files and seeds project-owned files once. Review the diff before committing. Existing project-owned policy is not silently overwritten.
+The plan is read-only. Review every action and conflict. If the target changes, the token becomes
+stale and apply refuses to write.
 
-In the target repository, commit the generated `agent-framework-lock.json` with the approved files. The lock lets future syncs distinguish safe framework updates from project-owned content.
+Apply only after approval, and keep the receipt outside the project:
+
+```bash
+node bin/cli.mjs adopt apply \
+  --profile standard \
+  --target /path/to/your-project \
+  --confirm <plan-token> \
+  --receipt /outside/path/agentflow-receipt.json \
+  --json
+```
+
+Apply stages writes, writes lockfile v2 last, and restores prior bytes after failure. Existing
+project-owned policy is not silently overwritten.
+
+In the target repository, commit the generated `agent-framework-lock.json` with the approved files.
+Keep the rollback receipt outside the repository.
 
 ## 5. Verify the installation
 
 ```bash
-node /path/to/agentflow-sdlc/bin/cli.mjs doctor --target /path/to/your-project
+node /path/to/agentflow-sdlc/bin/cli.mjs adopt plan --profile standard --target /path/to/your-project --json
 node /path/to/agentflow-sdlc/bin/cli.mjs sdlc validate --target /path/to/your-project
 ```
 
@@ -76,26 +93,14 @@ Then run the target repository's configured validation commands.
 
 ## Existing installations
 
-Plan updates before syncing:
+Plan updates before applying:
 
 ```bash
-node bin/cli.mjs update-prompt --target /path/to/your-project
-node bin/cli.mjs doctor --target /path/to/your-project
+node bin/cli.mjs adopt plan --profile standard --target /path/to/your-project --json
 ```
 
-After reviewing and approving the plan:
-
-```bash
-node bin/cli.mjs sync --target /path/to/your-project
-```
-
-If a framework file was intentionally hand-merged and should remain project-managed:
-
-```bash
-node bin/cli.mjs mark-merged CLAUDE.md --target /path/to/your-project
-```
-
-See [assisted update](assisted-update.md) for conflict classifications and the approval boundary.
+After reviewing and approving the current token, use `adopt apply` as above. Resolve conflicts in
+the target before generating a new plan; AgentFlow never overwrites project-owned changes silently.
 
 ## Verify this framework checkout
 

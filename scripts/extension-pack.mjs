@@ -51,7 +51,7 @@ if (command === 'scaffold') {
   fs.mkdirSync(path.join(dir, 'validators'), { recursive: true })
   fs.writeFileSync(
     path.join(dir, 'extension-pack.yaml'),
-    `id: ${id}\nkind: engineering-approach\nversion: 0.1.0\ndescription: Repository-local engineering approach extension pack.\nprinciples: principles.md\ndocumentation:\n  - README.md\nrequiredSkills: []\nrequiredWorkflowCapabilities: []\nrequiredToolPermissions: []\ncontrolRequirements: []\ntemplates: []\ntools: []\nvalidators: []\nplays: []\n`,
+    `id: ${id}\nkind: engineering-approach\nversion: 0.1.0\ndescription: Repository-local engineering approach extension pack.\nprinciples: principles.md\ndocumentation:\n  - README.md\nrequiredSkills: []\nrequiredExecutionIntents: []\nrequiredToolPermissions: []\ncontrolRequirements: []\ntemplates: []\ntools: []\nvalidators: []\nplays: []\n`,
   )
   fs.writeFileSync(
     path.join(dir, 'README.md'),

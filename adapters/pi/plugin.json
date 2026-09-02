@@ -1,5 +1,5 @@
 {
-  "name": "agentflow-sdlc-pi",
+  "name": "agentflow",
   "version": "1.0.0",
   "description": "AgentFlow SDLC skills, validators, and release governance for Pi.",
   "author": "AgentFlow SDLC",

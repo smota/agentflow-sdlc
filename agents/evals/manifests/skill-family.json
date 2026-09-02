@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "id": "agentflow-skill-family",
+  "owner": "auditor",
+  "subject": { "kind": "skill-catalog", "path": "manifests/skill-catalog.json" },
+  "threshold": 1,
+  "cases": [
+    {
+      "id": "skill-family-routing",
+      "actual": "../fixtures/skill-family-routing.txt",
+      "assertions": [
+        { "id": "orchestrator", "type": "contains", "value": "Route: agentflow:orchestrator" },
+        { "id": "collaborator", "type": "contains", "value": "Route: agentflow:collaborator" },
+        { "id": "scanner", "type": "contains", "value": "Route: agentflow:scanner" },
+        { "id": "designer", "type": "contains", "value": "Route: agentflow:designer" },
+        { "id": "migrator", "type": "contains", "value": "Route: agentflow:migrator" },
+        { "id": "auditor", "type": "contains", "value": "Route: agentflow:auditor" },
+        { "id": "no-overlap", "type": "contains", "value": "Rejects:" },
+        {
+          "id": "handoff",
+          "type": "contains",
+          "value": "agentflow:orchestrator -> agentflow:scanner -> agentflow:auditor -> agentflow:orchestrator"
+        }
+      ]
+    }
+  ]
+}

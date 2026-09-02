@@ -38,13 +38,25 @@ Supported direct routing clients are project-configurable:
 - `claude`
 - `codex`
 - `agy`
+- `grok`
 - `pi`
 
 Optional meta-harness/runtime:
 
 - `omnigent` — use when the project wants Omnigent to supervise agents, policies, sandboxes, or collaboration.
 
-`agent-workflow.config.json` can define `routing.agents.<slug>.availabilityCommand`. `doctor-env` reads those commands and reports whether the configured optional agent/runtime is available. Missing optional tools do not block the default single-agent workflow unless your project has chosen to require them.
+`agent-workflow.config.json` can define `routing.agents.<slug>.availabilityProbe` with a bare
+`executable` and string `args`. Provider inspection invokes that exact executable without a shell.
+Shell-string `availabilityCommand` values are rejected. Missing
+optional tools do not block the default manual/single-agent workflow unless project policy requires
+the provider capability.
+
+List declared provider facets without probing, then inspect one provider read-only:
+
+```bash
+node bin/cli.mjs providers list --json
+node bin/cli.mjs providers inspect grok-cli --json
+```
 
 ## Optional QA and integration tools
 

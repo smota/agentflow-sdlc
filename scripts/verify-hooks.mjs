@@ -151,7 +151,7 @@ try {
   assert.match(result.stdout, /\[session-status\] branch:/)
 
   // .codex/hooks.json (like .claude/settings.json and .agy/settings.json) is intentionally not
-  // framework-synced — see lib/framework-files.mjs's known-limitation note — so a project may not
+  // adoption-managed, so a project may not
   // have wired it yet. Only assert its contents when it exists.
   if (existsSync(codexHooksPath)) {
     const codexHooks = JSON.parse(readFileSync(codexHooksPath, 'utf8'))

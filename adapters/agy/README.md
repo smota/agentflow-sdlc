@@ -1,6 +1,7 @@
 # AGY adapter
 
 Generated AGY adapters project AgentFlow SDLC skills into skill-compatible local adapter surfaces.
+The shared namespace is `agentflow`; public skills are identified as `agentflow:<role>`.
 
 Rules:
 
@@ -11,3 +12,4 @@ Rules:
   and transition-envelope JSON, then pass the deterministic evidence/lifecycle validators.
 - Provenance is `platform: agy`, `executor: agy-cli`, `transport: local-cli` for local CLI runs.
 - Antigravity is a separate runtime identity even if a harness shares a compatible destination.
+- Portable lifecycle-role projections are generated under `.agentflow/roles/agy/`.

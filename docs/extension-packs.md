@@ -22,7 +22,10 @@ Extension packs are repository-level overlays for the core AgentFlow SDLC proces
 }
 ```
 
-Discovery is automatic; activation is explicit. `init`, `sync`, `doctor`, and the extension helper commands scan `extensions/` and `contrib/` every time they run, so a repo-local pack committed after initial setup is visible without rerunning `init`. Newly shipped framework packs may be discovered by `doctor`/`extensions list`, but they are not enabled unless `agent-workflow.config.json` is changed through review or the deterministic helper.
+Discovery is automatic; activation is explicit. Extension commands scan `extensions/` and
+`contrib/` every time they run, so a repo-local pack committed after adoption is immediately
+visible. Discovered packs are not enabled unless `agent-workflow.config.json` changes through review
+or the deterministic helper.
 
 Run validation with:
 
@@ -37,6 +40,11 @@ If a pack declares executable validators, run them explicitly:
 node scripts/validate-extension-packs.mjs --run-validators
 node bin/cli.mjs extensions validate --target /path/to/project --run-validators
 ```
+
+`--run-validators` executes pack-supplied commands and is a code-execution trust boundary, not a
+sandbox. Review and trust the entire pack before using it. The default `validate:extensions` gate
+checks manifests without running contributed commands. Provider availability probes separately use
+non-shell argument arrays; that constraint does not make arbitrary extension validators safe.
 
 ## Pack layout
 
@@ -74,7 +82,7 @@ documentation:
   - README.md
 requiredSkills:
   - context-mode
-requiredWorkflowCapabilities: []
+requiredExecutionIntents: []
 requiredToolPermissions:
   - shell
   - read
@@ -92,6 +100,9 @@ validators:
 plays:
   - id: evidence-analysis
     role: analyst
+    method: agentflow:method:event-storming
+    parameters:
+      includeExternalActors: true
     appliesWhen: non-trivial work needs evidence-backed scope
     requiredInputs: [goal]
     expectedOutputs: [acceptance-criteria]
@@ -113,9 +124,11 @@ Supported `kind` values:
 `plays` attach optional, declarative guidance to an existing canonical role. Each play declares
 when it applies, its inputs, outputs, evidence fields, and validators. A play cannot add or skip a
 core transition, transfer role ownership, change the readiness denominator, or weaken approvals.
+The optional `method` field binds a play to a typed entry in `manifests/method-catalog.json`;
+`parameters` must satisfy that method's declared types and the method must target the play's role.
+Method-free plays remain compatible.
 Workflow capabilities request behavior, tool permissions allow operations, and control requirements
-need independent enforcement or evidence. Legacy `requiredCapabilities` is input-compatible but
-deprecated.
+need independent enforcement or evidence. Untyped `requiredCapabilities` is unsupported.
 
 A configured extension pack may add requirements to each role pass:
 

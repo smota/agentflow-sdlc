@@ -14,6 +14,9 @@ New decisions get the next available number.
 | [ADR 001](001-role-based-single-agent-workflow.md)             | Role-based single-agent, phase-driven workflow              | Accepted | 2026-07-07 |
 | [ADR 002](002-npx-skills-plus-sync-cli-distribution.md)        | Distribution via npx skills + a companion sync CLI          | Accepted | 2026-07-07 |
 | [ADR 003](003-cross-platform-node-tooling-no-shell-scripts.md) | Cross-platform Node.js tooling — no bash/PowerShell scripts | Accepted | 2026-07-07 |
+| [ADR 004](004-separate-sdlc-policy-from-harness-execution.md)  | Separate SDLC policy from harness execution                 | Accepted | 2026-09-01 |
+| [ADR 005](005-versioned-provider-and-source-ports.md)          | Versioned provider and source ports                         | Accepted | 2026-09-01 |
+| [ADR 006](006-preview-first-transactional-adoption.md)         | Preview-first transactional adoption                        | Accepted | 2026-09-01 |
 
 ---
 

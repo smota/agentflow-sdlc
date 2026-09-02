@@ -39,20 +39,6 @@ describe('CLI prompt helpers', () => {
     expect(output).toContain('tmp-app')
     expect(output).toContain('do not execute them without explicit approval')
   })
-
-  it('prints the assisted update prompt with read-only and approval gates', () => {
-    const output = execFileSync(process.execPath, [cli, 'update-prompt', '--target', 'tmp-app'], {
-      encoding: 'utf8',
-    })
-
-    expect(output).toContain('assisted update guide')
-    expect(output).toContain('docs/assisted-update.md')
-    expect(output).toContain('tmp-app')
-    expect(output).toContain('Start read-only')
-    expect(output).toContain('agent-framework-lock.json')
-    expect(output).toContain('migrate-rename read-only')
-    expect(output).toContain('ask for approval before running migrate-rename --write, sync')
-  })
 })
 
 describe('CLI extension helpers', () => {

@@ -45,7 +45,7 @@
         "required": ["phase", "slug", "label", "owns"],
         "properties": {
           "phase": { "type": "integer", "minimum": 0 },
-          "slug": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+          "slug": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
           "label": { "type": "string" },
           "owns": { "type": "array", "items": { "type": "string" } }
         },

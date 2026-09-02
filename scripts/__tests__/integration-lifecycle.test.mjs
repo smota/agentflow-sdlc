@@ -68,4 +68,37 @@ describe('integration lifecycle', () => {
     expect(plan.skipped).toBe(true)
     expect(plan.reason).toContain('not development')
   })
+
+  it('applies lifecycle mutations through a source adapter', async () => {
+    const { applyIntegrationPlan } = await import('../integration-lifecycle.mjs')
+    const calls = []
+    const source = {
+      previewMutation: async ({ operation, parameters }) => ({
+        operation,
+        parameters,
+        token: `${operation}-token`,
+      }),
+      applyMutation: async (preview, { confirm }) => {
+        expect(confirm).toBe(preview.token)
+        calls.push([preview.operation, preview.parameters])
+        return { receiptToken: `${preview.operation}-receipt` }
+      },
+      flushReceipt: async () => {},
+    }
+    await applyIntegrationPlan(
+      {
+        labels: ['integrated:development'],
+        issues: ['#24'],
+        comment: 'integrated',
+        close: true,
+      },
+      source,
+    )
+    expect(calls).toEqual([
+      ['ensure-label', { label: 'integrated:development' }],
+      ['add-comment', { number: '24', body: 'integrated' }],
+      ['add-labels', { number: '24', labels: ['integrated:development'] }],
+      ['close-artifact', { number: '24' }],
+    ])
+  })
 })

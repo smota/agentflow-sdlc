@@ -1,10 +1,22 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process'
-import { dirname, resolve } from 'node:path'
+import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs'
+import { dirname, isAbsolute, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { doctor, init, markMerged, sync } from '../lib/install.mjs'
 import { validateEnvironment } from '../lib/environment.mjs'
 import { adapterStatus, syncSkillAdapters } from '../lib/skill-adapters.mjs'
+import { loadSkillCatalog, validateSkillCatalog } from '../lib/skill-catalog.mjs'
+import { roleAdapterStatus, syncRoleAdapters } from '../lib/role-adapters.mjs'
+import {
+  loadMethodCatalog,
+  loadRoleCatalog,
+  resolveRoleContract,
+  roleByIdentity,
+  validateMethodCatalog,
+  validateRoleCatalog,
+  validateRoleHandoff,
+  validateRoleMethodConfig,
+} from '../lib/role-catalog.mjs'
 import {
   buildPluginManifests,
   pluginStatus,
@@ -16,13 +28,19 @@ import {
   validateSettingsManifest,
 } from '../lib/structural-merge.mjs'
 import { buildReleasePlan } from '../lib/release-versioning.mjs'
-import { migrateRename } from '../lib/rename-migration.mjs'
 import {
   buildExtensionRegistry,
   resolveExtensionPack,
   setExtensionPackEnabled,
   validateConfiguredExtensionPacks,
 } from '../lib/extension-packs.mjs'
+import { COMPOSITION_PROFILES } from '../lib/adoption/profiles.mjs'
+import {
+  applyAdoption,
+  planAdoption,
+  recoverAdoption,
+  rollbackAdoption,
+} from '../lib/adoption/transaction.mjs'
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -109,6 +127,10 @@ function handleSdlc(rest, targetDir) {
   const pass = rest.filter((arg) => arg !== subcommand)
   if (subcommand === 'validate' || subcommand === 'validate-config')
     return runScript('scripts/validate-sdlc-config.mjs', pass, targetDir)
+  if (subcommand === 'validate-authority')
+    return runScript('scripts/validate-config-authority.mjs', pass, targetDir)
+  if (subcommand === 'migrate-authority')
+    return runScript('scripts/authority-migration.mjs', pass, targetDir)
   if (subcommand === 'validate-issue')
     return runScript('scripts/validate-sdlc-issue.mjs', pass, targetDir)
   if (subcommand === 'validate-role-pass')
@@ -134,13 +156,15 @@ function handleSdlc(rest, targetDir) {
   if (subcommand === 'migrate') return runScript('scripts/sdlc-migrate.mjs', pass, targetDir)
   process.stderr.write(`Usage:
   agentflow-sdlc sdlc validate [--target <dir>] [--json]
+  agentflow-sdlc sdlc validate-authority [--target <dir>] [--json]
+  agentflow-sdlc sdlc migrate-authority <plan|apply --confirm <plan-token>> [--target <dir>]
   agentflow-sdlc sdlc validate-issue --path <issue.json> [--json]
   agentflow-sdlc sdlc validate-role-pass --path <role-pass.md> [--json]
   agentflow-sdlc sdlc validate-pr --path <pr-body.md> [--json]
   agentflow-sdlc sdlc validate-release --path <issue.json> [--json]
   agentflow-sdlc sdlc validate-skill --path <SKILL.md> [--json]
   agentflow-sdlc sdlc validate-agent --path <AGENT.md> [--json]
-  agentflow-sdlc sdlc validate-evidence --type <contract> --path <json> [--json]
+  agentflow-sdlc sdlc validate-evidence --type <contract> --path <json> [--expected-digest <sha256>] [--json]
   agentflow-sdlc sdlc validate-lifecycle --type <contract> --path <json> [--json]
   agentflow-sdlc sdlc derive-metrics --path <events.json> [--json]
   agentflow-sdlc sdlc run-evals --manifest <manifest.json> [--actual-dir <dir>] [--json]
@@ -151,10 +175,144 @@ function handleSdlc(rest, targetDir) {
   process.exit(2)
 }
 
+function outsideTarget(targetDir, candidate) {
+  const value = relative(targetDir, candidate)
+  return value === '..' || value.startsWith(`..${sep}`) || isAbsolute(value)
+}
+
+function handleAdoption(rest, targetDir) {
+  const [subcommand] = positionalArgs(rest)
+  const profile = getFlag(rest, '--profile', COMPOSITION_PROFILES.defaultProfile)
+  const json = rest.includes('--json')
+  if (subcommand === 'profiles') {
+    const result = {
+      defaultProfile: COMPOSITION_PROFILES.defaultProfile,
+      profiles: COMPOSITION_PROFILES.profiles,
+    }
+    if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+    else {
+      process.stdout.write('AgentFlow install profiles\n')
+      for (const [id, item] of Object.entries(result.profiles)) {
+        process.stdout.write(`  - ${id}: ${item.description}\n`)
+      }
+    }
+    process.exit(0)
+  }
+  if (subcommand === 'plan') {
+    const plan = planAdoption(packageRoot, targetDir, { profile })
+    if (json) process.stdout.write(`${JSON.stringify(plan, null, 2)}\n`)
+    else
+      printReport(`Adoption preview for ${targetDir} (${plan.blocked ? 'BLOCKED' : 'ready'})`, {
+        actions: plan.actions.map((item) => `${item.action} ${item.target}`),
+        conflicts: plan.conflicts,
+        approvalToken: [plan.token],
+      })
+    process.exit(plan.blocked ? 1 : 0)
+  }
+  if (subcommand === 'apply') {
+    const confirm = getFlag(rest, '--confirm', '')
+    const receiptInput = getFlag(rest, '--receipt', '')
+    if (!confirm || !receiptInput) {
+      process.stderr.write(
+        'Usage: agentflow-sdlc adopt apply --confirm <plan-token> --receipt <outside-file> [--profile <id>] [--target <dir>] [--json]\n',
+      )
+      process.exit(2)
+    }
+    const receiptPath = resolve(receiptInput)
+    if (!outsideTarget(targetDir, receiptPath)) {
+      throw new Error('Adoption receipt must remain outside the target project')
+    }
+    if (existsSync(receiptPath)) throw new Error('Adoption receipt path already exists')
+    const plan = planAdoption(packageRoot, targetDir, { profile })
+    const receipt = applyAdoption(packageRoot, targetDir, plan, { confirm })
+    try {
+      writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`, {
+        encoding: 'utf8',
+        flag: 'wx',
+        mode: 0o600,
+      })
+    } catch (error) {
+      rollbackAdoption(targetDir, receipt, { confirm: receipt.receiptToken })
+      throw new Error(`Adoption receipt write failed and target was rolled back: ${error.message}`)
+    }
+    const result = {
+      status: 'applied',
+      target: receipt.target,
+      profile: receipt.profile,
+      planToken: receipt.planToken,
+      receiptToken: receipt.receiptToken,
+      receiptPath,
+      changed: receipt.changed,
+    }
+    if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+    else
+      printReport(`Applied adoption plan to ${targetDir}`, {
+        changed: result.changed,
+        receipt: [receiptPath],
+      })
+    process.exit(0)
+  }
+  if (subcommand === 'rollback') {
+    const confirm = getFlag(rest, '--confirm', '')
+    const receiptInput = getFlag(rest, '--receipt', '')
+    if (!confirm || !receiptInput) {
+      process.stderr.write(
+        'Usage: agentflow-sdlc adopt rollback --confirm <receipt-token> --receipt <outside-file> [--target <dir>] [--json]\n',
+      )
+      process.exit(2)
+    }
+    const receiptPath = resolve(receiptInput)
+    if (!outsideTarget(targetDir, receiptPath)) {
+      throw new Error('Adoption receipt must remain outside the target project')
+    }
+    const receipt = JSON.parse(readFileSync(receiptPath, 'utf8'))
+    const result = rollbackAdoption(targetDir, receipt, { confirm })
+    unlinkSync(receiptPath)
+    if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+    else process.stdout.write(`Rolled back adoption plan ${result.planToken}\n`)
+    process.exit(0)
+  }
+  if (subcommand === 'recover') {
+    const confirm = getFlag(rest, '--confirm', '')
+    if (!confirm) {
+      process.stderr.write(
+        'Usage: agentflow-sdlc adopt recover --confirm <recovery-token> [--target <dir>] [--json]\n',
+      )
+      process.exit(2)
+    }
+    const result = recoverAdoption(targetDir, { confirm })
+    if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+    else process.stdout.write(`Recovered unfinished adoption ${result.planToken ?? ''}\n`)
+    process.exit(0)
+  }
+  process.stderr.write(
+    'Usage: agentflow-sdlc adopt <profiles|plan|apply|rollback|recover> [--profile <id>] [--target <dir>] [--json]\n',
+  )
+  process.exit(2)
+}
+
 function handleSkills(rest, targetDir) {
   const [subcommand] = positionalArgs(rest)
   const json = rest.includes('--json')
   const harness = getFlag(rest, '--harness', 'all')
+  if (subcommand === 'catalog') {
+    const result = loadSkillCatalog(packageRoot)
+    if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+    else
+      printReport('AgentFlow skill catalog', {
+        skills: result.skills.map((skill) => `${skill.qualifiedName}: ${skill.owns.join(', ')}`),
+      })
+    process.exit(0)
+  }
+  if (subcommand === 'validate') {
+    const result = validateSkillCatalog({ packageRoot })
+    if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+    else
+      printReport(`AgentFlow skill catalog (${result.ok ? 'READY' : 'FAILED'})`, {
+        findings: result.findings.map((item) => `${item.severity} ${item.code}: ${item.message}`),
+      })
+    process.exit(result.ok ? 0 : 1)
+  }
   if (subcommand === 'sync') {
     const result = syncSkillAdapters({
       packageRoot,
@@ -181,9 +339,149 @@ function handleSkills(rest, targetDir) {
     process.exit(result.stale.length ? 1 : 0)
   }
   process.stderr.write(
-    `Usage:\n  agentflow-sdlc skills sync [--target <dir>] [--harness all|claude-code,agy,codex,pi] [--dry-run|--apply] [--json]\n  agentflow-sdlc skills status [--target <dir>] [--harness all|claude-code,agy,codex,pi] [--json]\n`,
+    `Usage:\n  agentflow-sdlc skills catalog [--json]\n  agentflow-sdlc skills validate [--json]\n  agentflow-sdlc skills sync [--target <dir>] [--harness all|claude-code,agy,codex,pi] [--dry-run|--apply] [--json]\n  agentflow-sdlc skills status [--target <dir>] [--harness all|claude-code,agy,codex,pi] [--json]\n`,
   )
   process.exit(2)
+}
+
+function handleRoles(rest, targetDir) {
+  const positionals = positionalArgs(rest)
+  const [subcommand, identity] = positionals
+  const json = rest.includes('--json')
+  const harness = getFlag(rest, '--harness', 'all')
+  const catalog = loadRoleCatalog(packageRoot)
+  if (subcommand === 'catalog' || subcommand === 'list') {
+    if (json) process.stdout.write(`${JSON.stringify(catalog, null, 2)}\n`)
+    else
+      printReport('AgentFlow role catalog', {
+        roles: catalog.roles.map(
+          (role) =>
+            `${role.qualifiedName} (${role.kind}${role.phase === null ? '' : ` phase ${role.phase}`}): ${role.purpose}`,
+        ),
+      })
+    process.exit(0)
+  }
+  if (subcommand === 'inspect') {
+    const role = roleByIdentity(identity, catalog)
+    if (!role) throw new Error(`Unknown role: ${identity ?? ''}`)
+    if (json) process.stdout.write(`${JSON.stringify(role, null, 2)}\n`)
+    else printReport(role.qualifiedName, { owns: role.owns, doesNotOwn: role.doesNotOwn })
+    process.exit(0)
+  }
+  if (subcommand === 'validate') {
+    const result = validateRoleCatalog({ packageRoot })
+    const configPath = resolve(targetDir, 'agent-workflow.config.json')
+    const configResult = validateRoleMethodConfig({
+      config: existsSync(configPath) ? JSON.parse(readFileSync(configPath, 'utf8')) : {},
+      packageRoot,
+      catalog: result.catalog,
+      methodCatalog: result.methodCatalog,
+    })
+    result.findings.push(...configResult.findings)
+    result.ok = result.ok && configResult.ok
+    if (json) process.stdout.write(`${JSON.stringify(result, replacerWithoutCatalogs, 2)}\n`)
+    else
+      printReport(`AgentFlow role catalog (${result.ok ? 'READY' : 'FAILED'})`, {
+        findings: result.findings.map((item) => `${item.severity} ${item.code}: ${item.message}`),
+      })
+    process.exit(result.ok ? 0 : 1)
+  }
+  if (subcommand === 'resolve') {
+    const configPath = getFlag(rest, '--config', null)
+    const config = configPath
+      ? JSON.parse(readFileSync(resolve(configPath), 'utf8'))
+      : existsSync(resolve(targetDir, 'agent-workflow.config.json'))
+        ? JSON.parse(readFileSync(resolve(targetDir, 'agent-workflow.config.json'), 'utf8'))
+        : {}
+    const methods = getFlag(rest, '--methods', '')
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean)
+    if (methods.length) {
+      config.roleMethods = config.roleMethods ?? { bindings: {} }
+      config.roleMethods.bindings = config.roleMethods.bindings ?? {}
+      config.roleMethods.bindings[identity] = methods
+    }
+    const result = resolveRoleContract({ role: identity, config, packageRoot })
+    if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+    else
+      printReport(`Effective role ${result.role.qualifiedName}`, {
+        methods: result.appliedMethods.map((method) => method.id),
+        inputs: result.role.inputs,
+        outputs: result.role.outputs,
+      })
+    process.exit(0)
+  }
+  if (subcommand === 'sync') {
+    const result = syncRoleAdapters({
+      packageRoot,
+      targetDir,
+      harness,
+      write: rest.includes('--apply') && !rest.includes('--dry-run'),
+    })
+    if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+    else
+      printReport(`Role adapter sync (${result.mode})`, {
+        entries: result.entries.map(
+          (entry) => `${entry.harness}:${entry.role ?? 'catalog'} -> ${entry.target}`,
+        ),
+      })
+    process.exit(0)
+  }
+  if (subcommand === 'status') {
+    const result = roleAdapterStatus({ packageRoot, targetDir, harness })
+    if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+    else printReport('Role adapter status', { stale: result.stale.map((entry) => entry.target) })
+    process.exit(result.stale.length ? 1 : 0)
+  }
+  if (subcommand === 'validate-handoff') {
+    const path = getFlag(rest, '--path', null)
+    if (!path) throw new Error('--path is required')
+    const handoff = JSON.parse(readFileSync(resolve(targetDir, path), 'utf8'))
+    const result = validateRoleHandoff({ handoff, packageRoot })
+    if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+    else
+      printReport(`Role handoff (${result.ok ? 'READY' : 'FAILED'})`, {
+        findings: result.findings.map((item) => item.message),
+      })
+    process.exit(result.ok ? 0 : 1)
+  }
+  process.stderr.write(
+    'Usage: agentflow-sdlc roles <catalog|inspect|validate|resolve|sync|status|validate-handoff> [role] [--target <dir>] [--json]\n',
+  )
+  process.exit(2)
+}
+
+function handleMethods(rest) {
+  const [subcommand] = positionalArgs(rest)
+  const json = rest.includes('--json')
+  const roleCatalog = loadRoleCatalog(packageRoot)
+  const methodCatalog = loadMethodCatalog(packageRoot)
+  if (subcommand === 'catalog' || subcommand === 'list') {
+    if (json) process.stdout.write(`${JSON.stringify(methodCatalog, null, 2)}\n`)
+    else
+      printReport('AgentFlow method catalog', {
+        methods: methodCatalog.methods.map((method) => `${method.id} -> ${method.role}`),
+      })
+    process.exit(0)
+  }
+  if (subcommand === 'validate') {
+    const result = validateMethodCatalog({ catalog: roleCatalog, methodCatalog })
+    if (json) process.stdout.write(`${JSON.stringify(result, replacerWithoutCatalogs, 2)}\n`)
+    else
+      printReport(`AgentFlow method catalog (${result.ok ? 'READY' : 'FAILED'})`, {
+        findings: result.findings.map((item) => item.message),
+      })
+    process.exit(result.ok ? 0 : 1)
+  }
+  process.stderr.write('Usage: agentflow-sdlc methods <catalog|validate> [--json]\n')
+  process.exit(2)
+}
+
+function replacerWithoutCatalogs(key, value) {
+  return ['catalog', 'methodCatalog', 'transitionKeys', 'sidecarKeys'].includes(key)
+    ? undefined
+    : value
 }
 
 function handlePlugins(rest, targetDir) {
@@ -385,17 +683,6 @@ function printOnboardingPrompt(targetDir) {
   )
 }
 
-function printUpdatePrompt(targetDir) {
-  process.stdout.write(`Use the AgentFlow SDLC assisted update guide:\n`)
-  process.stdout.write(
-    `https://github.com/smota/agentflow-sdlc/blob/main/docs/assisted-update.md\n\n`,
-  )
-  process.stdout.write(`Apply it to this already-adopted project: ${targetDir}\n`)
-  process.stdout.write(
-    `Start read-only. Inspect agent-framework-lock.json, existing agent instructions, project docs, and local workflow configuration. Run doctor-env, doctor, and migrate-rename read-only. Compare the installed framework state with this source framework checkout/version. Classify every proposed update as safe fast-forward, rename migration, conflict, seed-once skip, hand-merged, removed/missing, or validation blocker. Present an update plan and ask for approval before running migrate-rename --write, sync, editing files, marking hand merges, committing, pushing, or opening a PR. Preserve project-owned conventions and record update evidence in the PR.\n`,
-  )
-}
-
 function positionalArgs(args) {
   const result = []
   for (let index = 0; index < args.length; index += 1) {
@@ -408,12 +695,59 @@ function positionalArgs(args) {
   return result
 }
 
+const ROOT_USAGE =
+  'Usage: agentflow-sdlc <doctor-env|adopt|providers|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|onboarding-prompt|release-plan> [path] [--target <dir>] [--json]\n'
+
+const COMMAND_USAGE = {
+  'doctor-env': 'Usage: agentflow-sdlc doctor-env [--target <dir>] [--json]\n',
+  adopt:
+    'Usage: agentflow-sdlc adopt <profiles|plan|apply|rollback|recover> [--profile <id>] [--target <dir>] [--json]\n',
+  providers:
+    'Usage: agentflow-sdlc providers <list|inspect <id>|bind [--provider <id>] [--mode <mode>] [--profile <profile>]> --json\n',
+  collaboration:
+    'Usage: agentflow-sdlc collaboration <classify|plan|verify|advance|validate> [options] [--target <dir>] [--json]\n',
+  roles:
+    'Usage: agentflow-sdlc roles <catalog|inspect|validate|resolve|sync|status|validate-handoff> [role] [--json]\n',
+  methods: 'Usage: agentflow-sdlc methods <catalog|validate> [--json]\n',
+}
+
+function requestedHelp(args) {
+  return args.includes('--help') || args.includes('-h')
+}
+
 function main() {
   const [command, ...rest] = process.argv.slice(2)
+
+  if (!command || command === '--help' || command === '-h') {
+    process.stdout.write(ROOT_USAGE)
+    process.exit(0)
+  }
+  if (requestedHelp(rest)) {
+    process.stdout.write(COMMAND_USAGE[command] ?? ROOT_USAGE)
+    process.exit(0)
+  }
+
   const targetDir = resolve(getFlag(rest, '--target', process.cwd()))
 
   if (command === 'cockpit') {
     handleCockpit(rest, targetDir)
+  }
+
+  if (command === 'adopt') {
+    try {
+      handleAdoption(rest, targetDir)
+    } catch (error) {
+      process.stderr.write(`${error.message}\n`)
+      process.exit(1)
+    }
+  }
+
+  if (command === 'providers') {
+    runScript('scripts/provider-status.mjs', rest, targetDir)
+  }
+
+  if (command === 'collaboration') {
+    runScript('scripts/role-collaboration.mjs', rest, targetDir)
   }
 
   if (command === 'plugins') {
@@ -426,6 +760,24 @@ function main() {
 
   if (command === 'skills') {
     handleSkills(rest, targetDir)
+  }
+
+  if (command === 'roles') {
+    try {
+      handleRoles(rest, targetDir)
+    } catch (error) {
+      process.stderr.write(`${error.message}\n`)
+      process.exit(1)
+    }
+  }
+
+  if (command === 'methods') {
+    try {
+      handleMethods(rest)
+    } catch (error) {
+      process.stderr.write(`${error.message}\n`)
+      process.exit(1)
+    }
   }
 
   if (command === 'sdlc') {
@@ -441,32 +793,6 @@ function main() {
     }
   }
 
-  if (command === 'init') {
-    const report = init(packageRoot, targetDir)
-    printReport(`Installed framework into ${targetDir}`, report)
-    process.exit(0)
-  }
-
-  if (command === 'sync') {
-    const report = sync(packageRoot, targetDir)
-    printReport(`Synced framework in ${targetDir}`, report)
-    process.exit(report.conflicts.length > 0 ? 1 : 0)
-  }
-
-  if (command === 'doctor') {
-    const report = doctor(packageRoot, targetDir)
-    if (rest.includes('--json')) process.stdout.write(`${JSON.stringify(report, null, 2)}\n`)
-    else printReport(`Framework status for ${targetDir}`, report)
-    const drifted =
-      report.modified.length +
-      report.missing.length +
-      report.notInstalled.length +
-      (report.extensionEnabledMissing?.length ?? 0) +
-      (report.extensionEnabledInvalid?.length ?? 0) +
-      (report.extensionDuplicateIds?.length ?? 0)
-    process.exit(drifted > 0 ? 1 : 0)
-  }
-
   if (command === 'doctor-env') {
     const report = validateEnvironment(targetDir)
     if (rest.includes('--json')) process.stdout.write(`${JSON.stringify(report, null, 2)}\n`)
@@ -476,18 +802,6 @@ function main() {
 
   if (command === 'onboarding-prompt') {
     printOnboardingPrompt(targetDir)
-    process.exit(0)
-  }
-
-  if (command === 'update-prompt') {
-    printUpdatePrompt(targetDir)
-    process.exit(0)
-  }
-
-  if (command === 'migrate-rename') {
-    const report = migrateRename(targetDir, { write: rest.includes('--write') })
-    if (rest.includes('--json')) process.stdout.write(`${JSON.stringify(report, null, 2)}\n`)
-    else printReport(`AgentFlow SDLC rename migration for ${targetDir} (${report.mode})`, report)
     process.exit(0)
   }
 
@@ -503,20 +817,7 @@ function main() {
     process.exit(0)
   }
 
-  if (command === 'mark-merged') {
-    const path = positionalArgs(rest)[0]
-    if (!path) {
-      process.stderr.write('Usage: agentflow-sdlc mark-merged <path> [--target <dir>]\n')
-      process.exit(2)
-    }
-    const report = markMerged(targetDir, path)
-    printReport(`Marked hand-merged framework file in ${targetDir}`, { merged: [report.merged] })
-    process.exit(0)
-  }
-
-  process.stderr.write(
-    'Usage: agentflow-sdlc <init|sync|doctor|doctor-env|sdlc|cockpit|skills|plugins|settings|extensions|onboarding-prompt|update-prompt|migrate-rename|release-plan|mark-merged> [path] [--target <dir>] [--json]\n',
-  )
+  process.stderr.write(ROOT_USAGE)
   process.exit(2)
 }
 

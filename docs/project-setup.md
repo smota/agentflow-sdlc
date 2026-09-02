@@ -62,7 +62,7 @@ Setup prompts:
 ## Integration lifecycle automation
 
 Adopting projects should keep the framework-owned `.github/workflows/integration-lifecycle.yml` and
-`scripts/integration-lifecycle.mjs` installed through `init`/`sync`. The workflow needs these token
+`scripts/integration-lifecycle.mjs` installed through transactional adoption. The workflow needs these token
 permissions:
 
 ```yaml
@@ -92,35 +92,35 @@ for how planned ownership becomes evidenced multi-agent claims.
     "agents": {
       "pi": {
         "enabled": true,
-        "availabilityCommand": "pi --version",
+        "availabilityProbe": { "executable": "pi", "args": ["--version"] },
         "callWorkflowDoc": "docs/agents/pi-routing.md"
       },
       "claude": {
         "enabled": true,
-        "availabilityCommand": "claude --version",
+        "availabilityProbe": { "executable": "claude", "args": ["--version"] },
         "defaultExecutionTarget": "claude-cli",
         "callWorkflowDoc": "docs/agents/claude-routing.md"
       },
       "agy": {
         "enabled": true,
-        "availabilityCommand": "agy --version",
+        "availabilityProbe": { "executable": "agy", "args": ["--version"] },
         "defaultExecutionTarget": "agy-cli",
         "callWorkflowDoc": "docs/agents/agy-routing.md"
       },
       "codex": {
         "enabled": true,
-        "availabilityCommand": "codex --version",
+        "availabilityProbe": { "executable": "codex", "args": ["--version"] },
         "callWorkflowDoc": "docs/agents/codex-routing.md"
       }
     },
     "roles": {
       "analyst": { "owner": "pi", "fallbacks": ["claude", "agy", "codex"] },
       "architect": { "owner": "agy", "fallbacks": ["pi", "claude", "codex"] },
-      "developer-planning": { "owner": "pi", "fallbacks": ["claude", "agy", "codex"] },
+      "implementation-planner": { "owner": "pi", "fallbacks": ["claude", "agy", "codex"] },
       "developer": { "owner": "claude", "fallbacks": ["codex", "agy", "pi"] },
       "tester": { "owner": "pi", "fallbacks": ["claude", "codex"] },
       "review": { "owner": "agy", "fallbacks": ["codex", "pi"] },
-      "tech-writer": { "owner": "claude", "fallbacks": ["agy", "codex", "pi"] },
+      "technical-writer": { "owner": "claude", "fallbacks": ["agy", "codex", "pi"] },
       "pr-readiness": { "owner": "pi", "fallbacks": ["agy", "codex"] }
     }
   }

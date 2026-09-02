@@ -1,14 +1,18 @@
 # AgentFlow Cockpit
 
-AgentFlow Cockpit is the optional Goal Command Center for goal-oriented SDLC delivery. It turns GitHub issues, epics, comments, PRs, role-pass evidence, validation, and follow-ups into goals, evidence health, role flow contributions, graph navigation, next-best-actions, and replayable goal stories.
+AgentFlow Cockpit is the optional Goal Command Center for goal-oriented SDLC delivery. It turns
+source-adapter projections, role-pass evidence, validation, and follow-ups into goals, evidence
+health, role flow contributions, graph navigation, next-best-actions, and replayable goal stories.
 
-Cockpit is optional at runtime and first-class in the AgentFlow SDLC product. The CLI/GitHub workflow remains authoritative and fully usable without Cockpit. `init`, `sync`, `doctor`, validators, skills, plugins, and settings merge must not require a running Cockpit server.
+Cockpit is optional at runtime and first-class in the AgentFlow SDLC product. Core, CLI, and source
+adapters remain authoritative and fully usable without Cockpit. Adoption, validators, skills,
+plugins, and settings merge must not require a running Cockpit server.
 
 For the implemented product vocabulary and rules, see [`docs/cockpit-concepts-and-rules.md`](cockpit-concepts-and-rules.md). Use that document when reviewing SDLC roles, skills, and agents.
 
 ## Product principles
 
-- GitHub is durable truth: issues, comments, PR bodies, commits, closure metadata.
+- The configured source adapter supplies durable truth; GitHub is the implemented default.
 - Local or runner telemetry is optional and non-authoritative.
 - Single-agent, multi-role execution remains default.
 - Helpers are advisory unless role attribution proves a valid multi-agent handoff.

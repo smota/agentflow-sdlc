@@ -3,11 +3,26 @@
   "name": "AgentFlow SDLC for Pi",
   "version": "1.0.0",
   "harness": "pi",
+  "namespace": "agentflow",
   "entry": ".pi/skills",
-  "skills": ["sdlc-definition", "sdlc-migration", "sdlc-audit"],
+  "roleEntry": ".agentflow/roles/pi",
+  "skills": ["orchestrator", "collaborator", "scanner", "designer", "migrator", "auditor"],
+  "roles": [
+    "product-manager",
+    "analyst",
+    "architect",
+    "implementation-planner",
+    "developer",
+    "tester",
+    "reviewer",
+    "technical-writer",
+    "pr-readiness",
+    "qa-expert"
+  ],
   "commands": [
     "agentflow-sdlc sdlc validate",
     "agentflow-sdlc skills sync --harness pi",
+    "agentflow-sdlc roles sync --harness pi --apply",
     "agentflow-sdlc cockpit doctor --json"
   ],
   "settings": [".pi/settings.json"]

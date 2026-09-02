@@ -1,154 +1,105 @@
-# Advanced agent capabilities
+# Harness capability negotiation
 
-Capabilities describe requested workflow behavior. They are not tool permissions or controls.
-Extension manifests record allowed operations under `requiredToolPermissions` and independently
-enforced/evidenced boundaries under `controlRequirements`; see
-[`evidence-contracts.md`](evidence-contracts.md). An adapter cannot satisfy a control in prose.
+AgentFlow describes desired execution behavior without embedding Claude, Codex, Grok, Pi, Agy, or
+another harness into lifecycle roles or skills. The active provider is inspected at runtime and the
+resolver selects the smallest implementation that satisfies the declared intent and controls.
 
-**AgentFlow SDLC** is a reusable SDLC governance framework, not a single agent harness. Advanced features such as PLAN, WORKFLOW, LOOP, and SUB-AGENTS are therefore modeled as **portable capabilities**: a skill or workflow requests an intent, and the active execution target resolves that intent through a platform-specific adapter.
+## Bounded taxonomy
 
-This keeps framework-owned skills portable across Claude, Codex, Agy, Pi, humans, and future executors while preserving the existing role, routing, evidence, GitHub issue, and PR contracts.
+| Concept          | Question                          | Examples                                  |
+| ---------------- | --------------------------------- | ----------------------------------------- |
+| Lifecycle role   | Who owns the SDLC decision?       | `agentflow:architect`, `agentflow:tester` |
+| Skill or method  | How is the work approached?       | `agentflow:scanner`, TDD, event storming  |
+| Execution intent | What portable behavior is needed? | `delegated-work`, `parallel-fanout`       |
+| Control          | What may never be weakened?       | `single-writer`, `review-independence`    |
+| Provider facet   | What service surface exists?      | `execution`, `evidence`, `workspace`      |
+| Provider binding | How will this run now?            | provider, transport, fidelity, limits     |
+| Evidence         | What actually happened?           | intent resolutions and execution receipt  |
 
-## Core rule
+Controls are not capabilities. Provider facets are not execution intents. Runtime platform,
+execution target, transport, model, and delegation boundary remain distinct provenance fields.
 
-Do not hard-code a harness feature when a skill needs a portable behavior.
+## Execution intents
 
-Instead of:
+| Intent                   | Purpose                                             | Typical consumers               |
+| ------------------------ | --------------------------------------------------- | ------------------------------- |
+| `plan-before-edit`       | Establish an approach before mutation               | architect, planner, developer   |
+| `delegated-work`         | Run bounded work in another context                 | collaborator, reviewer, scanner |
+| `parallel-fanout`        | Evaluate independent lanes concurrently             | scanner, tester, QA expert      |
+| `isolated-workspace`     | Keep experimental writes outside the issue worktree | migrator, developer spike       |
+| `background-execution`   | Continue bounded long-running work asynchronously   | orchestrator, tester            |
+| `structured-result`      | Return a schema-constrained result                  | auditor, reviewer, PR readiness |
+| `bounded-loop`           | Repeat with explicit limits and stop conditions     | developer, migrator             |
+| `workflow-orchestration` | Coordinate steps while preserving AgentFlow phases  | orchestrator                    |
 
-- “Use Claude subagents.”
-- “Run the Pi workflow tool.”
-- “Enter Plan Mode.”
+`delegated-work` is intentionally mechanism-neutral. A provider may implement it as a subagent,
+fresh session, provider call, sequential role lens, or human handoff.
 
-Say:
+## Provider descriptors
 
-- Request `delegated-subagents` with read-only reviewer constraints.
-- Request `workflow-orchestration` for the SDLC phase sequence.
-- Request `plan-before-edit` before implementation edits.
-
-The adapter for the selected `executionTarget` decides whether the capability is native, package-backed, framework-emulated, manual, optional-unavailable, or required-unavailable.
-
-## Capability resolution modes
-
-| Mode                   | Meaning                                                                                              |
-| ---------------------- | ---------------------------------------------------------------------------------------------------- |
-| `native`               | The execution target has a first-class feature for the requested capability.                         |
-| `package`              | A trusted plugin, package, MCP server, or local extension provides the capability.                   |
-| `framework-emulated`   | The framework can produce equivalent governance with docs, role passes, scripts, and explicit gates. |
-| `manual`               | A human performs or approves the capability.                                                         |
-| `optional-unavailable` | The capability was requested as optional but is not available; continue with recorded fallback.      |
-| `required-unavailable` | The capability is required but unavailable; stop and record the blocker.                             |
-
-Resolution order is native, package, framework-emulated, manual, optional-unavailable, required-unavailable.
-
-## Standard capabilities
-
-### `plan-before-edit`
-
-**Intent:** capture and approve the implementation approach before edits begin.
-
-**Use when:** architect, developer-planning, or developer work could otherwise drift into unreviewed changes.
-
-**Allowed implementations:**
-
-- Native: a harness plan mode.
-- Package: a workflow package that gates writes on a plan artifact.
-- Framework-emulated: a role-pass or plan file created before edits and referenced in workflow evidence.
-- Manual: human-approved plan comment or PR note.
-
-**Required evidence:** plan artifact or summary, approval/gate status, whether edits were blocked until the plan existed.
-
-### `workflow-orchestration`
-
-**Intent:** run a multi-step recipe while keeping the framework phase model authoritative.
-
-**Use when:** a skill coordinates phases, role passes, validation, handovers, or PR readiness.
-
-**Allowed implementations:**
-
-- Native: harness workflow primitive.
-- Package: local workflow package or slash-command recipe.
-- Framework-emulated: `docs/agent-workflow.md` phases plus issue/PR evidence.
-- Manual: human-managed checklist using the same evidence contract.
-
-**Required evidence:** workflow id/name, selected phase set, skipped phases with reasons, and how workflow output maps back to SDLC evidence.
-
-### `bounded-loop`
-
-**Intent:** repeat a controlled cycle until an explicit stop condition is met.
-
-**Use when:** review/fix, test/fix, or clarify/plan cycles are useful.
-
-**Required constraints:**
-
-- maximum iteration count;
-- explicit stop conditions;
-- blocker handling;
-- no looping for optional polish;
-- no child agent decides the final loop outcome unless the parent workflow explicitly delegates that gate.
-
-**Required evidence:** loop type, current/max iterations, stop conditions, exit reason, and remaining findings/follow-ups.
-
-### `delegated-subagents`
-
-**Intent:** delegate bounded work to another context or specialist while keeping accountability clear.
-
-**Use when:** broad discovery, read-only review, isolated research, or controlled handoff adds value.
-
-**Required constraints:**
-
-- single-writer rule for a shared worktree;
-- read-only by default for review/research delegates;
-- launcher, executor, transport, delegation boundary, context boundary, and independence boundary recorded distinctly;
-- no claim of independent multi-agent review unless the role attribution evidence supports it.
-
-**Required evidence:** delegated task, executor, transport, boundaries, tool/write permissions, result artifact, and parent synthesis.
-
-## Evidence example
+Providers expose structural `facets` and a separate `intentSupport` descriptor:
 
 ```json
 {
-  "capabilitiesUsed": [
+  "facets": ["execution", "evidence"],
+  "intentSupport": [
     {
-      "name": "plan-before-edit",
-      "requested": true,
-      "required": true,
-      "mode": "framework-emulated",
-      "adapter": "generic-framework",
-      "artifact": ".agent-runs/issues/123/passes/03-developer-planning.md",
-      "status": "satisfied"
-    },
-    {
-      "name": "delegated-subagents",
-      "requested": true,
-      "required": false,
-      "mode": "optional-unavailable",
-      "adapter": "codex-cli",
-      "reason": "no configured independent subagent transport",
-      "status": "skipped"
+      "id": "delegated-work",
+      "implementation": "native",
+      "fidelity": "full",
+      "evidence": "probed",
+      "limits": { "maxDelegates": 4 }
     }
   ]
 }
 ```
 
-## Relationship to existing framework concepts
+Availability is `available`, `configured`, `manual`, `unknown`, or `unavailable`. Implementation is
+`native`, `plugin`, `adapter`, `emulated`, or `manual`; fidelity is `full`, `partial`, or `degraded`;
+evidence is `probed`, `contract-tested`, or `self-declared`.
 
-| Concept          | Answers                                      | Example                                  |
-| ---------------- | -------------------------------------------- | ---------------------------------------- |
-| Role             | What SDLC responsibility is being performed? | `developer`, `review`, `tester`          |
-| Platform slug    | Which registered runtime produced evidence?  | `cowork`, `antigravity`, `pi`, `human`   |
-| Execution target | How that work runs?                          | `claude-cli`, `codex-cli`, `pi-subagent` |
-| Capability       | What advanced behavior is requested?         | `plan-before-edit`, `bounded-loop`       |
+`inspect()` is the runtime authority. There is no target-by-capability matrix. A new provider adds a
+descriptor and probe without changing role, skill, or method catalogs.
 
-Capabilities never replace role-pass evidence, issue comments, PR manifests, execution-target resolution, or follow-up issue discipline.
+## Resolution and fallback
 
-## Intelligent collaboration
+The resolver:
 
-`docs/intelligent-collaboration.md` defines collaboration modes that compose these capabilities without changing the SDLC phase model. A collaboration plan may request `workflow-orchestration`, `delegated-subagents`, and `bounded-loop`, but it must still use the smallest sufficient collaboration mode and record parent synthesis. Use `node scripts/resolve-collaboration-plan.mjs --json` to preview the selected mode, and `node scripts/validate-collaboration-evidence.mjs --path <evidence.json>` when helper evidence is produced.
+1. validates the portable execution intent;
+2. checks required provider facets;
+3. calls the provider's `inspect()`;
+4. resolves every intent with fidelity, evidence, limits, and status;
+5. applies only explicitly allowed semantic fallbacks;
+6. emits a digest-bound plan and execution receipt.
 
-## False-claim guardrails
+Valid fallbacks include parallel fanout to sequential role lenses and native planning to an
+AgentFlow plan artifact. Invalid fallbacks include a shared-worktree second writer, same-context
+self-review presented as independent, or a spike without an isolated workspace.
 
-- A provider model id such as `anthropic/claude-*` is not the same thing as `claude-cli`.
-- A same-context self-review is not independent multi-agent review.
-- A prose plan after edits is not `plan-before-edit`.
-- An unbounded retry cycle is not `bounded-loop`.
-- A helper process without recorded boundaries is not sufficient evidence for `delegated-subagents`.
+```bash
+agentflow-sdlc providers list --json
+agentflow-sdlc providers inspect grok-cli --json
+agentflow-sdlc collaboration plan --mode council --provider grok-cli --json
+```
+
+Provider-specific documentation is illustrative only. The observed descriptor and receipt are the
+authority for the current run.
+
+## Evidence
+
+Role passes record `executionIntentsUsed`. `ExecutionReceipt.executionIntentSource` records the
+provider's declared support and actual resolutions. Required loops include maximum iterations and
+stop conditions; planning includes its pre-edit artifact; delegated work includes permissions,
+context, result, and owner synthesis.
+
+```bash
+node scripts/validate-execution-intent-evidence.mjs --path evidence.json --json
+```
+
+See [Intelligent collaboration](intelligent-collaboration.md) for mode selection and
+[Role collaboration](role-collaboration.md) for deterministic handover acceptance and councils.
+
+Execution integrations use `planBoundExecution({ provider, collaborationPlan, request })` from
+`lib/collaboration-plan.mjs` to carry the selected binding into the provider's digest-bound plan.
+This preserves intent resolutions and degraded status in the resulting `ExecutionReceipt`.
+Do not reconstruct a binding from a provider name or discard its fallback evidence.

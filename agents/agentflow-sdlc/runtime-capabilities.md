@@ -1,41 +1,27 @@
-# Runtime capabilities
+# Runtime execution intents
 
-Keep three namespaces distinct: workflow capabilities are requested behaviors, tool permissions
-are allowed operations, and controls are independently enforced/evidenced boundaries. Action
-authority is orthogonal to workflow profile and delegation may only narrow it.
+Keep execution intents, tool permissions, provider facets, and controls distinct. Action authority
+is orthogonal to workflow profile and delegation may only narrow it.
 
-AgentFlow SDLC uses portable capability names from `../../docs/capabilities.md` so harnesses can map intent to native, package, framework-emulated, manual, optional-unavailable, or required-unavailable implementations.
+| Intent                   | Purpose                            | Required evidence                                |
+| ------------------------ | ---------------------------------- | ------------------------------------------------ |
+| `plan-before-edit`       | Capture approach before mutation   | Plan artifact and pre-edit gate                  |
+| `workflow-orchestration` | Preserve phases and evidence       | Phase set, skips, and evidence mapping           |
+| `bounded-loop`           | Repeat with a stop condition       | Maximum iterations, stop conditions, exit reason |
+| `delegated-work`         | Delegate bounded work              | Context, permissions, result, parent synthesis   |
+| `parallel-fanout`        | Run independent lanes concurrently | Concurrency limit and joined results             |
+| `isolated-workspace`     | Isolate experimental writes        | Workspace identity, writer lease, cleanup        |
+| `background-execution`   | Run bounded asynchronous work      | Timeout, status, cancellation and completion     |
+| `structured-result`      | Produce a typed result             | Schema identity and validation result            |
 
-| Capability               | Intent                                                      | Default mode                                                   | Required evidence                                                             |
-| ------------------------ | ----------------------------------------------------------- | -------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| `plan-before-edit`       | Capture approach before mutation.                           | framework-emulated via architect/developer-planning role-pass. | Plan artifact/summary, gate status, whether edits waited.                     |
-| `workflow-orchestration` | Run SDLC phases while preserving evidence.                  | framework-emulated via `../../docs/agent-workflow.md`.         | Phase set, skipped phases, issue/PR evidence mapping.                         |
-| `bounded-loop`           | Repeat test/fix or review/fix with stop condition.          | framework-emulated unless harness provides loop primitive.     | Max iterations, stop condition, exit reason, remaining findings.              |
-| `delegated-subagents`    | Delegate discovery/review/research/handoff with boundaries. | optional; read-only by default.                                | Task, executor, transport, boundaries, permissions, result, parent synthesis. |
+Use the smallest sufficient mode from `../../docs/intelligent-collaboration.md`. The active provider
+may implement an intent natively, through a plugin/adapter, by AgentFlow emulation, or manually.
+Record the inspected implementation, fidelity, evidence level, and limits.
 
-## Harness capability mapping
+## Collaboration constraints
 
-- Native harness features may satisfy a capability only if evidence maps back to role-pass and PR contracts.
-- Package-backed features are acceptable when trusted and documented.
-- Framework-emulated behavior is the safe default.
-- Manual behavior is acceptable for human gates.
-- Optional unavailable capabilities may be skipped with evidence.
-- Required unavailable capabilities block work.
-
-## Intelligent collaboration modes
-
-Use `../../docs/intelligent-collaboration.md` to choose the smallest sufficient collaboration mode:
-
-- `single-agent` for clear low-risk work;
-- `advisory` for focused read-only second opinions;
-- `council` for high-uncertainty role-local strategy decisions;
-- `parallel-discovery` for broad read-only repo discovery;
-- `spike` for isolated worktree experiments;
-- `human-gated` for high-assurance authority decisions.
-
-## Sub-agent constraints
-
-- Use sub-agents for broad discovery, read-only review, isolated research, or controlled handoff.
-- Parent remains accountable for synthesis and final evidence.
+- Parent remains accountable for synthesis.
 - Keep one writer per shared worktree.
-- Do not claim independent review unless reviewer role intelligence differs or self-review is disclosed where allowed.
+- Review independence requires evidence, not a provider name.
+- Every role handover includes an acceptance contract; complex work may require a council.
+- Council members advise over one evidence digest; the role owner decides and dispositions objections.

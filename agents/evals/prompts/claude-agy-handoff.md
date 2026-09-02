@@ -9,7 +9,7 @@ For Claude: act as Analyst, apply the `evidence-analysis` extension play, and em
 `transport: local-cli`, and `delegationBoundary: current-session`.
 
 For Agy: consume the validated Claude JSON as Architect and emit an
-`architect → developer-planning` transition with `platform: agy`, `executor: agy-cli`,
+`architect -> implementation-planner` transition with `platform: agy`, `executor: agy-cli`,
 `transport: local-cli`, and `delegationBoundary: current-session`.
 
 Both outputs must include portable input/output ArtifactRefs and explicitly record true refusals

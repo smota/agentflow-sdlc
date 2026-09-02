@@ -29,7 +29,7 @@ Adopt a single-agent, multi-role, phase-driven workflow as the default operating
 - High-assurance security/acceptance gates require human review at the PR stage; bounded/standard
   work allows explicit, evidence-backed self-review.
 
-Full mechanics: `docs/agent-workflow.md`, `agents/workflows/orchestrate/SKILL.md`,
+Full mechanics: `docs/agent-workflow.md`, `skills/orchestrator/SKILL.md`,
 `agents/templates/role-pass.md`.
 
 ## Consequences

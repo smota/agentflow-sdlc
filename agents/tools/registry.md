@@ -55,14 +55,16 @@ committed configuration.
 
 ## Deterministic scripts (`scripts/*.mjs`)
 
-| Script                                     | Purpose                                                                            |
-| ------------------------------------------ | ---------------------------------------------------------------------------------- |
-| `scripts/validate-spec.mjs`                | Validates `SPEC.md` before implementation begins                                   |
-| `scripts/validate-bounded.mjs`             | Checks Lane B (bounded) eligibility on the current diff                            |
-| `scripts/system-check.mjs`                 | Validates local environment, versions, and connectivity                            |
-| `scripts/issue-markdown.mjs`               | Pure transform for replacing a section in an issue/PR markdown body                |
-| `scripts/resolve-capability.mjs`           | Resolves PLAN/WORKFLOW/LOOP/SUB-AGENTS capability requests for an execution target |
-| `scripts/validate-capability-evidence.mjs` | Validates recorded capability evidence and guardrails                              |
+| Script                                           | Purpose                                                             |
+| ------------------------------------------------ | ------------------------------------------------------------------- |
+| `scripts/validate-spec.mjs`                      | Validates `SPEC.md` before implementation begins                    |
+| `scripts/validate-bounded.mjs`                   | Checks Lane B (bounded) eligibility on the current diff             |
+| `scripts/system-check.mjs`                       | Validates local environment, versions, and connectivity             |
+| `scripts/issue-markdown.mjs`                     | Pure transform for replacing a section in an issue/PR markdown body |
+| `scripts/provider-status.mjs`                    | Inspects provider facets and execution-intent support at runtime    |
+| `scripts/role-collaboration.mjs`                 | Classifies, plans, validates, and verifies role collaboration       |
+| `scripts/validate-execution-intent-evidence.mjs` | Validates portable execution-intent evidence and guardrails         |
+| `scripts/role-collaboration-smoke.mjs`           | Runs the provider-to-role-acceptance path without external effects  |
 
 Run from the repository root with `node scripts/<name>.mjs`. Use `pnpm --filter <package>` for
 package-scoped commands.

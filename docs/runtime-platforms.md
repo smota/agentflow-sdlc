@@ -17,6 +17,7 @@ say **how work ran**. Never infer one from another.
 | `claude`      | Claude       | agent runtime | yes                   |
 | `codex`       | Codex        | agent runtime | yes                   |
 | `agy`         | Agy          | agent runtime | yes                   |
+| `grok`        | Grok         | agent runtime | yes                   |
 | `human`       | Human        | human         | no                    |
 
 Identity-only platforms remain truthful when work uses another execution surface. Example: Cowork may
@@ -56,5 +57,5 @@ node scripts/validate-role-attribution.mjs --path <evidence.md>
 node scripts/validate-sdlc-role-pass.mjs --path <role-pass.md>
 ```
 
-`schemas/runtime-platform-registry.schema.json` defines registry shape. Init/sync installs registry,
+`schemas/runtime-platform-registry.schema.json` defines registry shape. Transactional adoption installs registry,
 schema, library, and validators together so consumers use same vocabulary.
