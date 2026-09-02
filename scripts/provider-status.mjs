@@ -18,84 +18,88 @@ const positional = args.filter((item, index) => {
 const [command, id] = positional
 const providers = shippedProviders()
 
-if (command === 'list') {
-  process.stdout.write(
-    `${JSON.stringify(
-      providers.map(
-        ({
-          id: providerId,
-          version,
-          providerVersion,
-          spiRange,
-          intentSupport,
-          facets,
-          targets,
-          transports,
-          osSupport,
-          trust,
-          compatibility,
-          policy,
-        }) => ({
-          id: providerId,
-          version,
-          providerVersion,
-          spiRange,
-          intentSupport,
-          facets,
-          targets,
-          transports,
-          osSupport,
-          trust,
-          compatibility,
-          ...(policy ? { policy } : {}),
-        }),
-      ),
-      null,
-      2,
-    )}\n`,
+async function main() {
+  if (command === 'list') {
+    process.stdout.write(
+      `${JSON.stringify(
+        providers.map(
+          ({
+            id: providerId,
+            version,
+            providerVersion,
+            spiRange,
+            intentSupport,
+            facets,
+            targets,
+            transports,
+            osSupport,
+            trust,
+            compatibility,
+            policy,
+          }) => ({
+            id: providerId,
+            version,
+            providerVersion,
+            spiRange,
+            intentSupport,
+            facets,
+            targets,
+            transports,
+            osSupport,
+            trust,
+            compatibility,
+            ...(policy ? { policy } : {}),
+          }),
+        ),
+        null,
+        2,
+      )}\n`,
+    )
+    return 0
+  }
+
+  if (command === 'inspect') {
+    const provider = providerById(id, providers)
+    if (!provider) throw new Error(`Unknown provider: ${id}`)
+    process.stdout.write(
+      `${JSON.stringify(
+        {
+          id: provider.id,
+          version: provider.version,
+          providerVersion: provider.providerVersion,
+          spiRange: provider.spiRange,
+          intentSupport: provider.intentSupport,
+          facets: provider.facets,
+          targets: provider.targets,
+          transports: provider.transports,
+          osSupport: provider.osSupport,
+          trust: provider.trust,
+          compatibility: provider.compatibility,
+          ...(provider.policy ? { policy: provider.policy } : {}),
+          ...(await provider.inspect()),
+        },
+        null,
+        2,
+      )}\n`,
+    )
+    return 0
+  }
+
+  if (command === 'bind') {
+    const preferredProvider = flag('--provider', null)
+    const intent = createCollaborationIntent({
+      requestedMode: flag('--mode', 'single-agent'),
+      profile: flag('--profile', 'standard'),
+    })
+    const binding = await bindProvider({ intent, providers, preferredProvider })
+    process.stdout.write(`${JSON.stringify({ intent, binding }, null, 2)}\n`)
+    return binding.status === 'blocked' ? 1 : 0
+  }
+
+  process.stderr.write(
+    'Usage: agentflow-sdlc providers <list|inspect <id>|bind [--provider <id>] [--mode <mode>] [--profile <profile>]> --json\n',
   )
-  process.exit(0)
+  return 2
 }
 
-if (command === 'inspect') {
-  const provider = providerById(id, providers)
-  if (!provider) throw new Error(`Unknown provider: ${id}`)
-  process.stdout.write(
-    `${JSON.stringify(
-      {
-        id: provider.id,
-        version: provider.version,
-        providerVersion: provider.providerVersion,
-        spiRange: provider.spiRange,
-        intentSupport: provider.intentSupport,
-        facets: provider.facets,
-        targets: provider.targets,
-        transports: provider.transports,
-        osSupport: provider.osSupport,
-        trust: provider.trust,
-        compatibility: provider.compatibility,
-        ...(provider.policy ? { policy: provider.policy } : {}),
-        ...(await provider.inspect()),
-      },
-      null,
-      2,
-    )}\n`,
-  )
-  process.exit(0)
-}
-
-if (command === 'bind') {
-  const preferredProvider = flag('--provider', null)
-  const intent = createCollaborationIntent({
-    requestedMode: flag('--mode', 'single-agent'),
-    profile: flag('--profile', 'standard'),
-  })
-  const binding = await bindProvider({ intent, providers, preferredProvider })
-  process.stdout.write(`${JSON.stringify({ intent, binding }, null, 2)}\n`)
-  process.exit(binding.status === 'blocked' ? 1 : 0)
-}
-
-process.stderr.write(
-  'Usage: agentflow-sdlc providers <list|inspect <id>|bind [--provider <id>] [--mode <mode>] [--profile <profile>]> --json\n',
-)
-process.exit(2)
+process.exitCode = await main()
