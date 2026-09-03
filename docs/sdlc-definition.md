@@ -251,3 +251,7 @@ Required command surface:
 - `validate-sdlc-agent`
 
 Validators emit human-readable output and `--json` where useful.
+
+## Verifiable delivery and recovery
+
+New run acceptance uses a frozen v2 evidence policy. Deterministic criteria require source-resolved observations for the current candidate and check definition, in addition to the accountable role decision. Unknown writer status, unresolved external effects and open rework block unsafe advancement or transfer. Runtime policy remains `sdlc.config.json.deliveryPolicy`; operational commands, inputs and source bindings live in `agent-workflow.config.json.delivery`. See [ADR 007](adr/007-verifiable-recoverable-delivery.md) and [reliable delivery](reliable-delivery.md).

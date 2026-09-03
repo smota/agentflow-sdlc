@@ -53,3 +53,7 @@ type, authority, digest or revision when applicable, open questions, and next ow
 
 Use `docs/agent-workflow.md` for the phase model, `docs/role-collaboration.md` for bilateral acceptance,
 and `docs/evidence-contracts.md` for portable evidence.
+
+## Reliable delivery runs
+
+When the project configures the v2 delivery interface, use the shared `run` service for status, frozen criteria, verification, advancement and recovery. Never manufacture an observation or clear an unknown operation from a narrative claim. Read `docs/run-operations.md`; use current writer generations and preserve the normal human and publication gates.

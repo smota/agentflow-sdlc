@@ -41,3 +41,7 @@ Accept a review subject, `delivery-receipt`, or `migration-receipt`; return `aud
 validators, findings, decision, confidence, residual risks, and recommended receiving role.
 
 Read [references/workflow-compliance.md](references/workflow-compliance.md) for full workflow audits.
+
+## Delivery run audit
+
+For v2 runs, verify source-resolved observations against the frozen criteria and current candidate. Check that bilateral acceptance belongs to this run and that writer transfer and external operations are reconciled. A digest proves content integrity, not actor identity. Read `docs/reliable-delivery.md` and report live-provider and release exercises as unverified unless executed.

@@ -221,5 +221,15 @@
       "no-raw-secrets-or-transcripts",
       "follow-ups-over-hidden-todos"
     ]
+  },
+  "deliveryPolicy": {
+    "contractVersion": 2,
+    "deterministicOrigins": ["collector-observed", "external-resolved"],
+    "sourceAcknowledgmentRequired": true,
+    "highAssuranceHumanReviewPhase": 6,
+    "unknownWriterBlocksRecovery": true,
+    "admissionBudgetRejectsUnknownUsage": true,
+    "requiredJourneyCoverage": false,
+    "budgetMaxima": {}
   }
 }
