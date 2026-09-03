@@ -175,3 +175,9 @@ node scripts/validate-npm-package.mjs
 | Product manifests                             | [`manifests/`](../manifests/)                         |
 
 The distributable payload and profiles are maintained in [`product-payload.json`](../manifests/product-payload.json) and [`composition-profiles.json`](../manifests/composition-profiles.json).
+
+## Reliable delivery
+
+- [Evidence, recovery and architecture](reliable-delivery.md)
+- [Run operations and contained adoption](run-operations.md)
+- [Delivery release acceptance](delivery-release-acceptance.md)
