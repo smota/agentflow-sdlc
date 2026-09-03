@@ -59,3 +59,7 @@ node bin/cli.mjs adopt rollback \
 
 Successful rollback restores exact prior bytes and directory topology and removes the consumed
 receipt. Project-owned files outside the transaction are not touched.
+
+## Contained transaction storage
+
+The delivery update adds `adopt plan --storage project` and matching `adopt apply --storage project`. A unique transaction directory under ignored `.agentflow/transactions/` retains the receipt outside the managed payload. External storage remains available with `--receipt`. All API callers must supply an absolute external `receiptDestination` when project storage is not selected. Apply finalization waits for durable receipt storage; explicit rollback has a restartable journal. Follow the returned receipt path and tokens, and see [run operations](../run-operations.md).
