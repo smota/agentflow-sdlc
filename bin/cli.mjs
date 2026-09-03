@@ -3,7 +3,7 @@ import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs'
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { validateEnvironment } from '../lib/environment.mjs'
+import { validateEnvironment, inspectEnvironment } from '../lib/environment.mjs'
 import { adapterStatus, syncSkillAdapters } from '../lib/skill-adapters.mjs'
 import { loadSkillCatalog, validateSkillCatalog } from '../lib/skill-catalog.mjs'
 import { roleAdapterStatus, syncRoleAdapters } from '../lib/role-adapters.mjs'
@@ -184,6 +184,7 @@ function handleAdoption(rest, targetDir) {
   const [subcommand] = positionalArgs(rest)
   const profile = getFlag(rest, '--profile', COMPOSITION_PROFILES.defaultProfile)
   const json = rest.includes('--json')
+  const storage = getFlag(rest, '--storage', 'external')
   if (subcommand === 'profiles') {
     const result = {
       defaultProfile: COMPOSITION_PROFILES.defaultProfile,
@@ -199,7 +200,7 @@ function handleAdoption(rest, targetDir) {
     return 0
   }
   if (subcommand === 'plan') {
-    const plan = planAdoption(packageRoot, targetDir, { profile })
+    const plan = planAdoption(packageRoot, targetDir, { profile, storage })
     if (json) process.stdout.write(`${JSON.stringify(plan, null, 2)}\n`)
     else
       printReport(`Adoption preview for ${targetDir} (${plan.blocked ? 'BLOCKED' : 'ready'})`, {
@@ -212,29 +213,24 @@ function handleAdoption(rest, targetDir) {
   if (subcommand === 'apply') {
     const confirm = getFlag(rest, '--confirm', '')
     const receiptInput = getFlag(rest, '--receipt', '')
-    if (!confirm || !receiptInput) {
+    if (!confirm || (!receiptInput && storage !== 'project')) {
       process.stderr.write(
         'Usage: agentflow-sdlc adopt apply --confirm <plan-token> --receipt <outside-file> [--profile <id>] [--target <dir>] [--json]\n',
       )
       return 2
     }
-    const receiptPath = resolve(receiptInput)
-    if (!outsideTarget(targetDir, receiptPath)) {
+    let receiptPath = receiptInput ? resolve(receiptInput) : null
+    if (receiptPath && !outsideTarget(targetDir, receiptPath)) {
       throw new Error('Adoption receipt must remain outside the target project')
     }
-    if (existsSync(receiptPath)) throw new Error('Adoption receipt path already exists')
-    const plan = planAdoption(packageRoot, targetDir, { profile })
-    const receipt = applyAdoption(packageRoot, targetDir, plan, { confirm })
-    try {
-      writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`, {
-        encoding: 'utf8',
-        flag: 'wx',
-        mode: 0o600,
-      })
-    } catch (error) {
-      rollbackAdoption(targetDir, receipt, { confirm: receipt.receiptToken })
-      throw new Error(`Adoption receipt write failed and target was rolled back: ${error.message}`)
-    }
+    if (receiptPath && existsSync(receiptPath))
+      throw new Error('Adoption receipt path already exists')
+    const plan = planAdoption(packageRoot, targetDir, { profile, storage })
+    const receipt = applyAdoption(packageRoot, targetDir, plan, {
+      confirm,
+      receiptDestination: receiptPath,
+    })
+    if (receipt.receiptPath) receiptPath = resolve(targetDir, receipt.receiptPath)
     const result = {
       status: 'applied',
       target: receipt.target,
@@ -262,10 +258,13 @@ function handleAdoption(rest, targetDir) {
       return 2
     }
     const receiptPath = resolve(receiptInput)
-    if (!outsideTarget(targetDir, receiptPath)) {
-      throw new Error('Adoption receipt must remain outside the target project')
-    }
     const receipt = JSON.parse(readFileSync(receiptPath, 'utf8'))
+    if (
+      !outsideTarget(targetDir, receiptPath) &&
+      receiptPath !==
+        resolve(targetDir, '.agentflow/transactions', receipt.transactionId, 'receipt.json')
+    )
+      throw new Error('Contained receipt must use the reserved transaction path')
     const result = rollbackAdoption(targetDir, receipt, { confirm })
     unlinkSync(receiptPath)
     if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
@@ -696,10 +695,12 @@ function positionalArgs(args) {
 }
 
 const ROOT_USAGE =
-  'Usage: agentflow-sdlc <doctor-env|adopt|providers|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|onboarding-prompt|release-plan> [path] [--target <dir>] [--json]\n'
+  'Usage: agentflow-sdlc <run|doctor-env|adopt|providers|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|onboarding-prompt|release-plan> [path] [--target <dir>] [--json]\n'
 
 const COMMAND_USAGE = {
-  'doctor-env': 'Usage: agentflow-sdlc doctor-env [--target <dir>] [--json]\n',
+  run: 'Usage: agentflow-sdlc run <source-plan|start|status|next|freeze|verify|advance|checkpoint|pause|resume|publish> <id> [--target <dir>] [--writer <id> --generation <n> --execute] [--plan <file> --confirm <digest>] [--json]\n',
+  'doctor-env':
+    'Usage: agentflow-sdlc doctor-env [--inspect|--probe <profile> --execute] [--target <dir>] [--json]\n',
   adopt:
     'Usage: agentflow-sdlc adopt <profiles|plan|apply|rollback|recover> [--profile <id>] [--target <dir>] [--json]\n',
   providers:
@@ -728,6 +729,7 @@ function main() {
   }
 
   const targetDir = resolve(getFlag(rest, '--target', process.cwd()))
+  if (command === 'run') return runScript('scripts/run-delivery.mjs', rest, targetDir)
 
   if (command === 'cockpit') {
     return handleCockpit(rest, targetDir)
@@ -794,6 +796,12 @@ function main() {
   }
 
   if (command === 'doctor-env') {
+    if (rest.includes('--probe')) return runScript('scripts/probe-environment.mjs', rest, targetDir)
+    if (rest.includes('--inspect')) {
+      const report = inspectEnvironment(targetDir)
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`)
+      return report.readiness === 'blocked' ? 3 : 0
+    }
     const report = validateEnvironment(targetDir)
     if (rest.includes('--json')) process.stdout.write(`${JSON.stringify(report, null, 2)}\n`)
     else printEnvironmentReport(report)
