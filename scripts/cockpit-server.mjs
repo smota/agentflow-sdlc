@@ -13,6 +13,8 @@ import { authorizeCockpitUser, createAuditEvent } from '../lib/cockpit-auth.mjs'
 import { loadCockpitConfig, validateCockpitConfig } from '../lib/cockpit-config.mjs'
 import { createGitHubClient, loadRepositoryPermission } from '../lib/cockpit-github.mjs'
 import { buildCockpitIssueView, buildGoalBoard } from '../lib/cockpit-read-model.mjs'
+import { createGitHubRunStore } from '../lib/sources/github-run-store.mjs'
+import { loadRunView, renderRunView } from '../lib/cockpit-run-model.mjs'
 import { loadGoalStoryFromGitHub } from '../lib/cockpit-replay-github.mjs'
 import {
   clearSessionCookie,
@@ -91,6 +93,23 @@ createServer(async (req, res) => {
         403,
       )
 
+    const runMatch = url.pathname.match(/^\/runs\/([a-zA-Z0-9_-]{1,100})(\.json)?$/)
+    if (runMatch && req.method === 'GET') {
+      const view = await loadRunView(
+        createGitHubRunStore({ repo, runId: runMatch[1], client: github, boundary: 'observe' }),
+      )
+      return runMatch[2]
+        ? json(res, view)
+        : html(
+            res,
+            renderCockpitPage({
+              repo,
+              repositories: config.repositories,
+              title: 'Delivery run',
+              body: renderRunView(view),
+            }),
+          )
+    }
     if (url.pathname === '/actions' && req.method === 'POST')
       return actionEndpoint(req, res, repo, session)
     if (url.pathname === '/telemetry' && req.method === 'POST')

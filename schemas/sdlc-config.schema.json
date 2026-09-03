@@ -14,26 +14,50 @@
     "extensionPolicy"
   ],
   "properties": {
-    "version": { "type": "integer", "const": 1 },
+    "version": {
+      "type": "integer",
+      "const": 1
+    },
     "authority": {
       "type": "object",
       "required": ["human", "machine", "executionAdapter"],
       "properties": {
-        "human": { "type": "string" },
-        "machine": { "type": "string" },
-        "executionAdapter": { "type": "string" }
+        "human": {
+          "type": "string"
+        },
+        "machine": {
+          "type": "string"
+        },
+        "executionAdapter": {
+          "type": "string"
+        }
       },
       "additionalProperties": false
     },
-    "principles": { "type": "array", "items": { "type": "string" } },
+    "principles": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
     "vocabulary": {
       "type": "object",
       "properties": {
-        "rolePassStatuses": { "$ref": "#/$defs/nonEmptyStringArray" },
-        "artifactKinds": { "$ref": "#/$defs/nonEmptyStringArray" },
-        "sourceAuthorities": { "$ref": "#/$defs/nonEmptyStringArray" },
-        "artifactRelationships": { "$ref": "#/$defs/nonEmptyStringArray" },
-        "actionBoundaries": { "$ref": "#/$defs/nonEmptyStringArray" }
+        "rolePassStatuses": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "artifactKinds": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "sourceAuthorities": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "artifactRelationships": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "actionBoundaries": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        }
       },
       "additionalProperties": false
     },
@@ -44,10 +68,23 @@
         "type": "object",
         "required": ["phase", "slug", "label", "owns"],
         "properties": {
-          "phase": { "type": "integer", "minimum": 0 },
-          "slug": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
-          "label": { "type": "string" },
-          "owns": { "type": "array", "items": { "type": "string" } }
+          "phase": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "slug": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+          },
+          "label": {
+            "type": "string"
+          },
+          "owns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
         },
         "additionalProperties": true
       }
@@ -59,10 +96,24 @@
         "type": "object",
         "required": ["requiredRoles", "optionalRoles", "allowsSelfReview", "requiresHumanApproval"],
         "properties": {
-          "requiredRoles": { "type": "array", "items": { "type": "string" } },
-          "optionalRoles": { "type": "array", "items": { "type": "string" } },
-          "allowsSelfReview": { "type": "boolean" },
-          "requiresHumanApproval": { "type": "boolean" }
+          "requiredRoles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "optionalRoles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "allowsSelfReview": {
+            "type": "boolean"
+          },
+          "requiresHumanApproval": {
+            "type": "boolean"
+          }
         },
         "additionalProperties": true
       }
@@ -73,22 +124,78 @@
         "type": "array",
         "minItems": 2,
         "maxItems": 2,
-        "items": { "type": "string" }
+        "items": {
+          "type": "string"
+        }
       }
     },
-    "labels": { "type": "object" },
-    "release": { "type": "object" },
-    "gateways": { "type": "object" },
+    "labels": {
+      "type": "object"
+    },
+    "release": {
+      "type": "object"
+    },
+    "gateways": {
+      "type": "object"
+    },
     "actionPolicy": {
       "type": "object",
       "properties": {
-        "profileMaximums": { "type": "object", "additionalProperties": { "type": "string" } },
-        "externalActionRequiresHumanApproval": { "type": "boolean" },
-        "delegationMayNotWidenBoundary": { "type": "boolean" }
+        "profileMaximums": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "externalActionRequiresHumanApproval": {
+          "type": "boolean"
+        },
+        "delegationMayNotWidenBoundary": {
+          "type": "boolean"
+        }
       },
       "additionalProperties": false
     },
-    "extensionPolicy": { "type": "object" }
+    "extensionPolicy": {
+      "type": "object"
+    },
+    "deliveryPolicy": {
+      "type": "object",
+      "properties": {
+        "contractVersion": {
+          "const": 2
+        },
+        "deterministicOrigins": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": ["collector-observed", "external-resolved"]
+          }
+        },
+        "sourceAcknowledgmentRequired": {
+          "const": true
+        },
+        "highAssuranceHumanReviewPhase": {
+          "const": 6
+        },
+        "unknownWriterBlocksRecovery": {
+          "const": true
+        },
+        "admissionBudgetRejectsUnknownUsage": {
+          "const": true
+        },
+        "requiredJourneyCoverage": {
+          "type": "boolean"
+        },
+        "budgetMaxima": {
+          "type": "object",
+          "maxProperties": 1,
+          "additionalProperties": { "type": "number", "minimum": 0 }
+        }
+      },
+      "additionalProperties": false
+    }
   },
   "additionalProperties": true,
   "$defs": {
@@ -96,7 +203,10 @@
       "type": "array",
       "minItems": 1,
       "uniqueItems": true,
-      "items": { "type": "string", "minLength": 1 }
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
     }
   }
 }

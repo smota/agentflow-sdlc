@@ -4,6 +4,7 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const KNOWN_CLI_COMMANDS = new Set([
+  'run',
   'doctor-env',
   'adopt',
   'providers',

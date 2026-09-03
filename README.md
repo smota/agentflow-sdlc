@@ -124,3 +124,7 @@ Start from a GitHub issue or explicit maintainer direction. Read [`AGENTS.md`](A
 ## License
 
 Licensed under the [Apache License 2.0](LICENSE).
+
+## Delivery improvements in development
+
+Candidate-bound observations, guarded run recovery, environment inspection and contained adoption storage are documented in [reliable delivery](docs/reliable-delivery.md). Use [run operations](docs/run-operations.md) for the CLI and [release acceptance](docs/delivery-release-acceptance.md) for the remaining publication gates. These development interfaces do not imply an npm 2.0 release.

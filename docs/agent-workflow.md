@@ -585,3 +585,7 @@ Do not leave TODO comments or silent omissions.
 - Update hooks to enforce the new branch strategy
 - Validate PR manifests (`scripts/validate-pr-manifest.mjs`)
 - Add merged-branch follow-up cleanup automation or deterministic guidance (`scripts/branch-cleanup-report.mjs`)
+
+## Governed run coordination
+
+For the v2 delivery run interface, requirements remain in issues and current run transitions are acknowledged as immutable, digest-linked records on the isolated source coordination ref. Workflow-status comments are navigable projections; they do not advance state. Role phases, bilateral acceptance and human review remain required. Local `.agent-runs/` records report preview durability explicitly. See [reliable delivery](reliable-delivery.md) and [run operations](run-operations.md).
