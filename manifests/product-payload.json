@@ -465,6 +465,161 @@
       "source": "scripts/cockpit-doctor.mjs",
       "target": "scripts/cockpit-doctor.mjs",
       "ownership": "managed"
+    },
+    {
+      "source": "lib/core/delivery-record.mjs",
+      "target": "lib/core/delivery-record.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/core/delivery-policy.mjs",
+      "target": "lib/core/delivery-policy.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/core/run-state.mjs",
+      "target": "lib/core/run-state.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/core/verification-observation.mjs",
+      "target": "lib/core/verification-observation.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "schemas/candidate-identity.schema.json",
+      "target": "schemas/candidate-identity.schema.json",
+      "ownership": "managed"
+    },
+    {
+      "source": "schemas/verification-observation.schema.json",
+      "target": "schemas/verification-observation.schema.json",
+      "ownership": "managed"
+    },
+    {
+      "source": "schemas/verification-resolution.schema.json",
+      "target": "schemas/verification-resolution.schema.json",
+      "ownership": "managed"
+    },
+    {
+      "source": "schemas/run-event.schema.json",
+      "target": "schemas/run-event.schema.json",
+      "ownership": "managed"
+    },
+    {
+      "source": "schemas/delivery-acceptance-v2.schema.json",
+      "target": "schemas/delivery-acceptance-v2.schema.json",
+      "ownership": "managed"
+    },
+    {
+      "source": "schemas/journey.schema.json",
+      "target": "schemas/journey.schema.json",
+      "ownership": "managed"
+    },
+    {
+      "source": "schemas/recovery-plan.schema.json",
+      "target": "schemas/recovery-plan.schema.json",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/application/run-service.mjs",
+      "target": "lib/application/run-service.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/application/publication-service.mjs",
+      "target": "lib/application/publication-service.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/verification/workspace.mjs",
+      "target": "lib/verification/workspace.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/verification/process-collector.mjs",
+      "target": "lib/verification/process-collector.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/sources/run-store.mjs",
+      "target": "lib/sources/run-store.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/providers/writer-status.mjs",
+      "target": "lib/providers/writer-status.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "scripts/run-delivery.mjs",
+      "target": "scripts/run-delivery.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "scripts/probe-environment.mjs",
+      "target": "scripts/probe-environment.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "schemas/delivery-config.schema.json",
+      "target": "schemas/delivery-config.schema.json",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/sources/github-run-store.mjs",
+      "target": "lib/sources/github-run-store.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/sources/github-api-cli.mjs",
+      "target": "lib/sources/github-api-cli.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/verification/github-checks.mjs",
+      "target": "lib/verification/github-checks.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/verification/junit-report.mjs",
+      "target": "lib/verification/junit-report.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/verification/lifecycle-observer.mjs",
+      "target": "lib/verification/lifecycle-observer.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/cockpit-run-model.mjs",
+      "target": "lib/cockpit-run-model.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "docs/reliable-delivery.md",
+      "target": "docs/reliable-delivery.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "docs/run-operations.md",
+      "target": "docs/run-operations.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "docs/delivery-release-acceptance.md",
+      "target": "docs/delivery-release-acceptance.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "docs/adr/007-verifiable-recoverable-delivery.md",
+      "target": "docs/adr/007-verifiable-recoverable-delivery.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/adoption/operation-lock.mjs",
+      "target": "lib/adoption/operation-lock.mjs",
+      "ownership": "managed"
     }
   ]
 }
