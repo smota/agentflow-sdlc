@@ -9,6 +9,8 @@ node bin/cli.mjs adopt plan --profile standard --target /path/to/project --json
 The plan reads a v2 lock. Other versions, malformed entries, target conflicts,
 unsafe paths, and stale state fail closed.
 
+Use physical absolute paths for transaction storage. Receipt paths reject symlinked parents, including macOS's `/var` alias. For a temporary consumer, resolve the existing temporary directory first (for example, Node's `realpathSync(tmpdir())`) and create the target and receipt under that physical directory. This does not permit symlinks or junctions inside an adoption target or receipt path.
+
 ## Apply
 
 Keep the receipt outside the target repository:

@@ -7,6 +7,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  realpathSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -16,7 +17,7 @@ import { dirname, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 const root = process.cwd()
-const scratch = mkdtempSync(join(tmpdir(), 'agentflow-package-parity-'))
+const scratch = mkdtempSync(join(realpathSync(tmpdir()), 'agentflow-package-parity-'))
 const packDir = join(scratch, 'pack')
 const consumer = join(scratch, 'consumer')
 const target = join(scratch, 'target')
