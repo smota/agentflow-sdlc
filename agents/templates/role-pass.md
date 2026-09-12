@@ -15,6 +15,7 @@
 **Delegation boundary:** <current-session | child-subagent | separate-local-session | child-worktree | human-handoff>
 **Context boundary:** <current-session | fresh-session | forked-context | local-cli-child-process | provider-api-call | human-handoff | worktree | intercom-session> <!-- derived from Transport + Delegation boundary; see lib/role-attribution.mjs#deriveContextBoundary -->
 **Independence boundary:** <independent | self-review | not-applicable> <!-- only meaningful for the reviewer role: "independent" when the reviewer's roleIntelligence differs from the developer pass, "self-review" when it matches and is explicitly disclosed, otherwise "not-applicable" -->
+**Reviewed authors:** <comma-separated registered platform slugs, or "not-applicable:single-agent"> <!-- actor identities that authored the reviewed subject; Independence boundary is derived from these against Executed by, never accepted as a bare claim — see lib/role-attribution.mjs#deriveIndependenceBoundary -->
 **Model / runtime:** <freeform identifier or "not recorded">
 
 ### Inputs read
@@ -29,6 +30,27 @@
 
 Use portable `ArtifactRef` objects from `schemas/artifact-ref.schema.json`. A reference identifies
 the authoritative source; it does not copy raw source content into workflow evidence.
+
+### Verification observation
+
+```json
+{
+  "candidateDigest": "<sha256 of the candidate under review in this phase>",
+  "definitionDigest": "<sha256 of the check definition that produced the observation>",
+  "observationRef": "<path or URI to where the sealed verification-observation record is durably stored>",
+  "record": {}
+}
+```
+
+Required for `developer` and `tester` roles; optional, but still validated when present, for every
+other role. `record` MUST be a sealed `verification-observation` record that passes
+`validateObservation` from `lib/core/verification-observation.mjs` — never hand-construct it. Build it
+with the real collector helpers in `lib/core/` and `lib/verification/` (see
+`lib/__tests__/verification-observation.test.mjs` for the pattern). For `developer`/`tester` roles,
+`record.origin` must be one of the config's `deliveryPolicy.deterministicOrigins` and `record.outcome`
+must be `pass`. In every case, `record.candidateDigest`/`record.definitionDigest` must match the
+`candidateDigest`/`definitionDigest` declared above, or the observation is treated as belonging to a
+stale candidate or a stale check definition.
 
 ### Decisions / findings
 

@@ -1,16 +1,19 @@
 #!/usr/bin/env node
 import { existsSync, readFileSync } from 'node:fs'
-import { fieldValue } from '../lib/markdown-sections.mjs'
+import { extractJsonBlock, extractSection, fieldValue } from '../lib/markdown-sections.mjs'
 import { loadSdlcConfig, finding, report } from '../lib/sdlc-state.mjs'
 import {
   ALL_EXECUTION_TARGETS,
   DELEGATION_BOUNDARIES,
   TRANSPORTS,
 } from '../lib/execution-targets.mjs'
-import { CONTEXT_BOUNDARIES } from '../lib/role-attribution.mjs'
+import { CONTEXT_BOUNDARIES, deriveIndependenceBoundary } from '../lib/role-attribution.mjs'
 import { loadProjectConfig } from '../lib/role-routing.mjs'
 import { runtimePlatformSlugs } from '../lib/runtime-platforms.mjs'
 import { normalizeRole } from '../lib/sdlc-vocabulary.mjs'
+import { validateObservation } from '../lib/core/verification-observation.mjs'
+
+const OBSERVATION_REQUIRED_ROLES = ['developer', 'tester']
 
 const args = process.argv.slice(2)
 const json = args.includes('--json')
@@ -94,6 +97,96 @@ if (
 const roleIdentity = normalizeRole(role, config)
 if (role && !roleIdentity.canonical)
   findings.push(finding('medium', 'role-pass.role', `role not in SDLC config: ${role}`))
+
+const observationRequired = OBSERVATION_REQUIRED_ROLES.includes(role)
+const observationSection = extractSection(text, 'Verification observation', 3)
+const observationBlock = extractJsonBlock(observationSection)
+if (!observationBlock) {
+  if (observationRequired)
+    findings.push(
+      finding(
+        'blocker',
+        'role-pass.observation.missing',
+        'developer and tester role passes require a Verification observation section',
+      ),
+    )
+} else {
+  if (
+    typeof observationBlock.observationRef !== 'string' ||
+    !observationBlock.observationRef.trim()
+  )
+    findings.push(
+      finding(
+        'blocker',
+        'role-pass.observation.reference',
+        'verification observation is missing a reference to where the observation record lives',
+      ),
+    )
+  const { ok: observationOk, errors: observationErrors } = validateObservation(
+    observationBlock.record,
+  )
+  if (!observationOk) {
+    findings.push(finding('blocker', 'role-pass.observation.invalid', observationErrors.join('; ')))
+  } else {
+    if (observationBlock.candidateDigest !== observationBlock.record.candidateDigest)
+      findings.push(
+        finding(
+          'blocker',
+          'role-pass.observation.stale-candidate',
+          'verification observation belongs to a stale candidate',
+        ),
+      )
+    if (observationBlock.definitionDigest !== observationBlock.record.definitionDigest)
+      findings.push(
+        finding(
+          'blocker',
+          'role-pass.observation.definition-mismatch',
+          'verification observation belongs to a stale check definition',
+        ),
+      )
+    if (observationRequired) {
+      const deterministicOrigins = config.deliveryPolicy?.deterministicOrigins ?? []
+      if (!deterministicOrigins.includes(observationBlock.record.origin))
+        findings.push(
+          finding(
+            'blocker',
+            'role-pass.observation.origin',
+            `verification observation origin is not deterministic: ${observationBlock.record.origin}`,
+          ),
+        )
+      if (observationBlock.record.outcome !== 'pass')
+        findings.push(
+          finding(
+            'blocker',
+            'role-pass.observation.outcome',
+            `verification observation did not pass: ${observationBlock.record.outcome}`,
+          ),
+        )
+    }
+  }
+}
+
+const independenceDeclared = fieldValue(text, 'Independence boundary')
+const reviewedAuthorsRaw = fieldValue(text, 'Reviewed authors')
+if (reviewedAuthorsRaw && reviewedAuthorsRaw !== 'not-applicable:single-agent') {
+  const authorIdentities = reviewedAuthorsRaw
+    .split(',')
+    .map((identity) => identity.trim())
+    .filter(Boolean)
+  const derivedIndependence = deriveIndependenceBoundary({
+    authorIdentities,
+    reviewerIdentity: executedBy,
+  })
+  if (independenceDeclared === 'independent' && derivedIndependence === 'self-review')
+    findings.push(
+      finding(
+        'blocker',
+        'role-pass.independence.self-review',
+        'Independence boundary claims independent but the reviewer identity appears among the reviewed authors',
+      ),
+    )
+}
+
 const result = report(findings, 'role-pass')
 if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
 else {
