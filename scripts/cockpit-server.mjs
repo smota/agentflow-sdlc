@@ -153,7 +153,7 @@ function selectedRepository(url) {
 
 async function home(res, repo, session, view = 'goals', release = 'unreleased') {
   const issues = await github.issues(repo, { state: 'open', per_page: 50 })
-  const board = buildGoalBoard({ issues: issues.filter((issue) => !issue.pull_request) })
+  const board = buildGoalBoard({ issues: issues.filter((issue) => !issue.pull_request), repo })
   const sessionId = 'local-token'
   return html(
     res,
@@ -176,7 +176,7 @@ async function issuePage(req, res, repo, number, session) {
     github.issue(repo, number),
     github.issueComments(repo, number),
   ])
-  const view = buildCockpitIssueView({ issue, comments })
+  const view = buildCockpitIssueView({ issue, comments, repo })
   const sessionId = readCookie(req, 'cockpit_session') || 'local-token'
   return html(
     res,
