@@ -123,6 +123,23 @@ Record intelligent collaboration evidence from `docs/intelligent-collaboration.m
 }
 ```
 
+### Known limitations
+
+`scripts/validate-sdlc-role-pass.mjs` proves internal consistency of a declared verification
+observation against the real working tree; it does NOT prove (and never claims to prove) the
+following. Do not read a passing gate as evidence against these:
+
+- **Forgery.** `sealDeliveryRecord` is keyless — its `digest` is a checksum over the author's own
+  payload, not a signature. A synthetic record whose candidate digest happens to match the real
+  working tree, with a resolvable `observationRef`, still passes even though no check ever ran.
+  Closing this needs observations anchored in the append-only run store
+  (`lib/sources/github-run-store.mjs`), a later workstream.
+- **Replay across runs.** Nothing binds an observation to the issue, branch, or run it is presented
+  against, so a genuine observation captured for one context can be resubmitted for another.
+- **Honest role mislabeling.** Role is self-declared. A developer who declares `Role: reviewer` and
+  performs developer work escapes the developer/tester observation requirement. Binding the declared
+  role to VCS evidence is a later workstream.
+
 ---
 
 <!-- <platform> = registered runtime platform actually executing THIS pass right now — never copied from a prior pass or template example. Register built-in or project-specific slugs through manifests/runtime-platforms.json and agent-workflow.config.json; see docs/runtime-platforms.md. Executor/Transport/Delegation boundary remain distinct and come from docs/execution-targets.md. Planned owner/Context boundary/Independence boundary are role-alternation concepts from docs/agent-workflow.md §4a and lib/role-attribution.mjs; they feed roleAttributionMatrix in workflow-status comment and PR manifest. Execution-intent evidence comes from docs/capabilities.md and can be checked with scripts/validate-execution-intent-evidence.mjs. -->

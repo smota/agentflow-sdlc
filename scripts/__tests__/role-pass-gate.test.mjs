@@ -1,6 +1,6 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join, resolve } from 'node:path'
+import { join, resolve, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -10,6 +10,7 @@ import { sealDeliveryRecord } from '../../lib/core/delivery-record.mjs'
 import { recordDigest } from '../../lib/core/record-digest.mjs'
 
 const repoRoot = resolve(fileURLToPath(new URL('../..', import.meta.url)))
+const sdlcConfigSource = readFileSync(join(repoRoot, 'defaults/sdlc.config.json'), 'utf8')
 const tempDirs = []
 
 afterEach(() => {
@@ -22,8 +23,24 @@ function fixtureRoot() {
   return root
 }
 
-function candidateDefinition(root, content = 'candidate') {
+// A self-contained target root the gate can resolve everything against on its own: its own SDLC
+// config (so loadSdlcConfig succeeds without falling back to the real repo) and its own
+// delivery.candidate.inputs pointing at a real file, so fingerprintCandidate can compute a real
+// digest from the actual working tree (H3) rather than trusting a self-declared one.
+function realTargetRoot(content = 'candidate') {
+  const root = fixtureRoot()
+  writeFileSync(join(root, 'sdlc.config.json'), sdlcConfigSource)
   writeFileSync(join(root, 'input.txt'), content)
+  writeFileSync(
+    join(root, 'agent-workflow.config.json'),
+    JSON.stringify({
+      delivery: { source: { kind: 'local-preview' }, candidate: { inputs: ['input.txt'] } },
+    }),
+  )
+  return root
+}
+
+function candidateDefinition() {
   return {
     id: 'suite',
     criterionId: 'AC-1',
@@ -48,29 +65,36 @@ function runnerFor(outcome) {
   }
 }
 
-// A real, sealed, collector-observed record produced by the actual collector pipeline — the same
-// construction lib/__tests__/verification-observation.test.mjs uses — never a hand-typed digest.
-function collectorObservedRecord({ outcome = 'pass' } = {}) {
-  const root = fixtureRoot()
-  const definition = candidateDefinition(root)
-  const { observation } = collectProcessObservation({
+function relRef(root, absPath) {
+  return relative(root, absPath).replaceAll('\\', '/')
+}
+
+// A real, sealed, collector-observed record produced by the actual collector pipeline against
+// `root`, written to a real observation file under `root/.agent-runs/...` so observationRef
+// genuinely resolves (H7) instead of pointing at a path nobody ever reads.
+function collectorObservedRecord(root, { outcome = 'pass' } = {}) {
+  const definition = candidateDefinition()
+  const { observation, observationPath } = collectProcessObservation({
     root,
     definition,
     boundary: 'mutate-worktree',
     runner: runnerFor(outcome),
   })
-  return observation
+  return { observation, observationRef: relRef(root, observationPath) }
 }
 
 // A real, sealed record with a non-deterministic origin, built the way
-// lib/verification/github-checks.mjs builds an external-resolved record: real digests from the
-// shared fingerprint/record-digest helpers, never hand-typed hex.
-function agentReportedRecord() {
-  const root = fixtureRoot()
-  const definition = candidateDefinition(root)
-  const candidate = fingerprintCandidate(root, definition)
+// lib/verification/github-checks.mjs builds one: real digests from the shared
+// fingerprint/record-digest helpers, but asserted rather than collected — never hand-typed hex.
+// Also written to a real file under `root` so it resolves, isolating the origin problem from H7.
+function agentReportedRecord(
+  root,
+  { outcome = 'pass', assertions = [{ id: 'search', outcome: 'pass' }] } = {},
+) {
+  const definition = candidateDefinition()
+  const candidate = fingerprintCandidate(root, { inputs: definition.inputs })
   const now = new Date().toISOString()
-  return sealDeliveryRecord('verification-observation', {
+  const record = sealDeliveryRecord('verification-observation', {
     id: 'agent-reported-1',
     invocationId: 'agent-reported-1',
     criterionId: definition.criterionId,
@@ -79,24 +103,34 @@ function agentReportedRecord() {
     isolation: 'unknown',
     candidateDigest: candidate.digest,
     definitionDigest: recordDigest(definition),
-    outcome: 'pass',
-    assertions: [{ id: 'search', outcome: 'pass' }],
+    outcome,
+    assertions,
     startedAt: now,
     completedAt: now,
   })
+  return { observation: record, observationRef: writeRecordFile(root, 'agent-reported-1', record) }
 }
 
-function observationEnvelope(record, { candidateDigest, definitionDigest } = {}) {
+function writeRecordFile(root, invocationId, record) {
+  const dir = join(root, '.agent-runs/verification', invocationId)
+  mkdirSync(dir, { recursive: true })
+  const filePath = join(dir, 'observation.json')
+  writeFileSync(filePath, JSON.stringify(record, null, 2) + '\n')
+  return relRef(root, filePath)
+}
+
+function observationEnvelope(record, observationRef, { candidateDigest, definitionDigest } = {}) {
   return {
     candidateDigest: candidateDigest ?? record.candidateDigest,
     definitionDigest: definitionDigest ?? record.definitionDigest,
-    observationRef: '.agent-runs/verification/example/observation.json',
+    observationRef,
     record,
   }
 }
 
 function rolePass({
   role = 'developer',
+  profile = 'standard',
   independence,
   reviewedAuthors,
   observation,
@@ -114,7 +148,7 @@ function rolePass({
 **Phase:** 5
 **Role:** ${role}
 **Status:** pass
-**Workflow profile:** standard
+**Workflow profile:** ${profile}
 **Planned owner:** claude
 **Executed by:** claude
 **Launcher:** claude
@@ -130,13 +164,13 @@ ${body}
 `
 }
 
-function runValidator(text) {
+function runValidator(text, { target = repoRoot } = {}) {
   const dir = fixtureRoot()
   const path = join(dir, 'role-pass.md')
   writeFileSync(path, text)
   return spawnSync(
     process.execPath,
-    [join(repoRoot, 'scripts', 'validate-sdlc-role-pass.mjs'), '--path', path],
+    [join(repoRoot, 'scripts', 'validate-sdlc-role-pass.mjs'), '--path', path, '--target', target],
     { cwd: repoRoot, encoding: 'utf8' },
   )
 }
@@ -154,43 +188,58 @@ describe('role-pass gate: verification observation and independence', () => {
     expect(result.stdout).toContain('Result: FAILED')
   })
 
-  it('honest — a valid, passing, deterministic-origin observation whose candidateDigest matches exits 0', () => {
-    const record = collectorObservedRecord()
+  it('honest — a valid, passing, deterministic-origin observation whose candidateDigest matches the real working tree, with a resolvable observationRef, exits 0', () => {
+    const root = realTargetRoot()
+    const { observation, observationRef } = collectorObservedRecord(root)
     const result = runValidator(
-      rolePass({ role: 'developer', observation: observationEnvelope(record) }),
+      rolePass({
+        role: 'developer',
+        observation: observationEnvelope(observation, observationRef),
+      }),
+      { target: root },
     )
     expect(result.status).toBe(0)
     expect(result.stdout).toContain('Result: READY')
   })
 
-  it('stale candidate — candidateDigest not matching the candidate under review fails', () => {
-    const record = collectorObservedRecord()
-    const staleRoot = fixtureRoot()
-    const staleDefinition = candidateDefinition(staleRoot, 'a different candidate entirely')
-    const staleCandidate = fingerprintCandidate(staleRoot, staleDefinition)
+  it('stale candidate — the candidate changing since the observation was taken fails (candidate digest is recomputed from the real working tree, not trusted from the envelope)', () => {
+    const root = realTargetRoot()
+    const { observation, observationRef } = collectorObservedRecord(root)
+    writeFileSync(join(root, 'input.txt'), 'a different candidate entirely')
     const result = runValidator(
       rolePass({
         role: 'developer',
-        observation: observationEnvelope(record, { candidateDigest: staleCandidate.digest }),
+        observation: observationEnvelope(observation, observationRef),
       }),
+      { target: root },
     )
     expect(result.status).not.toBe(0)
     expect(result.stdout).toContain('role-pass.observation.stale-candidate')
   })
 
   it('wrong origin — an observation whose origin is not a deterministic origin fails', () => {
-    const record = agentReportedRecord()
+    const root = realTargetRoot()
+    const { observation, observationRef } = agentReportedRecord(root)
     const result = runValidator(
-      rolePass({ role: 'developer', observation: observationEnvelope(record) }),
+      rolePass({
+        role: 'developer',
+        observation: observationEnvelope(observation, observationRef),
+      }),
+      { target: root },
     )
     expect(result.status).not.toBe(0)
     expect(result.stdout).toContain('role-pass.observation.origin')
   })
 
   it('failed outcome — an observation with outcome: fail fails', () => {
-    const record = collectorObservedRecord({ outcome: 'fail' })
+    const root = realTargetRoot()
+    const { observation, observationRef } = collectorObservedRecord(root, { outcome: 'fail' })
     const result = runValidator(
-      rolePass({ role: 'developer', observation: observationEnvelope(record) }),
+      rolePass({
+        role: 'developer',
+        observation: observationEnvelope(observation, observationRef),
+      }),
+      { target: root },
     )
     expect(result.status).not.toBe(0)
     expect(result.stdout).toContain('role-pass.observation.outcome')
@@ -206,6 +255,246 @@ describe('role-pass gate: verification observation and independence', () => {
 
   it('non-developer role — a reviewer pass with no observation still exits 0', () => {
     const result = runValidator(rolePass({ role: 'reviewer', independence: 'not-applicable' }))
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain('Result: READY')
+  })
+})
+
+describe('role-pass gate: G1 adversarial holes (H1-H7)', () => {
+  it('H1 — role casing bypass: "Developer" (capital D) still requires a verification observation', () => {
+    // Before the fix: line 97 normalized the role for display/lookup purposes, but line 101 tested
+    // the RAW declared string against OBSERVATION_REQUIRED_ROLES, so "Developer" (matching the
+    // config's own label) slipped past the requirement entirely with no observation at all.
+    const result = runValidator(
+      rolePass({
+        role: 'Developer',
+        body: '- I made no decisions. This is filler text to satisfy the validator.',
+      }),
+    )
+    expect(result.status).not.toBe(0)
+    expect(result.stdout).toContain('role-pass.observation.missing')
+  })
+
+  it('H2 — the gate must call the real verification engine: a per-assertion failure inside a record that otherwise self-reports outcome: pass is blocked', () => {
+    // The old inline re-implementation only checked record-level origin/outcome for required
+    // roles; it never looked at individual assertions. verifyObservation checks every required
+    // assertion's own outcome, closing that gap.
+    const root = realTargetRoot()
+    const definition = candidateDefinition()
+    const candidate = fingerprintCandidate(root, { inputs: definition.inputs })
+    const now = new Date().toISOString()
+    const record = sealDeliveryRecord('verification-observation', {
+      id: 'mixed-assertions',
+      invocationId: 'mixed-assertions',
+      criterionId: definition.criterionId,
+      producer: 'agentflow:process-collector',
+      origin: 'collector-observed',
+      isolation: 'cooperative',
+      candidateDigest: candidate.digest,
+      definitionDigest: recordDigest(definition),
+      outcome: 'pass',
+      assertions: [{ id: 'search', outcome: 'fail' }],
+      startedAt: now,
+      completedAt: now,
+    })
+    const observationRef = writeRecordFile(root, 'mixed-assertions', record)
+    const result = runValidator(
+      rolePass({ role: 'developer', observation: observationEnvelope(record, observationRef) }),
+      { target: root },
+    )
+    expect(result.status).not.toBe(0)
+    expect(result.stdout).toContain('role-pass.observation.assertion-failed')
+  })
+
+  it('H3 — a self-declared candidateDigest that was never fingerprinted from the real working tree is blocked', () => {
+    // Forged records agree with themselves by construction (envelope and record are authored
+    // together). The gate must recompute the candidate digest independently.
+    const root = realTargetRoot()
+    const definition = candidateDefinition()
+    const now = new Date().toISOString()
+    const record = sealDeliveryRecord('verification-observation', {
+      id: 'invented-candidate',
+      invocationId: 'invented-candidate',
+      criterionId: definition.criterionId,
+      producer: 'my-imagination',
+      origin: 'collector-observed',
+      isolation: 'immutable',
+      candidateDigest: 'a'.repeat(64),
+      definitionDigest: recordDigest(definition),
+      outcome: 'pass',
+      assertions: [{ id: 'search', outcome: 'pass' }],
+      startedAt: now,
+      completedAt: now,
+    })
+    const observationRef = writeRecordFile(root, 'invented-candidate', record)
+    const result = runValidator(
+      rolePass({ role: 'developer', observation: observationEnvelope(record, observationRef) }),
+      { target: root },
+    )
+    expect(result.status).not.toBe(0)
+    expect(result.stdout).toContain('role-pass.observation.stale-candidate')
+  })
+
+  it('H3b — when the target has no delivery.candidate.inputs to fingerprint, that is a finding, never a silent pass', () => {
+    const root = fixtureRoot()
+    writeFileSync(join(root, 'sdlc.config.json'), sdlcConfigSource)
+    writeFileSync(join(root, 'agent-workflow.config.json'), JSON.stringify({}))
+    const definition = candidateDefinition()
+    const now = new Date().toISOString()
+    const record = sealDeliveryRecord('verification-observation', {
+      id: 'unfingerprintable',
+      invocationId: 'unfingerprintable',
+      criterionId: definition.criterionId,
+      producer: 'agentflow:process-collector',
+      origin: 'collector-observed',
+      isolation: 'immutable',
+      candidateDigest: 'a'.repeat(64),
+      definitionDigest: recordDigest(definition),
+      outcome: 'pass',
+      assertions: [{ id: 'search', outcome: 'pass' }],
+      startedAt: now,
+      completedAt: now,
+    })
+    const observationRef = writeRecordFile(root, 'unfingerprintable', record)
+    const result = runValidator(
+      rolePass({ role: 'developer', observation: observationEnvelope(record, observationRef) }),
+      { target: root },
+    )
+    expect(result.status).not.toBe(0)
+    expect(result.stdout).toContain('role-pass.observation.candidate-unverifiable')
+  })
+
+  it('H4 — an observation with assertions: [] is blocked even though outcome self-reports pass', () => {
+    const root = realTargetRoot()
+    const definition = candidateDefinition()
+    const candidate = fingerprintCandidate(root, { inputs: definition.inputs })
+    const now = new Date().toISOString()
+    const record = sealDeliveryRecord('verification-observation', {
+      id: 'empty-assertions',
+      invocationId: 'empty-assertions',
+      criterionId: definition.criterionId,
+      producer: 'my-imagination',
+      origin: 'collector-observed',
+      isolation: 'immutable',
+      candidateDigest: candidate.digest,
+      definitionDigest: recordDigest(definition),
+      outcome: 'pass',
+      assertions: [],
+      startedAt: now,
+      completedAt: now,
+    })
+    const observationRef = writeRecordFile(root, 'empty-assertions', record)
+    const result = runValidator(
+      rolePass({ role: 'developer', observation: observationEnvelope(record, observationRef) }),
+      { target: root },
+    )
+    expect(result.status).not.toBe(0)
+    expect(result.stdout).toContain('role-pass.observation.assertions-empty')
+  })
+
+  it('H5 — declaring Independence boundary: independent without Reviewed authors is blocked, including under high-assurance', () => {
+    const standard = runValidator(rolePass({ role: 'reviewer', independence: 'independent' }))
+    expect(standard.status).not.toBe(0)
+    expect(standard.stdout).toContain('role-pass.independence.unverifiable')
+
+    const highAssurance = runValidator(
+      rolePass({ role: 'reviewer', profile: 'high-assurance', independence: 'independent' }),
+    )
+    expect(highAssurance.status).not.toBe(0)
+    expect(highAssurance.stdout).toContain('role-pass.independence.unverifiable')
+  })
+
+  it('H5b — high-assurance blocks self-review derived from Reviewed authors even when Independence boundary dishonestly declares "independent"', () => {
+    // Executed by is "claude" in the rolePass() template; declaring the same identity as a
+    // reviewed author makes the DERIVED boundary self-review regardless of what is claimed.
+    const result = runValidator(
+      rolePass({
+        role: 'reviewer',
+        profile: 'high-assurance',
+        independence: 'independent',
+        reviewedAuthors: 'claude',
+      }),
+    )
+    expect(result.status).not.toBe(0)
+    expect(result.stdout).toContain('role-pass.high-assurance.self-review')
+  })
+
+  it('H6 — origin and outcome policy apply to ANY observation, even on a role that does not require one', () => {
+    const root = realTargetRoot()
+    const { observation, observationRef } = agentReportedRecord(root, {
+      outcome: 'fail',
+      assertions: [{ id: 'search', outcome: 'fail' }],
+    })
+    const result = runValidator(
+      rolePass({
+        role: 'reviewer',
+        independence: 'not-applicable',
+        observation: observationEnvelope(observation, observationRef),
+      }),
+      { target: root },
+    )
+    expect(result.status).not.toBe(0)
+    expect(result.stdout).toMatch(/role-pass\.observation\.(origin|outcome)/)
+  })
+
+  it('H7 — an observationRef that never resolves is a finding, not a silent pass', () => {
+    const root = realTargetRoot()
+    const { observation } = collectorObservedRecord(root)
+    const result = runValidator(
+      rolePass({
+        role: 'developer',
+        observation: observationEnvelope(
+          observation,
+          '.agent-runs/verification/does-not-exist/observation.json',
+        ),
+      }),
+      { target: root },
+    )
+    expect(result.status).not.toBe(0)
+    expect(result.stdout).toContain('role-pass.observation.reference-unresolved')
+  })
+
+  it('H7b — an observationRef that resolves to a DIFFERENT record than the one embedded is a finding', () => {
+    const root = realTargetRoot()
+    const a = collectorObservedRecord(root)
+    const b = collectorObservedRecord(root)
+    const result = runValidator(
+      rolePass({
+        role: 'developer',
+        observation: observationEnvelope(a.observation, b.observationRef),
+      }),
+      { target: root },
+    )
+    expect(result.status).not.toBe(0)
+    expect(result.stdout).toContain('role-pass.observation.reference-mismatch')
+  })
+})
+
+describe('role-pass gate: known limitations (out of scope, documented not silently claimed)', () => {
+  it("KNOWN LIMITATION — forgery: a synthetic record with a real matching candidate digest, a resolvable ref, and internally-consistent fields still passes. sealDeliveryRecord is keyless (a checksum over the author's own payload, not a signature); nothing here proves a command actually ran. Closing this needs observations anchored in the append-only run store (lib/sources/github-run-store.mjs) — a later workstream.", () => {
+    const root = realTargetRoot()
+    const definition = candidateDefinition()
+    const candidate = fingerprintCandidate(root, { inputs: definition.inputs })
+    const now = new Date().toISOString()
+    const record = sealDeliveryRecord('verification-observation', {
+      id: 'fabricated-by-hand',
+      invocationId: 'fabricated-by-hand',
+      criterionId: definition.criterionId,
+      producer: 'typed-by-hand-not-collected',
+      origin: 'collector-observed',
+      isolation: 'immutable',
+      candidateDigest: candidate.digest, // correctly computed, even though no command ever ran
+      definitionDigest: recordDigest(definition),
+      outcome: 'pass',
+      assertions: [{ id: 'search', outcome: 'pass' }],
+      startedAt: now,
+      completedAt: now,
+    })
+    const observationRef = writeRecordFile(root, 'fabricated-by-hand', record)
+    const result = runValidator(
+      rolePass({ role: 'developer', observation: observationEnvelope(record, observationRef) }),
+      { target: root },
+    )
     expect(result.status).toBe(0)
     expect(result.stdout).toContain('Result: READY')
   })
