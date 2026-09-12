@@ -37,7 +37,8 @@
       "implements",
       "observes"
     ],
-    "actionBoundaries": ["observe", "propose", "mutate-worktree", "open-pr", "external-action"]
+    "actionBoundaries": ["observe", "propose", "mutate-worktree", "open-pr", "external-action"],
+    "postures": ["advisory", "assisted", "delegated", "autonomous"]
   },
   "roles": [
     {

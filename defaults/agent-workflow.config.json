@@ -1,4 +1,5 @@
 {
+  "posture": "assisted",
   "ciCommands": [],
   "bounded": {
     "allowedExactPaths": ["README.md"],
