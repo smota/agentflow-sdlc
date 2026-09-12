@@ -82,7 +82,18 @@ export async function runDelivery(
   }
   const root = resolve(flag('--target', process.cwd()))
   const readJson = (path) => JSON.parse(readFileSync(containedPath(root, path), 'utf8'))
-  const config = readJson('agent-workflow.config.json').delivery
+  const readExecutionAdapter = () => {
+    try {
+      return readJson('agent-workflow.config.json')
+    } catch (error) {
+      if (error.code === 'ENOENT')
+        throw new Error(
+          'Execution adapter unavailable: agent-workflow.config.json not found at the project root. Run `agentflow-sdlc adopt apply` to create it.',
+        )
+      throw new Error(`Execution adapter agent-workflow.config.json is invalid: ${error.message}`)
+    }
+  }
+  const config = readExecutionAdapter().delivery
   if (!config?.source || !config.candidate)
     throw new Error('Configure delivery.source and delivery.candidate first')
   const external = config.source.kind === 'github'
