@@ -195,7 +195,7 @@
     "profileMaximums": {
       "bounded": "open-pr",
       "standard": "open-pr",
-      "high-assurance": "open-pr",
+      "high-assurance": "external-action",
       "exploratory": "propose"
     },
     "externalActionRequiresHumanApproval": true,
