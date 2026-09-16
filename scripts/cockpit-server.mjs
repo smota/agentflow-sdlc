@@ -14,6 +14,7 @@ import { loadCockpitConfig, validateCockpitConfig } from '../lib/cockpit-config.
 import { createGitHubClient, loadRepositoryPermission } from '../lib/cockpit-github.mjs'
 import { buildCockpitIssueView, buildGoalBoard } from '../lib/cockpit-read-model.mjs'
 import { createGitHubRunStore } from '../lib/sources/github-run-store.mjs'
+import { appendTerminalIntent } from '../lib/cockpit-intent-anchor.mjs'
 import { loadRunView, renderRunView } from '../lib/cockpit-run-model.mjs'
 import { loadGoalStoryFromGitHub } from '../lib/cockpit-replay-github.mjs'
 import {
@@ -231,7 +232,19 @@ async function actionEndpoint(req, res, repo, session) {
 
   const writeClient = session?.token ? createGitHubClient({ token: session.token }) : github
   let result
-  if (intent.type === 'draft-follow-up') {
+  let anchored = null
+  if (intent.type === 'close-unit') {
+    // The human's decision is not just a comment: it is appended to the ordered, content-addressed
+    // log the product already keeps in refs/heads/agentflow-state, through the exact same store
+    // (with all its guards) that observe-mode reads already trust.
+    const runId = payload.runId || `issue-${intent.issue}`
+    anchored = await appendTerminalIntent({ client: writeClient, repo, runId, intent })
+    result = await writeClient.createIssueComment(
+      repo,
+      intent.issue,
+      formatDurableActionBody(intent),
+    )
+  } else if (intent.type === 'draft-follow-up') {
     result = await writeClient.createIssue(repo, {
       title: payload.title || `Follow-up from #${intent.issue}`,
       body: formatDurableActionBody(intent),
@@ -251,10 +264,14 @@ async function actionEndpoint(req, res, repo, session) {
       target: `${repo}#${intent.issue}`,
       allowed: true,
       resultUrl: result.html_url,
-      previewSummary: intent.body.slice(0, 120),
+      previewSummary: anchored ? `anchored:${anchored.event.id}` : intent.body.slice(0, 120),
     }),
   )
-  return json(res, { ok: true, url: result.html_url })
+  return json(res, {
+    ok: true,
+    url: result.html_url,
+    ...(anchored ? { anchoredEventId: anchored.event.id } : {}),
+  })
 }
 
 async function telemetryEndpoint(req, res, repo, session) {
