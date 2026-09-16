@@ -13,7 +13,6 @@ import { authorizeCockpitUser, createAuditEvent } from '../lib/cockpit-auth.mjs'
 import { loadCockpitConfig, validateCockpitConfig } from '../lib/cockpit-config.mjs'
 import { createGitHubClient, loadRepositoryPermission } from '../lib/cockpit-github.mjs'
 import { buildCockpitIssueView, buildGoalBoard } from '../lib/cockpit-read-model.mjs'
-import { releaseCandidateSubject } from '../lib/cockpit-readiness-contract.mjs'
 import { createGitHubRunStore } from '../lib/sources/github-run-store.mjs'
 import { appendTerminalIntent } from '../lib/cockpit-intent-anchor.mjs'
 import { loadRunView, renderRunView } from '../lib/cockpit-run-model.mjs'
@@ -210,20 +209,35 @@ async function actionEndpoint(req, res, repo, session) {
     return json(res, { ok: false, errors: ['csrf-invalid'] }, 403)
   }
   // W8a D2 — close-unit's subjectDigest can never be trusted from the client alone: resolve the
-  // real unit (the issue's own goal state) here, server-side, and let parseCockpitIntent refuse any
-  // claimed subjectDigest that does not match it.
+  // real unit here, server-side, and let parseCockpitIntent refuse any claimed subjectDigest that
+  // does not match it.
+  //
+  // W8b D4 — the real unit for a release-of-candidate close is the candidate a run actually
+  // produced (lib/verification/workspace.mjs's fingerprintCandidate), never a hash of the issue's
+  // own metadata (goalRevision/targetBranch/releaseImpact) standing in for it — that recipe
+  // (formerly `releaseCandidateSubject`) could never match the candidate a real run built, and has
+  // been deleted. The cockpit has no run-store read-back yet (W8c), so it cannot resolve a real
+  // candidateDigest on its own; the caller must supply the one a completed run actually produced.
+  // Absent that, there is no candidate to close against — the honest response is that the release
+  // gate is still pending a candidate, not a fabricated digest standing in for one.
   let unit
   if ((payload.type || payload.intent) === 'close-unit') {
     const issueNumber = Number(payload.issue)
     if (!Number.isFinite(issueNumber)) {
       return json(res, { ok: false, errors: ['issue is required to resolve the unit'] }, 400)
     }
-    const [issue, comments] = await Promise.all([
-      github.issue(repo, issueNumber),
-      github.issueComments(repo, issueNumber),
-    ])
-    const view = buildCockpitIssueView({ issue, comments, repo })
-    unit = releaseCandidateSubject(view.goal)
+    const candidateDigest =
+      typeof payload.candidateDigest === 'string' && /^[a-f0-9]{64}$/.test(payload.candidateDigest)
+        ? payload.candidateDigest
+        : null
+    if (!candidateDigest) {
+      return json(
+        res,
+        { ok: false, errors: ['release gate is pending a candidate: no candidateDigest supplied'] },
+        400,
+      )
+    }
+    unit = { candidateDigest }
   }
   const parsed = parseCockpitIntent({ ...payload, repo, unit })
   if (!parsed.ok) return json(res, parsed, 400)

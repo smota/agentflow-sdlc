@@ -94,8 +94,16 @@ describe('run CLI consumer journey', () => {
       next.confirm,
       ...mutation,
     )
-    expect(advance.code).toBe(3)
-    expect(advance.value.error).toContain('bilateral')
+    // W8b2 — DEFECT FIXED: this used to expect exit 3 / 'bilateral' here, reachable only because
+    // the run-service defect made `requiresHumanAcceptance` silently return false for the default
+    // 'assisted' posture on a 'standard' change, letting advance() skip straight past the human
+    // gate to the bilateral-collaboration check underneath. With the fix, advance()'s very first
+    // transition (phase 0, the intent-freeze crossing) correctly asks a human — every posture,
+    // including the factory default, requires one there — and this CLI's own `authorize` callback
+    // (scripts/run-delivery.mjs) deliberately never grants `human-acceptance` on its own, so the
+    // run correctly blocks here instead of inventing bilateral acceptance it does not have either.
+    expect(advance.code).toBe(2)
+    expect(advance.value.error).toContain('Human acceptance is unresolved')
     writeFileSync(join(root, 'app.cjs'), 'module.exports = () => "broken"')
     expect(invoke('verify', 'demo', '--check', 'suite', ...mutation).code).toBe(3)
     expect(invoke('pause', 'demo', ...mutation).code).toBe(0)
