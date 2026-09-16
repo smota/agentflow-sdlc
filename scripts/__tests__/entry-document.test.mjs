@@ -5,6 +5,8 @@ import { fileURLToPath } from 'node:url'
 import {
   ENTRY_DOCUMENT,
   ENTRY_PATH_MARKER,
+  ENTRY_PATH_TERMS,
+  GLOSSARY_TERMS,
   SURFACE_TERMS,
   extractMarkedCommandBlock,
   findUndefinedTerms,
@@ -52,6 +54,46 @@ describe('entry document surface-term check (W6b / D2, test 5)', () => {
     const result = validateDocs(repoRoot)
     expect(result.errors).toEqual([])
     expect(result.ok).toBe(true)
+  })
+
+  // W8e / D5, test 6 — GLOSSARY_TERMS used to be the ONLY thing checked on the entry path: a closed,
+  // hand-maintained list that "digest" and "candidate" were never added to, so both passed the lint
+  // silently while the entry document used them undefined (finding 6). ENTRY_PATH_TERMS is the set
+  // validateDocs actually applies to the entry document; it must catch a real product term even
+  // though it is not a hand-typed entry in GLOSSARY_TERMS.
+  it('a term like "digest" used undefined on the entry path fails the doc lint (W8e / D5, test 6)', () => {
+    const findings = findUndefinedTerms('Your work produces a digest of the exact content.', ENTRY_PATH_TERMS)
+    expect(findings).toContain('digest')
+  })
+
+  it('"digest" is not a hand-typed entry in the old closed GLOSSARY_TERMS list', () => {
+    // Proves the catch above comes from the derived product vocabulary, not from someone having
+    // quietly added "digest" to the original closed list — which is exactly the defect (finding 6).
+    expect(GLOSSARY_TERMS).not.toContain('digest')
+    expect(ENTRY_PATH_TERMS).toContain('digest')
+  })
+
+  it('"candidate" used undefined on the entry path also fails the doc lint', () => {
+    const findings = findUndefinedTerms('This check runs against your candidate files.', ENTRY_PATH_TERMS)
+    expect(findings).toContain('candidate')
+  })
+
+  it('defining "digest" in plain language at first use satisfies the lint', () => {
+    const findings = findUndefinedTerms(
+      'Your work produces a digest (a short fingerprint of exact content) you can inspect.',
+      ENTRY_PATH_TERMS,
+    )
+    expect(findings).not.toContain('digest')
+  })
+
+  // W8e / D4, test 5 — `--writer you` used to be typed on three of the six entry-path commands, pure
+  // plumbing a newcomer had to copy without understanding. `--writer` now defaults to the local
+  // operator identity, so the documented path never needs to name it.
+  it('the entry path never types --writer (W8e / D4, test 5)', () => {
+    const text = readFileSync(resolve(repoRoot, ENTRY_DOCUMENT), 'utf8')
+    const commands = extractMarkedCommandBlock(text, ENTRY_PATH_MARKER)
+    expect(commands).not.toBeNull()
+    for (const line of commands) expect(line).not.toMatch(/--writer\b/)
   })
 })
 

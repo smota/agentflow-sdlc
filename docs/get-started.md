@@ -30,9 +30,9 @@ something the next one depends on.
 ```bash
 node bin/cli.mjs init --target /path/to/your-project
 node bin/cli.mjs sdlc validate --target /path/to/your-project
-node bin/cli.mjs run start demo --goal "Adopt AgentFlow SDLC" --writer you --execute --target /path/to/your-project
-node bin/cli.mjs run freeze demo --writer you --execute --target /path/to/your-project
-node bin/cli.mjs run verify demo --check starter --writer you --execute --target /path/to/your-project
+node bin/cli.mjs run start demo --goal "Adopt AgentFlow SDLC" --execute --target /path/to/your-project
+node bin/cli.mjs run freeze demo --execute --target /path/to/your-project
+node bin/cli.mjs run verify demo --check starter --execute --target /path/to/your-project
 git -C /path/to/your-project add -A -- . ":(exclude).agent-runs" && git -C /path/to/your-project commit -m "Adopt AgentFlow SDLC"
 ```
 
@@ -42,8 +42,9 @@ guessing one. When both a test command and at least one file of your own are det
 seeds a starter check that runs that exact test command, and a one-criterion acceptance file
 (`agentflow-acceptance.json`) wired to it — plainly marked as a starter, meant to be replaced with
 your project's real acceptance criteria. Every file `agent-framework-lock.json` records as
-AgentFlow's own is excluded from that check's candidate files, so upgrading the framework later never
-silently changes what your evidence covers. When `init` cannot detect a test command, or finds no
+AgentFlow's own is excluded from that check's candidate (candidate — the exact files your evidence
+will be checked against), so upgrading the framework later never silently changes what your evidence
+covers. When `init` cannot detect a test command, or finds no
 file of your own to check, it seeds neither the check nor the acceptance file — inventing either
 would be worse than leaving it to you — and it prints the one step to add yourself: a `test` script
 in `package.json`, or `delivery.checks` and `delivery.contracts` written by hand in
@@ -55,9 +56,9 @@ that the files are present, but that the roles, branches, and checks they descri
 together. This is what a gate looks like in AgentFlow: a deterministic pass/fail on a specific piece
 of work, not a person's opinion.
 
-**3. `run start`** opens a run named `demo` and records who owns it (`--writer`) and that it is
-allowed to change your files (`--execute`). Nothing is checked yet; this only establishes who is
-doing the work.
+**3. `run start`** opens a run named `demo` and records who owns it — your OS user name by default;
+override it with `--writer` if you want a different name recorded — and that it is allowed to change
+your files (`--execute`). Nothing is checked yet; this only establishes who is doing the work.
 
 **4. `run freeze`** reads `agentflow-acceptance.json` and locks it in as this run's acceptance
 contract. Once frozen, evidence can only be judged against these exact criteria — changing the
@@ -78,7 +79,8 @@ repository instead of a chat transcript. It deliberately leaves out `.agent-runs
 local scratch, and the `AGENTS.md` you just installed says it must not be committed.
 
 The run from steps 3–5 is a local preview. Its record is real — a frozen contract and an observation
-with a digest — but it is not durable until a source adapter anchors it; for GitHub that is the
+with a digest (a short fingerprint that changes if the recorded content changes) — but it is not
+durable until a source adapter anchors it; for GitHub that is the
 append-only `agentflow-state` branch. From here, your next real change — a bug fix, a feature —
 follows the same roles and gates, ending in a pull request whose evidence anyone can check.
 

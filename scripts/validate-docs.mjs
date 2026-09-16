@@ -2,6 +2,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { EVIDENCE_VOCABULARY_TERMS } from '../lib/sdlc-vocabulary.mjs'
 
 const KNOWN_CLI_COMMANDS = new Set([
   'init',
@@ -99,6 +100,13 @@ function definedAtFirstUse(line, matchIndex, term) {
   return /^[^a-zA-Z0-9]{0,3}(\(|—|--|:\s|,?\s*(which\s+)?means\b|is an?\b|is the\b)/i.test(after)
 }
 
+// W8e / D5 — the terms actually applied to the entry document: the hand-authored, multi-word
+// phrases above PLUS the product's own evidence vocabulary (lib/sdlc-vocabulary.mjs), which is a
+// real source of truth reused elsewhere rather than a second private copy validate-docs.mjs alone
+// would need to remember to keep in sync. A term missing from GLOSSARY_TERMS can still be caught
+// here as long as it is part of the product's own vocabulary.
+export const ENTRY_PATH_TERMS = [...GLOSSARY_TERMS, ...EVIDENCE_VOCABULARY_TERMS]
+
 export function findUndefinedTerms(markdown, terms = GLOSSARY_TERMS) {
   const prose = markdown.replace(/```[\s\S]*?```/g, '').replace(/`[^`]*`/g, '')
   const findings = []
@@ -173,7 +181,7 @@ export function validateDocs(root = process.cwd()) {
     if (/role-pass/i.test(entryText)) {
       errors.push(`${ENTRY_DOCUMENT}: "role-pass" must not appear on the entry path (D2)`)
     }
-    for (const term of findUndefinedTerms(entryText)) {
+    for (const term of findUndefinedTerms(entryText, ENTRY_PATH_TERMS)) {
       errors.push(`${ENTRY_DOCUMENT}: product term "${term}" is used before it is defined`)
     }
     const declaredCount = Number(ENTRY_PATH_MARKER.match(/(\d+) commands/)?.[1])

@@ -49,12 +49,12 @@ function runDocumentedCommand(line, { cwd, target }) {
     const [bin, ...args] = tokenize(part)
     const executable = bin === 'node' ? process.execPath : bin
     const result = spawnSync(executable, args, { cwd, encoding: 'utf8', timeout: 60000 })
-    // `run verify`'s starter check ships a placeholder assertion (D2: never invent a real one), so
-    // a genuinely honest run of it can legitimately observe a failing check — exit 3, "evidence
-    // missing/blocked" in this CLI's own convention, not a crash. What test 1 requires is that an
-    // observation was recorded, which the status assertions below check directly; every other step
-    // must still exit clean.
-    const acceptable = result.status === 0 || (args.includes('verify') && result.status === 3)
+    // W8e / D1 — the fixture's test script genuinely passes and prints no JUnit output (`node
+    // --test`'s default reporter is TAP, not JUnit). `init` now seeds the starter check with the
+    // exit-code format (D1), so an honest `run verify` against a passing test command exits 0, not
+    // 3. Tolerating exit 3 here used to paper over the real defect this release fixes: a passing
+    // test producing a failing first run. Every documented step must exit clean.
+    const acceptable = result.status === 0
     if (!acceptable) {
       throw new Error(
         `entry-path command failed (exit ${result.status}): ${part}\n--- stdout ---\n${result.stdout}\n--- stderr ---\n${result.stderr}`,
@@ -110,11 +110,12 @@ describe('the entry document reaches real governance end to end (W6c, test 1)', 
     expect(result.evidence).toHaveLength(1)
     expect(result.evidence[0].criterionId).toBe('starter')
 
-    // A verification observation was recorded against it — collected, not asserted. Whether the
-    // starter check's placeholder assertion happened to hold is irrelevant here; what test 1
-    // requires is that real evidence exists, which "missing" would mean it does not.
+    // A verification observation was recorded against it — collected, not asserted. W8e / D1: the
+    // fixture's test script genuinely passes and the starter check now uses the exit-code format
+    // (a single assertion that passes exactly when the process exits 0), so an honest run records a
+    // PASSING observation, not merely a non-missing one.
     expect(result.evidence[0].observationDigest).not.toBeNull()
-    expect(result.evidence[0].observedOutcome).not.toBe('missing')
+    expect(result.evidence[0].observedOutcome).toBe('pass')
 
     // The adoption was committed, so that decision lives in the repository rather than a chat
     // transcript. The run record was NOT: the AGENTS.md this path installs says .agent-runs/ is local

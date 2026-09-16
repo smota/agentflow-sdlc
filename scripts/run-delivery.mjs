@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { readFileSync, existsSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { hostname } from 'node:os'
+import { hostname, userInfo } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import { createFileRunStore } from '../lib/sources/run-store.mjs'
@@ -32,6 +32,42 @@ export const RUN_EXIT_CODES = {
 }
 const help =
   'Usage: agentflow-sdlc run <source-plan|start|status|context|next|freeze|verify|advance|checkpoint|pause|resume|resolve-escalation|publish> <id> [--target <dir>] [--execute] [--plan <file> --confirm <digest>] [--attestation <file>] [--json]'
+
+// W8e / D3 — replaces message-regex classification. A GovernedBlockError carries its exit code as a
+// fact about the error (RUN_EXIT_CODES.blocked, documented and distinct from a genuine error), so
+// rewording its message can never change the code. Everything else still falls back to the existing
+// message heuristic, which this change leaves in place rather than migrating every throw site in
+// the codebase — see the session report.
+export function classifyDeliveryError(error) {
+  if (error?.governed) return RUN_EXIT_CODES.blocked
+  const message = error?.message ?? ''
+  if (/stale|changed|conflict|Obsolete/.test(message)) return RUN_EXIT_CODES.conflict
+  if (/unavailable|ENOENT/.test(message)) return RUN_EXIT_CODES.unavailable
+  if (/required|blocked|authorized/.test(message)) return RUN_EXIT_CODES.blocked
+  return RUN_EXIT_CODES.invalid
+}
+
+// W8e / D6 — one readable line per run command, printed before the (unchanged) JSON block when
+// `--json` was not requested. `command === 'next'` is the one shape whose run-state projection is
+// nested under `.status` rather than at the top level (see the `next` branch of runDelivery below).
+function summarizeRunResult(command, result) {
+  if (!result || typeof result !== 'object') return 'Done.'
+  const projection = command === 'next' ? result.status : result
+  const nextAction = projection?.nextAction
+    ? ` Next: ${String(projection.nextAction).replaceAll('-', ' ')}.`
+    : ''
+  if (command === 'verify' && result.verification) {
+    return result.verification.outcome === 'pass'
+      ? `Evidence recorded: your check passed.${nextAction}`
+      : `Evidence recorded: your check did not pass.${nextAction}`
+  }
+  if (typeof projection?.status === 'string' && projection.status !== 'absent') {
+    return `Run "${projection.runId ?? ''}" is ${projection.status}.${nextAction}`
+  }
+  if (result.blocked) return `Blocked: acceptance criteria are not yet satisfied.${nextAction}`
+  if (typeof result.digest === 'string') return 'Plan ready; rerun with --confirm to apply it.'
+  return `Done.${nextAction}`
+}
 
 export async function resolveDeliveryContract({ value, state, source, client }) {
   const validation = validateDeliveryContract(value)
@@ -102,8 +138,11 @@ export async function runDelivery(
   if (!external && config.source.kind !== 'local-preview') throw new Error('Unsupported run source')
   const execute = args.includes('--execute')
   const boundary = flag('--boundary', external ? 'external-action' : 'mutate-worktree')
+  // W8e / D4 — `--writer` used to be required plumbing typed on three of the six entry-path
+  // commands. It now defaults to the local operator identity (the OS user name); `--writer` stays
+  // available to override it (a shared machine, CI, or a name that differs from the OS account).
   const authority = {
-    owner: flag('--writer'),
+    owner: flag('--writer', userInfo().username),
     generation: Number(flag('--generation', '0')),
     execute,
     boundary,
@@ -315,6 +354,9 @@ export async function runDelivery(
         authority,
       })
   } else throw new Error(help)
+  // W8e / D6 — a plain-language line before the JSON when `--json` was not requested; `--json`
+  // output itself is untouched (still exactly `emit({ version: 1, result })`, nothing prepended).
+  if (!args.includes('--json')) process.stdout.write(`${summarizeRunResult(command, result)}\n`)
   emit({ version: 1, result })
   return result?.state === 'unknown'
     ? 6
@@ -327,13 +369,8 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   try {
     process.exitCode = await runDelivery(process.argv.slice(2))
   } catch (error) {
+    if (!process.argv.includes('--json')) process.stdout.write(`Blocked: ${error.message}\n`)
     process.stdout.write(`${JSON.stringify({ version: 1, error: error.message })}\n`)
-    process.exitCode = /stale|changed|conflict|Obsolete/.test(error.message)
-      ? 4
-      : /unavailable|ENOENT/.test(error.message)
-        ? 5
-        : /required|blocked|authorized/.test(error.message)
-          ? 3
-          : 2
+    process.exitCode = classifyDeliveryError(error)
   }
 }
