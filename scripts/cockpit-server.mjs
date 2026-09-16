@@ -13,6 +13,7 @@ import { authorizeCockpitUser, createAuditEvent } from '../lib/cockpit-auth.mjs'
 import { loadCockpitConfig, validateCockpitConfig } from '../lib/cockpit-config.mjs'
 import { createGitHubClient, loadRepositoryPermission } from '../lib/cockpit-github.mjs'
 import { buildCockpitIssueView, buildGoalBoard } from '../lib/cockpit-read-model.mjs'
+import { releaseCandidateSubject } from '../lib/cockpit-readiness-contract.mjs'
 import { createGitHubRunStore } from '../lib/sources/github-run-store.mjs'
 import { appendTerminalIntent } from '../lib/cockpit-intent-anchor.mjs'
 import { loadRunView, renderRunView } from '../lib/cockpit-run-model.mjs'
@@ -208,7 +209,23 @@ async function actionEndpoint(req, res, repo, session) {
   ) {
     return json(res, { ok: false, errors: ['csrf-invalid'] }, 403)
   }
-  const parsed = parseCockpitIntent({ ...payload, repo })
+  // W8a D2 — close-unit's subjectDigest can never be trusted from the client alone: resolve the
+  // real unit (the issue's own goal state) here, server-side, and let parseCockpitIntent refuse any
+  // claimed subjectDigest that does not match it.
+  let unit
+  if ((payload.type || payload.intent) === 'close-unit') {
+    const issueNumber = Number(payload.issue)
+    if (!Number.isFinite(issueNumber)) {
+      return json(res, { ok: false, errors: ['issue is required to resolve the unit'] }, 400)
+    }
+    const [issue, comments] = await Promise.all([
+      github.issue(repo, issueNumber),
+      github.issueComments(repo, issueNumber),
+    ])
+    const view = buildCockpitIssueView({ issue, comments, repo })
+    unit = releaseCandidateSubject(view.goal)
+  }
+  const parsed = parseCockpitIntent({ ...payload, repo, unit })
   if (!parsed.ok) return json(res, parsed, 400)
   const intent = parsed.intent
   const guard = evaluateGuardedAction({
