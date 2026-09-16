@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { join, resolve, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
+import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it } from 'vitest'
 import { collectProcessObservation } from '../../lib/verification/process-collector.mjs'
 import { fingerprintCandidate } from '../../lib/verification/workspace.mjs'
@@ -24,9 +25,12 @@ function fixtureRoot() {
 }
 
 // A self-contained target root the gate can resolve everything against on its own: its own SDLC
-// config (so loadSdlcConfig succeeds without falling back to the real repo) and its own
-// delivery.candidate.inputs pointing at a real file, so fingerprintCandidate can compute a real
-// digest from the actual working tree (H3) rather than trusting a self-declared one.
+// config (so loadSdlcConfig succeeds without falling back to the real repo), its own
+// delivery.candidate.inputs pointing at a real file so fingerprintCandidate can compute a real
+// digest from the actual working tree (H3) rather than trusting a self-declared one, and (W8f D2) a
+// configured check matching candidateDefinition() so the definition/required-assertions binding the
+// shared resolver performs (lib/verification/observation-resolver.mjs) has something real to bind
+// to — the gate no longer accepts an observation whose definition matches no configured check.
 function realTargetRoot(content = 'candidate') {
   const root = fixtureRoot()
   writeFileSync(join(root, 'sdlc.config.json'), sdlcConfigSource)
@@ -34,7 +38,11 @@ function realTargetRoot(content = 'candidate') {
   writeFileSync(
     join(root, 'agent-workflow.config.json'),
     JSON.stringify({
-      delivery: { source: { kind: 'local-preview' }, candidate: { inputs: ['input.txt'] } },
+      delivery: {
+        source: { kind: 'local-preview' },
+        candidate: { inputs: ['input.txt'] },
+        checks: { suite: candidateDefinition() },
+      },
     }),
   )
   return root
@@ -283,9 +291,10 @@ describe('role-pass gate: G1 adversarial holes (H1-H7)', () => {
     const definition = candidateDefinition()
     const candidate = fingerprintCandidate(root, { inputs: definition.inputs })
     const now = new Date().toISOString()
+    const id = randomUUID()
     const record = sealDeliveryRecord('verification-observation', {
-      id: 'mixed-assertions',
-      invocationId: 'mixed-assertions',
+      id,
+      invocationId: id,
       criterionId: definition.criterionId,
       producer: 'agentflow:process-collector',
       origin: 'collector-observed',
@@ -297,7 +306,7 @@ describe('role-pass gate: G1 adversarial holes (H1-H7)', () => {
       startedAt: now,
       completedAt: now,
     })
-    const observationRef = writeRecordFile(root, 'mixed-assertions', record)
+    const observationRef = writeRecordFile(root, id, record)
     const result = runValidator(
       rolePass({ role: 'developer', observation: observationEnvelope(record, observationRef) }),
       { target: root },
@@ -312,9 +321,10 @@ describe('role-pass gate: G1 adversarial holes (H1-H7)', () => {
     const root = realTargetRoot()
     const definition = candidateDefinition()
     const now = new Date().toISOString()
+    const id = randomUUID()
     const record = sealDeliveryRecord('verification-observation', {
-      id: 'invented-candidate',
-      invocationId: 'invented-candidate',
+      id,
+      invocationId: id,
       criterionId: definition.criterionId,
       producer: 'my-imagination',
       origin: 'collector-observed',
@@ -326,7 +336,7 @@ describe('role-pass gate: G1 adversarial holes (H1-H7)', () => {
       startedAt: now,
       completedAt: now,
     })
-    const observationRef = writeRecordFile(root, 'invented-candidate', record)
+    const observationRef = writeRecordFile(root, id, record)
     const result = runValidator(
       rolePass({ role: 'developer', observation: observationEnvelope(record, observationRef) }),
       { target: root },
@@ -365,13 +375,21 @@ describe('role-pass gate: G1 adversarial holes (H1-H7)', () => {
   })
 
   it('H4 — an observation with assertions: [] is blocked even though outcome self-reports pass', () => {
+    // W8f D2 — before the fix, requiredAssertions came from the RECORD's own `assertions` field, so
+    // an empty list meant an empty requirement and this test caught "At least one required
+    // assertion is necessary". After the fix, requiredAssertions comes from the CONFIGURED check
+    // (`checks.suite.assertions`, which realTargetRoot() sets to candidateDefinition()'s
+    // `['search']`) — a record's own empty assertions list no longer erases the requirement, it
+    // just means the required assertion never happened, which is a per-assertion failure, not an
+    // empty-requirement finding.
     const root = realTargetRoot()
     const definition = candidateDefinition()
     const candidate = fingerprintCandidate(root, { inputs: definition.inputs })
     const now = new Date().toISOString()
+    const id = randomUUID()
     const record = sealDeliveryRecord('verification-observation', {
-      id: 'empty-assertions',
-      invocationId: 'empty-assertions',
+      id,
+      invocationId: id,
       criterionId: definition.criterionId,
       producer: 'my-imagination',
       origin: 'collector-observed',
@@ -383,13 +401,13 @@ describe('role-pass gate: G1 adversarial holes (H1-H7)', () => {
       startedAt: now,
       completedAt: now,
     })
-    const observationRef = writeRecordFile(root, 'empty-assertions', record)
+    const observationRef = writeRecordFile(root, id, record)
     const result = runValidator(
       rolePass({ role: 'developer', observation: observationEnvelope(record, observationRef) }),
       { target: root },
     )
     expect(result.status).not.toBe(0)
-    expect(result.stdout).toContain('role-pass.observation.assertions-empty')
+    expect(result.stdout).toContain('role-pass.observation.assertion-failed')
   })
 
   it('H5 — declaring Independence boundary: independent without Reviewed authors is blocked, including under high-assurance', () => {
@@ -470,32 +488,159 @@ describe('role-pass gate: G1 adversarial holes (H1-H7)', () => {
   })
 })
 
-describe('role-pass gate: known limitations (out of scope, documented not silently claimed)', () => {
-  it("KNOWN LIMITATION — forgery: a synthetic record with a real matching candidate digest, a resolvable ref, and internally-consistent fields still passes. sealDeliveryRecord is keyless (a checksum over the author's own payload, not a signature); nothing here proves a command actually ran. Closing this needs observations anchored in the append-only run store (lib/sources/github-run-store.mjs) — a later workstream.", () => {
+// W8f D3 — the single KNOWN LIMITATION test below used to cover ALL synthetic forgery: any
+// internally-consistent record with a real candidate digest and a resolvable ref passed, because
+// requiredAssertions came from the record itself and definitionDigest was trusted from the
+// author's own envelope. After W8f D2 (the gate resolves observations through the shared
+// lib/verification/observation-resolver.mjs, the same resolver scripts/run-delivery.mjs calls),
+// that is no longer true: a synthetic record is refused unless its definition matches a check the
+// TARGET's own agent-workflow.config.json configures AND a matching record is independently found
+// in the collector's own storage. The three tests below assert each of those refusals directly.
+// What genuinely remains — the one thing D2 cannot close — is a forger who has ordinary write
+// access to the worktree writing straight into `.agent-runs/verification/`, the collector's own
+// storage location: nothing distinguishes that file from one the real collector produced, because
+// both are unsigned JSON on local, author-writable scratch. That residual case gets exactly one
+// test, named for what it is.
+describe('role-pass gate: most forgery is now refused (W8f D2)', () => {
+  it('D2/1 — an observation whose definition matches no configured check is refused, even with correct candidate digest, real storage backing and self-reported passing assertions', () => {
+    const root = realTargetRoot()
+    // A criterionId the target's one configured check (checks.suite, criterionId 'AC-1') does not
+    // serve — so no configured check can ever match this record's definition, no matter how
+    // internally consistent the record is.
+    const definition = { ...candidateDefinition(), criterionId: 'not-a-configured-criterion' }
+    const candidate = fingerprintCandidate(root, { inputs: definition.inputs })
+    const now = new Date().toISOString()
+    const id = randomUUID()
+    const record = sealDeliveryRecord('verification-observation', {
+      id,
+      invocationId: id,
+      criterionId: definition.criterionId,
+      producer: 'my-imagination',
+      origin: 'collector-observed',
+      isolation: 'immutable',
+      candidateDigest: candidate.digest,
+      definitionDigest: recordDigest(definition), // self-consistent, but matches no configured check
+      outcome: 'pass',
+      assertions: [{ id: 'search', outcome: 'pass' }],
+      startedAt: now,
+      completedAt: now,
+    })
+    // Written to the record's OWN collector-storage path too, so the only thing wrong here is the
+    // check binding — isolating D2/1 from D2/2 and D2/3 below.
+    const observationRef = writeRecordFile(root, id, record)
+    const result = runValidator(
+      rolePass({ role: 'developer', observation: observationEnvelope(record, observationRef) }),
+      { target: root },
+    )
+    expect(result.status).not.toBe(0)
+    expect(result.stdout).toContain('role-pass.observation.definition-mismatch')
+  })
+
+  it('D2/2 — an embedded observation that differs from the collector\'s stored copy is refused, even though its own declared observationRef resolves and matches', () => {
+    const root = realTargetRoot()
+    // A real, genuinely-collected record, written by the actual collector pipeline to
+    // .agent-runs/verification/<id>/observation.json — the ONE path the shared resolver trusts.
+    const real = collectorObservedRecord(root)
+    // A forged copy of it, same id (so it targets the SAME collector-storage path), but different
+    // content — sealDeliveryRecord recomputes a different digest.
+    const forged = sealDeliveryRecord('verification-observation', {
+      ...real.observation,
+      producer: 'forged-by-hand',
+    })
+    // The forged copy's OWN observationRef points at a SEPARATE file holding the SAME forged
+    // content, so the role pass's own declared reference (H7) resolves and matches on its own —
+    // isolating the resolver's independent collector-storage comparison as the thing that refuses
+    // this, not H7.
+    const observationRef = writeRecordFile(root, randomUUID(), forged)
+    const result = runValidator(
+      rolePass({
+        role: 'developer',
+        observation: observationEnvelope(forged, observationRef),
+      }),
+      { target: root },
+    )
+    expect(result.status).not.toBe(0)
+    expect(result.stdout).toContain('role-pass.observation.unverified-source')
+  })
+
+  it('D2/3 — an observation whose id has no file at all in collector storage is refused', () => {
     const root = realTargetRoot()
     const definition = candidateDefinition()
     const candidate = fingerprintCandidate(root, { inputs: definition.inputs })
     const now = new Date().toISOString()
+    const id = randomUUID()
     const record = sealDeliveryRecord('verification-observation', {
-      id: 'fabricated-by-hand',
-      invocationId: 'fabricated-by-hand',
+      id,
+      invocationId: id,
       criterionId: definition.criterionId,
-      producer: 'typed-by-hand-not-collected',
+      producer: 'my-imagination',
       origin: 'collector-observed',
       isolation: 'immutable',
-      candidateDigest: candidate.digest, // correctly computed, even though no command ever ran
+      candidateDigest: candidate.digest,
       definitionDigest: recordDigest(definition),
       outcome: 'pass',
       assertions: [{ id: 'search', outcome: 'pass' }],
       startedAt: now,
       completedAt: now,
     })
-    const observationRef = writeRecordFile(root, 'fabricated-by-hand', record)
+    // Resolvable observationRef pointing SOMEWHERE (satisfying H7 on its own) — but nothing was
+    // ever written under this id's own collector-storage path, because nothing collected it.
+    const observationRef = writeRecordFile(root, 'never-collected', record)
+    const result = runValidator(
+      rolePass({ role: 'developer', observation: observationEnvelope(record, observationRef) }),
+      { target: root },
+    )
+    expect(result.status).not.toBe(0)
+    expect(result.stdout).toContain('role-pass.observation.unverified-source')
+  })
+})
+
+describe('role-pass gate: known limitation (out of scope, documented not silently claimed)', () => {
+  it("KNOWN LIMITATION — writing a fake observation.json directly into local .agent-runs/verification/<id>/ still passes: that directory is author-writable scratch, not a trust anchor. Every other synthetic-record path is refused (see 'most forgery is now refused' above); this is the one path D2 cannot close from inside a single worktree. sealDeliveryRecord is keyless (a checksum over the author's own payload, not a signature), so a file placed directly at the path the resolver trusts is indistinguishable from one the real collector produced. Closing this needs observations anchored in a durable store the author cannot write to directly — the append-only run store (lib/sources/github-run-store.mjs / lib/sources/run-store.mjs), not local .agent-runs/verification/ scratch — a later workstream.", () => {
+    const root = realTargetRoot()
+    const definition = candidateDefinition()
+    const candidate = fingerprintCandidate(root, { inputs: definition.inputs })
+    const now = new Date().toISOString()
+    const id = randomUUID() // a real-shaped id — the resolver only ever checks the SHAPE, not provenance
+    const record = sealDeliveryRecord('verification-observation', {
+      id,
+      invocationId: id,
+      criterionId: definition.criterionId,
+      producer: 'typed-by-hand-not-collected',
+      origin: 'collector-observed',
+      isolation: 'immutable',
+      candidateDigest: candidate.digest, // correctly computed, even though no command ever ran
+      definitionDigest: recordDigest(definition), // matches the real configured check
+      outcome: 'pass',
+      assertions: [{ id: 'search', outcome: 'pass' }],
+      startedAt: now,
+      completedAt: now,
+    })
+    // Written directly to the id's own collector-storage path — indistinguishable from a real
+    // collector run because nothing here is signed and the directory is ordinary worktree scratch.
+    const observationRef = writeRecordFile(root, id, record)
     const result = runValidator(
       rolePass({ role: 'developer', observation: observationEnvelope(record, observationRef) }),
       { target: root },
     )
     expect(result.status).toBe(0)
     expect(result.stdout).toContain('Result: READY')
+  })
+})
+
+describe('role-pass gate: one resolver, not two (W8f D1/D2)', () => {
+  it('the gate no longer derives requiredAssertions from the record, and both the gate and run-delivery.mjs call the same shared resolver', () => {
+    const gateSource = readFileSync(
+      join(repoRoot, 'scripts', 'validate-sdlc-role-pass.mjs'),
+      'utf8',
+    )
+    const runDeliverySource = readFileSync(join(repoRoot, 'scripts', 'run-delivery.mjs'), 'utf8')
+    // The old weak binding: requiredAssertions built from the record's own `assertions` field.
+    expect(gateSource).not.toMatch(/record\?\.assertions/)
+    expect(gateSource).not.toMatch(/observationBlock\.definitionDigest/)
+    // Both callers import the ONE shared resolver, from lib/verification/ (outside lib/core/).
+    const resolverImport = /from ['"].*\/verification\/observation-resolver\.mjs['"]/
+    expect(gateSource).toMatch(resolverImport)
+    expect(runDeliverySource).toMatch(resolverImport)
   })
 })

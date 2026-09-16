@@ -13,11 +13,9 @@ import {
   publishProjection,
   reconcileProjection,
 } from '../lib/application/publication-service.mjs'
-import {
-  collectProcessObservation,
-  inspectProcessRuntime,
-} from '../lib/verification/process-collector.mjs'
+import { collectProcessObservation } from '../lib/verification/process-collector.mjs'
 import { fingerprintCandidate, containedPath } from '../lib/verification/workspace.mjs'
+import { resolveObservation as resolveVerifiedObservation } from '../lib/verification/observation-resolver.mjs'
 import { recordDigest } from '../lib/core/record-digest.mjs'
 import { goalRevision } from '../lib/core/goal-revision.mjs'
 import { validateDeliveryContract } from '../lib/core/delivery-policy.mjs'
@@ -147,27 +145,10 @@ export async function runDelivery(
       const path = config.collaboration?.[RUN_ROLES[state.phase]]
       return path ? { verified: true, sources: readJson(path) } : null
     },
-    resolveObservation: async (observation) => {
-      if (observation.origin !== 'collector-observed' || !/^[a-f0-9-]{36}$/.test(observation.id))
-        return { verified: false, observation }
-      const path = `.agent-runs/verification/${observation.id}/observation.json`
-      const current = readJson(path)
-      const candidate = fingerprintCandidate(root, config.candidate)
-      const check = Object.values(config.checks ?? {}).find(
-        (check) =>
-          check.criterionId === observation.criterionId &&
-          recordDigest({ ...check, ...config.candidate }) === observation.definitionDigest,
-      )
-      const runtime = check ? inspectProcessRuntime(root, check).identity : null
-      return {
-        verified:
-          current.digest === observation.digest &&
-          candidate.digest === observation.candidateDigest &&
-          runtime !== null &&
-          runtime.digest === observation.executionContextDigest,
-        observation: current,
-      }
-    },
+    // W8f D1 — the run and the role-pass gate (scripts/validate-sdlc-role-pass.mjs) both resolve
+    // observation trust through the ONE shared function; no second copy of this decision lives here.
+    resolveObservation: async (observation) =>
+      resolveVerifiedObservation({ root, config, observation }),
     observeWriter: async (state) => observeLocalWriter(state.writer),
     observeWorkspace: async () => ({
       verified: true,

@@ -12,7 +12,8 @@ import { loadProjectConfig } from '../lib/role-routing.mjs'
 import { runtimePlatformSlugs } from '../lib/runtime-platforms.mjs'
 import { normalizeRole } from '../lib/sdlc-vocabulary.mjs'
 import { verifyObservation } from '../lib/core/verification-observation.mjs'
-import { containedPath, fingerprintCandidate } from '../lib/verification/workspace.mjs'
+import { containedPath } from '../lib/verification/workspace.mjs'
+import { resolveObservation } from '../lib/verification/observation-resolver.mjs'
 
 const OBSERVATION_REQUIRED_ROLES = ['developer', 'tester']
 
@@ -199,16 +200,21 @@ if (!observationBlock) {
     }
   }
 
-  // H3: the candidate digest is computed from the actual working tree, over the inputs the
-  // target's own agent-workflow.config.json declares under delivery.candidate.inputs — never taken
-  // from the author-supplied envelope, which agrees with the embedded record by construction. If
-  // the tree cannot be fingerprinted that is itself a finding, never a silent pass.
-  let actualCandidateDigest = null
+  // W8f D2 — H3/definition/required-assertions all go through the ONE shared resolver
+  // (lib/verification/observation-resolver.mjs), the same one `scripts/run-delivery.mjs` calls. The
+  // record is loaded from collector storage and compared with the embedded one, the definition is
+  // bound to a check the target's own agent-workflow.config.json configures (never the author's own
+  // definitionDigest), required assertions come from that configured check (never the record's own
+  // assertions), and the candidate digest is recomputed from the actual working tree. A record that
+  // only asserts things about itself can no longer satisfy itself. If the tree cannot be
+  // fingerprinted that is itself a finding, never a silent pass (H3b).
+  let observationResolution = null
   try {
-    actualCandidateDigest = fingerprintCandidate(
-      target,
-      projectConfig.delivery?.candidate ?? {},
-    ).digest
+    observationResolution = resolveObservation({
+      root: target,
+      config: projectConfig.delivery ?? {},
+      observation: observationBlock.record,
+    })
   } catch (error) {
     findings.push(
       finding(
@@ -223,25 +229,23 @@ if (!observationBlock) {
   // requiredAssertions, per-assertion pass, candidate/definition match, origin policy, outcome) are
   // not re-implemented here. H6: origin and outcome policy apply to ANY observation present in ANY
   // role pass, not only the developer/tester roles that require one.
-  const deterministicOrigins = config.deliveryPolicy?.deterministicOrigins ?? []
-  const requiredAssertions = [
-    ...new Set(
-      (observationBlock.record?.assertions ?? [])
-        .map((assertion) => assertion?.id)
-        .filter((id) => typeof id === 'string' && id),
-    ),
-  ]
-  const resolution = verifyObservation({
-    observation: observationBlock.record,
-    candidateDigest: actualCandidateDigest,
-    definitionDigest: observationBlock.definitionDigest,
-    requiredAssertions,
-    allowedOrigins: deterministicOrigins,
-    sourceVerified,
-  })
-  if (resolution.status !== 'pass') {
-    for (const error of resolution.errors)
-      findings.push(finding('blocker', observationFindingCode(error), error))
+  if (observationResolution) {
+    const deterministicOrigins = config.deliveryPolicy?.deterministicOrigins ?? []
+    const resolution = verifyObservation({
+      observation: observationResolution.observation,
+      candidateDigest: observationResolution.candidateDigest,
+      definitionDigest: observationResolution.definitionDigest,
+      requiredAssertions: observationResolution.requiredAssertions,
+      allowedOrigins: deterministicOrigins,
+      // Both the role pass's OWN declared reference (H7, above) and the shared resolver's
+      // independent collector-storage lookup must agree the record is genuine; either one alone is
+      // an author-controlled pointer.
+      sourceVerified: sourceVerified && observationResolution.sourceVerified,
+    })
+    if (resolution.status !== 'pass') {
+      for (const error of resolution.errors)
+        findings.push(finding('blocker', observationFindingCode(error), error))
+    }
   }
 }
 

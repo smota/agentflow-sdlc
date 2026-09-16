@@ -129,11 +129,22 @@ Record intelligent collaboration evidence from `docs/intelligent-collaboration.m
 observation against the real working tree; it does NOT prove (and never claims to prove) the
 following. Do not read a passing gate as evidence against these:
 
-- **Forgery.** `sealDeliveryRecord` is keyless — its `digest` is a checksum over the author's own
-  payload, not a signature. A synthetic record whose candidate digest happens to match the real
-  working tree, with a resolvable `observationRef`, still passes even though no check ever ran.
-  Closing this needs observations anchored in the append-only run store
-  (`lib/sources/github-run-store.mjs`), a later workstream.
+- **Forgery.** `scripts/validate-sdlc-role-pass.mjs` resolves every observation through the same
+  shared function `scripts/run-delivery.mjs` uses
+  (`lib/verification/observation-resolver.mjs`): the definition must match a check the target's own
+  `agent-workflow.config.json` configures, required assertions come from that configured check (never
+  the record's own `assertions`), and the record must be found — matching byte-for-byte — in the
+  collector's own storage (`.agent-runs/verification/<id>/observation.json`), independently of
+  whatever `observationRef` the role pass declares. A record can no longer define its own proof:
+  synthetic definitions, records absent from collector storage, and records that differ from their
+  stored copy are all refused. What remains: `sealDeliveryRecord` is keyless — its `digest` is a
+  checksum over the author's own payload, not a signature — and local `.agent-runs/verification/` is
+  ordinary, author-writable worktree scratch. A forger with the same write access as the role pass's
+  author can place a file directly at the path the resolver trusts, and nothing here distinguishes it
+  from one the real collector produced. Closing this needs observations anchored in a durable store
+  the author cannot write to directly — the append-only run store
+  (`lib/sources/github-run-store.mjs` / `lib/sources/run-store.mjs`), not local
+  `.agent-runs/verification/` scratch — a later workstream.
 - **Replay across runs.** Nothing binds an observation to the issue, branch, or run it is presented
   against, so a genuine observation captured for one context can be resubmitted for another.
 - **Honest role mislabeling.** Role is self-declared. A developer who declares `Role: reviewer` and
