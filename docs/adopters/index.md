@@ -3,7 +3,7 @@
 Use this route to evaluate or add AgentFlow to an existing repository without surrendering local
 policy or accepting an opaque write.
 
-1. Run the [read-only evaluation](../get-started.md#1-check-the-environment-read-only).
+1. Run the [read-only evaluation](../get-started.md#look-before-you-leap-optional-read-only).
 2. Choose an [install profile](profiles.md).
 3. Preview exact changes with `adopt plan`.
 4. Resolve conflicts; approve only the current plan token.

@@ -61,18 +61,19 @@ node bin/cli.mjs providers inspect claude-cli --json
 node bin/cli.mjs collaboration plan --mode council --provider claude-cli --json
 ```
 
-## The primary way to evaluate it
+## The fastest way to evaluate it
 
-The easiest evaluation path is **LLM-assisted onboarding**, not a manual checklist. Ask an assistant to inspect your project read-only, preserve existing instructions, ask for your choices, and propose setup commands before anything changes.
+Follow [Get started](get-started.md): it reaches a first governed change — a frozen acceptance
+contract with a recorded observation, not just installed files — in six commands, and its first
+command detects your repository's branch and test command instead of asking you to type them.
 
-Use the prompt in [`assisted-onboarding.md`](assisted-onboarding.md), or print it locally:
+Prefer to hand the whole thing to an assistant instead of running commands yourself? Use the prompt
+in [`assisted-onboarding.md`](assisted-onboarding.md): a human and an assistant walk through the same
+inspect-first, approval-gated setup together, conversationally.
 
-```bash
-node bin/cli.mjs onboarding-prompt --target /path/to/your-project
-```
-
-For an existing installation, use `adopt plan` with its current profile. Both first adoption and
-updates are read-only first and approval-gated before `adopt apply` writes.
+For an existing installation, use `adopt plan` with its current profile, as shown in
+[Get started](get-started.md#existing-installations). Both first adoption and updates are read-only
+first and approval-gated before `adopt apply` writes.
 
 ## What you see vs. what AgentFlow may coordinate
 

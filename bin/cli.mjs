@@ -41,6 +41,7 @@ import {
   recoverAdoption,
   rollbackAdoption,
 } from '../lib/adoption/transaction.mjs'
+import { runInit } from '../lib/init.mjs'
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -91,6 +92,41 @@ function printReleasePlan(plan) {
   if (plan.previousTag) process.stdout.write(`Previous tag: ${plan.previousTag}\n`)
   process.stdout.write(`Release notes draft: ${plan.notesPath}\n`)
   process.stdout.write(`Approval required: ${plan.approvalRequired ? 'yes' : 'no'}\n`)
+}
+
+function printInitReport(result) {
+  if (result.status === 'skipped') {
+    process.stdout.write(`${result.reason}\n`)
+    return
+  }
+  if (result.status === 'blocked') {
+    process.stdout.write(`Init blocked by conflicts:\n`)
+    for (const conflict of result.conflicts) process.stdout.write(`  - ${conflict}\n`)
+    return
+  }
+  process.stdout.write(`Initialized ${result.adapterPath}\n`)
+  process.stdout.write(
+    `  branch: ${result.facts.branch.detected ? result.facts.branch.value : 'not detected (assumed default)'}\n`,
+  )
+  process.stdout.write(
+    `  test command: ${result.facts.testCommand.detected ? result.facts.testCommand.value : 'not detected (none written)'}\n`,
+  )
+  process.stdout.write(
+    `  candidate inputs: ${result.facts.candidateInputs.value.length ? result.facts.candidateInputs.value.join(', ') : 'not detected (none written)'}\n`,
+  )
+  if (result.assumptions.length) {
+    process.stdout.write(`Assumptions:\n`)
+    for (const note of result.assumptions) process.stdout.write(`  - ${note}\n`)
+  }
+}
+
+function handleInit(rest, targetDir) {
+  const json = rest.includes('--json')
+  const force = rest.includes('--force')
+  const result = runInit({ packageRoot, targetDir, force })
+  if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+  else printInitReport(result)
+  return result.status === 'blocked' ? 1 : 0
 }
 
 function printExtensionRegistry(registry) {
@@ -695,9 +731,10 @@ function positionalArgs(args) {
 }
 
 const ROOT_USAGE =
-  'Usage: agentflow-sdlc <run|doctor-env|adopt|providers|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|onboarding-prompt|release-plan> [path] [--target <dir>] [--json]\n'
+  'Usage: agentflow-sdlc <init|run|doctor-env|adopt|providers|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|onboarding-prompt|release-plan> [path] [--target <dir>] [--json]\n'
 
 const COMMAND_USAGE = {
+  init: 'Usage: agentflow-sdlc init [--target <dir>] [--force] [--json]\n',
   run: 'Usage: agentflow-sdlc run <source-plan|start|status|next|freeze|verify|advance|checkpoint|pause|resume|publish> <id> [--target <dir>] [--execute] [--plan <file> --confirm <digest>] [--json]\n',
   'doctor-env': 'Usage: agentflow-sdlc doctor-env [--inspect] [--target <dir>] [--json]\n',
   adopt:
@@ -729,6 +766,15 @@ function main() {
 
   const targetDir = resolve(getFlag(rest, '--target', process.cwd()))
   if (command === 'run') return runScript('scripts/run-delivery.mjs', rest, targetDir)
+
+  if (command === 'init') {
+    try {
+      return handleInit(rest, targetDir)
+    } catch (error) {
+      process.stderr.write(`${error.message}\n`)
+      return 1
+    }
+  }
 
   if (command === 'cockpit') {
     return handleCockpit(rest, targetDir)

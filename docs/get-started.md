@@ -1,110 +1,132 @@
 # Get started
 
-You can evaluate AgentFlow without changing your project. The recommended path is read-only inspection, an explicit setup proposal, then an approved installation.
+This is the fastest path from a clean checkout to a first governed change in your own project: a
+change made under AgentFlow's roles and checked by its gates, with the decision recorded as evidence
+rather than left in private chat memory.
 
 ## Prerequisites
 
 - Node.js 20 or newer
 - Git
-- pnpm for working from this source repository
-- GitHub CLI only when you want issue, PR, or release automation
+- GitHub CLI (`gh`) only when you want issue, PR, or release automation
 
-The current documented distribution path is a source checkout. The package is not yet published on npm.
-
-## 1. Check the environment read-only
+Distribution for this release is a pinned git tag, not an npm package. Clone the tag you want to run:
 
 ```bash
-git clone https://github.com/smota/agentflow-sdlc.git
+git clone --branch v1.0.0 https://github.com/smota/agentflow-sdlc.git
 cd agentflow-sdlc
-pnpm install
-node bin/cli.mjs doctor-env --target /path/to/your/project
 ```
 
-`doctor-env` reports required and optional tools. It does not install software or change the target. Tool probes depend on the local executables returning normally; if a package manager hangs, stop the command and verify that tool directly before continuing.
+## Reach your first governed change in 6 commands
 
-## 2. Generate the onboarding prompt
+A governed change is more than files on disk: it is a run whose acceptance contract is frozen and
+whose evidence was actually collected, not asserted. That takes six commands, not three — freezing a
+contract and collecting evidence are each their own step, and skipping them would leave you with an
+installed project instead of a governed one. Here is the honest path, and every command in it does
+something the next one depends on.
+
+<!-- entry-path: 6 commands to a first governed change -->
 
 ```bash
-node bin/cli.mjs onboarding-prompt --target /path/to/your-project
+node bin/cli.mjs init --target /path/to/your-project
+node bin/cli.mjs sdlc validate --target /path/to/your-project
+node bin/cli.mjs run start demo --goal "Adopt AgentFlow SDLC" --writer you --execute --target /path/to/your-project
+node bin/cli.mjs run freeze demo --writer you --execute --target /path/to/your-project
+node bin/cli.mjs run verify demo --check starter --writer you --execute --target /path/to/your-project
+git -C /path/to/your-project add -A -- . ":(exclude).agent-runs" && git -C /path/to/your-project commit -m "Adopt AgentFlow SDLC"
 ```
 
-Give the output to your assistant. It asks the assistant to:
+**1. `init`** looks at your project before it writes anything. It reads your repository's current
+branch instead of assuming `main`, and it reads your `package.json` for a `test` script instead of
+guessing one. When both a test command and at least one file of your own are detected, `init` also
+seeds a starter check that runs that exact test command, and a one-criterion acceptance file
+(`agentflow-acceptance.json`) wired to it — plainly marked as a starter, meant to be replaced with
+your project's real acceptance criteria. Every file `agent-framework-lock.json` records as
+AgentFlow's own is excluded from that check's candidate files, so upgrading the framework later never
+silently changes what your evidence covers. When `init` cannot detect a test command, or finds no
+file of your own to check, it seeds neither the check nor the acceptance file — inventing either
+would be worse than leaving it to you — and it prints the one step to add yourself: a `test` script
+in `package.json`, or `delivery.checks` and `delivery.contracts` written by hand in
+`agent-workflow.config.json`. Either way, `init` never overwrites your project's settings file on a
+second run unless you pass `--force`.
 
-- inspect existing instructions and project docs;
-- preserve local conventions;
-- ask for branch, validation, routing, and automation choices;
-- propose exact setup commands;
-- wait for approval before writing.
+**2. `sdlc validate`** checks that the settings `init` wrote are internally consistent — not just
+that the files are present, but that the roles, branches, and checks they describe actually hold
+together. This is what a gate looks like in AgentFlow: a deterministic pass/fail on a specific piece
+of work, not a person's opinion.
 
-You can also copy the maintained prompt directly from [assisted onboarding](assisted-onboarding.md).
+**3. `run start`** opens a run named `demo` and records who owns it (`--writer`) and that it is
+allowed to change your files (`--execute`). Nothing is checked yet; this only establishes who is
+doing the work.
 
-## 3. Review the proposed setup
+**4. `run freeze`** reads `agentflow-acceptance.json` and locks it in as this run's acceptance
+contract. Once frozen, evidence can only be judged against these exact criteria — changing the
+acceptance file afterward requires a fresh freeze, not a quiet edit.
 
-Before approving writes, confirm:
+**5. `run verify`** runs the `starter` check `init` seeded, against your real files, and records
+what happened as an observation: the command that ran, its output, and whether the one placeholder
+assertion held. Replace that placeholder with an assertion your own test output actually produces
+once you are ready to trust the result; until then, this step honestly records what your test command
+did, pass or fail — including exiting non-zero when it fails. That is the command working correctly,
+not breaking: it collected real evidence instead of asserting success it could not back up. Check
+`node bin/cli.mjs run status demo --target /path/to/your-project --json` to see the recorded
+observation either way.
 
-| Decision              | Typical safe default                                                                        |
-| --------------------- | ------------------------------------------------------------------------------------------- |
-| Execution             | One agent moving through explicit roles                                                     |
-| Durable evidence      | GitHub issues, comments, commits, and PR bodies                                             |
-| Local scratch         | `.agent-runs/`, never committed                                                             |
-| Branching             | Work branch into the configured integration branch                                          |
-| Review                | Evidence-backed self-review for bounded/standard work; human review for high-assurance work |
-| Existing instructions | Merge or preserve; never overwrite silently                                                 |
+**6. `git commit`** records the adoption itself — `agent-framework-lock.json`, `AGENTS.md`,
+`agent-workflow.config.json` and the role templates `init` installed — so that decision lives in your
+repository instead of a chat transcript. It deliberately leaves out `.agent-runs/`: that directory is
+local scratch, and the `AGENTS.md` you just installed says it must not be committed.
 
-Use [project setup](project-setup.md) for the decision checklist and [project config](project-config.md) for every field.
+The run from steps 3–5 is a local preview. Its record is real — a frozen contract and an observation
+with a digest — but it is not durable until a source adapter anchors it; for GitHub that is the
+append-only `agentflow-state` branch. From here, your next real change — a bug fix, a feature —
+follows the same roles and gates, ending in a pull request whose evidence anyone can check.
 
-## 4. Preview the exact adoption
+If `init` reports an assumption you disagree with, edit `agent-workflow.config.json` directly; it is
+your project's file from that point on.
 
-From the AgentFlow checkout:
+## Look before you leap (optional, read-only)
+
+You can inspect everything `init` would do without changing your project:
 
 ```bash
-node bin/cli.mjs adopt profiles --json
+node bin/cli.mjs doctor-env --target /path/to/your-project
 node bin/cli.mjs adopt plan --profile standard --target /path/to/your-project --json
 ```
 
-The plan is read-only. Review every action and conflict. If the target changes, the token becomes
-stale and apply refuses to write.
-
-Apply only after approval, and keep the receipt outside the project:
-
-```bash
-node bin/cli.mjs adopt apply \
-  --profile standard \
-  --target /path/to/your-project \
-  --confirm <plan-token> \
-  --receipt /outside/path/agentflow-receipt.json \
-  --json
-```
-
-Apply stages writes, writes lockfile v2 last, and restores prior bytes after failure. Existing
-project-owned policy is not silently overwritten.
-
-In the target repository, commit the generated `agent-framework-lock.json` with the approved files.
-Keep the rollback receipt outside the repository.
-
-## 5. Verify the installation
-
-```bash
-node /path/to/agentflow-sdlc/bin/cli.mjs adopt plan --profile standard --target /path/to/your-project --json
-node /path/to/agentflow-sdlc/bin/cli.mjs sdlc validate --target /path/to/your-project
-```
-
-Then run the target repository's configured validation commands.
+`doctor-env` reports which required and optional tools are available; it installs nothing. `adopt
+plan` previews the same install `init` performs, file by file, so you can review every action before
+anything is written. Use [project setup](project-setup.md) for the full decision checklist and
+[project config](project-config.md) for every available field.
 
 ## Existing installations
 
-Plan updates before applying:
+To update files after a new release, preview first:
 
 ```bash
 node bin/cli.mjs adopt plan --profile standard --target /path/to/your-project --json
 ```
 
-After reviewing and approving the current token, use `adopt apply` as above. Resolve conflicts in
-the target before generating a new plan; AgentFlow never overwrites project-owned changes silently.
+Review the plan, then apply it with `adopt apply` as shown in [run operations](run-operations.md).
+AgentFlow never overwrites project-owned changes silently; resolve conflicts in the target before
+generating a new plan.
+
+## Go deeper
+
+This page is the fast path. For everything else:
+
+| You want…                                                          | Read                                                |
+| ------------------------------------------------------------------ | --------------------------------------------------- |
+| The problem, model, and evidence flow before you install           | [AgentFlow in 5 minutes](agentflow-in-5-minutes.md) |
+| A route by audience or job (maintainer, provider author, operator) | [Start here](start-here.md)                         |
+| An assistant to run this onboarding for you, conversationally      | [Assisted onboarding](assisted-onboarding.md)       |
+| Every field `init` and `adopt` can write                           | [Project configuration](project-config.md)          |
+| The complete map of every document                                 | [Documentation index](index.md)                     |
+| What a finished phase of work looks like, saved as a file          | [Agent workflow](agent-workflow.md)                 |
 
 ## Verify this framework checkout
 
-Contributors and maintainers run:
+Contributors and maintainers working on AgentFlow itself (not on an adopting project) run:
 
 ```bash
 pnpm test
@@ -114,5 +136,3 @@ pnpm format:check
 node scripts/verify-hooks.mjs
 node scripts/validate-npm-package.mjs
 ```
-
-Next: choose a route in [Start here](start-here.md), or browse the complete [documentation index](index.md).

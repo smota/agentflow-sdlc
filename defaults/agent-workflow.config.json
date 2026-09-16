@@ -77,7 +77,7 @@
       "kind": "local-preview"
     },
     "candidate": {
-      "inputs": ["src"]
+      "inputs": []
     }
   },
   "gateNotifications": {
