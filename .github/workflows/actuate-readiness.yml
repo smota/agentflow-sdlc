@@ -1,0 +1,37 @@
+name: Actuate readiness contract
+
+# D2: the default actuator is a scheduled job, not a daemon. Each run is a single stateless pass —
+# read the readiness contract, actuate the top item in its human decision queue, exit. There is
+# nothing to host between runs and nothing here that a restart or a skipped run can corrupt (D3):
+# durable governance state lives on refs/heads/agentflow-state, and the only local artifact this job
+# writes is a disposable cursor cache.
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  issues: read
+  pull-requests: read
+
+concurrency:
+  group: actuate-readiness
+  cancel-in-progress: false
+
+jobs:
+  actuate:
+    name: Actuate top readiness action
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Read the readiness contract and actuate its top human decision
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: node scripts/actuate-readiness.mjs
