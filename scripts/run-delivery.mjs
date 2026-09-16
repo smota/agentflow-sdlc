@@ -19,6 +19,7 @@ import {
 } from '../lib/verification/process-collector.mjs'
 import { fingerprintCandidate, containedPath } from '../lib/verification/workspace.mjs'
 import { recordDigest } from '../lib/core/record-digest.mjs'
+import { goalRevision } from '../lib/core/goal-revision.mjs'
 import { validateDeliveryContract } from '../lib/core/delivery-policy.mjs'
 import { RUN_ROLES, projectRunContext } from '../lib/core/run-state.mjs'
 import { observeLocalWriter } from '../lib/providers/writer-status.mjs'
@@ -32,7 +33,7 @@ export const RUN_EXIT_CODES = {
   unknown: 6,
 }
 const help =
-  'Usage: agentflow-sdlc run <source-plan|start|status|context|next|freeze|verify|advance|checkpoint|pause|resume|publish> <id> [--target <dir>] [--execute] [--plan <file> --confirm <digest>] [--json]'
+  'Usage: agentflow-sdlc run <source-plan|start|status|context|next|freeze|verify|advance|checkpoint|pause|resume|resolve-escalation|publish> <id> [--target <dir>] [--execute] [--plan <file> --confirm <digest>] [--attestation <file>] [--json]'
 
 export async function resolveDeliveryContract({ value, state, source, client }) {
   const validation = validateDeliveryContract(value)
@@ -52,7 +53,10 @@ export async function resolveDeliveryContract({ value, state, source, client }) 
     typeof issue.body !== 'string'
   )
     throw new Error('Authoritative goal issue unavailable')
-  const goalRevision = recordDigest({
+  // W8c D2 — calls the ONE shared revision recipe (lib/core/goal-revision.mjs); this used to type
+  // the same {repo, number, title, body, updatedAt} recipe out inline, a second definition that
+  // could silently drift from lib/cockpit-goal-model.mjs's own copy.
+  const revision = goalRevision({
     repo: source.repo,
     number: issue.number,
     title: issue.title,
@@ -60,10 +64,10 @@ export async function resolveDeliveryContract({ value, state, source, client }) 
     updatedAt: issue.updated_at,
   })
   return {
-    verified: value.goalRevision === goalRevision,
+    verified: value.goalRevision === revision,
     value,
-    goalRevision,
-    sourceRevision: recordDigest({ goalRevision, contractDigest: recordDigest(value) }),
+    goalRevision: revision,
+    sourceRevision: recordDigest({ goalRevision: revision, contractDigest: recordDigest(value) }),
   }
 }
 
@@ -276,6 +280,27 @@ export async function runDelivery(
       { reason: flag('--reason', 'Requested operator checkpoint') },
       { expectedRevision: (await service.read()).revision, authority },
     )
+  } else if (command === 'resolve-escalation') {
+    // D5 (W8c) — the escalated gate's path to satisfaction, reachable from the product's own `run`
+    // CLI (bin/cli.mjs -> scripts/run-delivery.mjs). `--attestation` is a review-attestation record
+    // (lib/core/review-attestation.mjs); only a real human attestation resolves it
+    // (service.resolveEscalation enforces this via satisfyGate).
+    //
+    // W8c2 D2/D3 — the gate now ranges over the specific drift, not the bare candidate, so
+    // resolveEscalation needs the SAME plan (`--plan`, `--confirm`) `next`/`advance` already use to
+    // rebuild that drift deterministically — exactly the same confirmation shape `advance` requires
+    // just above, never trusted without its digest matching.
+    const { state } = await service.read()
+    const contract = readJson(flag('--plan'))
+    if (flag('--confirm') !== recordDigest(contract))
+      throw new Error('Resolution plan confirmation mismatch')
+    if (contract.runRevision !== state.revision) throw new Error('Resolution plan is stale')
+    result = await service.resolveEscalation({
+      expectedRevision: state.revision,
+      authority,
+      attestation: readJson(flag('--attestation')),
+      contract,
+    })
   } else if (command === 'resume') {
     if (!flag('--confirm'))
       result = await service.recoveryPlan({

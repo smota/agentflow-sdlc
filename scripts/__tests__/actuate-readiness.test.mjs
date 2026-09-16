@@ -1,7 +1,7 @@
 import { existsSync, mkdtempSync, rmSync, unlinkSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   createGitHubRunStore,
   planGitHubCoordination,
@@ -9,6 +9,7 @@ import {
 import { createRunEvent } from '../../lib/core/run-state.mjs'
 import { recordDigest } from '../../lib/core/record-digest.mjs'
 import { GATE_CLASSES } from '../../lib/core/gate.mjs'
+import { createGatePendingHook } from '../../lib/adapters/gate-pending-hook.mjs'
 import { actuateTopAction, createLocalCursorStore } from '../actuate-readiness.mjs'
 
 // Same fake GitHub coordination backend used by lib/sources/__tests__/github-run-store.test.mjs:
@@ -198,5 +199,43 @@ describe('actuate-readiness (D2/D3)', () => {
     const store = storeFor(fake, setupConfirm)
     const result = await actuateTopAction({ contract: { queue: [] }, runStore: store, runId })
     expect(result).toEqual({ actuated: false, reason: 'queue-empty' })
+  })
+
+  // W8c D5 — DEFECT FIXED. createGatePendingHook (lib/adapters/gate-pending-hook.mjs) was built
+  // and never called from the actuator. It now fires exactly once, only when THIS call is the one
+  // that actually opens the gate (never on an 'already-recorded'/'converged' read, which means some
+  // other actuator already had its own chance to notify).
+  it('7. when the actuator opens a gate, a configured hook receives exactly one event', async () => {
+    const fake = fakeGitHub()
+    const setupConfirm = await seedStartedRun(fake)
+    const store = storeFor(fake, setupConfirm)
+    const deliver = vi.fn().mockResolvedValue()
+    const hook = createGatePendingHook(
+      { gateNotifications: { hookUrl: 'https://example.test/hooks/gate-pending' } },
+      { deliver },
+    )
+    const first = await actuateTopAction({ contract: contract(), runStore: store, runId, hook })
+    expect(first.actuated).toBe(true)
+    expect(deliver).toHaveBeenCalledTimes(1)
+    const [, deliveredEvent] = deliver.mock.calls[0]
+    expect(deliveredEvent.type).toBe('gate-pending')
+    expect(deliveredEvent.gateClass).toBe(GATE_CLASSES.adequacyOfIntent)
+
+    // A second actuation of the SAME already-open gate must not notify again — this run already
+    // recorded it, so this call reports 'already-recorded' and the hook is never re-invoked.
+    const second = await actuateTopAction({ contract: contract(), runStore: store, runId, hook })
+    expect(second.reason).toBe('already-recorded')
+    expect(deliver).toHaveBeenCalledTimes(1)
+  })
+
+  it('an unconfigured hook stays silent while the gate still opens', async () => {
+    const fake = fakeGitHub()
+    const setupConfirm = await seedStartedRun(fake)
+    const store = storeFor(fake, setupConfirm)
+    const deliver = vi.fn()
+    const hook = createGatePendingHook({}, { deliver })
+    const result = await actuateTopAction({ contract: contract(), runStore: store, runId, hook })
+    expect(result.actuated).toBe(true)
+    expect(deliver).not.toHaveBeenCalled()
   })
 })

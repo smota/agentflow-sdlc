@@ -14,7 +14,9 @@ import { loadCockpitConfig, validateCockpitConfig } from '../lib/cockpit-config.
 import { createGitHubClient, loadRepositoryPermission } from '../lib/cockpit-github.mjs'
 import { buildCockpitIssueView, buildGoalBoard } from '../lib/cockpit-read-model.mjs'
 import { createGitHubRunStore } from '../lib/sources/github-run-store.mjs'
-import { appendTerminalIntent } from '../lib/cockpit-intent-anchor.mjs'
+import { appendTerminalIntent, resolveAnchoredHumanGate } from '../lib/cockpit-intent-anchor.mjs'
+import { goalRevision } from '../lib/core/goal-revision.mjs'
+import { unitIdentity, unitRunId, resolveVerifiedRunId } from '../lib/core/unit-identity.mjs'
 import { loadRunView, renderRunView } from '../lib/cockpit-run-model.mjs'
 import { loadGoalStoryFromGitHub } from '../lib/cockpit-replay-github.mjs'
 import {
@@ -177,7 +179,26 @@ async function issuePage(req, res, repo, number, session) {
     github.issue(repo, number),
     github.issueComments(repo, number),
   ])
-  const view = buildCockpitIssueView({ issue, comments, repo })
+  // W8c D5 — read a human's anchored close-unit decision back from the durable run store and, only
+  // if the visible comment still matches it (no undetected edit), feed it into the cockpit's human
+  // gate as a satisfied gate (deriveHumanGate already knows how to consume this — W8b D2). The run
+  // id is derived from the SAME identity the actuator and close-unit both derive theirs from (D1),
+  // so this always reads back from the run a decision on this issue was actually anchored to.
+  const revision = goalRevision({
+    repo,
+    number: issue.number,
+    title: issue.title,
+    body: issue.body,
+    updatedAt: issue.updated_at,
+  })
+  const satisfiedGates = await resolveAnchoredHumanGate({
+    client: github,
+    repo,
+    runId: unitRunId(unitIdentity({ repo, id: issue.number })),
+    subjectDigest: revision,
+    comments,
+  })
+  const view = buildCockpitIssueView({ issue, comments, repo, satisfiedGates })
   const sessionId = readCookie(req, 'cockpit_session') || 'local-token'
   return html(
     res,
@@ -268,7 +289,24 @@ async function actionEndpoint(req, res, repo, session) {
     // The human's decision is not just a comment: it is appended to the ordered, content-addressed
     // log the product already keeps in refs/heads/agentflow-state, through the exact same store
     // (with all its guards) that observe-mode reads already trust.
-    const runId = payload.runId || `issue-${intent.issue}`
+    //
+    // W8c D1 — DEFECT FIXED. This used to be a hand-rolled issue-hyphen-number template — a THIRD
+    // spelling of unit identity, unrelated to the actuator's own readiness-hyphen-number template
+    // (scripts/actuate-readiness.mjs) for the SAME unit. A human's close-unit and the gate the
+    // actuator opened could never land on the same run. Both now derive their run id from the same
+    // unitRunId(unitIdentity(...)) pair over the same (repo, issue number).
+    //
+    // W8c2 D1 — DEFECT FIXED. `payload.runId || unitRunId(...)` let a client-sent runId WIN over the
+    // derived one whenever present, so a client could anchor a human's decision in any run it liked —
+    // defeating the point of the fix above. resolveVerifiedRunId always derives the run id first; a
+    // client-supplied runId is only ever compared against it (refused on mismatch), never preferred.
+    const resolvedRunId = resolveVerifiedRunId({
+      repo,
+      id: intent.issue,
+      requestedRunId: payload.runId ?? null,
+    })
+    if (!resolvedRunId.ok) return json(res, { ok: false, errors: resolvedRunId.errors }, 400)
+    const runId = resolvedRunId.runId
     anchored = await appendTerminalIntent({ client: writeClient, repo, runId, intent })
     result = await writeClient.createIssueComment(
       repo,

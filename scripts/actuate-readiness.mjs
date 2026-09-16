@@ -8,6 +8,8 @@ import { buildReadinessContract } from '../lib/cockpit-readiness-contract.mjs'
 import { relatedPullRequests } from '../lib/cockpit-replay-github.mjs'
 import { createGate, createGatePendingEvent } from '../lib/core/gate.mjs'
 import { createRunEvent, reduceRun } from '../lib/core/run-state.mjs'
+import { unitRunId } from '../lib/core/unit-identity.mjs'
+import { createGatePendingHook } from '../lib/adapters/gate-pending-hook.mjs'
 
 // D2 — the default actuator is a scheduled CI job, not a daemon.
 //
@@ -85,6 +87,11 @@ export async function actuateTopAction({
   runStore,
   runId,
   now = () => new Date().toISOString(),
+  // W8c D5 — the actuator invokes the gate-pending hook (lib/adapters/gate-pending-hook.mjs) when
+  // IT is the one that actually opens the gate — never on an 'already-recorded'/'converged' read,
+  // which means some other actuator opened it and already had its own chance to notify. An
+  // unconfigured hook (the default createGatePendingHook({}) below) stays silent.
+  hook = createGatePendingHook({}),
 }) {
   const item = selectTopQueueItem(contract)
   if (!item) return { actuated: false, reason: 'queue-empty' }
@@ -110,7 +117,14 @@ export async function actuateTopAction({
   })
   try {
     const result = await runStore.append(event, current.revision)
-    return { actuated: true, unitRef: item.unitRef, event, result }
+    const gate = createGate({
+      gateClass: item.gate.gateClass,
+      subjectDigest: item.gate.subjectDigest,
+      subjectKind: item.gate.subjectKind,
+      requiredRole: item.gate.requiredRole,
+    })
+    const delivery = await hook.emit(gate, unitRefLabel(item.unitRef))
+    return { actuated: true, unitRef: item.unitRef, event, result, hook: delivery }
   } catch (error) {
     // Lost (or arrived after) another actuator's write for the identical gate. Never retry blindly
     // on a guess — read back once and check identity: if the same gate is durably recorded, this
@@ -182,7 +196,11 @@ async function main() {
     process.env.AGENTFLOW_ACTUATOR_CURSOR || '.agent-runs/actuator-cursor.json',
   )
   const cursor = createLocalCursorStore(cursorPath)
-  const runId = `readiness-${item.unitRef.number}`
+  // W8c D1 — derived from the SAME identity a human's close-unit derives its run id from
+  // (scripts/cockpit-server.mjs), via the one shared unitRunId(unitIdentity(...)) pair. This used to
+  // be a hand-rolled readiness-hyphen-number template, unrelated to close-unit's own
+  // issue-hyphen-number template — the two could never land on the same run for the same unit.
+  const runId = unitRunId(item.unitRef.id)
   const runStore = createGitHubRunStore({
     repo,
     runId,
@@ -190,7 +208,12 @@ async function main() {
     boundary: 'external-action',
     setupConfirm: process.env.AGENTFLOW_COORDINATION_CONFIRM,
   })
-  const result = await actuateTopAction({ contract, runStore, runId })
+  // W8c D5 — an unconfigured hook (the default) stays silent; set AGENTFLOW_GATE_HOOK_URL to have
+  // the actuator notify an outside orchestrator the instant it actually opens a gate.
+  const hook = createGatePendingHook({
+    gateNotifications: { hookUrl: process.env.AGENTFLOW_GATE_HOOK_URL },
+  })
+  const result = await actuateTopAction({ contract, runStore, runId, hook })
   if (result.actuated)
     cursor.write({
       lastRevision: result.event?.digest ?? null,
