@@ -164,11 +164,11 @@ function handleSdlc(rest, targetDir) {
   agentflow-sdlc sdlc validate-release --path <issue.json> [--json]
   agentflow-sdlc sdlc validate-skill --path <SKILL.md> [--json]
   agentflow-sdlc sdlc validate-agent --path <AGENT.md> [--json]
-  agentflow-sdlc sdlc validate-evidence --type <contract> --path <json> [--expected-digest <sha256>] [--json]
+  agentflow-sdlc sdlc validate-evidence --type <contract> --path <json> [--json]
   agentflow-sdlc sdlc validate-lifecycle --type <contract> --path <json> [--json]
   agentflow-sdlc sdlc derive-metrics --path <events.json> [--json]
-  agentflow-sdlc sdlc run-evals --manifest <manifest.json> [--actual-dir <dir>] [--json]
-  agentflow-sdlc sdlc validate-multi-agent [--actual-dir <dir>] [--json]
+  agentflow-sdlc sdlc run-evals --manifest <manifest.json> [--json]
+  agentflow-sdlc sdlc validate-multi-agent [--json]
   agentflow-sdlc sdlc audit [--json]
   agentflow-sdlc sdlc migrate [--json]
 `)
@@ -666,7 +666,7 @@ function handleExtensions(rest, targetDir) {
   agentflow-sdlc extensions inspect <pack> [--target <dir>] [--json]
   agentflow-sdlc extensions enable <pack> [--target <dir>] [--json]
   agentflow-sdlc extensions disable <pack> [--target <dir>] [--json]
-  agentflow-sdlc extensions validate [--target <dir>] [--run-validators] [--json]
+  agentflow-sdlc extensions validate [--target <dir>] [--json]
 `)
   return 2
 }
@@ -698,9 +698,8 @@ const ROOT_USAGE =
   'Usage: agentflow-sdlc <run|doctor-env|adopt|providers|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|onboarding-prompt|release-plan> [path] [--target <dir>] [--json]\n'
 
 const COMMAND_USAGE = {
-  run: 'Usage: agentflow-sdlc run <source-plan|start|status|next|freeze|verify|advance|checkpoint|pause|resume|publish> <id> [--target <dir>] [--writer <id> --generation <n> --execute] [--plan <file> --confirm <digest>] [--json]\n',
-  'doctor-env':
-    'Usage: agentflow-sdlc doctor-env [--inspect|--probe <profile> --execute] [--target <dir>] [--json]\n',
+  run: 'Usage: agentflow-sdlc run <source-plan|start|status|next|freeze|verify|advance|checkpoint|pause|resume|publish> <id> [--target <dir>] [--execute] [--plan <file> --confirm <digest>] [--json]\n',
+  'doctor-env': 'Usage: agentflow-sdlc doctor-env [--inspect] [--target <dir>] [--json]\n',
   adopt:
     'Usage: agentflow-sdlc adopt <profiles|plan|apply|rollback|recover> [--profile <id>] [--target <dir>] [--json]\n',
   providers:

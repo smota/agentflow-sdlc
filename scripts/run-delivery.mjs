@@ -32,7 +32,7 @@ export const RUN_EXIT_CODES = {
   unknown: 6,
 }
 const help =
-  'Usage: agentflow-sdlc run <source-plan|start|status|context|next|freeze|verify|advance|checkpoint|pause|resume|publish> <id> [--target <dir>] [--writer <id> --generation <n> --execute] [--plan <file> --confirm <digest>] [--json]'
+  'Usage: agentflow-sdlc run <source-plan|start|status|context|next|freeze|verify|advance|checkpoint|pause|resume|publish> <id> [--target <dir>] [--execute] [--plan <file> --confirm <digest>] [--json]'
 
 export async function resolveDeliveryContract({ value, state, source, client }) {
   const validation = validateDeliveryContract(value)
