@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url'
 import { createFileRunStore } from '../lib/sources/run-store.mjs'
 import { createGitHubRunStore, planGitHubCoordination } from '../lib/sources/github-run-store.mjs'
 import { createGitHubApiCli } from '../lib/sources/github-api-cli.mjs'
-import { createRunService } from '../lib/application/run-service.mjs'
+import { createRunService, GovernedBlockError } from '../lib/application/run-service.mjs'
 import { loadSdlcConfig } from '../lib/sdlc-state.mjs'
 import {
   planProjection,
@@ -32,7 +32,7 @@ export const RUN_EXIT_CODES = {
   unknown: 6,
 }
 const help =
-  'Usage: agentflow-sdlc run <source-plan|start|status|context|next|freeze|verify|advance|checkpoint|pause|resume|resolve-escalation|publish> <id> [--target <dir>] [--execute] [--plan <file> --confirm <digest>] [--attestation <file>] [--json]'
+  'Usage: agentflow-sdlc run <source-plan|start|status|context|next|freeze|verify|advance|checkpoint|pause|resume|resolve-escalation|publish> <id> [--target <dir>] [--execute] [--plan <file> --confirm <digest>] [--json]'
 
 // W8e / D3 — replaces message-regex classification. A GovernedBlockError carries its exit code as a
 // fact about the error (RUN_EXIT_CODES.blocked, documented and distinct from a genuine error), so
@@ -317,17 +317,15 @@ export async function runDelivery(
     // resolveEscalation needs the SAME plan (`--plan`, `--confirm`) `next`/`advance` already use to
     // rebuild that drift deterministically — exactly the same confirmation shape `advance` requires
     // just above, never trusted without its digest matching.
-    const { state } = await service.read()
-    const contract = readJson(flag('--plan'))
-    if (flag('--confirm') !== recordDigest(contract))
-      throw new Error('Resolution plan confirmation mismatch')
-    if (contract.runRevision !== state.revision) throw new Error('Resolution plan is stale')
-    result = await service.resolveEscalation({
-      expectedRevision: state.revision,
-      authority,
-      attestation: readJson(flag('--attestation')),
-      contract,
-    })
+    //
+    // Final review B1 — DEFECT FIXED. The attestation came from a file the caller writes, and
+    // "human" is a declared field on it, so any agent with a shell could resolve a weakening
+    // escalation by writing `platform: "human"`. The CLI cannot authenticate a human, exactly as
+    // `authorize` above already refuses `human-acceptance`, so it fails closed: a human resolution
+    // must arrive through an authenticated channel, never a self-supplied file.
+    throw new GovernedBlockError(
+      'Escalation resolution requires an authenticated human channel; the run CLI cannot accept a self-supplied attestation',
+    )
   } else if (command === 'resume') {
     if (!flag('--confirm'))
       result = await service.recoveryPlan({
