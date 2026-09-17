@@ -128,7 +128,9 @@ describe('run CLI consumer journey', () => {
     roots.push(root)
     writeFileSync(
       join(root, 'agent-workflow.config.json'),
-      JSON.stringify({ delivery: { source: { kind: 'local-preview' }, candidate: { inputs: [] } } }),
+      JSON.stringify({
+        delivery: { source: { kind: 'local-preview' }, candidate: { inputs: [] } },
+      }),
     )
     const result = spawnSync(
       process.execPath,
@@ -154,7 +156,9 @@ describe('run CLI consumer journey', () => {
       roots.push(root)
       writeFileSync(
         join(root, 'agent-workflow.config.json'),
-        JSON.stringify({ delivery: { source: { kind: 'local-preview' }, candidate: { inputs: [] } } }),
+        JSON.stringify({
+          delivery: { source: { kind: 'local-preview' }, candidate: { inputs: [] } },
+        }),
       )
       return root
     }
@@ -162,10 +166,14 @@ describe('run CLI consumer journey', () => {
     const jsonRoot = setUpRoot()
     const mutation = ['--writer', 'fixture', '--generation', '0', '--execute']
     const invoke = (root, extraArgs, args) => {
-      const result = spawnSync(process.execPath, [cli, 'run', ...args, '--target', root, ...extraArgs], {
-        encoding: 'utf8',
-        timeout: 15000,
-      })
+      const result = spawnSync(
+        process.execPath,
+        [cli, 'run', ...args, '--target', root, ...extraArgs],
+        {
+          encoding: 'utf8',
+          timeout: 15000,
+        },
+      )
       if (result.status !== 0 && !args.includes('freeze'))
         throw new Error(`unexpected failure: ${args.join(' ')}\n${result.stdout}\n${result.stderr}`)
       return result

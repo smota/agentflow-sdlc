@@ -8,6 +8,7 @@ import { createFileRunStore } from '../lib/sources/run-store.mjs'
 import { createGitHubRunStore, planGitHubCoordination } from '../lib/sources/github-run-store.mjs'
 import { createGitHubApiCli } from '../lib/sources/github-api-cli.mjs'
 import { createRunService } from '../lib/application/run-service.mjs'
+import { loadSdlcConfig } from '../lib/sdlc-state.mjs'
 import {
   planProjection,
   publishProjection,
@@ -131,7 +132,8 @@ export async function runDelivery(
       throw new Error(`Execution adapter agent-workflow.config.json is invalid: ${error.message}`)
     }
   }
-  const config = readExecutionAdapter().delivery
+  const executionAdapter = readExecutionAdapter()
+  const config = executionAdapter.delivery
   if (!config?.source || !config.candidate)
     throw new Error('Configure delivery.source and delivery.candidate first')
   const external = config.source.kind === 'github'
@@ -163,6 +165,11 @@ export async function runDelivery(
   )
   const service = createRunService({
     store,
+    // The run must be governed by the TARGET project's own configuration and posture. Without these,
+    // run-service loaded config from process.cwd() - the framework checkout on the documented entry
+    // path - and always used the default posture, silently ignoring what the adopter chose.
+    sdlcConfig: loadSdlcConfig(root),
+    posture: executionAdapter.posture,
     policy: domainPath ? readJson(domainPath).deliveryPolicy : {},
     budget: config.budget ?? null,
     authorize: async ({ kind }) =>

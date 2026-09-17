@@ -231,6 +231,17 @@ try {
         cwd: consumer,
       }),
     ).result
+  // W8g — `run()` throws on a non-zero exit, but a governed block is not a tool failure; it is the
+  // packaged CLI correctly refusing to invent a decision that belongs to a human. Used only for the
+  // 'advance' call below, which is expected to block.
+  const invokeBlocked = (...args) => {
+    const result = spawnSync(
+      process.execPath,
+      [installedCli, 'run', ...args, '--target', journeyTarget, '--json'],
+      { cwd: consumer, encoding: 'utf8', windowsHide: true },
+    )
+    return { status: result.status, json: JSON.parse(result.stdout) }
+  }
   const mutation = ['--writer', 'package-fixture', '--generation', '0', '--execute']
   invoke('start', 'package-demo', '--goal', 'issue:1', ...mutation)
   invoke('freeze', 'package-demo', ...mutation)
@@ -266,7 +277,12 @@ try {
   json('collaboration.json', { handoff, contract, delivery, decision })
   const next = invoke('next', 'package-demo')
   json('advance.json', next.advancePlan)
-  const advanced = invoke(
+  // W8g — the intent-freeze crossing (phase 0 -> 1) always requires a human, at every posture
+  // (lib/core/posture.mjs), and this CLI's own `authorize` callback (scripts/run-delivery.mjs)
+  // deliberately never grants `human-acceptance` on its own (see scripts/__tests__/
+  // run-delivery-cli.test.mjs for the source-checkout equivalent of this exact assertion). The
+  // packed CLI must refuse the same way, not invent an acceptance it does not have.
+  const advanced = invokeBlocked(
     'advance',
     'package-demo',
     '--plan',
@@ -275,8 +291,11 @@ try {
     next.confirm,
     ...mutation,
   )
-  if (advanced.role !== 'analyst' || advanced.durable !== false)
-    throw new Error('Packed workflow acceptance or preview authority mismatch')
+  // Exit code 3 is the governed-block contract; message text is not a contract and may be reworded.
+  if (advanced.status !== 3)
+    throw new Error(
+      'Packed workflow did not correctly block on the unresolved human-acceptance gate',
+    )
   // Derive an explicit test-only upgrade from the packed payload, preserving the
   // real consumer's authored application and configuration throughout recovery.
   const upgradeSource = join(scratch, 'upgrade-fixture')
@@ -362,8 +381,7 @@ try {
         packedDeliveryJourney: {
           containedReceipt: true,
           observedTest: true,
-          acceptedTransition: advanced.role,
-          durable: advanced.durable,
+          humanAcceptanceGateBlocked: true,
         },
         packedUpgradeRecovery: {
           testOnlyUpgrade: true,

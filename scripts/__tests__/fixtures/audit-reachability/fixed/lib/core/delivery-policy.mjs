@@ -5,54 +5,15 @@ import {
   requireUnique,
 } from './delivery-record.mjs'
 
-export function resolveDeliveryPolicy(config = {}, budget = null) {
-  // Fixed: the redundant phase-gate key is gone. Human review is decided once, by boundary gating
-  // (actionPolicy.externalActionRequiresHumanApproval), not duplicated here as an unreconciled
-  // phase number.
-  const fixed = {
-    contractVersion: 2,
-    sourceAcknowledgmentRequired: true,
-    unknownWriterBlocksRecovery: true,
-    admissionBudgetRejectsUnknownUsage: true,
-  }
-  for (const [key, value] of Object.entries(fixed))
-    if (config[key] !== undefined && config[key] !== value)
-      throw new Error(`Unsupported delivery policy: ${key}`)
-  const policy = {
-    ...fixed,
-    deterministicOrigins: ['collector-observed', 'external-resolved'],
-    requiredJourneyCoverage: false,
-    budgetMaxima: {},
-    ...config,
-  }
-  if (
-    !Array.isArray(policy.deterministicOrigins) ||
-    !policy.deterministicOrigins.length ||
-    policy.deterministicOrigins.some(
-      (origin) => !['collector-observed', 'external-resolved'].includes(origin),
-    )
-  )
-    throw new Error('Invalid deterministic origins policy')
-  if (
-    typeof policy.requiredJourneyCoverage !== 'boolean' ||
-    !policy.budgetMaxima ||
-    typeof policy.budgetMaxima !== 'object' ||
-    Array.isArray(policy.budgetMaxima)
-  )
-    throw new Error('Invalid delivery policy')
-  for (const [unit, maximum] of Object.entries(policy.budgetMaxima)) {
-    if (!unit || !Number.isFinite(maximum) || maximum < 0) throw new Error('Invalid budget maximum')
-    if (
-      !budget ||
-      budget.unit !== unit ||
-      budget.level === 'advisory' ||
-      !Number.isFinite(budget.limit) ||
-      budget.limit > maximum
-    )
-      throw new Error('Operational budget does not enforce the domain maximum')
-  }
-  return policy
-}
+// W8d — trimmed from this fixture: resolveDeliveryPolicy, journeyCoverage, and budgetAdmission were
+// copied here verbatim from the real lib/core/delivery-policy.mjs, but this fixture's small file set
+// (unlike the real repo) has no lib/application/run-service.mjs to call them, and none of the five
+// W7 instances this fixture exists to test concern them. Once detector B started checking every
+// lib/core/ export regardless of name (W8d D2), keeping unrelated, uncalled functions here would
+// make this "fixed" fixture fail its own "zero findings" acceptance test for a reason that has
+// nothing to do with what this fixture is for. validateDeliveryContract (below), normalizeUsage, and
+// resolveLifecycle stay — the first is exercised by scripts/run-delivery.mjs in this same fixture,
+// the other two are declared, reasoned exemptions in the real audit (see OFF_PATH_EXEMPTIONS).
 
 export function validateDeliveryContract(contract) {
   const errors = []
@@ -83,53 +44,6 @@ export function validateDeliveryContract(contract) {
     errors.push(error.message)
   }
   return { ok: !errors.length, errors }
-}
-
-export function journeyCoverage({
-  journeys = [],
-  criteria = [],
-  observations = [],
-  candidateDigest,
-  acceptedCandidateDigest = null,
-  deployment = null,
-}) {
-  const ids = criteria.map((c) => c.id)
-  requireUnique(ids, 'criteria')
-  requireUnique(
-    journeys.map((j) => requireText(j.id, 'journey id')),
-    'journeys',
-  )
-  const rows = journeys.map((journey) => {
-    if (!journey.criteria?.length) throw new Error('Journey requires criterion references')
-    const missing = journey.criteria.filter(
-      (id) =>
-        !ids.includes(id) ||
-        !observations.some(
-          (o) =>
-            o.criterionId === id &&
-            o.candidateDigest === candidateDigest &&
-            o.resolution?.status === 'pass',
-        ),
-    )
-    return {
-      id: journey.id,
-      required: journey.required !== false,
-      criteria: journey.criteria,
-      missing,
-      verified: missing.length === 0,
-      accepted: missing.length === 0 && candidateDigest === acceptedCandidateDigest,
-      deployed:
-        missing.length === 0 &&
-        deployment?.candidateDigest === candidateDigest &&
-        deployment?.outcome === 'pass',
-    }
-  })
-  return {
-    version: 1,
-    candidateDigest,
-    rows,
-    status: rows.some((r) => r.required && !r.verified) ? 'blocked' : 'pass',
-  }
 }
 
 // Provider counters retain their original units. A reset starts a new measurement epoch.
@@ -166,36 +80,6 @@ export function normalizeUsage(measurements) {
     }
   }
   return { version: 1, totals, unknown, measurementCount: seen.size }
-}
-
-export function budgetAdmission({ budget, used, estimatedNext, providerCanStop = false }) {
-  if (
-    !['advisory', 'admission-enforced', 'provider-enforced'].includes(budget?.level) ||
-    !Number.isFinite(budget.limit) ||
-    budget.limit < 0
-  )
-    throw new Error('Invalid budget')
-  const known =
-    Number.isFinite(used) && used >= 0 && Number.isFinite(estimatedNext) && estimatedNext >= 0
-  const exceeded = known ? used + estimatedNext > budget.limit : null
-  const enforceable = budget.level !== 'provider-enforced' || providerCanStop
-  const admitted = budget.level === 'advisory' || (known && !exceeded && enforceable)
-  return {
-    version: 1,
-    admitted,
-    exceeded,
-    known,
-    enforceable,
-    level: budget.level,
-    nextAction: admitted ? 'continue' : 'safe-stop-reconcile-checkpoint',
-    reason: !known
-      ? 'Usage or next-attempt bound unknown'
-      : !enforceable
-        ? 'Provider cannot enforce cancellation'
-        : exceeded
-          ? 'Budget exhausted'
-          : 'Within budget',
-  }
 }
 
 export function resolveLifecycle({ candidateDigest, observations = [], required = [] }) {

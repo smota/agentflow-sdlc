@@ -62,7 +62,10 @@ describe('entry document surface-term check (W6b / D2, test 5)', () => {
   // validateDocs actually applies to the entry document; it must catch a real product term even
   // though it is not a hand-typed entry in GLOSSARY_TERMS.
   it('a term like "digest" used undefined on the entry path fails the doc lint (W8e / D5, test 6)', () => {
-    const findings = findUndefinedTerms('Your work produces a digest of the exact content.', ENTRY_PATH_TERMS)
+    const findings = findUndefinedTerms(
+      'Your work produces a digest of the exact content.',
+      ENTRY_PATH_TERMS,
+    )
     expect(findings).toContain('digest')
   })
 
@@ -74,7 +77,10 @@ describe('entry document surface-term check (W6b / D2, test 5)', () => {
   })
 
   it('"candidate" used undefined on the entry path also fails the doc lint', () => {
-    const findings = findUndefinedTerms('This check runs against your candidate files.', ENTRY_PATH_TERMS)
+    const findings = findUndefinedTerms(
+      'This check runs against your candidate files.',
+      ENTRY_PATH_TERMS,
+    )
     expect(findings).toContain('candidate')
   })
 

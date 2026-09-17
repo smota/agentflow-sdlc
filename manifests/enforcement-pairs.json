@@ -26,9 +26,9 @@
         "note": "always-on cockpit human-gate derivation"
       },
       "strong": {
-        "module": "lib/core/review-attestation.mjs",
-        "export": "validateReviewAttestation",
-        "note": "digest-bound, staleness-checked review attestation"
+        "module": "lib/core/gate.mjs",
+        "export": "satisfyGate",
+        "note": "W8d D4 — satisfyGate supersedes validateReviewAttestation as the strong side of this pair: validateReviewAttestation only ever checked that an attestation record was well-shaped and digest-current, never who signed it or what they decided. satisfyGate calls validateReviewAttestation itself, then additionally requires decision === 'agree', a human reviewer (independence: human-gate, the registered human platform), and re-verifies the gate's own seal. deriveHumanGate now calls satisfyGate directly (lib/cockpit-goal-model.mjs), not validateReviewAttestation — a well-formed, digest-current attestation from an agent, or one that merely exists without agreeing, no longer reads as consent."
       }
     },
     {

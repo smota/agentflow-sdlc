@@ -115,4 +115,69 @@ describe('role collaboration CLI', () => {
       rmSync(target, { recursive: true, force: true })
     }
   })
+
+  // W8g D2 — `build` gives the packaged CLI a real, reachable caller for the create* constructors
+  // (lib/core/role-collaboration.mjs) that used to have none in this repo's own product code.
+  it('builds a correctly-digested acceptance contract through the packaged CLI', () => {
+    const target = mkdtempSync(join(tmpdir(), 'agentflow-role-build-'))
+    try {
+      const input = {
+        id: 'contract',
+        subject: 'issue:188',
+        ownerRole: 'agentflow:implementation-planner',
+        deliveryRole: 'agentflow:developer',
+        candidateDigest: 'a'.repeat(64),
+        criteria: [
+          { id: 'tests', description: 'tests pass', verification: 'deterministic', required: true },
+        ],
+      }
+      writeFileSync(join(target, 'input.json'), JSON.stringify(input))
+      const result = spawnSync(
+        process.execPath,
+        [
+          cli,
+          'collaboration',
+          'build',
+          '--type',
+          'acceptance-contract',
+          '--target',
+          target,
+          '--path',
+          'input.json',
+          '--json',
+        ],
+        { encoding: 'utf8' },
+      )
+      expect(result.status, result.stderr || result.stdout).toBe(0)
+      const built = JSON.parse(result.stdout)
+      expect(built).toEqual(createAcceptanceContract(input))
+    } finally {
+      rmSync(target, { recursive: true, force: true })
+    }
+  })
+
+  it('rejects an unsupported build type', () => {
+    const target = mkdtempSync(join(tmpdir(), 'agentflow-role-build-'))
+    try {
+      writeFileSync(join(target, 'input.json'), JSON.stringify({}))
+      const result = spawnSync(
+        process.execPath,
+        [
+          cli,
+          'collaboration',
+          'build',
+          '--type',
+          'not-a-real-type',
+          '--target',
+          target,
+          '--path',
+          'input.json',
+        ],
+        { encoding: 'utf8' },
+      )
+      expect(result.status).not.toBe(0)
+    } finally {
+      rmSync(target, { recursive: true, force: true })
+    }
+  })
 })

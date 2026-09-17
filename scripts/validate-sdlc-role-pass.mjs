@@ -1,7 +1,12 @@
 #!/usr/bin/env node
 import { existsSync, readFileSync, lstatSync } from 'node:fs'
 import { extractJsonBlock, extractSection, fieldValue } from '../lib/markdown-sections.mjs'
-import { loadSdlcConfig, finding, report } from '../lib/sdlc-state.mjs'
+import {
+  loadSdlcConfig,
+  finding,
+  report,
+  validateNoForbiddenEvidenceText,
+} from '../lib/sdlc-state.mjs'
 import {
   ALL_EXECUTION_TARGETS,
   DELEGATION_BOUNDARIES,
@@ -50,6 +55,12 @@ for (const label of required)
     findings.push(finding('high', 'role-pass.field', `missing ${label}`))
 const executedBy = fieldValue(text, 'Executed by') ?? fieldValue(text, 'Actual executor')
 if (executedBy === null) findings.push(finding('high', 'role-pass.field', 'missing Executed by'))
+
+// W8d D3 — DEFECT FIXED. This check existed (lib/sdlc-state.mjs#validateNoForbiddenEvidenceText)
+// but was called only by the advisory `sdlc audit` report (scripts/sdlc-audit.mjs), never by this
+// mandatory gate: a role pass containing a secret or a raw transcript was accepted. It now runs on
+// every role pass this gate validates.
+findings.push(...validateNoForbiddenEvidenceText(text).findings)
 
 const projectConfig = loadProjectConfig(target)
 let registeredPlatforms = []

@@ -268,6 +268,32 @@ describe('role-pass gate: verification observation and independence', () => {
   })
 })
 
+// W8d D3 — DEFECT FIXED (spec test 4). validateNoForbiddenEvidenceText (lib/sdlc-state.mjs) existed
+// and was correct, but was called only from the advisory `sdlc audit` report
+// (scripts/sdlc-audit.mjs), never from this mandatory gate: a role pass containing a secret or a
+// raw transcript was accepted. It is now called directly on every role pass this gate validates.
+describe('role-pass gate: forbidden evidence text (W8d D3)', () => {
+  it('a role pass containing what looks like a secret is refused', () => {
+    const result = runValidator(
+      rolePass({
+        role: 'reviewer',
+        independence: 'not-applicable',
+        body: '- Decision: approved.\n- token = "sk-fake-not-a-real-secret-1234567890"',
+      }),
+    )
+    expect(result.status).not.toBe(0)
+    expect(result.stdout).toContain('evidence.secrets')
+    expect(result.stdout).toContain('Result: FAILED')
+  })
+
+  it('a role pass with no forbidden evidence text is unaffected by this check', () => {
+    const result = runValidator(rolePass({ role: 'reviewer', independence: 'not-applicable' }))
+    expect(result.status).toBe(0)
+    expect(result.stdout).not.toContain('evidence.secrets')
+    expect(result.stdout).not.toContain('evidence.raw-log')
+  })
+})
+
 describe('role-pass gate: G1 adversarial holes (H1-H7)', () => {
   it('H1 — role casing bypass: "Developer" (capital D) still requires a verification observation', () => {
     // Before the fix: line 97 normalized the role for display/lookup purposes, but line 101 tested
@@ -536,7 +562,7 @@ describe('role-pass gate: most forgery is now refused (W8f D2)', () => {
     expect(result.stdout).toContain('role-pass.observation.definition-mismatch')
   })
 
-  it('D2/2 — an embedded observation that differs from the collector\'s stored copy is refused, even though its own declared observationRef resolves and matches', () => {
+  it("D2/2 — an embedded observation that differs from the collector's stored copy is refused, even though its own declared observationRef resolves and matches", () => {
     const root = realTargetRoot()
     // A real, genuinely-collected record, written by the actual collector pipeline to
     // .agent-runs/verification/<id>/observation.json — the ONE path the shared resolver trusts.
