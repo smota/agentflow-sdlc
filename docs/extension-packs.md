@@ -143,10 +143,11 @@ Extensions must not hide execution-target provenance. Role-pass evidence still r
 
 ## Built-in packs
 
-This repository includes two stack-neutral packs that can be enabled by consuming projects:
+This repository includes stack-neutral packs that can be enabled by consuming projects:
 
 - `extensions/evidence-driven-engineering` — ADRs, analysis guardrails, decision evidence, validation honesty, PR evidence, and follow-up discipline.
 - `extensions/agent-handoff-governance` — handoff templates, provenance fields, delegation boundaries, review/implementation separation, human review requests, async resume points, and single-writer/multiple-reviewer coordination.
+- `extensions/nfr-verification` — ISO/IEC 25010 non-functional targets, candidate-bound verification evidence, and mechanical verification checkers. See [NFR verification](nfr-verification.md).
 
 Enable both when a project wants the full evidence and handoff operating model:
 
