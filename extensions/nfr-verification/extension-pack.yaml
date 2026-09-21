@@ -1,0 +1,47 @@
+id: nfr-verification
+kind: engineering-approach
+version: 0.1.0
+description: Non-functional requirement targets and candidate-bound verification evidence for AgentFlow.
+principles: principles.md
+documentation:
+  - README.md
+requiredSkills: []
+requiredToolPermissions:
+  - read
+  - shell
+requiredExecutionIntents: []
+controlRequirements:
+  - branch-protection
+templates:
+  - templates/nfr-targets.md
+  - templates/nfr-evidence.md
+tools:
+  - path: tools/check-nfr-targets.mjs
+    command: node tools/check-nfr-targets.mjs
+  - path: tools/check-nfr-evidence.mjs
+    command: node tools/check-nfr-evidence.mjs
+validators:
+  - path: validators/validate-nfr-templates.mjs
+    command: node validators/validate-nfr-templates.mjs
+plays:
+  - id: quality-attribute-targets
+    role: architect
+    appliesWhen: architecture defines non-functional criteria
+    requiredInputs: []
+    expectedOutputs:
+      - nfr-targets
+    evidenceFields:
+      - nfr-targets
+      - nfr-not-applicable
+    validators: []
+  - id: nfr-verification
+    role: tester
+    appliesWhen: verifying non-functional criteria
+    requiredInputs:
+      - nfr-targets
+    expectedOutputs:
+      - nfr-verification-map
+    evidenceFields:
+      - nfr-results
+      - nfr-unmeasured
+    validators: []

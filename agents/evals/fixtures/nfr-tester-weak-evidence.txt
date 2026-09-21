@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "play": "nfr-verification",
+  "role": "tester",
+  "status": "flagged",
+  "decision": "blocked",
+  "findings": [
+    {
+      "code": "disallowed-agent-reported",
+      "row": 1,
+      "targetId": "NFR-01",
+      "message": "Required target \"NFR-01\" cannot rest on agent-reported evidence without --allow-agent-reported"
+    }
+  ]
+}

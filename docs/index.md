@@ -97,11 +97,12 @@ Runtime-specific references:
 
 ## Extensions and distribution
 
-| Document                              | Use it for                                                              |
-| ------------------------------------- | ----------------------------------------------------------------------- |
-| [Default skills](default-skills.md)   | Skill inventory, provenance, and companion skills                       |
-| [Extension packs](extension-packs.md) | Add repository-level engineering approaches and validators              |
-| [SDLC packaging](sdlc-packaging.md)   | Understand source, adapters, manifests, and future package distribution |
+| Document                                | Use it for                                                              |
+| --------------------------------------- | ----------------------------------------------------------------------- |
+| [Default skills](default-skills.md)     | Skill inventory, provenance, and companion skills                       |
+| [Extension packs](extension-packs.md)   | Add repository-level engineering approaches and validators              |
+| [NFR verification](nfr-verification.md) | Define non-functional targets and record candidate-bound evidence       |
+| [SDLC packaging](sdlc-packaging.md)     | Understand source, adapters, manifests, and future package distribution |
 
 ## Cockpit operations
 
