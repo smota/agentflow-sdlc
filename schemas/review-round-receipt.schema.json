@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentflow.dev/schemas/review-round-receipt.schema.json",
+  "title": "AgentFlow ReviewRoundReceipt",
+  "type": "object",
+  "required": [
+    "round",
+    "cycle",
+    "targetIdentityDigest",
+    "fencingToken",
+    "reviewer",
+    "delegationTopology",
+    "independenceClassification",
+    "disposition",
+    "findings"
+  ],
+  "properties": {
+    "round": { "type": "integer", "minimum": 1 },
+    "cycle": { "type": "string", "minLength": 1 },
+    "targetIdentityDigest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "fencingToken": { "type": "integer", "minimum": 1 },
+    "reviewer": {
+      "type": "object",
+      "required": ["platform", "executor", "model"],
+      "properties": {
+        "platform": { "type": "string", "minLength": 1 },
+        "executor": { "type": "string", "minLength": 1 },
+        "model": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "delegationTopology": {
+      "enum": ["cli-process", "child-subagent", "remote-session", "manual"]
+    },
+    "independenceClassification": {
+      "enum": ["independent", "same-harness-child", "self-review", "not-applicable"]
+    },
+    "disposition": {
+      "enum": ["approved", "changes-required"]
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "severity", "citation", "description", "status"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "severity": { "enum": ["blocker", "structural", "nit"] },
+          "citation": { "type": "string", "minLength": 1 },
+          "description": { "type": "string", "minLength": 1 },
+          "status": { "enum": ["open", "verified_closed"] }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
