@@ -18,6 +18,8 @@ templates:
 tools:
   - path: tools/check-nfr-targets.mjs
     command: node tools/check-nfr-targets.mjs
+  - path: tools/check-nfr-evidence.mjs
+    command: node tools/check-nfr-evidence.mjs
 validators:
   - path: validators/validate-nfr-templates.mjs
     command: node validators/validate-nfr-templates.mjs
