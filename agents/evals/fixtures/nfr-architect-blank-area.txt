@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "play": "quality-attribute-targets",
+  "role": "architect",
+  "status": "flagged",
+  "decision": "blocked",
+  "findings": [
+    {
+      "code": "blank-area",
+      "row": 2,
+      "message": "Row 2 has a blank area"
+    }
+  ]
+}
