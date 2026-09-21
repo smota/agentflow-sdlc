@@ -19,6 +19,7 @@ const KNOWN_CLI_COMMANDS = new Set([
   'plugins',
   'settings',
   'extensions',
+  'harness',
   'onboarding-prompt',
   'release-plan',
 ])
