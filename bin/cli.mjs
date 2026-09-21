@@ -46,6 +46,10 @@ import {
   inspectHarnessIntelligence,
   scaffoldHarnessIntelligence,
 } from '../lib/config/harness-intelligence.mjs'
+import { runConfigDoctor } from '../lib/config/doctor.mjs'
+import { runConfigSync } from '../lib/config/sync.mjs'
+import { inspectEffectiveConfig } from '../lib/config/inspect.mjs'
+import { formatContinuousConfigPrompt } from '../lib/config/prompt.mjs'
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -118,6 +122,19 @@ function printInitReport(result) {
   process.stdout.write(
     `  candidate inputs: ${result.facts.candidateInputs.value.length ? result.facts.candidateInputs.value.join(', ') : 'not detected (none written)'}\n`,
   )
+  if (result.posture) {
+    process.stdout.write(`  posture: ${result.posture}\n`)
+  }
+  if (result.harnessIntelligence && result.harnessIntelligence.created.length > 0) {
+    process.stdout.write(
+      `  harness intelligence: scaffolded ${result.harnessIntelligence.created.length} pillars in ${result.harnessIntelligence.agentflowDir}\n`,
+    )
+  }
+  if (result.syncedAdapters) {
+    process.stdout.write(
+      `  synced adapters: ${result.syncedAdapters.summary.skillsCount} skills, ${result.syncedAdapters.summary.rolesCount} roles, ${result.syncedAdapters.summary.pluginsCount} plugins, ${result.syncedAdapters.summary.settingsCount} settings\n`,
+    )
+  }
   if (result.assumptions.length) {
     process.stdout.write(`Assumptions:\n`)
     for (const note of result.assumptions) process.stdout.write(`  - ${note}\n`)
@@ -127,10 +144,106 @@ function printInitReport(result) {
 function handleInit(rest, targetDir) {
   const json = rest.includes('--json')
   const force = rest.includes('--force')
-  const result = runInit({ packageRoot, targetDir, force })
+  const profile = getFlag(rest, '--profile', undefined)
+  const posture = getFlag(rest, '--posture', undefined)
+  const scaffoldHarness = !rest.includes('--no-harness')
+  const syncAdapters = rest.includes('--sync')
+  const result = runInit({
+    packageRoot,
+    targetDir,
+    force,
+    ...(profile ? { profile } : {}),
+    ...(posture ? { posture } : {}),
+    scaffoldHarness,
+    syncAdapters,
+  })
   if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
   else printInitReport(result)
   return result.status === 'blocked' ? 1 : 0
+}
+
+function printConfigDoctorReport(report) {
+  process.stdout.write(
+    `AgentFlow project configuration doctor (${report.ok ? 'READY' : 'BLOCKED'})\n`,
+  )
+  process.stdout.write(`Target: ${report.targetDir}\n\n`)
+  process.stdout.write(
+    `Passed checks (${report.passedChecks.length}/${report.summary.totalChecks}):\n`,
+  )
+  for (const item of report.passedChecks) {
+    process.stdout.write(`  ✓ ${item}\n`)
+  }
+  process.stdout.write(`\n`)
+  if (report.warnings.length) {
+    process.stdout.write(`Warnings (${report.warnings.length}):\n`)
+    for (const item of report.warnings) {
+      process.stdout.write(`  ! ${item}\n`)
+    }
+    process.stdout.write(`\n`)
+  }
+  if (report.blockers.length) {
+    process.stdout.write(`Blockers (${report.blockers.length}):\n`)
+    for (const item of report.blockers) {
+      process.stdout.write(`  ✗ ${item}\n`)
+    }
+    process.stdout.write(`\n`)
+  }
+  process.stdout.write(
+    `Summary: ${report.summary.passedCount} passed, ${report.summary.warningCount} warnings, ${report.summary.blockerCount} blockers\n`,
+  )
+}
+
+function printConfigSyncReport(report) {
+  process.stdout.write(`AgentFlow configuration sync (${report.mode})\n`)
+  process.stdout.write(`Target: ${report.targetDir}\n`)
+  process.stdout.write(`  Skills: ${report.summary.skillsCount} entries\n`)
+  process.stdout.write(`  Roles: ${report.summary.rolesCount} entries\n`)
+  process.stdout.write(`  Plugins: ${report.summary.pluginsCount} manifests\n`)
+  process.stdout.write(`  Settings: ${report.summary.settingsCount} merged\n`)
+  if (!report.ok) {
+    process.stdout.write(`Sync completed with issues.\n`)
+  } else {
+    process.stdout.write(
+      `Result: ${report.mode === 'applied' ? 'ALL ADAPTERS IN SYNC' : 'PREVIEW ONLY'}\n`,
+    )
+  }
+}
+
+function handleConfig(rest, targetDir) {
+  const [subcommand] = positionalArgs(rest)
+  const json = rest.includes('--json')
+  const harness = getFlag(rest, '--harness', 'all')
+
+  if (subcommand === 'doctor' || subcommand === 'check' || !subcommand) {
+    const report = runConfigDoctor({ packageRoot, targetDir })
+    if (json) process.stdout.write(`${JSON.stringify(report, null, 2)}\n`)
+    else printConfigDoctorReport(report)
+    return report.ok ? 0 : 1
+  }
+
+  if (subcommand === 'sync') {
+    const write = rest.includes('--apply') && !rest.includes('--dry-run')
+    const result = runConfigSync({ packageRoot, targetDir, harness, write })
+    if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+    else printConfigSyncReport(result)
+    return result.ok ? 0 : 1
+  }
+
+  if (subcommand === 'inspect') {
+    const result = inspectEffectiveConfig({ targetDir })
+    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+    return 0
+  }
+
+  if (subcommand === 'prompt') {
+    process.stdout.write(formatContinuousConfigPrompt(targetDir))
+    return 0
+  }
+
+  process.stderr.write(`Usage:
+  agentflow-sdlc config <doctor|check|sync|inspect|prompt> [--target <dir>] [--harness <name>] [--dry-run|--apply] [--json]
+`)
+  return 2
 }
 
 function printExtensionRegistry(registry) {
@@ -780,10 +893,12 @@ function positionalArgs(args) {
 }
 
 const ROOT_USAGE =
-  'Usage: agentflow-sdlc <init|run|doctor-env|adopt|providers|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|onboarding-prompt|release-plan> [path] [--target <dir>] [--json]\n'
+  'Usage: agentflow-sdlc <init|run|doctor-env|config|adopt|providers|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|onboarding-prompt|release-plan> [path] [--target <dir>] [--json]\n'
 
 const COMMAND_USAGE = {
-  init: 'Usage: agentflow-sdlc init [--target <dir>] [--force] [--json]\n',
+  init: 'Usage: agentflow-sdlc init [--profile <id>] [--posture <posture>] [--no-harness] [--sync] [--target <dir>] [--force] [--json]\n',
+  config:
+    'Usage: agentflow-sdlc config <doctor|check|sync|inspect|prompt> [--target <dir>] [--harness <name>] [--dry-run|--apply] [--json]\n',
   run: 'Usage: agentflow-sdlc run <source-plan|start|status|next|freeze|verify|advance|checkpoint|pause|resume|publish> <id> [--target <dir>] [--execute] [--plan <file> --confirm <digest>] [--json]\n',
   'doctor-env': 'Usage: agentflow-sdlc doctor-env [--inspect] [--target <dir>] [--json]\n',
   adopt:
@@ -820,6 +935,15 @@ function main() {
   if (command === 'init') {
     try {
       return handleInit(rest, targetDir)
+    } catch (error) {
+      process.stderr.write(`${error.message}\n`)
+      return 1
+    }
+  }
+
+  if (command === 'config') {
+    try {
+      return handleConfig(rest, targetDir)
     } catch (error) {
       process.stderr.write(`${error.message}\n`)
       return 1

@@ -100,3 +100,7 @@ node bin/cli.mjs onboarding-prompt --target /path/to/project
 ```
 
 The helper prints instructions only. It does not run setup commands.
+
+## Ongoing configuration and maintenance
+
+After initial onboarding is complete, use [Assisted configuration](assisted-configuration.md) for continuous configuration, adapter synchronization, and posture changes.

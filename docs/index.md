@@ -32,6 +32,7 @@ This is the complete map of maintained product, adoption, architecture, operatio
 | [AgentFlow in 5 minutes](agentflow-in-5-minutes.md) | Understand the problem, model, and evidence flow                        |
 | [Get started](get-started.md)                       | Follow the current source-based adoption path                           |
 | [Assisted onboarding](assisted-onboarding.md)       | Give an assistant a read-only-first setup contract                      |
+| [Assisted configuration](assisted-configuration.md) | Continuous configuration and maintenance in assisted agent workflows    |
 | [Environment tools](environment-tools.md)           | Understand required and optional tooling                                |
 
 ## Core model and governance
