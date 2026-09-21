@@ -147,3 +147,15 @@ Each agent-specific routing guide distinguishes its execution targets:
 - `docs/agents/agy-routing.md` — `agy-cli` vs `agy-session`
 - `docs/agents/pi-routing.md` — `pi-parent`, `pi-subagent`, `pi-session`, `pi-subagent-model`
 - `docs/agents/codex-routing.md` — `codex-cli` vs `provider-api`
+
+## Fallback cascade & execution degradation
+
+When executing autonomous multi-agent or adversarial review roles, external API limits, quota exhaustion (such as Claude Opus weekly limit resets or OpenAI rate spikes), or network disconnections can interrupt execution. AgentFlow SDLC defines an explicit 3-stage fallback cascade in `execution-policy.json`:
+
+1. **Primary Target (`external-cli`):** The preferred independent reviewer or executor is invoked via local CLI process streaming (e.g., `codex exec -s read-only` or `claude`).
+2. **Quota Fallback (`inner-subagent`):** If the external harness fails with a recognized rate-limit or quota error (detected via `scripts/invoke-harness.mjs`), execution gracefully degrades to an inner subagent within the current harness (e.g. Gemini 2.5 Pro subagent in Antigravity or Anthropic subagent in Claude).
+   - **Boundary Invariant:** The run MUST record `delegationBoundary: "child-subagent"` and `independenceClassification: "same-harness-child"`.
+   - **Evidence Invariant:** `recordDegradationInEvidence: true` logs the fallback event in the workflow receipt.
+3. **Exhaustion Fallback (`human-gate`):** If inner subagents also encounter quota exhaustion or repeated review rejections exceed policy limits (`suspendOnRepeatedRejections: 2`), execution immediately suspends and transitions to a human gate.
+
+Under `high-assurance` workflow profiles, any downgrade from `independent` to `same-harness-child` automatically pauses gate unlock until a human acceptance decision is attested.

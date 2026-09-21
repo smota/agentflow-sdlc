@@ -15,3 +15,4 @@ The core works with manual execution. A missing Claude, Codex, Agy, Pi, Grok, or
 binary does not block adoption unless project policy explicitly requires that provider capability.
 
 For an existing v1 installation, start with [upgrade and rollback](upgrade-and-rollback.md).
+For resuming or transferring active work across agent harnesses, see the [In-Flight Plan Takeover Playbook](plan-takeover-playbook.md).

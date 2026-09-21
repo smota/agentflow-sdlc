@@ -42,6 +42,10 @@ import {
   rollbackAdoption,
 } from '../lib/adoption/transaction.mjs'
 import { runInit } from '../lib/init.mjs'
+import {
+  inspectHarnessIntelligence,
+  scaffoldHarnessIntelligence,
+} from '../lib/config/harness-intelligence.mjs'
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -707,6 +711,51 @@ function handleExtensions(rest, targetDir) {
   return 2
 }
 
+function handleHarness(rest, targetDir) {
+  const [subcommand] = positionalArgs(rest)
+  const json = rest.includes('--json')
+  const force = rest.includes('--force')
+
+  if (subcommand === 'inspect' || !subcommand) {
+    const result = inspectHarnessIntelligence(targetDir)
+    if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+    else {
+      process.stdout.write(
+        `Harness intelligence (${result.configuredCount}/${result.totalPillars} pillars configured)\n`,
+      )
+      process.stdout.write(`Directory: ${result.agentflowDir}\n`)
+      for (const [pillar, info] of Object.entries(result.status)) {
+        process.stdout.write(
+          `  - ${pillar}: ${info.exists ? 'configured' : 'missing (using defaults)'}\n`,
+        )
+      }
+    }
+    return 0
+  }
+
+  if (subcommand === 'scaffold' || subcommand === 'init') {
+    const result = scaffoldHarnessIntelligence(targetDir, { force })
+    if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+    else {
+      process.stdout.write(`Scaffolded harness intelligence in ${result.agentflowDir}\n`)
+      if (result.created.length) {
+        process.stdout.write(`  Created:\n`)
+        for (const file of result.created) process.stdout.write(`    + ${file}\n`)
+      }
+      if (result.existing.length) {
+        process.stdout.write(`  Skipped existing (use --force to overwrite):\n`)
+        for (const file of result.existing) process.stdout.write(`    = ${file}\n`)
+      }
+    }
+    return 0
+  }
+
+  process.stderr.write(`Usage:
+  agentflow-sdlc harness <inspect|scaffold> [--target <dir>] [--force] [--json]
+`)
+  return 2
+}
+
 function printOnboardingPrompt(targetDir) {
   process.stdout.write(`Use the AgentFlow SDLC assisted onboarding guide:\n`)
   process.stdout.write(
@@ -714,7 +763,7 @@ function printOnboardingPrompt(targetDir) {
   )
   process.stdout.write(`Apply it to this existing project: ${targetDir}\n`)
   process.stdout.write(
-    `First inspect existing agent instructions and project docs. Validate the environment read-only. Ask me to choose agents, execution mode, branch strategy, validation commands, and GitHub automation. Propose install/setup commands but do not execute them without explicit approval. Preserve or merge existing instructions instead of overwriting them.\n`,
+    `First inspect existing agent instructions and project docs. Validate the environment read-only. Ask me to choose agents, execution mode, branch strategy, validation commands, and GitHub automation. Propose install/setup commands but do not execute them without explicit approval. Preserve or merge existing instructions instead of overwriting them. Configure tooling and harnessing intelligence (.agentflow/ with orchestration-model.json, execution-policy.json, model-catalog.json, and harness-parameters.json) and establish pre-code adversarial sparring gates for robust verification.\n`,
   )
 }
 
@@ -731,7 +780,7 @@ function positionalArgs(args) {
 }
 
 const ROOT_USAGE =
-  'Usage: agentflow-sdlc <init|run|doctor-env|adopt|providers|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|onboarding-prompt|release-plan> [path] [--target <dir>] [--json]\n'
+  'Usage: agentflow-sdlc <init|run|doctor-env|adopt|providers|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|onboarding-prompt|release-plan> [path] [--target <dir>] [--json]\n'
 
 const COMMAND_USAGE = {
   init: 'Usage: agentflow-sdlc init [--target <dir>] [--force] [--json]\n',
@@ -746,6 +795,7 @@ const COMMAND_USAGE = {
   roles:
     'Usage: agentflow-sdlc roles <catalog|inspect|validate|resolve|sync|status|validate-handoff> [role] [--json]\n',
   methods: 'Usage: agentflow-sdlc methods <catalog|validate> [--json]\n',
+  harness: 'Usage: agentflow-sdlc harness <inspect|scaffold> [--target <dir>] [--force] [--json]\n',
 }
 
 function requestedHelp(args) {
@@ -840,16 +890,34 @@ function main() {
     }
   }
 
+  if (command === 'harness') {
+    try {
+      return handleHarness(rest, targetDir)
+    } catch (error) {
+      process.stderr.write(`${error.message}\n`)
+      return 1
+    }
+  }
+
   if (command === 'doctor-env') {
     if (rest.includes('--probe')) return runScript('scripts/probe-environment.mjs', rest, targetDir)
     if (rest.includes('--inspect')) {
       const report = inspectEnvironment(targetDir)
+      report.harnessIntelligence = inspectHarnessIntelligence(targetDir)
       process.stdout.write(`${JSON.stringify(report, null, 2)}\n`)
       return report.readiness === 'blocked' ? 3 : 0
     }
     const report = validateEnvironment(targetDir)
-    if (rest.includes('--json')) process.stdout.write(`${JSON.stringify(report, null, 2)}\n`)
-    else printEnvironmentReport(report)
+    if (rest.includes('--json')) {
+      report.harnessIntelligence = inspectHarnessIntelligence(targetDir)
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`)
+    } else {
+      printEnvironmentReport(report)
+      const harnessInfo = inspectHarnessIntelligence(targetDir)
+      process.stdout.write(
+        `Harness intelligence: ${harnessInfo.configuredCount}/${harnessInfo.totalPillars} pillars configured in .agentflow/\n\n`,
+      )
+    }
     return report.ok ? 0 : 1
   }
 
