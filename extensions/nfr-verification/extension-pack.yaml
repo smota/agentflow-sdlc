@@ -15,7 +15,9 @@ controlRequirements:
 templates:
   - templates/nfr-targets.md
   - templates/nfr-evidence.md
-tools: []
+tools:
+  - path: tools/check-nfr-targets.mjs
+    command: node tools/check-nfr-targets.mjs
 validators:
   - path: validators/validate-nfr-templates.mjs
     command: node validators/validate-nfr-templates.mjs
