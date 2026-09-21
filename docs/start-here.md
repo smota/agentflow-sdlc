@@ -31,7 +31,7 @@ You only need four ideas to begin:
 3. Issues and PRs hold durable evidence; `.agent-runs/` remains local scratch.
 4. High-assurance work keeps human review before merge.
 
-Start with the read-only command in [Get started](get-started.md#1-check-the-environment-read-only).
+Start with the three-command path in [Get started](get-started.md#reach-your-first-governed-change-in-three-commands).
 
 ## Advanced-user map
 

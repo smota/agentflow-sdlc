@@ -1,24 +1,24 @@
 #!/usr/bin/env node
 import { readFileSync, existsSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { hostname } from 'node:os'
+import { hostname, userInfo } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import { createFileRunStore } from '../lib/sources/run-store.mjs'
 import { createGitHubRunStore, planGitHubCoordination } from '../lib/sources/github-run-store.mjs'
 import { createGitHubApiCli } from '../lib/sources/github-api-cli.mjs'
-import { createRunService } from '../lib/application/run-service.mjs'
+import { createRunService, GovernedBlockError } from '../lib/application/run-service.mjs'
+import { loadSdlcConfig } from '../lib/sdlc-state.mjs'
 import {
   planProjection,
   publishProjection,
   reconcileProjection,
 } from '../lib/application/publication-service.mjs'
-import {
-  collectProcessObservation,
-  inspectProcessRuntime,
-} from '../lib/verification/process-collector.mjs'
+import { collectProcessObservation } from '../lib/verification/process-collector.mjs'
 import { fingerprintCandidate, containedPath } from '../lib/verification/workspace.mjs'
+import { resolveObservation as resolveVerifiedObservation } from '../lib/verification/observation-resolver.mjs'
 import { recordDigest } from '../lib/core/record-digest.mjs'
+import { goalRevision } from '../lib/core/goal-revision.mjs'
 import { validateDeliveryContract } from '../lib/core/delivery-policy.mjs'
 import { RUN_ROLES, projectRunContext } from '../lib/core/run-state.mjs'
 import { observeLocalWriter } from '../lib/providers/writer-status.mjs'
@@ -32,7 +32,43 @@ export const RUN_EXIT_CODES = {
   unknown: 6,
 }
 const help =
-  'Usage: agentflow-sdlc run <source-plan|start|status|context|next|freeze|verify|advance|checkpoint|pause|resume|publish> <id> [--target <dir>] [--writer <id> --generation <n> --execute] [--plan <file> --confirm <digest>] [--json]'
+  'Usage: agentflow-sdlc run <source-plan|start|status|context|next|freeze|verify|advance|checkpoint|pause|resume|resolve-escalation|publish> <id> [--target <dir>] [--execute] [--plan <file> --confirm <digest>] [--json]'
+
+// W8e / D3 — replaces message-regex classification. A GovernedBlockError carries its exit code as a
+// fact about the error (RUN_EXIT_CODES.blocked, documented and distinct from a genuine error), so
+// rewording its message can never change the code. Everything else still falls back to the existing
+// message heuristic, which this change leaves in place rather than migrating every throw site in
+// the codebase — see the session report.
+export function classifyDeliveryError(error) {
+  if (error?.governed) return RUN_EXIT_CODES.blocked
+  const message = error?.message ?? ''
+  if (/stale|changed|conflict|Obsolete/.test(message)) return RUN_EXIT_CODES.conflict
+  if (/unavailable|ENOENT/.test(message)) return RUN_EXIT_CODES.unavailable
+  if (/required|blocked|authorized/.test(message)) return RUN_EXIT_CODES.blocked
+  return RUN_EXIT_CODES.invalid
+}
+
+// W8e / D6 — one readable line per run command, printed before the (unchanged) JSON block when
+// `--json` was not requested. `command === 'next'` is the one shape whose run-state projection is
+// nested under `.status` rather than at the top level (see the `next` branch of runDelivery below).
+function summarizeRunResult(command, result) {
+  if (!result || typeof result !== 'object') return 'Done.'
+  const projection = command === 'next' ? result.status : result
+  const nextAction = projection?.nextAction
+    ? ` Next: ${String(projection.nextAction).replaceAll('-', ' ')}.`
+    : ''
+  if (command === 'verify' && result.verification) {
+    return result.verification.outcome === 'pass'
+      ? `Evidence recorded: your check passed.${nextAction}`
+      : `Evidence recorded: your check did not pass.${nextAction}`
+  }
+  if (typeof projection?.status === 'string' && projection.status !== 'absent') {
+    return `Run "${projection.runId ?? ''}" is ${projection.status}.${nextAction}`
+  }
+  if (result.blocked) return `Blocked: acceptance criteria are not yet satisfied.${nextAction}`
+  if (typeof result.digest === 'string') return 'Plan ready; rerun with --confirm to apply it.'
+  return `Done.${nextAction}`
+}
 
 export async function resolveDeliveryContract({ value, state, source, client }) {
   const validation = validateDeliveryContract(value)
@@ -52,7 +88,10 @@ export async function resolveDeliveryContract({ value, state, source, client }) 
     typeof issue.body !== 'string'
   )
     throw new Error('Authoritative goal issue unavailable')
-  const goalRevision = recordDigest({
+  // W8c D2 — calls the ONE shared revision recipe (lib/core/goal-revision.mjs); this used to type
+  // the same {repo, number, title, body, updatedAt} recipe out inline, a second definition that
+  // could silently drift from lib/cockpit-goal-model.mjs's own copy.
+  const revision = goalRevision({
     repo: source.repo,
     number: issue.number,
     title: issue.title,
@@ -60,10 +99,10 @@ export async function resolveDeliveryContract({ value, state, source, client }) 
     updatedAt: issue.updated_at,
   })
   return {
-    verified: value.goalRevision === goalRevision,
+    verified: value.goalRevision === revision,
     value,
-    goalRevision,
-    sourceRevision: recordDigest({ goalRevision, contractDigest: recordDigest(value) }),
+    goalRevision: revision,
+    sourceRevision: recordDigest({ goalRevision: revision, contractDigest: recordDigest(value) }),
   }
 }
 
@@ -82,15 +121,30 @@ export async function runDelivery(
   }
   const root = resolve(flag('--target', process.cwd()))
   const readJson = (path) => JSON.parse(readFileSync(containedPath(root, path), 'utf8'))
-  const config = readJson('agent-workflow.config.json').delivery
+  const readExecutionAdapter = () => {
+    try {
+      return readJson('agent-workflow.config.json')
+    } catch (error) {
+      if (error.code === 'ENOENT')
+        throw new Error(
+          'Execution adapter unavailable: agent-workflow.config.json not found at the project root. Run `agentflow-sdlc adopt apply` to create it.',
+        )
+      throw new Error(`Execution adapter agent-workflow.config.json is invalid: ${error.message}`)
+    }
+  }
+  const executionAdapter = readExecutionAdapter()
+  const config = executionAdapter.delivery
   if (!config?.source || !config.candidate)
     throw new Error('Configure delivery.source and delivery.candidate first')
   const external = config.source.kind === 'github'
   if (!external && config.source.kind !== 'local-preview') throw new Error('Unsupported run source')
   const execute = args.includes('--execute')
   const boundary = flag('--boundary', external ? 'external-action' : 'mutate-worktree')
+  // W8e / D4 — `--writer` used to be required plumbing typed on three of the six entry-path
+  // commands. It now defaults to the local operator identity (the OS user name); `--writer` stays
+  // available to override it (a shared machine, CI, or a name that differs from the OS account).
   const authority = {
-    owner: flag('--writer'),
+    owner: flag('--writer', userInfo().username),
     generation: Number(flag('--generation', '0')),
     execute,
     boundary,
@@ -111,6 +165,11 @@ export async function runDelivery(
   )
   const service = createRunService({
     store,
+    // The run must be governed by the TARGET project's own configuration and posture. Without these,
+    // run-service loaded config from process.cwd() - the framework checkout on the documented entry
+    // path - and always used the default posture, silently ignoring what the adopter chose.
+    sdlcConfig: loadSdlcConfig(root),
+    posture: executionAdapter.posture,
     policy: domainPath ? readJson(domainPath).deliveryPolicy : {},
     budget: config.budget ?? null,
     authorize: async ({ kind }) =>
@@ -132,27 +191,10 @@ export async function runDelivery(
       const path = config.collaboration?.[RUN_ROLES[state.phase]]
       return path ? { verified: true, sources: readJson(path) } : null
     },
-    resolveObservation: async (observation) => {
-      if (observation.origin !== 'collector-observed' || !/^[a-f0-9-]{36}$/.test(observation.id))
-        return { verified: false, observation }
-      const path = `.agent-runs/verification/${observation.id}/observation.json`
-      const current = readJson(path)
-      const candidate = fingerprintCandidate(root, config.candidate)
-      const check = Object.values(config.checks ?? {}).find(
-        (check) =>
-          check.criterionId === observation.criterionId &&
-          recordDigest({ ...check, ...config.candidate }) === observation.definitionDigest,
-      )
-      const runtime = check ? inspectProcessRuntime(root, check).identity : null
-      return {
-        verified:
-          current.digest === observation.digest &&
-          candidate.digest === observation.candidateDigest &&
-          runtime !== null &&
-          runtime.digest === observation.executionContextDigest,
-        observation: current,
-      }
-    },
+    // W8f D1 — the run and the role-pass gate (scripts/validate-sdlc-role-pass.mjs) both resolve
+    // observation trust through the ONE shared function; no second copy of this decision lives here.
+    resolveObservation: async (observation) =>
+      resolveVerifiedObservation({ root, config, observation }),
     observeWriter: async (state) => observeLocalWriter(state.writer),
     observeWorkspace: async () => ({
       verified: true,
@@ -265,6 +307,25 @@ export async function runDelivery(
       { reason: flag('--reason', 'Requested operator checkpoint') },
       { expectedRevision: (await service.read()).revision, authority },
     )
+  } else if (command === 'resolve-escalation') {
+    // D5 (W8c) — the escalated gate's path to satisfaction, reachable from the product's own `run`
+    // CLI (bin/cli.mjs -> scripts/run-delivery.mjs). `--attestation` is a review-attestation record
+    // (lib/core/review-attestation.mjs); only a real human attestation resolves it
+    // (service.resolveEscalation enforces this via satisfyGate).
+    //
+    // W8c2 D2/D3 — the gate now ranges over the specific drift, not the bare candidate, so
+    // resolveEscalation needs the SAME plan (`--plan`, `--confirm`) `next`/`advance` already use to
+    // rebuild that drift deterministically — exactly the same confirmation shape `advance` requires
+    // just above, never trusted without its digest matching.
+    //
+    // Final review B1 — DEFECT FIXED. The attestation came from a file the caller writes, and
+    // "human" is a declared field on it, so any agent with a shell could resolve a weakening
+    // escalation by writing `platform: "human"`. The CLI cannot authenticate a human, exactly as
+    // `authorize` above already refuses `human-acceptance`, so it fails closed: a human resolution
+    // must arrive through an authenticated channel, never a self-supplied file.
+    throw new GovernedBlockError(
+      'Escalation resolution requires an authenticated human channel; the run CLI cannot accept a self-supplied attestation',
+    )
   } else if (command === 'resume') {
     if (!flag('--confirm'))
       result = await service.recoveryPlan({
@@ -298,6 +359,9 @@ export async function runDelivery(
         authority,
       })
   } else throw new Error(help)
+  // W8e / D6 — a plain-language line before the JSON when `--json` was not requested; `--json`
+  // output itself is untouched (still exactly `emit({ version: 1, result })`, nothing prepended).
+  if (!args.includes('--json')) process.stdout.write(`${summarizeRunResult(command, result)}\n`)
   emit({ version: 1, result })
   return result?.state === 'unknown'
     ? 6
@@ -310,13 +374,8 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   try {
     process.exitCode = await runDelivery(process.argv.slice(2))
   } catch (error) {
+    if (!process.argv.includes('--json')) process.stdout.write(`Blocked: ${error.message}\n`)
     process.stdout.write(`${JSON.stringify({ version: 1, error: error.message })}\n`)
-    process.exitCode = /stale|changed|conflict|Obsolete/.test(error.message)
-      ? 4
-      : /unavailable|ENOENT/.test(error.message)
-        ? 5
-        : /required|blocked|authorized/.test(error.message)
-          ? 3
-          : 2
+    process.exitCode = classifyDeliveryError(error)
   }
 }

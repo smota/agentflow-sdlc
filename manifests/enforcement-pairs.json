@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "description": "Declarative registry for audit-reachability.mjs detector C (optional rigor). A fully general detector for 'strong check conditional, weak check mandatory' cannot be inferred from static analysis alone (see scripts/audit-reachability.mjs and W7 spec), so each known instance is asserted explicitly here instead of guessed at.",
+  "pairs": [
+    {
+      "id": "run-track-vs-role-pass-track",
+      "subject": "delivery evidence rigor for the mandatory role-pass phase",
+      "kind": "wired-import",
+      "weak": {
+        "module": "scripts/validate-sdlc-role-pass.mjs",
+        "note": "shape-only role-pass validator; a mandatory entry point that always runs"
+      },
+      "strong": {
+        "module": "lib/core/verification-observation.mjs",
+        "export": "verifyObservation",
+        "note": "structural + policy verification of an anti-fabrication observation record (candidate digest, origin, isolation, required assertions); the real fix (W1b) wired this into scripts/validate-sdlc-role-pass.mjs, not scripts/run-delivery.mjs"
+      }
+    },
+    {
+      "id": "review-attestation-vs-cockpit-human-gate",
+      "subject": "completion signal for the human approval gate shown by the cockpit",
+      "kind": "wired-import",
+      "weak": {
+        "module": "lib/cockpit-goal-model.mjs",
+        "export": "deriveHumanGate",
+        "note": "always-on cockpit human-gate derivation"
+      },
+      "strong": {
+        "module": "lib/core/gate.mjs",
+        "export": "satisfyGate",
+        "note": "W8d D4 — satisfyGate supersedes validateReviewAttestation as the strong side of this pair: validateReviewAttestation only ever checked that an attestation record was well-shaped and digest-current, never who signed it or what they decided. satisfyGate calls validateReviewAttestation itself, then additionally requires decision === 'agree', a human reviewer (independence: human-gate, the registered human platform), and re-verifies the gate's own seal. deriveHumanGate now calls satisfyGate directly (lib/cockpit-goal-model.mjs), not validateReviewAttestation — a well-formed, digest-current attestation from an agent, or one that merely exists without agreeing, no longer reads as consent."
+      }
+    },
+    {
+      "id": "boundary-gate-vs-phase-gate",
+      "subject": "human review gating has two independently declared trigger mechanisms",
+      "kind": "config-reconciliation",
+      "a": {
+        "module": "lib/sdlc-state.mjs",
+        "configKey": "actionPolicy.externalActionRequiresHumanApproval",
+        "note": "boundary gating: a human is required once the action-boundary state is reached"
+      },
+      "b": {
+        "module": "lib/core/delivery-policy.mjs",
+        "configKey": "deliveryPolicy.highAssuranceHumanReviewPhase",
+        "note": "phase gating: a human is required once role-pass phase 6 is reached"
+      }
+    }
+  ]
+}

@@ -69,6 +69,29 @@ describe('integration lifecycle', () => {
     expect(plan.reason).toContain('not development')
   })
 
+  // W8g D1 — validateSourceAdapter used to have no caller anywhere in this repo's own product
+  // code; its natural enforcement point is here, where a source adapter is resolved for use before
+  // this mandatory CI entry point (.github/workflows/integration-lifecycle.yml) reads or mutates
+  // anything through it.
+  it('refuses to resolve a source adapter that violates the contract', async () => {
+    const { resolveSource } = await import('../integration-lifecycle.mjs')
+    const createBrokenAdapter = () => ({ version: 1, id: 'broken' }) // no capabilities, no readArtifact
+    expect(() => resolveSource('acme/app', null, { createAdapter: createBrokenAdapter })).toThrow(
+      /source adapter for acme\/app is invalid/i,
+    )
+  })
+
+  it('resolves a real, contract-valid source adapter for a repo', async () => {
+    const { resolveSource } = await import('../integration-lifecycle.mjs')
+    const source = resolveSource('acme/app', null)
+    expect(typeof source.readArtifact).toBe('function')
+  })
+
+  it('resolves to null when no repo is given', async () => {
+    const { resolveSource } = await import('../integration-lifecycle.mjs')
+    expect(resolveSource(null, null)).toBeNull()
+  })
+
   it('applies lifecycle mutations through a source adapter', async () => {
     const { applyIntegrationPlan } = await import('../integration-lifecycle.mjs')
     const calls = []

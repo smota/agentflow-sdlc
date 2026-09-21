@@ -29,13 +29,12 @@ It adds delivery governance around your existing repository. It does **not** gen
 The safest first look is read-only:
 
 ```bash
-git clone https://github.com/smota/agentflow-sdlc.git
+git clone --branch v1.0.0 https://github.com/smota/agentflow-sdlc.git
 cd agentflow-sdlc
-pnpm install
-node bin/cli.mjs onboarding-prompt --target /path/to/your-project
+node bin/cli.mjs doctor-env --target /path/to/your-project
 ```
 
-The last command prints an assistant-ready onboarding prompt. It does not change the target project. Ready to continue? Follow [Get started](docs/get-started.md), or give your assistant the [assisted onboarding guide](docs/assisted-onboarding.md).
+`doctor-env` reports on the target project's tooling; it does not change the target project. Ready to continue? [Get started](docs/get-started.md) is the entry document — it reaches a first governed change, a frozen acceptance contract with a recorded observation, in six commands. Prefer an assistant to drive the same steps conversationally? Use the [assisted onboarding guide](docs/assisted-onboarding.md).
 
 ## How it works
 

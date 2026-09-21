@@ -3,16 +3,7 @@
   "$id": "https://agentflow.dev/schemas/sdlc-config.schema.json",
   "title": "AgentFlow SDLC configuration",
   "type": "object",
-  "required": [
-    "version",
-    "authority",
-    "roles",
-    "paths",
-    "labels",
-    "release",
-    "gateways",
-    "extensionPolicy"
-  ],
+  "required": ["version", "authority", "paths", "labels", "release", "gateways", "extensionPolicy"],
   "properties": {
     "version": {
       "type": "integer",
@@ -20,7 +11,7 @@
     },
     "authority": {
       "type": "object",
-      "required": ["human", "machine", "executionAdapter"],
+      "required": ["human", "machine"],
       "properties": {
         "human": {
           "type": "string"
@@ -175,9 +166,6 @@
         },
         "sourceAcknowledgmentRequired": {
           "const": true
-        },
-        "highAssuranceHumanReviewPhase": {
-          "const": 6
         },
         "unknownWriterBlocksRecovery": {
           "const": true

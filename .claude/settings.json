@@ -1,51 +1,83 @@
 {
   "hooks": {
-    "UserPromptSubmit": [
+    "PostToolUse": [
       {
         "hooks": [
           {
-            "type": "command",
-            "command": "node -e \"const c=require('child_process');process.exit(c.spawnSync(process.execPath,[c.execFileSync('git',['rev-parse','--show-toplevel'],{encoding:'utf8'}).trim()+'/.github/hooks/session-status.mjs'],{stdio:'inherit'}).status||0)\""
+            "command": "node -e \"const c=require('child_process');process.exit(c.spawnSync(process.execPath,[c.execFileSync('git',['rev-parse','--show-toplevel'],{encoding:'utf8'}).trim()+'/.github/hooks/prettier-on-write.mjs'],{stdio:'inherit'}).status||0)\"",
+            "type": "command"
           }
-        ]
+        ],
+        "matcher": "Write|Edit"
+      },
+      {
+        "hooks": [
+          {
+            "command": "node -e \"const c=require('child_process');process.exit(c.spawnSync(process.execPath,[c.execFileSync('git',['rev-parse','--show-toplevel'],{encoding:'utf8'}).trim()+'/.github/hooks/post-commit-summary.mjs'],{stdio:'inherit'}).status||0)\"",
+            "type": "command"
+          }
+        ],
+        "matcher": "Bash"
+      },
+      {
+        "hooks": [
+          {
+            "command": "C:\\Users\\samue\\AppData\\Local\\agent-otel-bridge\\bin\\agent-hook.exe PostToolUse",
+            "timeout": 5,
+            "type": "command"
+          }
+        ],
+        "matcher": ".*"
       }
     ],
     "PreToolUse": [
       {
-        "matcher": "Edit|Write|NotebookEdit",
         "hooks": [
           {
-            "type": "command",
-            "command": "node -e \"const c=require('child_process');process.exit(c.spawnSync(process.execPath,[c.execFileSync('git',['rev-parse','--show-toplevel'],{encoding:'utf8'}).trim()+'/.github/hooks/check-issue-branch.mjs'],{stdio:'inherit'}).status||0)\""
+            "command": "node -e \"const c=require('child_process');process.exit(c.spawnSync(process.execPath,[c.execFileSync('git',['rev-parse','--show-toplevel'],{encoding:'utf8'}).trim()+'/.github/hooks/check-issue-branch.mjs'],{stdio:'inherit'}).status||0)\"",
+            "type": "command"
           }
-        ]
+        ],
+        "matcher": "Edit|Write|NotebookEdit"
       },
       {
-        "matcher": "Bash",
         "hooks": [
           {
-            "type": "command",
-            "command": "node -e \"const c=require('child_process');process.exit(c.spawnSync(process.execPath,[c.execFileSync('git',['rev-parse','--show-toplevel'],{encoding:'utf8'}).trim()+'/.github/hooks/check-commit-ready.mjs'],{stdio:'inherit'}).status||0)\""
+            "command": "node -e \"const c=require('child_process');process.exit(c.spawnSync(process.execPath,[c.execFileSync('git',['rev-parse','--show-toplevel'],{encoding:'utf8'}).trim()+'/.github/hooks/check-commit-ready.mjs'],{stdio:'inherit'}).status||0)\"",
+            "type": "command"
           }
-        ]
+        ],
+        "matcher": "Bash"
+      },
+      {
+        "hooks": [
+          {
+            "command": "C:\\Users\\samue\\AppData\\Local\\agent-otel-bridge\\bin\\agent-hook.exe PreToolUse",
+            "timeout": 5,
+            "type": "command"
+          }
+        ],
+        "matcher": ".*"
       }
     ],
-    "PostToolUse": [
+    "Stop": [
       {
-        "matcher": "Write|Edit",
         "hooks": [
           {
-            "type": "command",
-            "command": "node -e \"const c=require('child_process');process.exit(c.spawnSync(process.execPath,[c.execFileSync('git',['rev-parse','--show-toplevel'],{encoding:'utf8'}).trim()+'/.github/hooks/prettier-on-write.mjs'],{stdio:'inherit'}).status||0)\""
+            "command": "C:\\Users\\samue\\AppData\\Local\\agent-otel-bridge\\bin\\agent-hook.exe Stop",
+            "timeout": 5,
+            "type": "command"
           }
-        ]
-      },
+        ],
+        "matcher": ".*"
+      }
+    ],
+    "UserPromptSubmit": [
       {
-        "matcher": "Bash",
         "hooks": [
           {
-            "type": "command",
-            "command": "node -e \"const c=require('child_process');process.exit(c.spawnSync(process.execPath,[c.execFileSync('git',['rev-parse','--show-toplevel'],{encoding:'utf8'}).trim()+'/.github/hooks/post-commit-summary.mjs'],{stdio:'inherit'}).status||0)\""
+            "command": "node -e \"const c=require('child_process');process.exit(c.spawnSync(process.execPath,[c.execFileSync('git',['rev-parse','--show-toplevel'],{encoding:'utf8'}).trim()+'/.github/hooks/session-status.mjs'],{stdio:'inherit'}).status||0)\"",
+            "type": "command"
           }
         ]
       }

@@ -67,6 +67,11 @@
       "ownership": "seed-once"
     },
     {
+      "source": "defaults/agent-workflow.config.json",
+      "target": "agent-workflow.config.json",
+      "ownership": "seed-once"
+    },
+    {
       "source": "schemas/sdlc-config.schema.json",
       "target": "schemas/sdlc-config.schema.json",
       "ownership": "managed"

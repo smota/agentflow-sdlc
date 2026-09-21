@@ -34,6 +34,7 @@ jobs:
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
+      - run: node scripts/audit-reachability.mjs
       - run: pnpm validate:release
 
   validate-pr-body:
