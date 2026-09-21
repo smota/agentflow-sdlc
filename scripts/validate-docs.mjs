@@ -8,6 +8,7 @@ const KNOWN_CLI_COMMANDS = new Set([
   'init',
   'run',
   'doctor-env',
+  'config',
   'adopt',
   'providers',
   'collaboration',
