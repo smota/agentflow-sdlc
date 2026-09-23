@@ -3,7 +3,7 @@ import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs'
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { validateEnvironment } from '../lib/environment.mjs'
+import { validateEnvironment, inspectEnvironment } from '../lib/environment.mjs'
 import { adapterStatus, syncSkillAdapters } from '../lib/skill-adapters.mjs'
 import { loadSkillCatalog, validateSkillCatalog } from '../lib/skill-catalog.mjs'
 import { roleAdapterStatus, syncRoleAdapters } from '../lib/role-adapters.mjs'
@@ -41,6 +41,15 @@ import {
   recoverAdoption,
   rollbackAdoption,
 } from '../lib/adoption/transaction.mjs'
+import { runInit } from '../lib/init.mjs'
+import {
+  inspectHarnessIntelligence,
+  scaffoldHarnessIntelligence,
+} from '../lib/config/harness-intelligence.mjs'
+import { runConfigDoctor } from '../lib/config/doctor.mjs'
+import { runConfigSync } from '../lib/config/sync.mjs'
+import { inspectEffectiveConfig } from '../lib/config/inspect.mjs'
+import { formatContinuousConfigPrompt } from '../lib/config/prompt.mjs'
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -91,6 +100,150 @@ function printReleasePlan(plan) {
   if (plan.previousTag) process.stdout.write(`Previous tag: ${plan.previousTag}\n`)
   process.stdout.write(`Release notes draft: ${plan.notesPath}\n`)
   process.stdout.write(`Approval required: ${plan.approvalRequired ? 'yes' : 'no'}\n`)
+}
+
+function printInitReport(result) {
+  if (result.status === 'skipped') {
+    process.stdout.write(`${result.reason}\n`)
+    return
+  }
+  if (result.status === 'blocked') {
+    process.stdout.write(`Init blocked by conflicts:\n`)
+    for (const conflict of result.conflicts) process.stdout.write(`  - ${conflict}\n`)
+    return
+  }
+  process.stdout.write(`Initialized ${result.adapterPath}\n`)
+  process.stdout.write(
+    `  branch: ${result.facts.branch.detected ? result.facts.branch.value : 'not detected (assumed default)'}\n`,
+  )
+  process.stdout.write(
+    `  test command: ${result.facts.testCommand.detected ? result.facts.testCommand.value : 'not detected (none written)'}\n`,
+  )
+  process.stdout.write(
+    `  candidate inputs: ${result.facts.candidateInputs.value.length ? result.facts.candidateInputs.value.join(', ') : 'not detected (none written)'}\n`,
+  )
+  if (result.posture) {
+    process.stdout.write(`  posture: ${result.posture}\n`)
+  }
+  if (result.harnessIntelligence && result.harnessIntelligence.created.length > 0) {
+    process.stdout.write(
+      `  harness intelligence: scaffolded ${result.harnessIntelligence.created.length} pillars in ${result.harnessIntelligence.agentflowDir}\n`,
+    )
+  }
+  if (result.syncedAdapters) {
+    process.stdout.write(
+      `  synced adapters: ${result.syncedAdapters.summary.skillsCount} skills, ${result.syncedAdapters.summary.rolesCount} roles, ${result.syncedAdapters.summary.pluginsCount} plugins, ${result.syncedAdapters.summary.settingsCount} settings\n`,
+    )
+  }
+  if (result.assumptions.length) {
+    process.stdout.write(`Assumptions:\n`)
+    for (const note of result.assumptions) process.stdout.write(`  - ${note}\n`)
+  }
+}
+
+function handleInit(rest, targetDir) {
+  const json = rest.includes('--json')
+  const force = rest.includes('--force')
+  const profile = getFlag(rest, '--profile', undefined)
+  const posture = getFlag(rest, '--posture', undefined)
+  const scaffoldHarness = !rest.includes('--no-harness')
+  const syncAdapters = rest.includes('--sync')
+  const result = runInit({
+    packageRoot,
+    targetDir,
+    force,
+    ...(profile ? { profile } : {}),
+    ...(posture ? { posture } : {}),
+    scaffoldHarness,
+    syncAdapters,
+  })
+  if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+  else printInitReport(result)
+  return result.status === 'blocked' ? 1 : 0
+}
+
+function printConfigDoctorReport(report) {
+  process.stdout.write(
+    `AgentFlow project configuration doctor (${report.ok ? 'READY' : 'BLOCKED'})\n`,
+  )
+  process.stdout.write(`Target: ${report.targetDir}\n\n`)
+  process.stdout.write(
+    `Passed checks (${report.passedChecks.length}/${report.summary.totalChecks}):\n`,
+  )
+  for (const item of report.passedChecks) {
+    process.stdout.write(`  ✓ ${item}\n`)
+  }
+  process.stdout.write(`\n`)
+  if (report.warnings.length) {
+    process.stdout.write(`Warnings (${report.warnings.length}):\n`)
+    for (const item of report.warnings) {
+      process.stdout.write(`  ! ${item}\n`)
+    }
+    process.stdout.write(`\n`)
+  }
+  if (report.blockers.length) {
+    process.stdout.write(`Blockers (${report.blockers.length}):\n`)
+    for (const item of report.blockers) {
+      process.stdout.write(`  ✗ ${item}\n`)
+    }
+    process.stdout.write(`\n`)
+  }
+  process.stdout.write(
+    `Summary: ${report.summary.passedCount} passed, ${report.summary.warningCount} warnings, ${report.summary.blockerCount} blockers\n`,
+  )
+}
+
+function printConfigSyncReport(report) {
+  process.stdout.write(`AgentFlow configuration sync (${report.mode})\n`)
+  process.stdout.write(`Target: ${report.targetDir}\n`)
+  process.stdout.write(`  Skills: ${report.summary.skillsCount} entries\n`)
+  process.stdout.write(`  Roles: ${report.summary.rolesCount} entries\n`)
+  process.stdout.write(`  Plugins: ${report.summary.pluginsCount} manifests\n`)
+  process.stdout.write(`  Settings: ${report.summary.settingsCount} merged\n`)
+  if (!report.ok) {
+    process.stdout.write(`Sync completed with issues.\n`)
+  } else {
+    process.stdout.write(
+      `Result: ${report.mode === 'applied' ? 'ALL ADAPTERS IN SYNC' : 'PREVIEW ONLY'}\n`,
+    )
+  }
+}
+
+function handleConfig(rest, targetDir) {
+  const [subcommand] = positionalArgs(rest)
+  const json = rest.includes('--json')
+  const harness = getFlag(rest, '--harness', 'all')
+
+  if (subcommand === 'doctor' || subcommand === 'check' || !subcommand) {
+    const report = runConfigDoctor({ packageRoot, targetDir })
+    if (json) process.stdout.write(`${JSON.stringify(report, null, 2)}\n`)
+    else printConfigDoctorReport(report)
+    return report.ok ? 0 : 1
+  }
+
+  if (subcommand === 'sync') {
+    const write = rest.includes('--apply') && !rest.includes('--dry-run')
+    const result = runConfigSync({ packageRoot, targetDir, harness, write })
+    if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+    else printConfigSyncReport(result)
+    return result.ok ? 0 : 1
+  }
+
+  if (subcommand === 'inspect') {
+    const result = inspectEffectiveConfig({ targetDir })
+    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+    return 0
+  }
+
+  if (subcommand === 'prompt') {
+    process.stdout.write(formatContinuousConfigPrompt(targetDir))
+    return 0
+  }
+
+  process.stderr.write(`Usage:
+  agentflow-sdlc config <doctor|check|sync|inspect|prompt> [--target <dir>] [--harness <name>] [--dry-run|--apply] [--json]
+`)
+  return 2
 }
 
 function printExtensionRegistry(registry) {
@@ -164,11 +317,11 @@ function handleSdlc(rest, targetDir) {
   agentflow-sdlc sdlc validate-release --path <issue.json> [--json]
   agentflow-sdlc sdlc validate-skill --path <SKILL.md> [--json]
   agentflow-sdlc sdlc validate-agent --path <AGENT.md> [--json]
-  agentflow-sdlc sdlc validate-evidence --type <contract> --path <json> [--expected-digest <sha256>] [--json]
+  agentflow-sdlc sdlc validate-evidence --type <contract> --path <json> [--json]
   agentflow-sdlc sdlc validate-lifecycle --type <contract> --path <json> [--json]
   agentflow-sdlc sdlc derive-metrics --path <events.json> [--json]
-  agentflow-sdlc sdlc run-evals --manifest <manifest.json> [--actual-dir <dir>] [--json]
-  agentflow-sdlc sdlc validate-multi-agent [--actual-dir <dir>] [--json]
+  agentflow-sdlc sdlc run-evals --manifest <manifest.json> [--json]
+  agentflow-sdlc sdlc validate-multi-agent [--json]
   agentflow-sdlc sdlc audit [--json]
   agentflow-sdlc sdlc migrate [--json]
 `)
@@ -184,6 +337,7 @@ function handleAdoption(rest, targetDir) {
   const [subcommand] = positionalArgs(rest)
   const profile = getFlag(rest, '--profile', COMPOSITION_PROFILES.defaultProfile)
   const json = rest.includes('--json')
+  const storage = getFlag(rest, '--storage', 'external')
   if (subcommand === 'profiles') {
     const result = {
       defaultProfile: COMPOSITION_PROFILES.defaultProfile,
@@ -199,7 +353,7 @@ function handleAdoption(rest, targetDir) {
     return 0
   }
   if (subcommand === 'plan') {
-    const plan = planAdoption(packageRoot, targetDir, { profile })
+    const plan = planAdoption(packageRoot, targetDir, { profile, storage })
     if (json) process.stdout.write(`${JSON.stringify(plan, null, 2)}\n`)
     else
       printReport(`Adoption preview for ${targetDir} (${plan.blocked ? 'BLOCKED' : 'ready'})`, {
@@ -212,29 +366,24 @@ function handleAdoption(rest, targetDir) {
   if (subcommand === 'apply') {
     const confirm = getFlag(rest, '--confirm', '')
     const receiptInput = getFlag(rest, '--receipt', '')
-    if (!confirm || !receiptInput) {
+    if (!confirm || (!receiptInput && storage !== 'project')) {
       process.stderr.write(
         'Usage: agentflow-sdlc adopt apply --confirm <plan-token> --receipt <outside-file> [--profile <id>] [--target <dir>] [--json]\n',
       )
       return 2
     }
-    const receiptPath = resolve(receiptInput)
-    if (!outsideTarget(targetDir, receiptPath)) {
+    let receiptPath = receiptInput ? resolve(receiptInput) : null
+    if (receiptPath && !outsideTarget(targetDir, receiptPath)) {
       throw new Error('Adoption receipt must remain outside the target project')
     }
-    if (existsSync(receiptPath)) throw new Error('Adoption receipt path already exists')
-    const plan = planAdoption(packageRoot, targetDir, { profile })
-    const receipt = applyAdoption(packageRoot, targetDir, plan, { confirm })
-    try {
-      writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`, {
-        encoding: 'utf8',
-        flag: 'wx',
-        mode: 0o600,
-      })
-    } catch (error) {
-      rollbackAdoption(targetDir, receipt, { confirm: receipt.receiptToken })
-      throw new Error(`Adoption receipt write failed and target was rolled back: ${error.message}`)
-    }
+    if (receiptPath && existsSync(receiptPath))
+      throw new Error('Adoption receipt path already exists')
+    const plan = planAdoption(packageRoot, targetDir, { profile, storage })
+    const receipt = applyAdoption(packageRoot, targetDir, plan, {
+      confirm,
+      receiptDestination: receiptPath,
+    })
+    if (receipt.receiptPath) receiptPath = resolve(targetDir, receipt.receiptPath)
     const result = {
       status: 'applied',
       target: receipt.target,
@@ -262,10 +411,13 @@ function handleAdoption(rest, targetDir) {
       return 2
     }
     const receiptPath = resolve(receiptInput)
-    if (!outsideTarget(targetDir, receiptPath)) {
-      throw new Error('Adoption receipt must remain outside the target project')
-    }
     const receipt = JSON.parse(readFileSync(receiptPath, 'utf8'))
+    if (
+      !outsideTarget(targetDir, receiptPath) &&
+      receiptPath !==
+        resolve(targetDir, '.agentflow/transactions', receipt.transactionId, 'receipt.json')
+    )
+      throw new Error('Contained receipt must use the reserved transaction path')
     const result = rollbackAdoption(targetDir, receipt, { confirm })
     unlinkSync(receiptPath)
     if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
@@ -667,7 +819,52 @@ function handleExtensions(rest, targetDir) {
   agentflow-sdlc extensions inspect <pack> [--target <dir>] [--json]
   agentflow-sdlc extensions enable <pack> [--target <dir>] [--json]
   agentflow-sdlc extensions disable <pack> [--target <dir>] [--json]
-  agentflow-sdlc extensions validate [--target <dir>] [--run-validators] [--json]
+  agentflow-sdlc extensions validate [--target <dir>] [--json]
+`)
+  return 2
+}
+
+function handleHarness(rest, targetDir) {
+  const [subcommand] = positionalArgs(rest)
+  const json = rest.includes('--json')
+  const force = rest.includes('--force')
+
+  if (subcommand === 'inspect' || !subcommand) {
+    const result = inspectHarnessIntelligence(targetDir)
+    if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+    else {
+      process.stdout.write(
+        `Harness intelligence (${result.configuredCount}/${result.totalPillars} pillars configured)\n`,
+      )
+      process.stdout.write(`Directory: ${result.agentflowDir}\n`)
+      for (const [pillar, info] of Object.entries(result.status)) {
+        process.stdout.write(
+          `  - ${pillar}: ${info.exists ? 'configured' : 'missing (using defaults)'}\n`,
+        )
+      }
+    }
+    return 0
+  }
+
+  if (subcommand === 'scaffold' || subcommand === 'init') {
+    const result = scaffoldHarnessIntelligence(targetDir, { force })
+    if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+    else {
+      process.stdout.write(`Scaffolded harness intelligence in ${result.agentflowDir}\n`)
+      if (result.created.length) {
+        process.stdout.write(`  Created:\n`)
+        for (const file of result.created) process.stdout.write(`    + ${file}\n`)
+      }
+      if (result.existing.length) {
+        process.stdout.write(`  Skipped existing (use --force to overwrite):\n`)
+        for (const file of result.existing) process.stdout.write(`    = ${file}\n`)
+      }
+    }
+    return 0
+  }
+
+  process.stderr.write(`Usage:
+  agentflow-sdlc harness <inspect|scaffold> [--target <dir>] [--force] [--json]
 `)
   return 2
 }
@@ -679,7 +876,7 @@ function printOnboardingPrompt(targetDir) {
   )
   process.stdout.write(`Apply it to this existing project: ${targetDir}\n`)
   process.stdout.write(
-    `First inspect existing agent instructions and project docs. Validate the environment read-only. Ask me to choose agents, execution mode, branch strategy, validation commands, and GitHub automation. Propose install/setup commands but do not execute them without explicit approval. Preserve or merge existing instructions instead of overwriting them.\n`,
+    `First inspect existing agent instructions and project docs. Validate the environment read-only. Ask me to choose agents, execution mode, branch strategy, validation commands, and GitHub automation. Propose install/setup commands but do not execute them without explicit approval. Preserve or merge existing instructions instead of overwriting them. Configure tooling and harnessing intelligence (.agentflow/ with orchestration-model.json, execution-policy.json, model-catalog.json, and harness-parameters.json) and establish pre-code adversarial sparring gates for robust verification.\n`,
   )
 }
 
@@ -696,10 +893,14 @@ function positionalArgs(args) {
 }
 
 const ROOT_USAGE =
-  'Usage: agentflow-sdlc <doctor-env|adopt|providers|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|onboarding-prompt|release-plan> [path] [--target <dir>] [--json]\n'
+  'Usage: agentflow-sdlc <init|run|doctor-env|config|adopt|providers|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|onboarding-prompt|release-plan> [path] [--target <dir>] [--json]\n'
 
 const COMMAND_USAGE = {
-  'doctor-env': 'Usage: agentflow-sdlc doctor-env [--target <dir>] [--json]\n',
+  init: 'Usage: agentflow-sdlc init [--profile <id>] [--posture <posture>] [--no-harness] [--sync] [--target <dir>] [--force] [--json]\n',
+  config:
+    'Usage: agentflow-sdlc config <doctor|check|sync|inspect|prompt> [--target <dir>] [--harness <name>] [--dry-run|--apply] [--json]\n',
+  run: 'Usage: agentflow-sdlc run <source-plan|start|status|next|freeze|verify|advance|checkpoint|pause|resume|publish> <id> [--target <dir>] [--execute] [--plan <file> --confirm <digest>] [--json]\n',
+  'doctor-env': 'Usage: agentflow-sdlc doctor-env [--inspect] [--target <dir>] [--json]\n',
   adopt:
     'Usage: agentflow-sdlc adopt <profiles|plan|apply|rollback|recover> [--profile <id>] [--target <dir>] [--json]\n',
   providers:
@@ -709,6 +910,7 @@ const COMMAND_USAGE = {
   roles:
     'Usage: agentflow-sdlc roles <catalog|inspect|validate|resolve|sync|status|validate-handoff> [role] [--json]\n',
   methods: 'Usage: agentflow-sdlc methods <catalog|validate> [--json]\n',
+  harness: 'Usage: agentflow-sdlc harness <inspect|scaffold> [--target <dir>] [--force] [--json]\n',
 }
 
 function requestedHelp(args) {
@@ -728,6 +930,25 @@ function main() {
   }
 
   const targetDir = resolve(getFlag(rest, '--target', process.cwd()))
+  if (command === 'run') return runScript('scripts/run-delivery.mjs', rest, targetDir)
+
+  if (command === 'init') {
+    try {
+      return handleInit(rest, targetDir)
+    } catch (error) {
+      process.stderr.write(`${error.message}\n`)
+      return 1
+    }
+  }
+
+  if (command === 'config') {
+    try {
+      return handleConfig(rest, targetDir)
+    } catch (error) {
+      process.stderr.write(`${error.message}\n`)
+      return 1
+    }
+  }
 
   if (command === 'cockpit') {
     return handleCockpit(rest, targetDir)
@@ -793,10 +1014,34 @@ function main() {
     }
   }
 
+  if (command === 'harness') {
+    try {
+      return handleHarness(rest, targetDir)
+    } catch (error) {
+      process.stderr.write(`${error.message}\n`)
+      return 1
+    }
+  }
+
   if (command === 'doctor-env') {
+    if (rest.includes('--probe')) return runScript('scripts/probe-environment.mjs', rest, targetDir)
+    if (rest.includes('--inspect')) {
+      const report = inspectEnvironment(targetDir)
+      report.harnessIntelligence = inspectHarnessIntelligence(targetDir)
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`)
+      return report.readiness === 'blocked' ? 3 : 0
+    }
     const report = validateEnvironment(targetDir)
-    if (rest.includes('--json')) process.stdout.write(`${JSON.stringify(report, null, 2)}\n`)
-    else printEnvironmentReport(report)
+    if (rest.includes('--json')) {
+      report.harnessIntelligence = inspectHarnessIntelligence(targetDir)
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`)
+    } else {
+      printEnvironmentReport(report)
+      const harnessInfo = inspectHarnessIntelligence(targetDir)
+      process.stdout.write(
+        `Harness intelligence: ${harnessInfo.configuredCount}/${harnessInfo.totalPillars} pillars configured in .agentflow/\n\n`,
+      )
+    }
     return report.ok ? 0 : 1
   }
 

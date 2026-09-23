@@ -2,6 +2,9 @@
 
 Use this guide when adding **AgentFlow SDLC** to an existing project. It is designed for a human and an agent to follow together: inspect first, validate read-only, ask explicit choices, propose changes, and preserve existing project instructions.
 
+Prefer to run the commands yourself instead? [Get started](get-started.md) covers the same ground
+in six commands without a conversation.
+
 ## Core rule: clarity over automation
 
 The onboarding assistant may inspect files, summarize conflicts, and propose commands. It must not install tools, authenticate services, overwrite instructions, or modify project policy without explicit approval.
@@ -97,3 +100,7 @@ node bin/cli.mjs onboarding-prompt --target /path/to/project
 ```
 
 The helper prints instructions only. It does not run setup commands.
+
+## Ongoing configuration and maintenance
+
+After initial onboarding is complete, use [Assisted configuration](assisted-configuration.md) for continuous configuration, adapter synchronization, and posture changes.

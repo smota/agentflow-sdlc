@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentflow.dev/schemas/resolution-ledger.schema.json",
+  "title": "AgentFlow ResolutionLedger",
+  "type": "object",
+  "required": [
+    "ledgerVersion",
+    "targetIdentity",
+    "targetIdentityDigest",
+    "fencingToken",
+    "expectedLedgerRevision",
+    "currentRound",
+    "status",
+    "findingsLedger",
+    "rounds"
+  ],
+  "properties": {
+    "ledgerVersion": { "const": 1 },
+    "targetIdentity": {
+      "type": "object",
+      "required": ["workItemId", "cycle", "contractDigest", "sliceManifestDigest", "policyDigest"],
+      "properties": {
+        "workItemId": { "type": "string", "minLength": 1 },
+        "cycle": { "type": "string", "minLength": 1 },
+        "contractDigest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "sliceManifestDigest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "policyDigest": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      },
+      "additionalProperties": false
+    },
+    "targetIdentityDigest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "fencingToken": { "type": "integer", "minimum": 0 },
+    "expectedLedgerRevision": { "type": ["string", "null"] },
+    "currentRound": { "type": "integer", "minimum": 0 },
+    "status": { "enum": ["open", "approved", "rejected"] },
+    "findingsLedger": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["initialRound", "severity", "description", "status"],
+        "properties": {
+          "initialRound": { "type": "integer", "minimum": 1 },
+          "severity": { "enum": ["blocker", "structural", "nit"] },
+          "description": { "type": "string", "minLength": 1 },
+          "status": { "enum": ["open", "resolved", "waived"] },
+          "resolutionEvidence": { "type": ["string", "null"] },
+          "waiver": {
+            "type": ["object", "null"],
+            "required": ["actor", "rationale", "scope"],
+            "properties": {
+              "actor": { "type": "string", "minLength": 1 },
+              "rationale": { "type": "string", "minLength": 1 },
+              "scope": { "type": "string", "minLength": 1 },
+              "expiry": { "type": ["string", "null"] }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "rounds": {
+      "type": "array",
+      "items": { "$ref": "review-round-receipt.schema.json" }
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,235 @@
+{
+  "version": 1,
+  "authority": {
+    "human": "docs/sdlc-definition.md",
+    "machine": "sdlc.config.json",
+    "executionAdapter": "agent-workflow.config.json"
+  },
+  "principles": [
+    "AgentFlow concepts lead; source systems are substrate.",
+    "Durable evidence is required for delivery claims.",
+    "Single-agent is default; multi-agent claims require attribution.",
+    "High-assurance work requires a human approval gate.",
+    "Skipped-by-path roles do not reduce readiness.",
+    "Follow-up issues replace hidden TODOs.",
+    "Harness directories contain generated adapters only."
+  ],
+  "vocabulary": {
+    "rolePassStatuses": ["pass", "blocked", "returned", "skipped"],
+    "artifactKinds": [
+      "goal",
+      "requirement",
+      "design",
+      "plan",
+      "implementation",
+      "validation",
+      "review",
+      "release",
+      "incident",
+      "other"
+    ],
+    "sourceAuthorities": ["authoritative", "working-copy", "mirror"],
+    "artifactRelationships": [
+      "input",
+      "output",
+      "supersedes",
+      "verifies",
+      "implements",
+      "observes"
+    ],
+    "actionBoundaries": ["observe", "propose", "mutate-worktree", "open-pr", "external-action"]
+  },
+  "roles": [
+    {
+      "phase": 0,
+      "slug": "product-manager",
+      "label": "Product manager / JTBD",
+      "owns": ["goal", "job", "release-intent"]
+    },
+    {
+      "phase": 1,
+      "slug": "analyst",
+      "label": "Analyst",
+      "owns": ["requirements", "acceptance-criteria", "scope-boundary"]
+    },
+    {
+      "phase": 2,
+      "slug": "architect",
+      "label": "Architect",
+      "owns": ["technical-design", "risk", "path-selection"]
+    },
+    {
+      "phase": 3,
+      "slug": "implementation-planner",
+      "label": "Developer planning",
+      "owns": ["implementation-plan", "validation-plan"]
+    },
+    {
+      "phase": 4,
+      "slug": "developer",
+      "label": "Developer",
+      "owns": ["implementation", "commit-evidence"]
+    },
+    {
+      "phase": 5,
+      "slug": "tester",
+      "label": "Tester",
+      "owns": ["validation-evidence", "coverage-notes"]
+    },
+    {
+      "phase": 6,
+      "slug": "reviewer",
+      "label": "Reviewer",
+      "owns": ["review-findings", "independence-boundary"]
+    },
+    {
+      "phase": 7,
+      "slug": "technical-writer",
+      "label": "Technical writer",
+      "owns": ["docs", "release-notes", "product-language"]
+    },
+    {
+      "phase": 8,
+      "slug": "pr-readiness",
+      "label": "PR readiness",
+      "owns": ["pr-manifest", "merge-readiness", "follow-up-status"]
+    }
+  ],
+  "paths": {
+    "bounded": {
+      "requiredRoles": [
+        "analyst",
+        "implementation-planner",
+        "developer",
+        "tester",
+        "reviewer",
+        "pr-readiness"
+      ],
+      "optionalRoles": ["product-manager", "architect", "technical-writer"],
+      "allowsSelfReview": true,
+      "requiresHumanApproval": false
+    },
+    "standard": {
+      "requiredRoles": [
+        "analyst",
+        "architect",
+        "implementation-planner",
+        "developer",
+        "tester",
+        "reviewer",
+        "pr-readiness"
+      ],
+      "optionalRoles": ["product-manager", "technical-writer"],
+      "allowsSelfReview": true,
+      "requiresHumanApproval": false
+    },
+    "high-assurance": {
+      "requiredRoles": [
+        "product-manager",
+        "analyst",
+        "architect",
+        "implementation-planner",
+        "developer",
+        "tester",
+        "reviewer",
+        "technical-writer",
+        "pr-readiness"
+      ],
+      "optionalRoles": [],
+      "allowsSelfReview": false,
+      "requiresHumanApproval": true
+    },
+    "exploratory": {
+      "requiredRoles": ["product-manager", "analyst", "architect", "reviewer"],
+      "optionalRoles": [
+        "implementation-planner",
+        "developer",
+        "tester",
+        "technical-writer",
+        "pr-readiness"
+      ],
+      "allowsSelfReview": true,
+      "requiresHumanApproval": false
+    }
+  },
+  "transitions": [
+    ["product-manager", "analyst"],
+    ["analyst", "architect"],
+    ["architect", "implementation-planner"],
+    ["implementation-planner", "developer"],
+    ["developer", "tester"],
+    ["tester", "reviewer"],
+    ["reviewer", "technical-writer"],
+    ["technical-writer", "pr-readiness"],
+    ["developer", "implementation-planner"],
+    ["reviewer", "developer"],
+    ["technical-writer", "developer"],
+    ["pr-readiness", "developer"]
+  ],
+  "labels": {
+    "type": ["epic", "feature", "bug", "dx", "tooling", "documentation", "qa", "exploratory"],
+    "routingPrefixes": ["for-implementation:"],
+    "lifecyclePrefixes": ["drafted-by:", "implemented-by:", "for-review:", "reviewed-by:"],
+    "forbiddenPrefixes": ["agent:"],
+    "release": ["awaiting-release"],
+    "integrationPrefixes": ["integrated:"]
+  },
+  "release": {
+    "candidateSources": ["issue-field", "milestone"],
+    "assignmentStates": ["assigned", "needs-assignment", "released", "no-release-impact"],
+    "impactStates": ["major", "minor", "patch", "docs-only", "none", "unknown"],
+    "filters": ["unreleased", "released", "all", "needs-assignment"],
+    "rejectIncidentalSemver": true
+  },
+  "gateways": {
+    "humanApproval": {
+      "requiredFor": ["high-assurance"],
+      "fields": ["Reviewer", "Scope", "Decision", "Notes"],
+      "decisions": ["approved", "changes-requested", "blocked"]
+    },
+    "guidedAction": {
+      "requires": ["preview", "auth", "csrf", "confirmation", "audit"]
+    }
+  },
+  "actionPolicy": {
+    "profileMaximums": {
+      "bounded": "open-pr",
+      "standard": "open-pr",
+      "high-assurance": "external-action",
+      "exploratory": "propose"
+    },
+    "externalActionRequiresHumanApproval": true,
+    "delegationMayNotWidenBoundary": true
+  },
+  "extensionPolicy": {
+    "mayAdd": [
+      "roles",
+      "roleBoundPlays",
+      "labels",
+      "gateways",
+      "paths",
+      "validators",
+      "toolPermissions",
+      "controlRequirements",
+      "evals",
+      "harnessAdapters"
+    ],
+    "mustPreserve": [
+      "role-pass-provenance",
+      "human-approval-for-high-assurance",
+      "readiness-denominator-rules",
+      "no-raw-secrets-or-transcripts",
+      "follow-ups-over-hidden-todos"
+    ]
+  },
+  "deliveryPolicy": {
+    "contractVersion": 2,
+    "deterministicOrigins": ["collector-observed", "external-resolved"],
+    "sourceAcknowledgmentRequired": true,
+    "highAssuranceHumanReviewPhase": 6,
+    "unknownWriterBlocksRecovery": true,
+    "admissionBudgetRejectsUnknownUsage": true,
+    "requiredJourneyCoverage": false,
+    "budgetMaxima": {}
+  }
+}

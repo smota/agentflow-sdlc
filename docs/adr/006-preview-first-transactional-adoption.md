@@ -40,3 +40,7 @@ lockfile state is deterministic; profiles do not silently change the default ins
 **Negative:** implementation and tests are more complex; removed command and lock formats require a
 fresh adoption; atomic replacement has platform-specific failure modes that require fault-injection
 coverage.
+
+## Receipt durability extension
+
+[ADR 007](007-verifiable-recoverable-delivery.md) extends storage with project-contained transactions and a mandatory durable receipt destination. Finalization and rollback use restartable journals. The v2-only lock and no-alias decisions remain unchanged.

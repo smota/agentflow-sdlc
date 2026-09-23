@@ -14,7 +14,7 @@ function rolePass(platform) {
 **Issue:** #181 — runtime identity
 **Branch:** work/runtime-platform-registry
 **Phase:** 4
-**Role:** developer
+**Role:** reviewer
 **Status:** pass
 **Workflow profile:** standard
 **Planned owner:** ${platform}

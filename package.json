@@ -5,7 +5,6 @@
   "version": "1.0.0",
   "description": "Harness-neutral roles, evidence, validators, skills, adapters, and release governance for AI-assisted software delivery.",
   "license": "Apache-2.0",
-  "packageManager": "pnpm@9.6.0",
   "engines": {
     "node": ">=20.0.0"
   },
@@ -28,7 +27,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "validate:npm": "node scripts/validate-npm-package.mjs",
-    "validate:release": "pnpm format:check && pnpm test && pnpm test:hooks && pnpm test:workflow && pnpm validate:authority && pnpm validate:extensions && pnpm validate:skills && pnpm validate:roles && pnpm validate:docs && pnpm test:evals && pnpm test:collaboration && pnpm test:package && node scripts/sdlc-sandbox-smoke.mjs && node scripts/cockpit-smoke.mjs && node scripts/validate-npm-package.mjs"
+    "validate:reachability": "node scripts/audit-reachability.mjs",
+    "validate:release": "pnpm format:check && pnpm test && pnpm test:hooks && pnpm test:workflow && pnpm validate:authority && pnpm validate:extensions && pnpm validate:skills && pnpm validate:roles && pnpm validate:docs && pnpm validate:reachability && pnpm test:evals && pnpm test:collaboration && pnpm test:package && node scripts/sdlc-sandbox-smoke.mjs && node scripts/cockpit-smoke.mjs && node scripts/validate-npm-package.mjs"
   },
   "devDependencies": {
     "prettier": "^3.3.3",

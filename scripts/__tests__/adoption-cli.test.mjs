@@ -1,5 +1,13 @@
 import { execFileSync, spawnSync } from 'node:child_process'
-import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs'
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  realpathSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -23,7 +31,7 @@ describe('adoption CLI', () => {
   let receipt
 
   beforeEach(() => {
-    target = mkdtempSync(join(tmpdir(), 'agentflow-adopt-cli-'))
+    target = mkdtempSync(join(realpathSync(tmpdir()), 'agentflow-adopt-cli-'))
     receipt = join(dirname(target), `${Date.now()}-agentflow-receipt.json`)
   })
 

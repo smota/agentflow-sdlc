@@ -13,6 +13,11 @@ import { authorizeCockpitUser, createAuditEvent } from '../lib/cockpit-auth.mjs'
 import { loadCockpitConfig, validateCockpitConfig } from '../lib/cockpit-config.mjs'
 import { createGitHubClient, loadRepositoryPermission } from '../lib/cockpit-github.mjs'
 import { buildCockpitIssueView, buildGoalBoard } from '../lib/cockpit-read-model.mjs'
+import { createGitHubRunStore } from '../lib/sources/github-run-store.mjs'
+import { appendTerminalIntent, resolveAnchoredHumanGate } from '../lib/cockpit-intent-anchor.mjs'
+import { goalRevision } from '../lib/core/goal-revision.mjs'
+import { unitIdentity, unitRunId, resolveVerifiedRunId } from '../lib/core/unit-identity.mjs'
+import { loadRunView, renderRunView } from '../lib/cockpit-run-model.mjs'
 import { loadGoalStoryFromGitHub } from '../lib/cockpit-replay-github.mjs'
 import {
   clearSessionCookie,
@@ -91,6 +96,23 @@ createServer(async (req, res) => {
         403,
       )
 
+    const runMatch = url.pathname.match(/^\/runs\/([a-zA-Z0-9_-]{1,100})(\.json)?$/)
+    if (runMatch && req.method === 'GET') {
+      const view = await loadRunView(
+        createGitHubRunStore({ repo, runId: runMatch[1], client: github, boundary: 'observe' }),
+      )
+      return runMatch[2]
+        ? json(res, view)
+        : html(
+            res,
+            renderCockpitPage({
+              repo,
+              repositories: config.repositories,
+              title: 'Delivery run',
+              body: renderRunView(view),
+            }),
+          )
+    }
     if (url.pathname === '/actions' && req.method === 'POST')
       return actionEndpoint(req, res, repo, session)
     if (url.pathname === '/telemetry' && req.method === 'POST')
@@ -134,7 +156,7 @@ function selectedRepository(url) {
 
 async function home(res, repo, session, view = 'goals', release = 'unreleased') {
   const issues = await github.issues(repo, { state: 'open', per_page: 50 })
-  const board = buildGoalBoard({ issues: issues.filter((issue) => !issue.pull_request) })
+  const board = buildGoalBoard({ issues: issues.filter((issue) => !issue.pull_request), repo })
   const sessionId = 'local-token'
   return html(
     res,
@@ -157,7 +179,26 @@ async function issuePage(req, res, repo, number, session) {
     github.issue(repo, number),
     github.issueComments(repo, number),
   ])
-  const view = buildCockpitIssueView({ issue, comments })
+  // W8c D5 — read a human's anchored close-unit decision back from the durable run store and, only
+  // if the visible comment still matches it (no undetected edit), feed it into the cockpit's human
+  // gate as a satisfied gate (deriveHumanGate already knows how to consume this — W8b D2). The run
+  // id is derived from the SAME identity the actuator and close-unit both derive theirs from (D1),
+  // so this always reads back from the run a decision on this issue was actually anchored to.
+  const revision = goalRevision({
+    repo,
+    number: issue.number,
+    title: issue.title,
+    body: issue.body,
+    updatedAt: issue.updated_at,
+  })
+  const satisfiedGates = await resolveAnchoredHumanGate({
+    client: github,
+    repo,
+    runId: unitRunId(unitIdentity({ repo, id: issue.number })),
+    subjectDigest: revision,
+    comments,
+  })
+  const view = buildCockpitIssueView({ issue, comments, repo, satisfiedGates })
   const sessionId = readCookie(req, 'cockpit_session') || 'local-token'
   return html(
     res,
@@ -188,7 +229,38 @@ async function actionEndpoint(req, res, repo, session) {
   ) {
     return json(res, { ok: false, errors: ['csrf-invalid'] }, 403)
   }
-  const parsed = parseCockpitIntent({ ...payload, repo })
+  // W8a D2 — close-unit's subjectDigest can never be trusted from the client alone: resolve the
+  // real unit here, server-side, and let parseCockpitIntent refuse any claimed subjectDigest that
+  // does not match it.
+  //
+  // W8b D4 — the real unit for a release-of-candidate close is the candidate a run actually
+  // produced (lib/verification/workspace.mjs's fingerprintCandidate), never a hash of the issue's
+  // own metadata (goalRevision/targetBranch/releaseImpact) standing in for it — that recipe
+  // (formerly `releaseCandidateSubject`) could never match the candidate a real run built, and has
+  // been deleted. The cockpit has no run-store read-back yet (W8c), so it cannot resolve a real
+  // candidateDigest on its own; the caller must supply the one a completed run actually produced.
+  // Absent that, there is no candidate to close against — the honest response is that the release
+  // gate is still pending a candidate, not a fabricated digest standing in for one.
+  let unit
+  if ((payload.type || payload.intent) === 'close-unit') {
+    const issueNumber = Number(payload.issue)
+    if (!Number.isFinite(issueNumber)) {
+      return json(res, { ok: false, errors: ['issue is required to resolve the unit'] }, 400)
+    }
+    const candidateDigest =
+      typeof payload.candidateDigest === 'string' && /^[a-f0-9]{64}$/.test(payload.candidateDigest)
+        ? payload.candidateDigest
+        : null
+    if (!candidateDigest) {
+      return json(
+        res,
+        { ok: false, errors: ['release gate is pending a candidate: no candidateDigest supplied'] },
+        400,
+      )
+    }
+    unit = { candidateDigest }
+  }
+  const parsed = parseCockpitIntent({ ...payload, repo, unit })
   if (!parsed.ok) return json(res, parsed, 400)
   const intent = parsed.intent
   const guard = evaluateGuardedAction({
@@ -212,7 +284,36 @@ async function actionEndpoint(req, res, repo, session) {
 
   const writeClient = session?.token ? createGitHubClient({ token: session.token }) : github
   let result
-  if (intent.type === 'draft-follow-up') {
+  let anchored = null
+  if (intent.type === 'close-unit') {
+    // The human's decision is not just a comment: it is appended to the ordered, content-addressed
+    // log the product already keeps in refs/heads/agentflow-state, through the exact same store
+    // (with all its guards) that observe-mode reads already trust.
+    //
+    // W8c D1 — DEFECT FIXED. This used to be a hand-rolled issue-hyphen-number template — a THIRD
+    // spelling of unit identity, unrelated to the actuator's own readiness-hyphen-number template
+    // (scripts/actuate-readiness.mjs) for the SAME unit. A human's close-unit and the gate the
+    // actuator opened could never land on the same run. Both now derive their run id from the same
+    // unitRunId(unitIdentity(...)) pair over the same (repo, issue number).
+    //
+    // W8c2 D1 — DEFECT FIXED. `payload.runId || unitRunId(...)` let a client-sent runId WIN over the
+    // derived one whenever present, so a client could anchor a human's decision in any run it liked —
+    // defeating the point of the fix above. resolveVerifiedRunId always derives the run id first; a
+    // client-supplied runId is only ever compared against it (refused on mismatch), never preferred.
+    const resolvedRunId = resolveVerifiedRunId({
+      repo,
+      id: intent.issue,
+      requestedRunId: payload.runId ?? null,
+    })
+    if (!resolvedRunId.ok) return json(res, { ok: false, errors: resolvedRunId.errors }, 400)
+    const runId = resolvedRunId.runId
+    anchored = await appendTerminalIntent({ client: writeClient, repo, runId, intent })
+    result = await writeClient.createIssueComment(
+      repo,
+      intent.issue,
+      formatDurableActionBody(intent),
+    )
+  } else if (intent.type === 'draft-follow-up') {
     result = await writeClient.createIssue(repo, {
       title: payload.title || `Follow-up from #${intent.issue}`,
       body: formatDurableActionBody(intent),
@@ -232,10 +333,14 @@ async function actionEndpoint(req, res, repo, session) {
       target: `${repo}#${intent.issue}`,
       allowed: true,
       resultUrl: result.html_url,
-      previewSummary: intent.body.slice(0, 120),
+      previewSummary: anchored ? `anchored:${anchored.event.id}` : intent.body.slice(0, 120),
     }),
   )
-  return json(res, { ok: true, url: result.html_url })
+  return json(res, {
+    ok: true,
+    url: result.html_url,
+    ...(anchored ? { anchoredEventId: anchored.event.id } : {}),
+  })
 }
 
 async function telemetryEndpoint(req, res, repo, session) {

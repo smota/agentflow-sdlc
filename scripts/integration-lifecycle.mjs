@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { validateSourceAdapter } from '../lib/core/source-adapter.mjs'
 import { createGitHubCliSourceAdapter } from '../lib/sources/github-cli.mjs'
 import { createFileSourceReceiptStore } from '../lib/sources/receipt-store.mjs'
 
@@ -151,6 +152,27 @@ export async function applyIntegrationPlan(plan, source) {
   }
 }
 
+// W8g D1 — validateSourceAdapter used to have no caller anywhere in this repo's own product code
+// (only lib/__tests__/modular-contracts.test.mjs exercised it as a contract-shape check). Its
+// natural enforcement point is here: the moment a source adapter is resolved for use, before this
+// mandatory CI entry point (.github/workflows/integration-lifecycle.yml runs this script on every
+// merged PR) reads or mutates anything through it. A source adapter that violates the contract
+// (missing a required capability method, an unsupported capability, ...) is refused at runtime
+// instead of failing later with an unrelated "not a function" error mid-mutation.
+export function resolveSource(
+  repo,
+  receiptStore,
+  { createAdapter = createGitHubCliSourceAdapter } = {},
+) {
+  if (!repo) return null
+  const source = createAdapter({ repo, receiptStore })
+  const validation = validateSourceAdapter(source)
+  if (!validation.ok) {
+    throw new Error(`source adapter for ${repo} is invalid: ${validation.errors.join('; ')}`)
+  }
+  return source
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2))
   const config = loadIntegrationLifecycleConfig()
@@ -160,7 +182,7 @@ async function main() {
     throw new Error('Lifecycle apply requires --receipt <durable-file>')
   }
   const receiptStore = receiptPath ? createFileSourceReceiptStore(receiptPath) : null
-  const source = repo ? createGitHubCliSourceAdapter({ repo, receiptStore }) : null
+  const source = resolveSource(repo, receiptStore)
   const pr = normalizePr(
     args.pr
       ? await source.readArtifact({ kind: 'pull-request', number: args.pr })

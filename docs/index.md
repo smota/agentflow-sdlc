@@ -32,6 +32,7 @@ This is the complete map of maintained product, adoption, architecture, operatio
 | [AgentFlow in 5 minutes](agentflow-in-5-minutes.md) | Understand the problem, model, and evidence flow                        |
 | [Get started](get-started.md)                       | Follow the current source-based adoption path                           |
 | [Assisted onboarding](assisted-onboarding.md)       | Give an assistant a read-only-first setup contract                      |
+| [Assisted configuration](assisted-configuration.md) | Continuous configuration and maintenance in assisted agent workflows    |
 | [Environment tools](environment-tools.md)           | Understand required and optional tooling                                |
 
 ## Core model and governance
@@ -97,11 +98,12 @@ Runtime-specific references:
 
 ## Extensions and distribution
 
-| Document                              | Use it for                                                              |
-| ------------------------------------- | ----------------------------------------------------------------------- |
-| [Default skills](default-skills.md)   | Skill inventory, provenance, and companion skills                       |
-| [Extension packs](extension-packs.md) | Add repository-level engineering approaches and validators              |
-| [SDLC packaging](sdlc-packaging.md)   | Understand source, adapters, manifests, and future package distribution |
+| Document                                | Use it for                                                              |
+| --------------------------------------- | ----------------------------------------------------------------------- |
+| [Default skills](default-skills.md)     | Skill inventory, provenance, and companion skills                       |
+| [Extension packs](extension-packs.md)   | Add repository-level engineering approaches and validators              |
+| [NFR verification](nfr-verification.md) | Define non-functional targets and record candidate-bound evidence       |
+| [SDLC packaging](sdlc-packaging.md)     | Understand source, adapters, manifests, and future package distribution |
 
 ## Cockpit operations
 
@@ -175,3 +177,9 @@ node scripts/validate-npm-package.mjs
 | Product manifests                             | [`manifests/`](../manifests/)                         |
 
 The distributable payload and profiles are maintained in [`product-payload.json`](../manifests/product-payload.json) and [`composition-profiles.json`](../manifests/composition-profiles.json).
+
+## Reliable delivery
+
+- [Evidence, recovery and architecture](reliable-delivery.md)
+- [Run operations and contained adoption](run-operations.md)
+- [Delivery release acceptance](delivery-release-acceptance.md)

@@ -31,12 +31,13 @@ You only need four ideas to begin:
 3. Issues and PRs hold durable evidence; `.agent-runs/` remains local scratch.
 4. High-assurance work keeps human review before merge.
 
-Start with the read-only command in [Get started](get-started.md#1-check-the-environment-read-only).
+Start with the entry path in [Get started](get-started.md#reach-your-first-governed-change-in-6-commands).
 
 ## Advanced-user map
 
 | Concern                                            | Canonical document                                                                                             |
 | -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Continuous configuration and maintenance           | [Assisted configuration](assisted-configuration.md) and [project setup](project-setup.md)                      |
 | Phase transitions and role-pass contract           | [Agent workflow](agent-workflow.md)                                                                            |
 | Platform identity, execution target, and transport | [Runtime platforms](runtime-platforms.md) and [execution targets](execution-targets.md)                        |
 | Role routing and independent review                | [Agent routing](agent-routing.md)                                                                              |

@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 import { execFileSync } from 'node:child_process'
-import { existsSync, mkdtempSync, rmSync } from 'node:fs'
+import { existsSync, mkdtempSync, rmSync, realpathSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 
 const repoRoot = resolve(process.cwd())
 const cli = join(repoRoot, 'bin', 'cli.mjs')
-const tmp = mkdtempSync(join(tmpdir(), 'agentflow-sdlc-smoke-'))
+const tmp = mkdtempSync(join(realpathSync(tmpdir()), 'agentflow-sdlc-smoke-'))
 const receipt = `${tmp}-receipt.json`
 function run(args) {
   return execFileSync(process.execPath, [cli, ...args, '--target', tmp], {

@@ -8,6 +8,13 @@ import { validateRoleHandoff } from '../lib/role-catalog.mjs'
 import { loadSdlcConfig } from '../lib/sdlc-state.mjs'
 import {
   classifyRoleCollaboration,
+  createAcceptanceContract,
+  createAcceptanceDecision,
+  createCouncilAdvice,
+  createCouncilRequest,
+  createCouncilSynthesis,
+  createDeliveryReceipt,
+  selectCouncilSeats,
   validateAcceptanceContract,
   validateAcceptanceDecision,
   validateCouncilRecord,
@@ -109,6 +116,50 @@ if (command === 'verify' || command === 'advance') {
   process.exit(report.status === 'fail' ? 1 : 0)
 }
 
+// W8g D2 — `createAcceptanceContract`, `createDeliveryReceipt`, `createCouncilRequest`,
+// `createCouncilAdvice`, `createCouncilSynthesis`, `createAcceptanceDecision`, and
+// `selectCouncilSeats` (lib/core/role-collaboration.mjs) had no in-repo product caller: the
+// `verify`/`advance`/`validate` commands above only ever READ these records back from JSON an
+// adopter's own automation already produced. Removing the audit's `validate:release` script-chain
+// walk (which used to make scripts/role-collaboration-smoke.mjs read as a mandatory entry, and
+// everything it imports along with it) surfaced that gap for real. `build` is the missing,
+// documented half of the protocol in docs/role-collaboration.md ("Role A -> RoleHandoff +
+// AcceptanceContract", "Role B -> DeliveryReceipt", ...): it lets the packaged CLI construct a
+// correctly-digested record from a plain options object, instead of requiring every producer to
+// import lib/core/role-collaboration.mjs directly.
+if (command === 'build') {
+  const type = value('--type')
+  const input = readJson('--path')
+  let built
+  switch (type) {
+    case 'acceptance-contract':
+      built = createAcceptanceContract(input)
+      break
+    case 'delivery-receipt':
+      built = createDeliveryReceipt(input)
+      break
+    case 'council-request':
+      built = createCouncilRequest(input)
+      break
+    case 'council-advice':
+      built = createCouncilAdvice(input)
+      break
+    case 'council-synthesis':
+      built = createCouncilSynthesis(input)
+      break
+    case 'acceptance-decision':
+      built = createAcceptanceDecision(input)
+      break
+    case 'council-seats':
+      built = selectCouncilSeats(input)
+      break
+    default:
+      throw new Error(`unsupported role collaboration record type: ${type ?? ''}`)
+  }
+  output(built)
+  process.exit(0)
+}
+
 if (command === 'validate') {
   const record = readJson('--path')
   const validators = {
@@ -128,6 +179,6 @@ if (command === 'validate') {
 }
 
 process.stderr.write(
-  'Usage: agentflow-sdlc collaboration <classify|plan|verify|advance|validate> [options] [--target <dir>] [--json]\n',
+  'Usage: agentflow-sdlc collaboration <classify|plan|build|verify|advance|validate> [options] [--target <dir>] [--json]\n',
 )
 process.exit(2)

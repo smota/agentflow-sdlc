@@ -11,7 +11,7 @@ const flag = (name) => {
 const manifestPath = flag('--manifest')
 const target = path.resolve(flag('--target') ?? process.cwd())
 if (!manifestPath) {
-  process.stderr.write('Usage: run-agent-evals --manifest <json> [--actual-dir <dir>] [--json]\n')
+  process.stderr.write('Usage: run-agent-evals --manifest <json> [--json]\n')
   process.exit(2)
 }
 try {

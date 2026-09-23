@@ -198,6 +198,28 @@ node scripts/validate-bounded.mjs --json
 
 Before PR readiness, also run the repository's normal validation commands and include the results in the PR manifest.
 
+## Continuous configuration and synchronization
+
+Use the unified `config` command suite to monitor configuration health, synchronize local harness assets, and guide continuous maintenance:
+
+```bash
+# Check overall configuration health across authority, domain, workflow, posture, and adapters
+node /path/to/agentflow-sdlc/bin/cli.mjs config doctor --target /path/to/project
+node /path/to/agentflow-sdlc/bin/cli.mjs config doctor --target /path/to/project --json
+
+# Synchronize all harness assets (skills, roles, plugins, settings) after configuration edits
+node /path/to/agentflow-sdlc/bin/cli.mjs config sync --dry-run --target /path/to/project
+node /path/to/agentflow-sdlc/bin/cli.mjs config sync --apply --target /path/to/project
+
+# Inspect composite configuration
+node /path/to/agentflow-sdlc/bin/cli.mjs config inspect --target /path/to/project
+
+# Print assisted continuous configuration playbook prompt for agent sessions
+node /path/to/agentflow-sdlc/bin/cli.mjs config prompt --target /path/to/project
+```
+
+See [`assisted-configuration.md`](assisted-configuration.md) for the assisted agent workflow loop.
+
 ## Compliance notes
 
 Keep project choices committed and easy to review. If the project changes agents, branch policy, validation commands, or bounded-work rules, update this config and the related docs in the same PR. If a related improvement is out of scope, open a follow-up issue instead of leaving hidden TODOs.

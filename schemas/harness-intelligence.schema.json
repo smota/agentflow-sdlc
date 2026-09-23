@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentflow.dev/schemas/harness-intelligence.schema.json",
+  "title": "AgentFlow HarnessIntelligence",
+  "type": "object",
+  "properties": {
+    "version": { "const": 1 },
+    "orchestrationModel": {
+      "type": "object",
+      "properties": {
+        "lifecycle": { "type": "string" },
+        "preCodeReview": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "gate": { "type": "string" },
+            "targetPhases": { "type": "array", "items": { "type": "string" } },
+            "blockingSeverity": {
+              "type": "array",
+              "items": { "enum": ["blocker", "structural", "nit"] }
+            }
+          }
+        },
+        "concurrency": {
+          "type": "object",
+          "properties": {
+            "maxWriters": { "type": "integer", "minimum": 1 },
+            "maxAdvisors": { "type": "integer", "minimum": 0 },
+            "isolatedWorktreeRequired": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "executionPolicy": {
+      "type": "object",
+      "properties": {
+        "escalation": {
+          "type": "object",
+          "properties": {
+            "maxAttemptsPerTier": { "type": "integer", "minimum": 1 },
+            "tierProgression": { "type": "array", "items": { "type": "string" } },
+            "suspendOnRepeatedRejections": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "fallbackCascade": {
+          "type": "object",
+          "properties": {
+            "primary": { "type": "string" },
+            "onQuotaExhausted": { "type": "string" },
+            "onSubagentExhausted": { "type": "string" },
+            "recordDegradationInEvidence": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "modelCatalog": {
+      "type": "object",
+      "properties": {
+        "tiers": { "type": "object" },
+        "roleAssignments": { "type": "object" },
+        "pairings": { "type": "array" }
+      }
+    },
+    "harnessParameters": {
+      "type": "object",
+      "properties": {
+        "shellRunner": {
+          "type": "object",
+          "properties": {
+            "windowsStrategy": { "type": "string" },
+            "posixStrategy": { "type": "string" },
+            "stdinTimeoutMs": { "type": "integer", "minimum": 1000 }
+          }
+        },
+        "limits": {
+          "type": "object",
+          "properties": {
+            "envelopeByteCapKb": { "type": "integer", "minimum": 1 },
+            "maxReviewIterations": { "type": "integer", "minimum": 1 },
+            "largeFileScriptThresholdLines": { "type": "integer", "minimum": 100 }
+          }
+        },
+        "scratchPath": { "type": "string" }
+      }
+    }
+  },
+  "additionalProperties": false
+}

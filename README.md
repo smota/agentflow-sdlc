@@ -29,13 +29,12 @@ It adds delivery governance around your existing repository. It does **not** gen
 The safest first look is read-only:
 
 ```bash
-git clone https://github.com/smota/agentflow-sdlc.git
+git clone --branch v1.0.0 https://github.com/smota/agentflow-sdlc.git
 cd agentflow-sdlc
-pnpm install
-node bin/cli.mjs onboarding-prompt --target /path/to/your-project
+node bin/cli.mjs doctor-env --target /path/to/your-project
 ```
 
-The last command prints an assistant-ready onboarding prompt. It does not change the target project. Ready to continue? Follow [Get started](docs/get-started.md), or give your assistant the [assisted onboarding guide](docs/assisted-onboarding.md).
+`doctor-env` reports on the target project's tooling; it does not change the target project. Ready to continue? [Get started](docs/get-started.md) is the entry document — it reaches a first governed change, a frozen acceptance contract with a recorded observation, in six commands. Prefer an assistant to drive the same steps conversationally? Use the [assisted onboarding guide](docs/assisted-onboarding.md) and [assisted configuration guide](docs/assisted-configuration.md).
 
 ## How it works
 
@@ -85,17 +84,17 @@ The current release line is **1.0.0** and requires Node.js 20 or newer. Read the
 
 ## Choose your path
 
-| I want to…                                | Read this                                                     |
-| ----------------------------------------- | ------------------------------------------------------------- |
-| Evaluate the product quickly              | [AgentFlow in 5 minutes](docs/agentflow-in-5-minutes.md)      |
-| Adopt it in a repository                  | [Get started](docs/get-started.md)                            |
-| Find the right guide for my role          | [Start here](docs/start-here.md)                              |
-| Author or integrate an execution provider | [Provider author path](docs/providers/index.md)               |
-| Operate and troubleshoot an installation  | [Operator path](docs/operators/index.md)                      |
-| Understand every document and tool        | [Documentation index](docs/index.md)                          |
-| Configure branches, checks, and routing   | [Project setup](docs/project-setup.md)                        |
-| Run or contribute issue work              | [Contribution workflow](docs/guides/contribution-workflow.md) |
-| Extend or integrate the framework         | [Modular architecture](docs/modular-architecture.md)          |
+| I want to…                                | Read this                                                                                           |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Evaluate the product quickly              | [AgentFlow in 5 minutes](docs/agentflow-in-5-minutes.md)                                            |
+| Adopt it in a repository                  | [Get started](docs/get-started.md)                                                                  |
+| Find the right guide for my role          | [Start here](docs/start-here.md)                                                                    |
+| Author or integrate an execution provider | [Provider author path](docs/providers/index.md)                                                     |
+| Operate and troubleshoot an installation  | [Operator path](docs/operators/index.md)                                                            |
+| Understand every document and tool        | [Documentation index](docs/index.md)                                                                |
+| Configure branches, checks, and routing   | [Project setup](docs/project-setup.md) and [assisted configuration](docs/assisted-configuration.md) |
+| Run or contribute issue work              | [Contribution workflow](docs/guides/contribution-workflow.md)                                       |
+| Extend or integrate the framework         | [Modular architecture](docs/modular-architecture.md)                                                |
 
 ## Core principles
 
@@ -124,3 +123,7 @@ Start from a GitHub issue or explicit maintainer direction. Read [`AGENTS.md`](A
 ## License
 
 Licensed under the [Apache License 2.0](LICENSE).
+
+## Delivery improvements in development
+
+Candidate-bound observations, guarded run recovery, environment inspection and contained adoption storage are documented in [reliable delivery](docs/reliable-delivery.md). Use [run operations](docs/run-operations.md) for the CLI and [release acceptance](docs/delivery-release-acceptance.md) for the remaining publication gates. These development interfaces do not imply an npm 2.0 release.

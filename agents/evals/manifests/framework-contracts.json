@@ -13,6 +13,26 @@
         { "id": "exploratory-profile", "type": "contains", "value": "Profile: exploratory" },
         { "id": "no-legacy-role", "type": "not-contains", "value": "techwriter" }
       ]
+    },
+    {
+      "id": "nfr-architect-blank-area",
+      "actual": "../fixtures/nfr-architect-blank-area.txt",
+      "assertions": [
+        { "id": "status-flagged", "type": "contains", "value": "\"status\": \"flagged\"" },
+        { "id": "finding-blank-area", "type": "contains", "value": "\"code\": \"blank-area\"" }
+      ]
+    },
+    {
+      "id": "nfr-tester-weak-evidence",
+      "actual": "../fixtures/nfr-tester-weak-evidence.txt",
+      "assertions": [
+        { "id": "status-flagged", "type": "contains", "value": "\"status\": \"flagged\"" },
+        {
+          "id": "finding-disallowed-agent-reported",
+          "type": "contains",
+          "value": "\"code\": \"disallowed-agent-reported\""
+        }
+      ]
     }
   ]
 }
