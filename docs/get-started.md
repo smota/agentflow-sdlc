@@ -10,7 +10,13 @@ rather than left in private chat memory.
 - Git
 - GitHub CLI (`gh`) only when you want issue, PR, or release automation
 
-Distribution for this release is a pinned git tag, not an npm package. Clone the tag you want to run:
+You can install `agentflow-sdlc` as an application CLI in your environment directly from GitHub:
+
+```bash
+npm install -g github:smota/agentflow-sdlc
+```
+
+Or clone the pinned git release:
 
 ```bash
 git clone --branch v1.0.0 https://github.com/smota/agentflow-sdlc.git

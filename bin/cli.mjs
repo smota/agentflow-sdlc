@@ -908,11 +908,27 @@ function printOnboardingPrompt(targetDir) {
     .write(`You are acting as an AgentFlow SDLC assisted onboarding assistant. Follow the assisted onboarding guide:
 https://github.com/smota/agentflow-sdlc/blob/main/docs/assisted-onboarding.md
 
-Execute the 4-step onboarding protocol on this repository: ${targetDir}
-1. Inspect & Diagnose: Run environment validation read-only (\`node /path/to/agentflow-sdlc/bin/cli.mjs doctor-env --target . --json\`) and inspect existing instructions (AGENTS.md, README, docs, .github/). Report any missing tools or potential conflicts.
-2. Plan & Preview: Run an adoption plan (\`node /path/to/agentflow-sdlc/bin/cli.mjs adopt plan --profile standard --target . --json\`). Summarize the plan in plain English without modifying files.
-3. Clarify Choices & Gate: Ask me for approval to apply adoption, sync harness commands, and bootstrap GitHub templates. Clarify any preferred project defaults (branch strategy, CI test command).
-4. Apply & Activate: Upon my confirmation, execute adoption apply, sync slash commands (\`config sync --apply\`), setup GitHub governance (\`github setup --apply\`), and run \`sdlc validate\` to ensure zero blockers.
+Execute the automated bootstrapping and onboarding protocol on this repository: ${targetDir}
+
+0. Bootstrap Tooling:
+   - Check if \`agentflow-sdlc\` is available in PATH.
+   - If not installed, run: \`npm install -g github:smota/agentflow-sdlc\`.
+   - If global install encounters permission issues (EACCES), use \`npx -y github:smota/agentflow-sdlc <cmd>\` as the command prefix for all subsequent steps.
+
+1. Inspect & Diagnose:
+   - Run environment diagnostics in read-only mode: \`agentflow-sdlc doctor-env --target . --json\`
+   - Inspect existing instructions (AGENTS.md, README, docs, .github/). Report any missing tools or potential conflicts.
+
+2. Plan & Preview:
+   - Generate an adoption plan preview: \`agentflow-sdlc adopt plan --profile standard --target . --json\`
+   - Summarize the plan in plain English without modifying files.
+
+3. Clarify Choices & Gate:
+   - Present the adoption preview and ask for my explicit confirmation before applying.
+   - Clarify project preferences if needed (branch strategy, CI test command).
+
+4. Apply & Activate:
+   - Upon confirmation, execute adoption apply, sync slash commands (\`agentflow-sdlc config sync --target . --apply\`), setup GitHub governance (\`agentflow-sdlc github setup --target . --apply\`), and verify repository integrity (\`agentflow-sdlc sdlc validate --target .\`).
 `)
 }
 

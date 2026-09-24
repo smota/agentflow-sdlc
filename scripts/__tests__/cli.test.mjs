@@ -37,8 +37,10 @@ describe('CLI prompt helpers', () => {
     expect(output).toContain('assisted onboarding guide')
     expect(output).toContain('docs/assisted-onboarding.md')
     expect(output).toContain('tmp-app')
-    expect(output).toContain('4-step onboarding protocol')
-    expect(output).toContain('Ask me for approval')
+    expect(output).toContain('Bootstrap Tooling')
+    expect(output).toContain('npm install -g github:smota/agentflow-sdlc')
+    expect(output).toContain('agentflow-sdlc doctor-env')
+    expect(output).toContain('Present the adoption preview and ask for my explicit confirmation')
   })
 })
 

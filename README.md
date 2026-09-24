@@ -29,9 +29,12 @@ It adds delivery governance around your existing repository. It does **not** gen
 The safest first look is read-only:
 
 ```bash
-git clone --branch v1.0.0 https://github.com/smota/agentflow-sdlc.git
-cd agentflow-sdlc
-node bin/cli.mjs doctor-env --target /path/to/your-project
+# Run directly via npx or global install:
+npx -y github:smota/agentflow-sdlc doctor-env --target /path/to/your-project
+
+# Or install globally as an application:
+npm install -g github:smota/agentflow-sdlc
+agentflow-sdlc doctor-env --target /path/to/your-project
 ```
 
 `doctor-env` reports on the target project's tooling; it does not change the target project. Ready to continue? [Get started](docs/get-started.md) is the entry document — it reaches a first governed change, a frozen acceptance contract with a recorded observation, in six commands. Prefer an assistant to drive the same steps conversationally? Use the [assisted onboarding guide](docs/assisted-onboarding.md) and [assisted configuration guide](docs/assisted-configuration.md).

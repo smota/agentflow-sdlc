@@ -7,7 +7,7 @@ in six commands without a conversation.
 
 ## Core rule: clarity over automation
 
-The onboarding assistant inspects the environment and repo files, presents clear plans and trade-offs, and seeks explicit confirmation before making changes. It does not install external system tools, authenticate services, overwrite custom instructions, or modify policy without explicit approval.
+The onboarding assistant inspects the environment and repo files, presents clear plans and trade-offs, and seeks explicit confirmation before making changes. It does not authenticate services, overwrite custom instructions, or modify policy without explicit approval.
 
 ## Copy-paste agent handoff
 
@@ -17,22 +17,51 @@ Paste this prompt into any coding agent or harness (Antigravity, Claude Code, Co
 You are acting as an AgentFlow SDLC assisted onboarding assistant. Follow the assisted onboarding guide:
 https://github.com/smota/agentflow-sdlc/blob/main/docs/assisted-onboarding.md
 
-Execute the 4-step onboarding protocol on this repository:
-1. Inspect & Diagnose: Run environment validation read-only (`node /path/to/agentflow-sdlc/bin/cli.mjs doctor-env --target . --json`) and inspect existing instructions (AGENTS.md, README, docs, .github/). Report any missing tools or potential conflicts.
-2. Plan & Preview: Run an adoption plan (`node /path/to/agentflow-sdlc/bin/cli.mjs adopt plan --profile standard --target . --json`). Summarize the plan in plain English without modifying files.
-3. Clarify Choices & Gate: Ask me for approval to apply adoption, sync harness commands, and bootstrap GitHub templates. Clarify any preferred project defaults (branch strategy, CI test command).
-4. Apply & Activate: Upon my confirmation, execute adoption apply, sync slash commands (`config sync --apply`), setup GitHub governance (`github setup --apply`), and run `sdlc validate` to ensure zero blockers.
+Execute the automated bootstrapping and onboarding protocol on this repository:
+
+0. Bootstrap Tooling:
+   - Check if `agentflow-sdlc` is available in PATH.
+   - If not installed, run: `npm install -g github:smota/agentflow-sdlc`.
+   - If global install encounters permission issues (EACCES), use `npx -y github:smota/agentflow-sdlc <cmd>` as the command prefix for all subsequent steps.
+
+1. Inspect & Diagnose:
+   - Run environment diagnostics in read-only mode: `agentflow-sdlc doctor-env --target . --json`
+   - Inspect existing instructions (AGENTS.md, README, docs, .github/). Report any missing tools or potential conflicts.
+
+2. Plan & Preview:
+   - Generate an adoption plan preview: `agentflow-sdlc adopt plan --profile standard --target . --json`
+   - Summarize the plan in plain English without modifying files.
+
+3. Clarify Choices & Gate:
+   - Present the adoption preview and ask for my explicit confirmation before applying.
+   - Clarify project preferences if needed (branch strategy, CI test command).
+
+4. Apply & Activate:
+   - Upon confirmation, execute adoption apply, sync slash commands (`agentflow-sdlc config sync --target . --apply`), setup GitHub governance (`agentflow-sdlc github setup --target . --apply`), and verify repository integrity (`agentflow-sdlc sdlc validate --target .`).
 ```
 
 ---
 
-## The 4-step assisted onboarding protocol
+## The assisted onboarding protocol
 
 ```mermaid
 flowchart TD
-  S1["1. Inspect & Diagnose\n(doctor-env read-only)"] --> S2["2. Plan & Preview\n(adopt plan preview)"]
+  S0["0. Bootstrap Tooling\n(npm install -g / npx fallback)"] --> S1["1. Inspect & Diagnose\n(doctor-env read-only)"]
+  S1 --> S2["2. Plan & Preview\n(adopt plan preview)"]
   S2 --> S3["3. Clarify & Gate\n(Human consultation & confirmation)"]
   S3 --> S4["4. Apply & Activate\n(apply + config sync + github setup)"]
+```
+
+### Step 0: Bootstrap Tooling
+
+The assistant ensures the `agentflow-sdlc` executable is ready in the environment without requiring a manual checkout:
+
+```bash
+# Install globally in environment:
+npm install -g github:smota/agentflow-sdlc
+
+# Or if permission-restricted (EACCES), run commands on the fly via npx:
+npx -y github:smota/agentflow-sdlc <command>
 ```
 
 ### Step 1: Inspect & Diagnose
@@ -40,7 +69,7 @@ flowchart TD
 The assistant validates repository health and tool availability in read-only mode:
 
 ```bash
-node /path/to/agentflow-sdlc/bin/cli.mjs doctor-env --target /path/to/project --json
+agentflow-sdlc doctor-env --target /path/to/project --json
 ```
 
 - Inspects existing files (`AGENTS.md`, `CLAUDE.md`, `CODEX.md`, `AGY.md`, README, `.github/`).
@@ -52,7 +81,7 @@ node /path/to/agentflow-sdlc/bin/cli.mjs doctor-env --target /path/to/project --
 The assistant generates a non-destructive adoption plan preview:
 
 ```bash
-node /path/to/agentflow-sdlc/bin/cli.mjs adopt plan --profile standard --target /path/to/project --json
+agentflow-sdlc adopt plan --profile standard --target /path/to/project --json
 ```
 
 - Checks `agent-framework-lock.json` and evaluates files to be added or managed.
@@ -78,16 +107,16 @@ Upon receiving human approval, the assistant runs the activation pipeline:
 
 ```bash
 # 1. Apply the approved adoption plan
-node /path/to/agentflow-sdlc/bin/cli.mjs adopt apply --profile standard --target /path/to/project --confirm <plan-token> --json
+agentflow-sdlc adopt apply --profile standard --target /path/to/project --confirm <plan-token> --json
 
 # 2. Activate harness slash commands and portable skills
-node /path/to/agentflow-sdlc/bin/cli.mjs config sync --target /path/to/project --apply
+agentflow-sdlc config sync --target /path/to/project --apply
 
 # 3. Bootstrap GitHub governance templates and labels
-node /path/to/agentflow-sdlc/bin/cli.mjs github setup --target /path/to/project --apply
+agentflow-sdlc github setup --target /path/to/project --apply
 
 # 4. Verify installation integrity
-node /path/to/agentflow-sdlc/bin/cli.mjs sdlc validate --target /path/to/project
+agentflow-sdlc sdlc validate --target /path/to/project
 ```
 
 The assistant summarizes the outcome: files added, commands executed, and verified status.
