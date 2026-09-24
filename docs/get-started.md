@@ -87,6 +87,24 @@ follows the same roles and gates, ending in a pull request whose evidence anyone
 If `init` reports an assumption you disagree with, edit `agent-workflow.config.json` directly; it is
 your project's file from that point on.
 
+## Prefer an AI agent to guide you?
+
+If you prefer to have your coding assistant (Claude, Codex, Antigravity, Cursor, Pi, Omnigent) inspect the repo, present options, and handle the setup conversationally without running raw CLI commands yourself, see the **[Assisted onboarding guide](assisted-onboarding.md)**.
+
+## What to configure next
+
+Once initial files are committed, activate harness slash commands and issue templates:
+
+```bash
+# Sync canonical roles and skills into harness slash commands (.claude/commands/, etc.)
+node bin/cli.mjs config sync --target /path/to/your-project --apply
+
+# Bootstrap GitHub issue forms, label taxonomies, and PR checklists
+node bin/cli.mjs github setup --target /path/to/your-project --apply
+```
+
+For continuous configuration, posture adjustments, or role-method tuning, follow [Assisted configuration](assisted-configuration.md).
+
 ## Look before you leap (optional, read-only)
 
 You can inspect everything `init` would do without changing your project:
@@ -97,7 +115,7 @@ node bin/cli.mjs adopt plan --profile standard --target /path/to/your-project --
 ```
 
 `doctor-env` reports which required and optional tools are available; it installs nothing. `adopt
-plan` previews the same install `init` performs, file by file, so you can review every action before
+plan` previews the same install `init` performs, file by file, with transactional safety and rollback guarantees (`adopt apply`), so you can review every action before
 anything is written. Use [project setup](project-setup.md) for the full decision checklist and
 [project config](project-config.md) for every available field.
 

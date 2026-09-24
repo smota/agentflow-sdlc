@@ -50,6 +50,7 @@ import { runConfigDoctor } from '../lib/config/doctor.mjs'
 import { runConfigSync } from '../lib/config/sync.mjs'
 import { inspectEffectiveConfig } from '../lib/config/inspect.mjs'
 import { formatContinuousConfigPrompt } from '../lib/config/prompt.mjs'
+import { setupGitHubGovernance } from '../lib/github-setup.mjs'
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -366,9 +367,9 @@ function handleAdoption(rest, targetDir) {
   if (subcommand === 'apply') {
     const confirm = getFlag(rest, '--confirm', '')
     const receiptInput = getFlag(rest, '--receipt', '')
-    if (!confirm || (!receiptInput && storage !== 'project')) {
+    if (!confirm) {
       process.stderr.write(
-        'Usage: agentflow-sdlc adopt apply --confirm <plan-token> --receipt <outside-file> [--profile <id>] [--target <dir>] [--json]\n',
+        'Usage: agentflow-sdlc adopt apply --confirm <plan-token> [--receipt <outside-file>] [--profile <id>] [--target <dir>] [--json]\n',
       )
       return 2
     }
@@ -384,6 +385,8 @@ function handleAdoption(rest, targetDir) {
       receiptDestination: receiptPath,
     })
     if (receipt.receiptPath) receiptPath = resolve(targetDir, receipt.receiptPath)
+    else if (!receiptPath && receipt.externalReceiptDestination)
+      receiptPath = resolve(receipt.externalReceiptDestination)
     const result = {
       status: 'applied',
       target: receipt.target,
@@ -869,15 +872,48 @@ function handleHarness(rest, targetDir) {
   return 2
 }
 
+function handleGitHub(rest, targetDir) {
+  const [subcommand] = positionalArgs(rest)
+  const json = rest.includes('--json')
+  const write = rest.includes('--apply') && !rest.includes('--dry-run')
+
+  if (subcommand === 'setup' || !subcommand) {
+    const result = setupGitHubGovernance({ targetDir, write })
+    if (json) {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+    } else {
+      process.stdout.write(`GitHub Governance (${result.mode})\n`)
+      process.stdout.write(`Target: ${result.targetDir}\n`)
+      for (const op of result.operations) {
+        process.stdout.write(`  - ${op.filename}: ${op.status}\n`)
+      }
+      process.stdout.write(
+        `Summary: ${result.summary.plannedCount} planned, ${result.summary.unchangedCount} unchanged, ${result.summary.conflictCount} conflicts\n`,
+      )
+      if (!write && result.summary.plannedCount > 0) {
+        process.stdout.write(`\nRun with --apply to write templates and label definitions.\n`)
+      }
+    }
+    return 0
+  }
+
+  process.stderr.write(`Usage:
+  agentflow-sdlc github setup [--target <dir>] [--dry-run|--apply] [--json]
+`)
+  return 2
+}
+
 function printOnboardingPrompt(targetDir) {
-  process.stdout.write(`Use the AgentFlow SDLC assisted onboarding guide:\n`)
-  process.stdout.write(
-    `https://github.com/smota/agentflow-sdlc/blob/main/docs/assisted-onboarding.md\n\n`,
-  )
-  process.stdout.write(`Apply it to this existing project: ${targetDir}\n`)
-  process.stdout.write(
-    `First inspect existing agent instructions and project docs. Validate the environment read-only. Ask me to choose agents, execution mode, branch strategy, validation commands, and GitHub automation. Propose install/setup commands but do not execute them without explicit approval. Preserve or merge existing instructions instead of overwriting them. Configure tooling and harnessing intelligence (.agentflow/ with orchestration-model.json, execution-policy.json, model-catalog.json, and harness-parameters.json) and establish pre-code adversarial sparring gates for robust verification.\n`,
-  )
+  process.stdout
+    .write(`You are acting as an AgentFlow SDLC assisted onboarding assistant. Follow the assisted onboarding guide:
+https://github.com/smota/agentflow-sdlc/blob/main/docs/assisted-onboarding.md
+
+Execute the 4-step onboarding protocol on this repository: ${targetDir}
+1. Inspect & Diagnose: Run environment validation read-only (\`node /path/to/agentflow-sdlc/bin/cli.mjs doctor-env --target . --json\`) and inspect existing instructions (AGENTS.md, README, docs, .github/). Report any missing tools or potential conflicts.
+2. Plan & Preview: Run an adoption plan (\`node /path/to/agentflow-sdlc/bin/cli.mjs adopt plan --profile standard --target . --json\`). Summarize the plan in plain English without modifying files.
+3. Clarify Choices & Gate: Ask me for approval to apply adoption, sync harness commands, and bootstrap GitHub templates. Clarify any preferred project defaults (branch strategy, CI test command).
+4. Apply & Activate: Upon my confirmation, execute adoption apply, sync slash commands (\`config sync --apply\`), setup GitHub governance (\`github setup --apply\`), and run \`sdlc validate\` to ensure zero blockers.
+`)
 }
 
 function positionalArgs(args) {
@@ -893,7 +929,7 @@ function positionalArgs(args) {
 }
 
 const ROOT_USAGE =
-  'Usage: agentflow-sdlc <init|run|doctor-env|config|adopt|providers|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|onboarding-prompt|release-plan> [path] [--target <dir>] [--json]\n'
+  'Usage: agentflow-sdlc <init|run|doctor-env|config|adopt|providers|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding-prompt|release-plan> [path] [--target <dir>] [--json]\n'
 
 const COMMAND_USAGE = {
   init: 'Usage: agentflow-sdlc init [--profile <id>] [--posture <posture>] [--no-harness] [--sync] [--target <dir>] [--force] [--json]\n',
@@ -911,6 +947,7 @@ const COMMAND_USAGE = {
     'Usage: agentflow-sdlc roles <catalog|inspect|validate|resolve|sync|status|validate-handoff> [role] [--json]\n',
   methods: 'Usage: agentflow-sdlc methods <catalog|validate> [--json]\n',
   harness: 'Usage: agentflow-sdlc harness <inspect|scaffold> [--target <dir>] [--force] [--json]\n',
+  github: 'Usage: agentflow-sdlc github <setup> [--target <dir>] [--dry-run|--apply] [--json]\n',
 }
 
 function requestedHelp(args) {
@@ -1017,6 +1054,15 @@ function main() {
   if (command === 'harness') {
     try {
       return handleHarness(rest, targetDir)
+    } catch (error) {
+      process.stderr.write(`${error.message}\n`)
+      return 1
+    }
+  }
+
+  if (command === 'github') {
+    try {
+      return handleGitHub(rest, targetDir)
     } catch (error) {
       process.stderr.write(`${error.message}\n`)
       return 1

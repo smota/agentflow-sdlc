@@ -37,7 +37,8 @@ describe('CLI prompt helpers', () => {
     expect(output).toContain('assisted onboarding guide')
     expect(output).toContain('docs/assisted-onboarding.md')
     expect(output).toContain('tmp-app')
-    expect(output).toContain('do not execute them without explicit approval')
+    expect(output).toContain('4-step onboarding protocol')
+    expect(output).toContain('Ask me for approval')
   })
 })
 
