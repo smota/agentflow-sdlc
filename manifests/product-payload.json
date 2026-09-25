@@ -52,7 +52,7 @@
       "ownership": "managed"
     },
     {
-      "source": "AGENTS.md",
+      "source": "defaults/AGENTS.md",
       "target": "AGENTS.md",
       "ownership": "seed-once"
     },
@@ -624,6 +624,16 @@
     {
       "source": "lib/adoption/operation-lock.mjs",
       "target": "lib/adoption/operation-lock.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "docs/agent-workflow.md",
+      "target": "docs/agent-workflow.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "docs/issue-standards.md",
+      "target": "docs/issue-standards.md",
       "ownership": "managed"
     }
   ]
