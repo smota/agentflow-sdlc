@@ -21,6 +21,43 @@ Status: preliminary read-only evidence, not qualification or acceptance. Inspect
 
 Owner split: Agy engineering implementation; Codex authority/evidence review; Grok architecture adversarial. The approved execution plan remains the acceptance authority.
 
+## Standalone fixture and lifecycle findings
+
+Codex exercised the installed Windows binary on 2026-09-25 in a fresh temporary Git
+repository, using Meshloop's deterministic `fixture_harness` and a single-node plan.
+The repository contained no AgentFlow configuration or imports. The public `run`
+command with explicit plan acceptance, configuration, database, worktree directory,
+`--fixture-only` and `--json` exited zero and reported `AwaitingHumanAcceptance`.
+No `accept` or integration command was invoked. This proves the installed binary can
+execute that fixture independently of AgentFlow project configuration; it does not
+prove live model execution, clean-machine installation independence, source/binary
+equivalence, or completed engineering acceptance.
+
+Binary identities: Meshloop SHA-256
+`97781768f14e160481ef241d6a6d7daed3563f34b9ca2510c8380002f67dd573`;
+fixture SHA-256 `40d4a40215bd7116fb960c7b714c99240450ee274dda0bd131ee7b428ac89717`.
+The fixture had zero retries and a 15-second task timeout; the outer command was
+bounded to 30 seconds. Local raw evidence remains scratch, with private paths omitted here.
+
+Two additional integration constraints are confirmed:
+
+- The observed `--json` stdout begins with human-readable notes before the JSON
+  envelope. A whole-stream JSON parser therefore fails. The adapter needs a qualified
+  bounded framing strategy or a Meshloop change guaranteeing machine-only stdout;
+  arbitrary brace extraction is insufficient because malformed or conflicting output
+  must not become accepted evidence. Track this with the envelope/version remediation.
+- Accepted ADR0021 and `reset_graph_execution` in
+  `crates/meshloop-adapters/src/store.rs` explicitly delete graph events, attempts and
+  evidence on restart. `resume --restart` and `run --reset` are destructive engineering
+  operations, not ordinary continuation or an idempotent retry. The integration must
+  preserve required evidence before any separately authorized restart, or leave that
+  facet unsupported. Never map AgentFlow continuation to those flags implicitly.
+
+ADR0022 replaces the earlier Herdr execution assumption with direct CLI execution.
+Current adapters and binary tests must determine transport capabilities; ADR0017's
+older live-transport description alone cannot qualify them. Process-tree and output
+drain guarantees from ADR0025 still require concrete adapter fault tests.
+
 ## Grok advisory review and Codex disposition
 
 Review completed 2026-09-25 through local `grok-cli`, requested `grok-4.7`, reported usage model `grok-4.7-build`; launcher Codex, separate local session. Reviewer consumed this supplied discovery report and boundary brief only, with no independent repository inspection or runtime qualification. Original response is advisory, not implementation acceptance. Raw runtime logs are excluded from product documentation.
