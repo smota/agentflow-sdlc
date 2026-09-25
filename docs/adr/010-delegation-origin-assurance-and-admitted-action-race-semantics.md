@@ -34,7 +34,8 @@ identity service or cryptographic signature scheme.
 ## Decision
 
 1. **Typed grant at the boundary.** Add `issueGrant(intent)` and `resolveGrant(ref)` use-case
-   methods to the authority adapter boundary alongside the existing boolean `authorize()`. The
+   as AgentFlow application use cases alongside existing boolean `authorize()`. Host adapters supply
+   origin/assurance evidence; they do not define SDLC scope or mint additional authority. The
    boolean compatibility path remains for existing callers but is explicitly insufficient for
    delegated admission: only a resolved `DelegationGrant` object supplies the grant.
 
@@ -51,13 +52,14 @@ identity service or cryptographic signature scheme.
    - `not-available`: through-merge or externally-effecting actions are refused; record ready-PR
      and report the limitation explicitly.
 
-4. **Atomic admission.** Before any external action is dispatched, the admission callback must:
-   (a) re-resolve and verify the grant (origin, expiry, revocation); (b) atomically reserve the
-   business operation against the current writer/run revision using the GitHub isolated-ref
-   conditional append mechanism (single-parent commit + non-force ref update); (c) confirm the
-   reservation before dispatch. A confirmation read alone is not an atomic transaction. Concurrent
-   divergent commits cannot both fast-forward the same ref; this is the documented linearization
-   mechanism.
+4. **Atomic admission.** Define a portable conditional-admission source capability. Its one
+   authoritative transaction binds grant identity/revision, revocation epoch, writer/run revision,
+   budget reservation and operation digest. Revocation and writer handoff use the same consistency
+   boundary. The GitHub adapter proposes a single-parent commit against the observed ref, followed
+   by a non-force fast-forward update. The commit parent is the observed Git commit, not a writer
+   generation number. Dispatch requires acknowledged admission; ambiguous confirmation remains
+   pending until reconciliation. A later descendant does not invalidate an acknowledged admission.
+   A source without the capability cannot claim revocation-safe delegated external effects.
 
 5. **Revocation and race semantics.** Acknowledged revocation blocks all new admissions. A
    previously admitted operation may finish after revocation; attempt cancellation only if the
@@ -71,13 +73,13 @@ identity service or cryptographic signature scheme.
 7. **Plan digest immutability.** Once a grant is issued against a plan digest, the candidate
    code may evolve only to implement that plan within the approved scope, action set, and
    assertions. Scope, action set, or assertion changes invalidate or re-evaluate the grant;
-   ordinary implementation edits admitted by the predicate do not require plan reapproval.
+   ordinary implementation edits admitted by the AgentFlow-owned predicate do not require plan reapproval.
 
 ## Consequences
 
 **Positive:** Typed grants make authority explicit and auditable; assurance disclosure prevents
-silent false claims; atomic admission eliminates the race window between authority check and
-external dispatch; boolean compatibility keeps existing adapters working during migration.
+silent false claims; atomic admission is intended to fence concurrent authority changes at the admission boundary;
+S2/S3 must prove that invariant, and already-admitted actions may finish after revocation; boolean compatibility keeps existing adapters working during migration.
 
 **Negative:** The admission path becomes more complex and requires a capable source provider for
 through-merge assurance; local-cooperative mode's threat-model limitations must be disclosed
@@ -91,3 +93,18 @@ actions.
   through-merge (expected no without explicit policy authorization).
 - Provider-capability negotiation at issuance when the named provider cannot enforce a hard
   budget ceiling (see D3 / S2 for provider binding).
+
+## Adversarial review clarifications
+
+Grok advisory review identified these constraints; no trusted-host binding is certified by this
+proposal. Origin and delegate strings are labels, not authentication evidence. Only an explicitly
+reviewed host binding can assert trusted-host assurance; unsupported requests fail closed.
+Shared-account CLI operates at local-cooperative assurance with its limitations visible.
+
+The compatibility boolean path remains for legacy current-session operations; it cannot authorize
+a new delegated action without a typed resolved grant. This does not silently revoke all existing
+non-delegated APIs. AgentFlow owns scope/materiality evaluation, not an executor's self-report.
+
+A safety checkpoint is bounded control-plane recording, suspension or reconciliation. It cannot
+launch new business work, extend a grant, waive a gate or fabricate progress. Durable persistence
+and authorized reconciliation can use the reserved control budget; telemetry cannot block them.

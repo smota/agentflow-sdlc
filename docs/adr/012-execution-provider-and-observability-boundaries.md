@@ -117,3 +117,24 @@ adds latency to each dispatch.
   review required before S7 acceptance).
 - Whether `local-cooperative` assurance is sufficient to claim advisory budget enforcement
   (expected yes) or hard ceiling enforcement (expected no; see ADR 010).
+
+## Adversarial review clarifications
+
+All capacity, retention and performance figures are proposed acceptance targets, not measured
+results. The pending-audit journal is a bounded unacknowledged outbox, never a second authority;
+only source acknowledgment establishes admission. Source failure refuses new business effects.
+Use the safety-checkpoint definition in ADR010; telemetry eviction cannot remove audit evidence.
+
+AgentFlow owns admission of new work. In-flight enforcement depends on a named, proven provider;
+local-cooperative identity alone establishes neither enforcement nor a hard ceiling. Hard-ceiling
+issuance fails when that capability is absent; advisory and admission-enforced budgets report their
+actual fidelity. Fallbacks must remain inside the grant/policy envelope and preserve required controls.
+
+Meshloop's profile specializes existing versioned ports and receipts; it does not create another
+SDLC lifecycle. Provider lifecycle means technical start/inspect/stop/cancel/recovery, not process
+acceptance or handover authority. The direct provider preserves the same process boundary.
+
+Observation attributes are default-deny and typed. Unknown attributes are dropped; telemetry and
+its buffers are never consulted to decide admission, acceptance or continuation. Export credentials,
+when configured, remain runtime-managed exporter configuration and are never emitted as telemetry.
+No collector or provider installation is owned by this adapter.
