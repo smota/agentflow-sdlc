@@ -140,7 +140,16 @@
     },
     "candidate": {
       "inputs": [
-        "docs/maintainers/incremental-onboarding-plan.md",
+        "AGENTS.md",
+        "defaults",
+        "bin",
+        "lib",
+        "schemas",
+        "manifests",
+        "docs",
+        "scripts",
+        "package.json",
+        "pnpm-lock.yaml",
         "agent-workflow.config.json",
         ".agentflow/orchestration-model.json",
         ".agentflow/execution-policy.json",
@@ -149,8 +158,7 @@
       ],
       "context": {
         "workstream": "incremental-onboarding",
-        "activeIssue": 251,
-        "scope": "phase-0-framing"
+        "scope": "product-implementation"
       }
     },
     "checks": {
@@ -162,10 +170,26 @@
         "assertions": ["documentation validation passes"],
         "format": "exit-code",
         "timeoutMs": 60000
+      },
+      "onboarding": {
+        "id": "onboarding",
+        "criterionId": "onboarding-regression",
+        "executable": "node",
+        "args": [
+          "node_modules/vitest/vitest.mjs",
+          "run",
+          "lib/__tests__/onboarding-runtime.test.mjs",
+          "lib/__tests__/onboarding-template.test.mjs",
+          "lib/__tests__/onboarding-inventory.test.mjs",
+          "lib/__tests__/onboarding-plan.test.mjs",
+          "lib/__tests__/onboarding-apply.test.mjs",
+          "lib/__tests__/onboarding-migration.test.mjs",
+          "lib/__tests__/onboarding-e2e.test.mjs"
+        ],
+        "assertions": ["incremental onboarding regression suite passes"],
+        "format": "exit-code",
+        "timeoutMs": 120000
       }
-    },
-    "contracts": {
-      "product-manager": ".agentflow/workstreams/onboarding-251.acceptance.json"
     }
   }
 }

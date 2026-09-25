@@ -222,6 +222,11 @@ observations before acceptance. Never reuse the activation observation as proof 
 later implementation candidate. Review rejected artifacts in #251; raw local scratch
 is not committed.
 
+The original framing acceptance file is retained as historical setup evidence, but its
+active contract binding is removed. The repository now fingerprints product sources and
+provides an `onboarding` regression check. A future governed change must bind its own
+current issue acceptance contract; it cannot inherit phase-0 framing acceptance.
+
 | ID  | Behavior delivered                                                                  | Acceptance check                                                                                                                     | Test level                     | Size | Blast radius               | Depends on |
 | --- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------ | ---- | -------------------------- | ---------- |
 | S1  | Separate development policy from consumer template                                  | Adoption uses the dedicated template; authored consumer text and all template references survive                                     | Payload/integration + docs     | M    | Instructions and packaging | None       |
