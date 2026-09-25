@@ -5,12 +5,69 @@ import { validateSourceAdapter } from '../lib/core/source-adapter.mjs'
 import { createGitHubCliSourceAdapter } from '../lib/sources/github-cli.mjs'
 import { createFileSourceReceiptStore } from '../lib/sources/receipt-store.mjs'
 
-const DEFAULT_CONFIG = {
+export const DEFAULT_CONFIG = {
   integrationBranch: 'development',
   trunkBranch: 'main',
   closeIntegratedIssues: true,
   addLabels: ['integrated:development', 'awaiting-release'],
   referenceKeywords: ['Implements', 'Closes'],
+}
+
+// The complete set of recognized implementation and closure keywords.
+// Only members of this list (case-insensitive) are permitted in referenceKeywords.
+// New recognized variants must be added here explicitly; unknown strings are rejected.
+export const SAFE_KEYWORDS = ['Implements', 'Closes', 'Fixes', 'Resolves']
+
+// Keywords that indicate a related reference only and must never drive issue closure.
+// This denylist is checked in addition to the SAFE_KEYWORDS allowlist.
+export const REFERENCE_ONLY_KEYWORDS = ['Refs', 'Related', 'See', 'cc']
+
+/**
+ * Validates a referenceKeywords array from project config.
+ *
+ * Rules enforced:
+ *  - Must be an array (non-array → error).
+ *  - Must not be empty (empty array → error; zero keywords would match arbitrary text via
+ *    an empty alternation in the regex).
+ *  - Every entry must be a non-empty, non-whitespace-only string.
+ *  - Every entry (without surrounding whitespace, case-insensitive) must appear in SAFE_KEYWORDS.
+ *  - No entry may appear in REFERENCE_ONLY_KEYWORDS.
+ *
+ * Returns { ok: boolean, errors: string[] }.
+ * Callers MUST throw when ok is false before applying any external effects.
+ */
+export function validateReferenceKeywords(keywords) {
+  if (!Array.isArray(keywords)) {
+    return { ok: false, errors: ['referenceKeywords must be an array of strings'] }
+  }
+  if (keywords.length === 0) {
+    return {
+      ok: false,
+      errors: [
+        'referenceKeywords must not be empty; an empty array produces an invalid regex that matches arbitrary text',
+      ],
+    }
+  }
+  const errors = []
+  for (const kw of keywords) {
+    if (typeof kw !== 'string' || !kw.trim() || kw !== kw.trim()) {
+      errors.push(`referenceKeywords contains an invalid entry: ${JSON.stringify(kw)}`)
+      continue
+    }
+    const trimmed = kw.trim()
+    if (REFERENCE_ONLY_KEYWORDS.some((unsafe) => unsafe.toLowerCase() === trimmed.toLowerCase())) {
+      errors.push(
+        `referenceKeywords contains reference-only keyword "${kw}" which must never drive issue closure; remove it from integrationLifecycle.referenceKeywords`,
+      )
+      continue
+    }
+    if (!SAFE_KEYWORDS.some((safe) => safe.toLowerCase() === trimmed.toLowerCase())) {
+      errors.push(
+        `referenceKeywords contains unrecognized keyword "${kw}"; only recognized implementation/closure keywords are permitted: ${SAFE_KEYWORDS.join(', ')}`,
+      )
+    }
+  }
+  return { ok: errors.length === 0, errors }
 }
 
 function isPlainObject(value) {
@@ -25,6 +82,19 @@ export function loadIntegrationLifecycleConfig(repoRoot = process.cwd()) {
   const branching = isPlainObject(config.branching) ? config.branching : {}
   const lifecycle = isPlainObject(config.integrationLifecycle) ? config.integrationLifecycle : {}
 
+  let resolvedKeywords = DEFAULT_CONFIG.referenceKeywords
+  if (Object.hasOwn(lifecycle, 'referenceKeywords')) {
+    const validation = validateReferenceKeywords(lifecycle.referenceKeywords)
+    if (!validation.ok) {
+      // An explicit but invalid override is a config error, not a missing value.
+      // Throw before any external effects so the misconfiguration is visible.
+      throw new Error(
+        `[integration-lifecycle] invalid integrationLifecycle.referenceKeywords: ${validation.errors.join('; ')}`,
+      )
+    }
+    resolvedKeywords = lifecycle.referenceKeywords
+  }
+
   return {
     integrationBranch:
       lifecycle.integrationBranch ??
@@ -34,9 +104,7 @@ export function loadIntegrationLifecycleConfig(repoRoot = process.cwd()) {
     trunkBranch: lifecycle.trunkBranch ?? branching.trunk ?? 'main',
     closeIntegratedIssues: lifecycle.closeIntegratedIssues ?? true,
     addLabels: Array.isArray(lifecycle.addLabels) ? lifecycle.addLabels : DEFAULT_CONFIG.addLabels,
-    referenceKeywords: Array.isArray(lifecycle.referenceKeywords)
-      ? lifecycle.referenceKeywords
-      : DEFAULT_CONFIG.referenceKeywords,
+    referenceKeywords: resolvedKeywords,
   }
 }
 
@@ -44,13 +112,35 @@ function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
+/**
+ * Parses issue references from PR body text using the given referenceKeywords.
+ *
+ * Safety rules enforced at the call boundary:
+ *  - referenceKeywords must pass validateReferenceKeywords (non-empty, recognized, no Refs).
+ *    Callers passing an invalid list receive an Error before any regex is built.
+ *  - Word-boundary anchors (\b) are added around each keyword to prevent substring matches
+ *    (e.g. "Discloses #N" must not match keyword "Closes").
+ *  - Cross-repository references (owner/repo#N) are parsed but excluded from the returned list.
+ *
+ * @param {string} text  PR body or similar text.
+ * @param {{ referenceKeywords?: string[] }} options
+ * @returns {string[]} Sorted, deduplicated local issue refs (e.g. ["#24", "#26"]).
+ */
 export function parseIssueReferences(text = '', options = {}) {
-  // Only implementation/closure keywords should drive integration lifecycle actions.
-  // Related-reference keywords such as "Refs" are intentionally excluded by default.
-  const keywords = options.referenceKeywords ?? DEFAULT_CONFIG.referenceKeywords
+  const keywords = Object.hasOwn(options, 'referenceKeywords')
+    ? options.referenceKeywords
+    : DEFAULT_CONFIG.referenceKeywords
+  // Enforce validation at every call boundary, not only at config-load time.
+  const validation = validateReferenceKeywords(keywords)
+  if (!validation.ok) {
+    throw new Error(
+      `parseIssueReferences: invalid referenceKeywords: ${validation.errors.join('; ')}`,
+    )
+  }
   const keywordPattern = keywords.map(escapeRegExp).join('|')
+  // \b ensures the keyword is a whole word: "Discloses" cannot match keyword "Closes".
   const regex = new RegExp(
-    `(?:${keywordPattern})\\s+((?:#\\d+|[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+#\\d+)(?:[\\s,;]+(?:#\\d+|[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+#\\d+))*)`,
+    `\\b(?:${keywordPattern})\\b\\s+((?:#\\d+|[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+#\\d+)(?:[\\s,;]+(?:#\\d+|[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+#\\d+))*)`,
     'gi',
   )
   const refs = new Set()
