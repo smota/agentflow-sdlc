@@ -45,3 +45,4 @@ What was decided.
 ```
 
 - [ADR 007 — Verifiable and recoverable delivery](007-verifiable-recoverable-delivery.md)
+- [ADR 008 — One public name for each AgentFlow skill](008-single-skill-name.md)

@@ -4,24 +4,16 @@ Canonical AgentFlow SDLC product source is harness-neutral. Do not place product
 
 ## Current distribution status
 
-The package is not currently published on npm. Use a source checkout:
+Install the CLI directly from GitHub using npm; no manual source checkout is required:
 
 ```bash
-git clone https://github.com/smota/agentflow-sdlc.git
-cd agentflow-sdlc
-pnpm install
-node bin/cli.mjs adopt plan --profile standard --target /path/to/project --json
-node bin/cli.mjs sdlc validate --target /path/to/project --json
+npm install -g github:smota/agentflow-sdlc
+agentflow-sdlc adopt plan --profile standard --target /path/to/project --json
+agentflow-sdlc sdlc validate --target /path/to/project --json
 ```
 
-After npm publication, the equivalent interface is intended to be:
-
-```bash
-npx agentflow-sdlc adopt plan --profile standard --target /path/to/project --json
-npx agentflow-sdlc sdlc validate --json
-```
-
-These `npx agentflow-sdlc` examples are post-publication guidance, not a current installation path.
+For a one-off invocation, use `npx -y github:smota/agentflow-sdlc <command>`.
+The GitHub package source is explicit in both forms; these commands do not require an npm registry release.
 
 ## Composition profiles
 
@@ -29,18 +21,18 @@ Logical composition precedes physical package extraction. `minimal`, `standard`,
 `cockpit` form the supported progression; `standard` is the default.
 
 ```bash
-node bin/cli.mjs adopt profiles --json
-node bin/cli.mjs adopt plan --profile standard --target /path/to/project --json
+agentflow-sdlc adopt profiles --json
+agentflow-sdlc adopt plan --profile standard --target /path/to/project --json
 ```
 
 `manifests/composition-profiles.json` is the profile authority. Contract and installed-payload tests
 must pass before any physical npm package split. Package directories remain implementation details;
 consumers bind to versioned contracts.
 
-Skill-only distribution uses the harness-neutral packages under `skills/`. The public identity is
-the plugin-qualified `agentflow:<role>` name. Raw folder and frontmatter names remain standards-safe
-lowercase role slugs because portable skill specifications do not use `:` in the local name.
-Flat directory adapters use `agentflow-<role>` as the standards-safe equivalent.
+Skill-only distribution uses the portable packages under `skills/agentflow-<skill>/`.
+The single public identity is `agentflow-<skill>`, used unchanged in source frontmatter,
+catalog entries, plugin payloads and generated flat adapters. Short and colon-separated
+skill names are not supported aliases. See [default skills](default-skills.md) for the six names.
 
 Lifecycle-role distribution is separate from skills. `manifests/role-catalog.json` defines nine
 core accountability contracts and the optional QA sidecar; `manifests/method-catalog.json` defines
@@ -62,12 +54,12 @@ every harness shares a native subagent format.
 - `manifests/role-catalog.json`
 - `manifests/method-catalog.json`
 - `roles/`
-- `skills/orchestrator/`
-- `skills/collaborator/`
-- `skills/scanner/`
-- `skills/designer/`
-- `skills/migrator/`
-- `skills/auditor/`
+- `skills/agentflow-orchestrator/`
+- `skills/agentflow-collaborator/`
+- `skills/agentflow-scanner/`
+- `skills/agentflow-designer/`
+- `skills/agentflow-migrator/`
+- `skills/agentflow-auditor/`
 
 ## Generated targets
 
@@ -83,23 +75,23 @@ skill so progressive-disclosure links remain valid.
 
 ## Adapter commands
 
-From a source checkout:
+With the CLI installed, run these commands from your project directory:
 
 ```bash
-node bin/cli.mjs skills sync --harness all --dry-run
-node bin/cli.mjs skills catalog --json
-node bin/cli.mjs skills validate --json
-node bin/cli.mjs skills sync --harness claude-code,agy,codex,pi --apply
-node bin/cli.mjs skills status --harness all --json
-node bin/cli.mjs roles catalog --json
-node bin/cli.mjs roles validate --json
-node bin/cli.mjs roles sync --harness all --dry-run
-node bin/cli.mjs roles status --harness all --json
-node bin/cli.mjs methods validate --json
-node bin/cli.mjs plugins validate --harness all --json
-node bin/cli.mjs plugins build --harness all --dry-run
-node bin/cli.mjs settings validate --harness all --json
-node bin/cli.mjs settings merge --harness all --dry-run
+agentflow-sdlc skills sync --harness all --dry-run
+agentflow-sdlc skills catalog --json
+agentflow-sdlc skills validate --json
+agentflow-sdlc skills sync --harness claude-code,agy,codex,pi --apply
+agentflow-sdlc skills status --harness all --json
+agentflow-sdlc roles catalog --json
+agentflow-sdlc roles validate --json
+agentflow-sdlc roles sync --harness all --dry-run
+agentflow-sdlc roles status --harness all --json
+agentflow-sdlc methods validate --json
+agentflow-sdlc plugins validate --harness all --json
+agentflow-sdlc plugins build --harness all --dry-run
+agentflow-sdlc settings validate --harness all --json
+agentflow-sdlc settings merge --harness all --dry-run
 ```
 
 `skills status` fails when generated adapters are stale or missing. `plugins validate` checks canonical native manifests. `settings merge` preserves project-owned keys and refuses non-object JSON roots instead of overwriting harness config.

@@ -11,7 +11,7 @@ Configuration changes alter how agents behave, which branches they touch, and wh
 1. **Never mutate blindly**: inspect current configuration and adapter drift read-only first.
 2. **Clarify human intent**: ask focused, multiple-choice or direct questions instead of guessing intent.
 3. **Preview exact diffs**: present proposed changes clearly before writing to disk.
-4. **Synchronize atomically**: run `agentflow-sdlc config sync --apply` so skills, roles, plugins, and settings remain in lockstep.
+4. **Synchronize and inspect results**: run `agentflow-sdlc config sync --apply` to update skills, roles, plugins, and settings in sequence; inspect failures and warnings.
 5. **Verify health**: confirm that `agentflow-sdlc config doctor` reports zero blockers.
 
 ---
@@ -42,9 +42,9 @@ agentflow-sdlc config inspect --json
 Key facets evaluated by `config doctor`:
 
 - **Config Authority**: verifies clean separation between domain policy (`sdlc.config.json`) and workflow settings (`agent-workflow.config.json`).
-- **Workflow Configuration**: checks presence, JSON validity, and mandatory fields in `agent-workflow.config.json`.
+- **Workflow Configuration**: checks presence and JSON validity in `agent-workflow.config.json`.
 - **SDLC Domain Policy**: validates policy shape against schema and rules.
-- **Autonomy Posture Capability**: evaluates if repo tooling (tests, CI, observation fixtures) can sustain the configured posture (`interactive`, `assisted`, `delegated`, or `autonomous`).
+- **Autonomy Posture Capability**: evaluates if repo tooling (tests, CI, observation fixtures) can sustain the configured posture (`advisory`, `assisted`, `delegated`, or `autonomous`).
 - **Harness Intelligence**: checks configuration of the 4 pillars in `.agentflow/` (`orchestration-model.json`, `execution-policy.json`, `model-catalog.json`, `harness-parameters.json`).
 - **Role & Method Catalog**: verifies role definitions and role-method bindings (e.g. TDD, event-storming).
 - **Extension Packs**: checks validity of enabled extension packs.
@@ -55,7 +55,7 @@ Key facets evaluated by `config doctor`:
 The agent should interview the human operator on the specific dimensions being reconfigured:
 
 1. **Autonomy Posture**:
-   - `interactive`: human executes or supervises every phase.
+   - `advisory`: agent observes and proposes; mutations require a different authorized posture.
    - `assisted` (default): agent executes role phases with human approval for intent freeze and high-assurance gates.
    - `delegated`: agent carries work autonomously within bounded limits.
    - `autonomous`: agent executes end-to-end delivery within strict budget and policy constraints.
@@ -88,7 +88,7 @@ Do not apply changes until the user approves the preview.
 
 ### Phase 4: Apply & Sync
 
-Apply approved edits to configuration files. Then synchronize all local harness assets (skills, roles, plugins, and settings) in a single atomic operation:
+Apply approved edits to configuration files. Then synchronize all local harness assets (skills, roles, plugins, and settings) through sequential operations:
 
 ```bash
 # Preview sync actions (dry-run)
@@ -97,6 +97,11 @@ agentflow-sdlc config sync --dry-run
 # Apply sync across all harnesses
 agentflow-sdlc config sync --apply
 ```
+
+This command is not a transaction: an error can leave earlier operations applied.
+Inspect the report and `config doctor --json`, correct the reported conflict or failure,
+preview again, and retry the sync. Use version control to review or restore affected files;
+there is no automatic rollback across all four operations.
 
 This synchronizes:
 
@@ -107,12 +112,15 @@ This synchronizes:
 
 ### Phase 5: Verify & Close
 
-Re-run the configuration doctor to confirm that all checks pass and zero blockers remain:
+Re-run the configuration doctor to confirm that zero blockers remain and review every warning:
 
 ```bash
 agentflow-sdlc config doctor
 ```
 
+Zero blockers does not mean every facet passed: missing harness pillars, stale adapters and
+posture capability limitations can remain warnings. Report them explicitly, resolve actionable
+items or record why they are accepted. This diagnostic does not certify readiness for any posture.
 Report the final configuration state and summarize the changes made.
 
 ---
@@ -143,10 +151,10 @@ Apply it to this project. You are acting as an assisted configuration collaborat
 2. Clarify Intent: Ask me what you want to adjust (autonomy posture, branching strategy, CI commands, role routing, adversarial sparring gates, harness intelligence, or extension packs).
 3. Preview & Propose: Propose exact changes to agent-workflow.config.json, sdlc.config.json, or .agentflow/ files without mutating them until approved.
 4. Apply & Sync: Once approved, apply the changes and synchronize harness adapters using `agentflow-sdlc config sync --apply`.
-5. Verify: Re-run `agentflow-sdlc config doctor` to confirm all checks pass with zero blockers.
+5. Verify: Re-run `agentflow-sdlc config doctor` to check blockers and warnings; report unresolved warnings and their disposition.
 ```
 
-Or print it dynamically from your checkout:
+Or print it with the installed CLI:
 
 ```bash
 agentflow-sdlc config prompt

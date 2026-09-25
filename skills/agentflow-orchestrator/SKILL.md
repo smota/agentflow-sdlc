@@ -1,9 +1,9 @@
 ---
-name: orchestrator
+name: agentflow-orchestrator
 description: Run governed AgentFlow issue work through role phases, evidence transitions, validation, and PR readiness. Use for end-to-end delivery coordination; route policy design, migration, scanning, collaboration strategy, and compliance verdicts to their owning AgentFlow skills.
 metadata:
   namespace: agentflow
-  qualified-name: 'agentflow:orchestrator'
+  qualified-name: 'agentflow-orchestrator'
   role: orchestrator
 ---
 
@@ -29,11 +29,11 @@ For each applicable phase:
 
 ## Collaboration
 
-- Use `agentflow:collaborator` for complexity routing, helpers, or a role-based council.
-- Use `agentflow:scanner` for bounded read-only discovery.
-- Use `agentflow:designer` for canonical policy or schema changes.
-- Use `agentflow:migrator` for adoption changes in a consuming repository.
-- Use `agentflow:auditor` for an independent compliance verdict.
+- Use `agentflow-collaborator` for complexity routing, helpers, or a role-based council.
+- Use `agentflow-scanner` for bounded read-only discovery.
+- Use `agentflow-designer` for canonical policy or schema changes.
+- Use `agentflow-migrator` for adoption changes in a consuming repository.
+- Use `agentflow-auditor` for an independent compliance verdict.
 
 The orchestrator maintains the acceptance ledger; it never relabels another executor's work.
 

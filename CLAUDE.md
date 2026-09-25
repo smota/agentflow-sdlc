@@ -16,7 +16,7 @@ workflow and recording machine-checkable evidence for each phase.
 
 ## Execution model
 
-- Run the issue via `skills/orchestrator/SKILL.md` (`agentflow:orchestrator`).
+- Run the issue via `skills/agentflow-orchestrator/SKILL.md` (`agentflow-orchestrator`).
 - Execute one formal phase at a time
 - Read the previous role-pass before starting the next one
 - Write a new role-pass artifact after every completed phase

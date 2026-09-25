@@ -41,6 +41,19 @@ describe('CLI prompt helpers', () => {
     expect(output).toContain('npm install -g github:smota/agentflow-sdlc')
     expect(output).toContain('agentflow-sdlc doctor-env')
     expect(output).toContain('Present the adoption preview and ask for my explicit confirmation')
+    expect(output).toContain('Do not use init --force')
+    expect(output).toContain('advisory, assisted, delegated, autonomous')
+    expect(output).toContain('blockers and warnings separately')
+    const guide = fs.readFileSync(
+      new URL('../../docs/assisted-onboarding.md', import.meta.url),
+      'utf8',
+    )
+    const generatedSteps = output.slice(output.indexOf('0. Bootstrap Tooling:')).trim()
+    const documentedSteps = guide
+      .slice(guide.indexOf('0. Bootstrap Tooling:'))
+      .split('\n```')[0]
+      .trim()
+    expect(generatedSteps.replaceAll('\r\n', '\n')).toBe(documentedSteps.replaceAll('\r\n', '\n'))
   })
 })
 

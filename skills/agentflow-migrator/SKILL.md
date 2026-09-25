@@ -1,9 +1,9 @@
 ---
-name: migrator
+name: agentflow-migrator
 description: Adopt, upgrade, or roll back AgentFlow SDLC in a consuming repository through preview-first transactional changes. Use for target-repository migration; do not use to redefine canonical policy or independently certify compliance.
 metadata:
   namespace: agentflow
-  qualified-name: 'agentflow:migrator'
+  qualified-name: 'agentflow-migrator'
   role: migrator
 ---
 
@@ -25,9 +25,9 @@ preview, lossy conversion, or missing rollback evidence.
 
 ## Collaboration
 
-Use `agentflow:scanner` for inventory, route canonical-policy gaps to `agentflow:designer`, and send
-the resulting `migration-receipt` to `agentflow:auditor`. Return rollout status to
-`agentflow:orchestrator`.
+Use `agentflow-scanner` for inventory, route canonical-policy gaps to `agentflow-designer`, and send
+the resulting `migration-receipt` to `agentflow-auditor`. Return rollout status to
+`agentflow-orchestrator`.
 
 ## Boundaries
 

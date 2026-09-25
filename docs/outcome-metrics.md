@@ -5,7 +5,7 @@ workflow authority. The version-1 projection reports cycle time, first-pass vali
 latency, PR-ready-to-release lead time, follow-up age, and incident-to-regression-eval time.
 
 ```text
-node bin/cli.mjs sdlc derive-metrics --path lifecycle-events.json
+agentflow-sdlc sdlc derive-metrics --path lifecycle-events.json
 ```
 
 Events are sorted and deduplicated by id. Missing endpoints produce `null`, never a fabricated zero.

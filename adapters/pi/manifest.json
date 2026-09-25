@@ -6,7 +6,14 @@
   "namespace": "agentflow",
   "entry": ".pi/skills",
   "roleEntry": ".agentflow/roles/pi",
-  "skills": ["orchestrator", "collaborator", "scanner", "designer", "migrator", "auditor"],
+  "skills": [
+    "agentflow-orchestrator",
+    "agentflow-collaborator",
+    "agentflow-scanner",
+    "agentflow-designer",
+    "agentflow-migrator",
+    "agentflow-auditor"
+  ],
   "roles": [
     "product-manager",
     "analyst",

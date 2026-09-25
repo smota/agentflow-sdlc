@@ -31,14 +31,14 @@ Run validation with:
 
 ```bash
 node scripts/validate-extension-packs.mjs
-node bin/cli.mjs extensions validate --target /path/to/project
+agentflow-sdlc extensions validate --target /path/to/project
 ```
 
 If a pack declares executable validators, run them explicitly:
 
 ```bash
 node scripts/validate-extension-packs.mjs --run-validators
-node bin/cli.mjs extensions validate --target /path/to/project --run-validators
+agentflow-sdlc extensions validate --target /path/to/project --run-validators
 ```
 
 `--run-validators` executes pack-supplied commands and is a code-execution trust boundary, not a
@@ -167,11 +167,11 @@ Enable both when a project wants the full evidence and handoff operating model:
 Use the main framework CLI in adopting projects:
 
 ```bash
-node bin/cli.mjs extensions list --target /path/to/project
-node bin/cli.mjs extensions inspect extensions/my-engineering-approach --target /path/to/project
-node bin/cli.mjs extensions enable extensions/my-engineering-approach --target /path/to/project
-node bin/cli.mjs extensions disable extensions/my-engineering-approach --target /path/to/project
-node bin/cli.mjs extensions validate --target /path/to/project
+agentflow-sdlc extensions list --target /path/to/project
+agentflow-sdlc extensions inspect extensions/my-engineering-approach --target /path/to/project
+agentflow-sdlc extensions enable extensions/my-engineering-approach --target /path/to/project
+agentflow-sdlc extensions disable extensions/my-engineering-approach --target /path/to/project
+agentflow-sdlc extensions validate --target /path/to/project
 ```
 
 `enable` and `disable` are idempotent and preserve unrelated `agent-workflow.config.json` fields while canonicalizing `extensions.enabledPacks`. Exact relative paths are preferred. Manifest `id` aliases are accepted only when unique; duplicate ids fail with candidate paths rather than guessing.

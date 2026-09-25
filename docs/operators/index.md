@@ -4,11 +4,11 @@ Operators diagnose installed state, provider availability, source connectivity, 
 and optional Cockpit behavior.
 
 ```bash
-node bin/cli.mjs adopt plan --profile standard --target /path/to/project --json
-node bin/cli.mjs sdlc validate-authority --target /path/to/project --json
-node bin/cli.mjs providers list --json
-node bin/cli.mjs providers inspect <id> --json
-node bin/cli.mjs cockpit doctor --json
+agentflow-sdlc adopt plan --profile standard --target /path/to/project --json
+agentflow-sdlc sdlc validate-authority --target /path/to/project --json
+agentflow-sdlc providers list --json
+agentflow-sdlc providers inspect <id> --json
+agentflow-sdlc cockpit doctor --json
 ```
 
 Use [troubleshooting](troubleshooting.md) for failure classes and

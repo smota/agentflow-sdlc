@@ -30,7 +30,7 @@ flowchart TD
 
 1. Inspect the target repository root:
    ```bash
-   node bin/cli.mjs harness inspect
+   agentflow-sdlc harness inspect
    ```
 2. Locate the resolution ledger (default: `.agentflow/review-ledger.json`).
 3. Extract:
@@ -44,7 +44,7 @@ flowchart TD
 
 1. Check available local tools and CLI runners:
    ```bash
-   node bin/cli.mjs doctor-env
+   agentflow-sdlc doctor-env
    ```
 2. Inspect configured execution policies in `.agentflow/execution-policy.json` and model catalogs in `.agentflow/model-catalog.json`.
 3. If an external CLI (`codex-cli` or `claude-cli`) is unavailable or quota-exhausted:

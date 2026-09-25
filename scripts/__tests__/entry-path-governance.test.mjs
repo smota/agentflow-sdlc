@@ -10,7 +10,7 @@ import {
   writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join, resolve } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { ENTRY_DOCUMENT, ENTRY_PATH_MARKER, extractMarkedCommandBlock } from '../validate-docs.mjs'
 
@@ -23,7 +23,54 @@ import { ENTRY_DOCUMENT, ENTRY_PATH_MARKER, extractMarkedCommandBlock } from '..
 // again — whether because the document changes or because the commands it names stop working.
 
 const repoRoot = resolve(fileURLToPath(new URL('../..', import.meta.url)))
-const cli = join(repoRoot, 'bin/cli.mjs')
+const npmCli = [
+  join(dirname(process.execPath), 'node_modules/npm/bin/npm-cli.js'),
+  resolve(dirname(process.execPath), '../lib/node_modules/npm/bin/npm-cli.js'),
+].find(existsSync)
+
+function installPackage() {
+  if (!npmCli) throw new Error('Unable to locate npm bundled with Node')
+  const prefix = mkdtempSync(join(realpathSync(tmpdir()), 'agentflow-installed-entry-'))
+  roots.push(prefix)
+  const packed = JSON.parse(
+    execFileSync(process.execPath, [npmCli, 'pack', '--json', '--pack-destination', prefix], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+    }),
+  )
+  execFileSync(
+    process.execPath,
+    [
+      npmCli,
+      'install',
+      '--prefix',
+      prefix,
+      join(prefix, packed[0].filename),
+      '--ignore-scripts',
+      '--no-audit',
+      '--no-fund',
+    ],
+    { encoding: 'utf8' },
+  )
+  const installedRoot = join(prefix, 'node_modules/agentflow-sdlc')
+  const catalog = JSON.parse(
+    readFileSync(join(installedRoot, 'manifests/skill-catalog.json'), 'utf8'),
+  )
+  expect(catalog.skills.map((skill) => skill.role).sort()).toEqual([
+    'auditor',
+    'collaborator',
+    'designer',
+    'migrator',
+    'orchestrator',
+    'scanner',
+  ])
+  for (const skill of catalog.skills) {
+    const source = readFileSync(join(installedRoot, skill.source, 'SKILL.md'), 'utf8')
+    expect(source).toMatch(new RegExp(`^name: ${skill.qualifiedName}$`, 'm'))
+    expect(source).toContain(skill.qualifiedName)
+  }
+  return prefix
+}
 const placeholder = '/path/to/your-project'
 
 const roots = []
@@ -31,10 +78,7 @@ afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true })
 })
 
-// The document's commands are written the way a human runs them: `node ...`, `git ...`, joined with
-// `&&` on the commit line. Running them "for real" means parsing exactly that, not a paraphrase of
-// it — `node` is resolved to this process's own executable (what "install Node.js" means on the
-// machine actually running this test) and everything else is taken literally from the document.
+// Execute the documented installed command via npm exec, outside the source checkout.
 function tokenize(command) {
   const tokens = []
   const re = /"([^"]*)"|(\S+)/g
@@ -43,11 +87,13 @@ function tokenize(command) {
   return tokens
 }
 
-function runDocumentedCommand(line, { cwd, target }) {
-  const substituted = line.replaceAll(placeholder, target)
-  for (const part of substituted.split(/\s&&\s/)) {
-    const [bin, ...args] = tokenize(part)
-    const executable = bin === 'node' ? process.execPath : bin
+function runDocumentedCommand(line, { cwd, target, prefix }) {
+  for (const part of line.split(/\s&&\s/)) {
+    const [bin, ...tokens] = tokenize(part)
+    let args = tokens.map((token) => token.replaceAll(placeholder, target))
+    const executable = bin === 'agentflow-sdlc' ? process.execPath : bin
+    if (bin === 'agentflow-sdlc')
+      args = [npmCli, 'exec', '--offline', '--prefix', prefix, '--', bin, ...args]
     const result = spawnSync(executable, args, { cwd, encoding: 'utf8', timeout: 60000 })
     // W8e / D1 — the fixture's test script genuinely passes and prints no JUnit output (`node
     // --test`'s default reporter is TAP, not JUnit). `init` now seeds the starter check with the
@@ -86,12 +132,14 @@ function tempAdopterRepo() {
 
 describe('the entry document reaches real governance end to end (W6c, test 1)', () => {
   it('executing the documented commands on a fresh repository produces a run, a frozen contract, and a recorded observation', () => {
+    const prefix = installPackage()
+    const cli = join(prefix, 'node_modules/agentflow-sdlc/bin/cli.mjs')
     const target = tempAdopterRepo()
     const entryText = readFileSync(resolve(repoRoot, ENTRY_DOCUMENT), 'utf8')
     const commands = extractMarkedCommandBlock(entryText, ENTRY_PATH_MARKER)
     expect(commands, 'the entry document must mark a runnable command block').not.toBeNull()
 
-    for (const line of commands) runDocumentedCommand(line, { cwd: repoRoot, target })
+    for (const line of commands) runDocumentedCommand(line, { cwd: target, target, prefix })
 
     // A run exists, durably, on disk.
     expect(existsSync(join(target, '.agent-runs/runs/demo/events.json'))).toBe(true)
@@ -129,5 +177,50 @@ describe('the entry document reaches real governance end to end (W6c, test 1)', 
     expect(tracked).toContain('agent-framework-lock.json')
     expect(tracked).toContain('AGENTS.md')
     expect(tracked).not.toContain('.agent-runs')
-  })
+    writeFileSync(join(target, 'src/greeter.test.js'), 'process.exit(1)\n')
+    for (const action of ['start', 'freeze']) {
+      const failedRun = spawnSync(
+        process.execPath,
+        [
+          cli,
+          'run',
+          action,
+          'failing',
+          '--goal',
+          'Failing starter fixture',
+          '--execute',
+          '--target',
+          target,
+        ],
+        { cwd: target, encoding: 'utf8' },
+      )
+      expect(failedRun.status, failedRun.stdout + failedRun.stderr).toBe(0)
+    }
+    const failedCheck = spawnSync(
+      process.execPath,
+      [
+        cli,
+        'run',
+        'verify',
+        'failing',
+        '--check',
+        'starter',
+        '--execute',
+        '--target',
+        target,
+        '--json',
+      ],
+      { cwd: target, encoding: 'utf8' },
+    )
+    expect(failedCheck.status).not.toBe(0)
+    const failedStatus = JSON.parse(
+      execFileSync(
+        process.execPath,
+        [cli, 'run', 'status', 'failing', '--target', target, '--json'],
+        { cwd: target, encoding: 'utf8' },
+      ),
+    ).result
+    expect(failedStatus.evidence[0].observedOutcome).toBe('fail')
+    expect(failedStatus.evidence[0].observationDigest).not.toBeNull()
+  }, 120000)
 })

@@ -5,8 +5,8 @@ Providers supply capabilities around AgentFlow; they do not redefine the SDLC.
 Start read-only:
 
 ```bash
-node bin/cli.mjs providers list --json
-node bin/cli.mjs providers inspect manual --json
+agentflow-sdlc providers list --json
+agentflow-sdlc providers inspect manual --json
 ```
 
 Then use:

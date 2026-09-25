@@ -22,6 +22,20 @@ This guide is the human-readable contribution path. `AGENTS.md` and `docs/agent-
 6. **Open the PR.** Use `agents/templates/pr-manifest.md`; include issue references, workflow evidence, validation, review fields, merge owner, and follow-up status.
 7. **Verify the PR.** Check target branch, final body, issue references, workflow-status/handover links, checks, and merge owner.
 
+## Source checkout for contributors
+
+Clone AgentFlow only when developing or validating the framework itself:
+
+```bash
+git clone https://github.com/smota/agentflow-sdlc.git
+cd agentflow-sdlc
+pnpm install
+node bin/cli.mjs --help
+```
+
+Here, `node bin/cli.mjs` runs your local source changes. Adopting projects use the installed
+`agentflow-sdlc` command described in [Get started](../get-started.md).
+
 ## Common commands
 
 ```bash
