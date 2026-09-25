@@ -46,3 +46,4 @@ What was decided.
 
 - [ADR 007 — Verifiable and recoverable delivery](007-verifiable-recoverable-delivery.md)
 - [ADR 008 — One public name for each AgentFlow skill](008-single-skill-name.md)
+- [ADR 009 — Incremental onboarding and runtime installation authority](009-incremental-onboarding.md)
