@@ -10,13 +10,7 @@ rather than left in private chat memory.
 - Git
 - GitHub CLI (`gh`) only when you want issue, PR, or release automation
 
-You can install `agentflow-sdlc` as an application CLI in your environment directly from GitHub:
-
-```bash
-npm install -g github:smota/agentflow-sdlc
-```
-
-No AgentFlow repository clone is needed. Run the commands below from any directory;
+Runtimes provision `agentflow-sdlc` using their own mechanisms, or you can invoke it directly in your Node 20+ environment. No AgentFlow repository clone is needed. Run the commands below from any directory;
 `--target` points to your own project. Replace `/path/to/your-project` with its path.
 
 ## Reach your first governed change in 6 commands
@@ -95,15 +89,14 @@ If you prefer to have your coding assistant (Claude, Codex, Antigravity, Cursor,
 
 ## What to configure next
 
-Once initial files are committed, activate harness slash commands and issue templates:
+Once initial files are committed, bootstrap local governance templates if using GitHub:
 
 ```bash
-# Sync canonical roles and skills into harness slash commands (.claude/commands/, etc.)
-agentflow-sdlc config sync --target /path/to/your-project --apply
-
 # Bootstrap GitHub issue forms, label taxonomies, and PR checklists
 agentflow-sdlc github setup --target /path/to/your-project --apply
 ```
+
+Skills and tools are discovered by the runtime using its own mechanisms; explicit maintainer synchronization tools remain available when maintaining local harness adapters.
 
 For continuous configuration, posture adjustments, or role-method tuning, follow [Assisted configuration](assisted-configuration.md).
 

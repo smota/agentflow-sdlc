@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, realpathSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
@@ -48,7 +48,7 @@ describe('CLI output drain', () => {
   })
 
   it('drains a read-only adoption plan without falling through to another command', () => {
-    const target = mkdtempSync(join(tmpdir(), 'agentflow-output-drain-'))
+    const target = mkdtempSync(join(realpathSync(tmpdir()), 'agentflow-output-drain-'))
     targets.push(target)
     const result = delayedOutput(cli, ['adopt', 'plan', '--target', target, '--json'])
     expect(result.status).toBe(0)

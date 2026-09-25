@@ -25,7 +25,65 @@
     "closeIntegratedIssues": true
   },
   "routing": {
-    "defaultMode": "single-agent"
+    "defaultMode": "optional-multi-agent",
+    "agents": {
+      "agy": {
+        "enabled": true,
+        "availabilityProbe": {
+          "executable": "agy",
+          "args": ["--version"]
+        },
+        "defaultExecutionTarget": "agy-cli",
+        "callWorkflowDoc": "docs/agents/agy-routing.md"
+      },
+      "codex": {
+        "enabled": true,
+        "availabilityProbe": {
+          "executable": "codex",
+          "args": ["--version"]
+        },
+        "defaultExecutionTarget": "codex-cli",
+        "callWorkflowDoc": "docs/agents/codex-routing.md"
+      }
+    },
+    "roles": {
+      "product-manager": {
+        "owner": "agy",
+        "fallbacks": []
+      },
+      "analyst": {
+        "owner": "agy",
+        "fallbacks": []
+      },
+      "architect": {
+        "owner": "agy",
+        "fallbacks": []
+      },
+      "implementation-planner": {
+        "owner": "agy",
+        "fallbacks": []
+      },
+      "developer": {
+        "owner": "agy",
+        "fallbacks": []
+      },
+      "tester": {
+        "owner": "agy",
+        "fallbacks": []
+      },
+      "reviewer": {
+        "owner": "codex",
+        "fallbacks": []
+      },
+      "technical-writer": {
+        "owner": "agy",
+        "fallbacks": []
+      },
+      "pr-readiness": {
+        "owner": "codex",
+        "fallbacks": []
+      }
+    }
   },
   "collaboration": {
     "defaultMode": "auto-minimal",
@@ -73,5 +131,65 @@
       "extensions/evidence-driven-engineering",
       "extensions/agent-handoff-governance"
     ]
+  },
+  "delivery": {
+    "source": {
+      "kind": "github",
+      "repo": "smota/agentflow-sdlc",
+      "branch": "agentflow-state"
+    },
+    "candidate": {
+      "inputs": [
+        "AGENTS.md",
+        "defaults",
+        "bin",
+        "lib",
+        "schemas",
+        "manifests",
+        "docs",
+        "scripts",
+        "package.json",
+        "pnpm-lock.yaml",
+        "agent-workflow.config.json",
+        ".agentflow/orchestration-model.json",
+        ".agentflow/execution-policy.json",
+        ".agentflow/model-catalog.json",
+        ".agentflow/harness-parameters.json"
+      ],
+      "context": {
+        "workstream": "incremental-onboarding",
+        "scope": "product-implementation"
+      }
+    },
+    "checks": {
+      "docs": {
+        "id": "docs",
+        "criterionId": "documentation-integrity",
+        "executable": "node",
+        "args": ["scripts/validate-docs.mjs"],
+        "assertions": ["documentation validation passes"],
+        "format": "exit-code",
+        "timeoutMs": 60000
+      },
+      "onboarding": {
+        "id": "onboarding",
+        "criterionId": "onboarding-regression",
+        "executable": "node",
+        "args": [
+          "node_modules/vitest/vitest.mjs",
+          "run",
+          "lib/__tests__/onboarding-runtime.test.mjs",
+          "lib/__tests__/onboarding-template.test.mjs",
+          "lib/__tests__/onboarding-inventory.test.mjs",
+          "lib/__tests__/onboarding-plan.test.mjs",
+          "lib/__tests__/onboarding-apply.test.mjs",
+          "lib/__tests__/onboarding-migration.test.mjs",
+          "lib/__tests__/onboarding-e2e.test.mjs"
+        ],
+        "assertions": ["incremental onboarding regression suite passes"],
+        "format": "exit-code",
+        "timeoutMs": 120000
+      }
+    }
   }
 }

@@ -75,7 +75,13 @@
         "schemas/source-adapter.schema.json",
         "schemas/transition-envelope.schema.json",
         "schemas/verification-observation.schema.json",
-        "schemas/verification-resolution.schema.json"
+        "schemas/verification-resolution.schema.json",
+        "docs/agent-workflow.md",
+        "docs/issue-standards.md",
+        "lib/core/onboarding-state.mjs",
+        "lib/core/onboarding-plan.mjs",
+        "schemas/onboarding-runtime.schema.json",
+        "docs/adr/009-incremental-onboarding.md"
       ]
     },
     "standard": {
@@ -126,7 +132,13 @@
         "skills/agentflow-migrator/SKILL.md",
         "skills/agentflow-migrator/references/preflight.md",
         "skills/agentflow-orchestrator/SKILL.md",
-        "skills/agentflow-scanner/SKILL.md"
+        "skills/agentflow-scanner/SKILL.md",
+        "lib/application/onboarding-service.mjs",
+        "lib/onboarding/project-reader.mjs",
+        "lib/onboarding/project-writer.mjs",
+        "lib/onboarding/runtime-handoff.mjs",
+        "lib/onboarding/cli.mjs",
+        "lib/onboarding/prompt.mjs"
       ]
     },
     "github": {

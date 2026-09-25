@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "goalRevision": "ee092cf516d99a78e4453ac21cf4d910bb78b36951100e6992735dfab199af85",
+  "ownerRole": "product-manager",
+  "criteria": [
+    {
+      "id": "documentation-integrity",
+      "definitionDigest": "79ef1bb88bc493ade802451eac036e7449f94cfd300f8a1d87282bafdea17c88",
+      "assertions": ["documentation validation passes"],
+      "allowedOrigins": ["collector-observed"],
+      "requireImmutable": false,
+      "maxAgeMs": 3600000
+    }
+  ]
+}
