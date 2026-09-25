@@ -2,8 +2,9 @@
 
 Use this guide when adding **AgentFlow SDLC** to an existing project. It is designed for a human and an agent to follow together: inspect first, validate read-only, ask explicit choices, propose changes, and preserve existing project instructions.
 
-Prefer to run the commands yourself instead? [Get started](get-started.md) covers the same ground
-in six commands without a conversation.
+Prefer to run the commands yourself instead? [Get started](get-started.md) uses `init` for a quick path with repository detection and starter evidence.
+This assisted path uses reviewed `adopt plan/apply` and explicit project configuration;
+it does not automatically create the same starter run.
 
 ## Core rule: clarity over automation
 
@@ -37,7 +38,12 @@ Execute the automated bootstrapping and onboarding protocol on this repository:
    - Clarify project preferences if needed (branch strategy, CI test command).
 
 4. Apply & Activate:
-   - Upon confirmation, execute adoption apply, sync slash commands (`agentflow-sdlc config sync --target . --apply`), setup GitHub governance (`agentflow-sdlc github setup --target . --apply`), and verify repository integrity (`agentflow-sdlc sdlc validate --target .`).
+   - After approval, apply the reviewed adoption plan with its confirmation token.
+   - Apply the approved branch, integration lifecycle, CI command and posture edits to agent-workflow.config.json; preserve existing instructions and settings. Supported postures: advisory, assisted, delegated, autonomous.
+   - Adoption does not perform init's detection or seed starter evidence. Do not use init --force as a shortcut. Configure delivery.candidate, delivery.checks and delivery.contracts for the actual change before its first run; report missing tests explicitly.
+   - Scaffold missing harness pillars (`agentflow-sdlc harness scaffold --target .`), review their defaults, then synchronize adapters (`agentflow-sdlc config sync --target . --apply`). Sync is sequential, not atomic; inspect partial failures before retrying.
+   - If GitHub is selected, write local governance files (`agentflow-sdlc github setup --target . --apply`); this does not create remote labels.
+   - Run `agentflow-sdlc sdlc validate --target .` and `agentflow-sdlc config doctor --target . --json`. Report blockers and warnings separately. Adoption completion is not a frozen contract or a verification observation.
 ```
 
 ---
@@ -96,7 +102,7 @@ The assistant consults the human collaborator on key project decisions before ta
 2. **Project Defaults**:
    - Primary branch strategy (`trunk`, `development`, or custom feature branches);
    - CI-equivalent validation and test command (e.g. `npm test`, `pytest`, `cargo test`);
-   - Desired autonomy posture (`assisted`, `delegated`, or `interactive`).
+   - Desired autonomy posture (`advisory`, `assisted`, `delegated`, or `autonomous`).
 3. **Activation Options**:
    - Synchronize harness slash commands and skills (`config sync`);
    - Bootstrap GitHub issue templates, labels schema, and PR checklists (`github setup`).
@@ -109,27 +115,51 @@ Upon receiving human approval, the assistant runs the activation pipeline:
 # 1. Apply the approved adoption plan
 agentflow-sdlc adopt apply --profile standard --target /path/to/project --confirm <plan-token> --json
 
-# 2. Activate harness slash commands and portable skills
+# 2. After applying the approved project configuration described below, scaffold harness defaults
+agentflow-sdlc harness scaffold --target /path/to/project
+
+# 3. Activate harness slash commands and portable skills
 agentflow-sdlc config sync --target /path/to/project --apply
 
-# 3. Bootstrap GitHub governance templates and labels
+# 4. Write local GitHub templates and a labels manifest (optional)
 agentflow-sdlc github setup --target /path/to/project --apply
 
-# 4. Verify installation integrity
+# 5. Verify installation integrity
 agentflow-sdlc sdlc validate --target /path/to/project
 ```
 
-The assistant summarizes the outcome: files added, commands executed, and verified status.
+Between adoption and activation, apply the approved edits to the project-owned
+`agent-workflow.config.json`: set the actual trunk/integration branches and matching
+`integrationLifecycle` values, work-branch policy, `ciCommands`, and `posture`.
+Preserve existing instructions and settings; surface adoption conflicts before proceeding.
+Unlike `init`, `adopt apply` does not detect these values or create a starter check and
+`agentflow-acceptance.json`. Do not run `init --force` to fill this gap: it regenerates
+project-owned settings.
+
+Before the first governed run, configure `delivery.candidate`, `delivery.checks` and
+`delivery.contracts` with an acceptance file for the actual change, following
+[run operations](run-operations.md). If no test command exists, report that missing
+prerequisite; installation validation alone is not evidence that a change passed tests.
+
+`harness scaffold` seeds missing pillars; tailor them to the approved project choices.
+`config sync` is sequential, not atomic; inspect partial failures before retrying.
+`github setup` writes local files, including `.github/labels.json`; it does not create
+remote labels. Skip it for projects that do not use GitHub.
+
+Finally run `agentflow-sdlc config doctor --target /path/to/project --json`.
+Report blockers, warnings, files changed and which steps were actually verified.
+Completion here means adoption and configuration; a frozen contract and recorded
+observation require a subsequent run.
 
 ---
 
 ## Optional CLI prompt helper
 
-From the framework checkout, print the onboarding prompt targeting any repository:
+With the CLI installed, print the onboarding prompt targeting any repository:
 
 ```bash
-node bin/cli.mjs onboarding-prompt
-node bin/cli.mjs onboarding-prompt --target /path/to/project
+agentflow-sdlc onboarding-prompt
+agentflow-sdlc onboarding-prompt --target /path/to/project
 ```
 
 ## Ongoing configuration and maintenance

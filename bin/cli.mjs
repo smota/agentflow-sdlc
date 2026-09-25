@@ -928,7 +928,12 @@ Execute the automated bootstrapping and onboarding protocol on this repository: 
    - Clarify project preferences if needed (branch strategy, CI test command).
 
 4. Apply & Activate:
-   - Upon confirmation, execute adoption apply, sync slash commands (\`agentflow-sdlc config sync --target . --apply\`), setup GitHub governance (\`agentflow-sdlc github setup --target . --apply\`), and verify repository integrity (\`agentflow-sdlc sdlc validate --target .\`).
+   - After approval, apply the reviewed adoption plan with its confirmation token.
+   - Apply the approved branch, integration lifecycle, CI command and posture edits to agent-workflow.config.json; preserve existing instructions and settings. Supported postures: advisory, assisted, delegated, autonomous.
+   - Adoption does not perform init's detection or seed starter evidence. Do not use init --force as a shortcut. Configure delivery.candidate, delivery.checks and delivery.contracts for the actual change before its first run; report missing tests explicitly.
+   - Scaffold missing harness pillars (\`agentflow-sdlc harness scaffold --target .\`), review their defaults, then synchronize adapters (\`agentflow-sdlc config sync --target . --apply\`). Sync is sequential, not atomic; inspect partial failures before retrying.
+   - If GitHub is selected, write local governance files (\`agentflow-sdlc github setup --target . --apply\`); this does not create remote labels.
+   - Run \`agentflow-sdlc sdlc validate --target .\` and \`agentflow-sdlc config doctor --target . --json\`. Report blockers and warnings separately. Adoption completion is not a frozen contract or a verification observation.
 `)
 }
 

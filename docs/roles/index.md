@@ -48,13 +48,13 @@ to an external owner or operational lifecycle.
 ## CLI
 
 ```bash
-node bin/cli.mjs roles catalog --json
-node bin/cli.mjs roles inspect developer --json
-node bin/cli.mjs roles validate --json
-node bin/cli.mjs roles resolve analyst --methods agentflow:method:event-storming --json
-node bin/cli.mjs roles sync --harness all --dry-run --target /path/to/project --json
-node bin/cli.mjs roles sync --harness all --apply --target /path/to/project --json
-node bin/cli.mjs roles status --harness all --target /path/to/project --json
+agentflow-sdlc roles catalog --json
+agentflow-sdlc roles inspect developer --json
+agentflow-sdlc roles validate --json
+agentflow-sdlc roles resolve analyst --methods agentflow:method:event-storming --json
+agentflow-sdlc roles sync --harness all --dry-run --target /path/to/project --json
+agentflow-sdlc roles sync --harness all --apply --target /path/to/project --json
+agentflow-sdlc roles status --harness all --target /path/to/project --json
 ```
 
 Generated role projections live under `.agentflow/roles/<harness>/`. They are portable adapter

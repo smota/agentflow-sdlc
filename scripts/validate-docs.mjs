@@ -2,7 +2,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { EVIDENCE_VOCABULARY_TERMS } from '../lib/sdlc-vocabulary.mjs'
+import { POSTURES, EVIDENCE_VOCABULARY_TERMS } from '../lib/sdlc-vocabulary.mjs'
 
 const KNOWN_CLI_COMMANDS = new Set([
   'init',
@@ -140,6 +140,22 @@ export function extractMarkedCommandBlock(markdown, marker) {
     .filter((line) => line.length > 0)
 }
 
+export function validateDocumentedCommands(text) {
+  const errors = []
+  const prefix =
+    /(?:node (?:\/path\/to\/agentflow-sdlc\/)?bin\/cli\.mjs|npx(?: -y)? (?:github:smota\/agentflow-sdlc|agentflow-sdlc)|agentflow-sdlc) ([a-z][a-z-]*)/g
+  for (const match of text.matchAll(prefix)) {
+    if (!KNOWN_CLI_COMMANDS.has(match[1])) errors.push('unknown CLI command ' + match[1])
+  }
+  for (const match of text.matchAll(/--posture(?:=| +)([a-z][a-z-]*)/g)) {
+    if (!POSTURES.includes(match[1])) errors.push('unknown posture ' + match[1])
+  }
+  for (const match of text.matchAll(/"posture"\s*:\s*"([^"<>]+)"/g)) {
+    if (!POSTURES.includes(match[1])) errors.push('unknown posture ' + match[1])
+  }
+  return errors
+}
+
 export function validateDocs(root = process.cwd()) {
   const errors = []
   const files = markdownFiles(root)
@@ -158,13 +174,7 @@ export function validateDocs(root = process.cwd()) {
       }
     }
     if (!relative.startsWith('docs/releases/') && !/^\*\*Status:\*\* Superseded/m.test(text)) {
-      for (const match of text.matchAll(
-        /node (?:\/path\/to\/agentflow-sdlc\/)?bin\/cli\.mjs ([a-z][a-z-]*)/g,
-      )) {
-        if (!KNOWN_CLI_COMMANDS.has(match[1])) {
-          errors.push(`${relative}: unknown CLI command ${match[1]}`)
-        }
-      }
+      errors.push(...validateDocumentedCommands(text).map((error) => `${relative}: ${error}`))
     }
   }
   for (const required of [

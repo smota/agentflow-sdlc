@@ -127,7 +127,7 @@ Add `extensions/nfr-verification` to `extensions.enabledPacks` in `agent-workflo
 Or enable via the framework CLI:
 
 ```bash
-node bin/cli.mjs extensions enable extensions/nfr-verification
+agentflow-sdlc extensions enable extensions/nfr-verification
 ```
 
 Validate pack registration:
@@ -138,7 +138,7 @@ node scripts/validate-extension-packs.mjs --run-validators
 
 ### Disabling the pack
 
-Remove `extensions/nfr-verification` from `extensions.enabledPacks` in `agent-workflow.config.json` (or use `node bin/cli.mjs extensions disable extensions/nfr-verification`). Disabling the pack immediately restores default workflow behavior without leftover dependencies.
+Remove `extensions/nfr-verification` from `extensions.enabledPacks` in `agent-workflow.config.json` (or use `agentflow-sdlc extensions disable extensions/nfr-verification`). Disabling the pack immediately restores default workflow behavior without leftover dependencies.
 
 ## Phase 1 Limitations
 

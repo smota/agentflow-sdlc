@@ -1,6 +1,6 @@
 # Get started
 
-This is the fastest path from a clean checkout to a first governed change in your own project: a
+This is the fastest path from installation to a first governed change in your own project: a
 change made under AgentFlow's roles and checked by its gates, with the decision recorded as evidence
 rather than left in private chat memory.
 
@@ -16,12 +16,8 @@ You can install `agentflow-sdlc` as an application CLI in your environment direc
 npm install -g github:smota/agentflow-sdlc
 ```
 
-Or clone the pinned git release:
-
-```bash
-git clone --branch v1.0.0 https://github.com/smota/agentflow-sdlc.git
-cd agentflow-sdlc
-```
+No AgentFlow repository clone is needed. Run the commands below from any directory;
+`--target` points to your own project. Replace `/path/to/your-project` with its path.
 
 ## Reach your first governed change in 6 commands
 
@@ -34,11 +30,11 @@ something the next one depends on.
 <!-- entry-path: 6 commands to a first governed change -->
 
 ```bash
-node bin/cli.mjs init --target /path/to/your-project
-node bin/cli.mjs sdlc validate --target /path/to/your-project
-node bin/cli.mjs run start demo --goal "Adopt AgentFlow SDLC" --execute --target /path/to/your-project
-node bin/cli.mjs run freeze demo --execute --target /path/to/your-project
-node bin/cli.mjs run verify demo --check starter --execute --target /path/to/your-project
+agentflow-sdlc init --target /path/to/your-project
+agentflow-sdlc sdlc validate --target /path/to/your-project
+agentflow-sdlc run start demo --goal "Adopt AgentFlow SDLC" --execute --target /path/to/your-project
+agentflow-sdlc run freeze demo --execute --target /path/to/your-project
+agentflow-sdlc run verify demo --check starter --execute --target /path/to/your-project
 git -C /path/to/your-project add -A -- . ":(exclude).agent-runs" && git -C /path/to/your-project commit -m "Adopt AgentFlow SDLC"
 ```
 
@@ -72,11 +68,11 @@ acceptance file afterward requires a fresh freeze, not a quiet edit.
 
 **5. `run verify`** runs the `starter` check `init` seeded, against your real files, and records
 what happened as an observation: the command that ran, its output, and whether the one placeholder
-assertion held. Replace that placeholder with an assertion your own test output actually produces
-once you are ready to trust the result; until then, this step honestly records what your test command
-did, pass or fail — including exiting non-zero when it fails. That is the command working correctly,
-not breaking: it collected real evidence instead of asserting success it could not back up. Check
-`node bin/cli.mjs run status demo --target /path/to/your-project --json` to see the recorded
+assertion held. The starter uses the test process exit code: zero records a pass; non-zero
+records a failure and makes verification fail. Its assertion label is a placeholder, not text
+that must appear in test output. Replace the starter criterion with real acceptance criteria
+and appropriate checks before treating it as evidence for a product change. Check
+`agentflow-sdlc run status demo --target /path/to/your-project --json` to see the recorded
 observation either way.
 
 **6. `git commit`** records the adoption itself — `agent-framework-lock.json`, `AGENTS.md`,
@@ -103,10 +99,10 @@ Once initial files are committed, activate harness slash commands and issue temp
 
 ```bash
 # Sync canonical roles and skills into harness slash commands (.claude/commands/, etc.)
-node bin/cli.mjs config sync --target /path/to/your-project --apply
+agentflow-sdlc config sync --target /path/to/your-project --apply
 
 # Bootstrap GitHub issue forms, label taxonomies, and PR checklists
-node bin/cli.mjs github setup --target /path/to/your-project --apply
+agentflow-sdlc github setup --target /path/to/your-project --apply
 ```
 
 For continuous configuration, posture adjustments, or role-method tuning, follow [Assisted configuration](assisted-configuration.md).
@@ -116,13 +112,15 @@ For continuous configuration, posture adjustments, or role-method tuning, follow
 You can inspect everything `init` would do without changing your project:
 
 ```bash
-node bin/cli.mjs doctor-env --target /path/to/your-project
-node bin/cli.mjs adopt plan --profile standard --target /path/to/your-project --json
+agentflow-sdlc doctor-env --target /path/to/your-project
+agentflow-sdlc adopt plan --profile standard --target /path/to/your-project --json
 ```
 
 `doctor-env` reports which required and optional tools are available; it installs nothing. `adopt
-plan` previews the same install `init` performs, file by file, with transactional safety and rollback guarantees (`adopt apply`), so you can review every action before
-anything is written. Use [project setup](project-setup.md) for the full decision checklist and
+plan` previews the adoption payload shared with `init`, file by file. It does not preview
+the repository detection, starter evidence configuration or harness scaffolding that `init` adds
+after adoption. The transaction and rollback guarantees of `adopt apply` cover its adoption
+actions, not those additional writes. Use [project setup](project-setup.md) for the full decision checklist and
 [project config](project-config.md) for every available field.
 
 ## Existing installations
@@ -130,7 +128,7 @@ anything is written. Use [project setup](project-setup.md) for the full decision
 To update files after a new release, preview first:
 
 ```bash
-node bin/cli.mjs adopt plan --profile standard --target /path/to/your-project --json
+agentflow-sdlc adopt plan --profile standard --target /path/to/your-project --json
 ```
 
 Review the plan, then apply it with `adopt apply` as shown in [run operations](run-operations.md).
@@ -150,15 +148,7 @@ This page is the fast path. For everything else:
 | The complete map of every document                                 | [Documentation index](index.md)                     |
 | What a finished phase of work looks like, saved as a file          | [Agent workflow](agent-workflow.md)                 |
 
-## Verify this framework checkout
+## Contribute to AgentFlow
 
-Contributors and maintainers working on AgentFlow itself (not on an adopting project) run:
-
-```bash
-pnpm test
-pnpm test:workflow
-pnpm test:evals
-pnpm format:check
-node scripts/verify-hooks.mjs
-node scripts/validate-npm-package.mjs
-```
+To work on AgentFlow itself, follow the [contribution workflow](guides/contribution-workflow.md)
+for source checkout and framework validation instructions.

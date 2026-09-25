@@ -9,7 +9,7 @@ resolver selects the smallest implementation that satisfies the declared intent 
 | Concept          | Question                          | Examples                                  |
 | ---------------- | --------------------------------- | ----------------------------------------- |
 | Lifecycle role   | Who owns the SDLC decision?       | `agentflow:architect`, `agentflow:tester` |
-| Skill or method  | How is the work approached?       | `agentflow:scanner`, TDD, event storming  |
+| Skill or method  | How is the work approached?       | `agentflow-scanner`, TDD, event storming  |
 | Execution intent | What portable behavior is needed? | `delegated-work`, `parallel-fanout`       |
 | Control          | What may never be weakened?       | `single-writer`, `review-independence`    |
 | Provider facet   | What service surface exists?      | `execution`, `evidence`, `workspace`      |

@@ -1,9 +1,9 @@
 ---
-name: designer
+name: agentflow-designer
 description: Define or evolve canonical AgentFlow SDLC policy, roles, schemas, gates, and extension contracts. Use for framework-definition changes; do not use to migrate consuming repositories, coordinate delivery phases, or issue audit verdicts.
 metadata:
   namespace: agentflow
-  qualified-name: 'agentflow:designer'
+  qualified-name: 'agentflow-designer'
   role: designer
 ---
 
@@ -23,9 +23,9 @@ evidence, and explicit compatibility behavior.
 
 ## Collaboration
 
-Use `agentflow:scanner` for discovery, consult `agentflow:migrator` for adoption impact, and ask
-`agentflow:auditor` to verify the resulting contract. Return `definition-change-set` to
-`agentflow:orchestrator`.
+Use `agentflow-scanner` for discovery, consult `agentflow-migrator` for adoption impact, and ask
+`agentflow-auditor` to verify the resulting contract. Return `definition-change-set` to
+`agentflow-orchestrator`.
 
 ## Boundaries
 
@@ -38,6 +38,6 @@ Use `agentflow:scanner` for discovery, consult `agentflow:migrator` for adoption
 
 Accept `definition-change-request`; return `definition-change-set` with decision, affected authority
 files, compatibility impact, migration requirement, validators, and unresolved questions. Route
-consumer changes to `agentflow:migrator` and independent verification to `agentflow:auditor`.
+consumer changes to `agentflow-migrator` and independent verification to `agentflow-auditor`.
 
 Read [references/definition-completeness.md](references/definition-completeness.md) before closeout.

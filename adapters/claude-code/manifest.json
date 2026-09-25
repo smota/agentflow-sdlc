@@ -6,7 +6,14 @@
   "namespace": "agentflow",
   "entry": ".claude/skills",
   "roleEntry": ".agentflow/roles/claude-code",
-  "skills": ["orchestrator", "collaborator", "scanner", "designer", "migrator", "auditor"],
+  "skills": [
+    "agentflow-orchestrator",
+    "agentflow-collaborator",
+    "agentflow-scanner",
+    "agentflow-designer",
+    "agentflow-migrator",
+    "agentflow-auditor"
+  ],
   "roles": [
     "product-manager",
     "analyst",

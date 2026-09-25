@@ -1,9 +1,9 @@
 ---
-name: collaborator
+name: agentflow-collaborator
 description: Select and govern AgentFlow complexity class, collaboration mode, council policy, helper boundaries, and parent synthesis. Use when uncertainty or review risk benefits from multiple perspectives; do not use to own phase state, implementation, or acceptance verdicts.
 metadata:
   namespace: agentflow
-  qualified-name: 'agentflow:collaborator'
+  qualified-name: 'agentflow-collaborator'
   role: collaborator
 ---
 
@@ -26,8 +26,8 @@ only when the expected uncertainty reduction justifies coordination cost.
 
 ## Collaboration
 
-Use `agentflow:scanner` for broad evidence collection and `agentflow:auditor` for an independent
-verdict. Return `strategy-synthesis` or `council-synthesis` to `agentflow:orchestrator`. Other peer roles may request a
+Use `agentflow-scanner` for broad evidence collection and `agentflow-auditor` for an independent
+verdict. Return `strategy-synthesis` or `council-synthesis` to `agentflow-orchestrator`. Other peer roles may request a
 collaboration plan but do not transfer their domain ownership.
 
 ## Boundaries

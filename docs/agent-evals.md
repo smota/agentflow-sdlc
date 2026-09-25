@@ -6,7 +6,7 @@ deterministic assertions, and sets a pass threshold. Assertions include `contain
 `regex`, and `json-valid`.
 
 ```text
-node bin/cli.mjs sdlc run-evals --manifest agents/evals/manifests/framework-contracts.json
+agentflow-sdlc sdlc run-evals --manifest agents/evals/manifests/framework-contracts.json
 ```
 
 For live harness output, keep files under ignored `.agent-runs/` and pass `--actual-dir`. Commit only
@@ -17,7 +17,7 @@ The mandatory Claude → Agy acceptance uses
 `agents/evals/prompts/claude-agy-handoff.md`, the `claude-agy-handoff.json` manifest, and:
 
 ```text
-node bin/cli.mjs sdlc validate-multi-agent --actual-dir .agent-runs/<run>
+agentflow-sdlc sdlc validate-multi-agent --actual-dir .agent-runs/<run>
 ```
 
 This checks the semantic role chain, exact platform/executor provenance, action-boundary

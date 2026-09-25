@@ -1,9 +1,9 @@
 ---
-name: auditor
+name: agentflow-auditor
 description: Validate and review AgentFlow project, issue, PR, release, evidence, agent, or skill compliance and return a severity-based verdict. Use for independent assurance; do not use to modify the audited subject or coordinate delivery.
 metadata:
   namespace: agentflow
-  qualified-name: 'agentflow:auditor'
+  qualified-name: 'agentflow-auditor'
   role: auditor
 ---
 
@@ -23,9 +23,9 @@ and residual risk. Treat evals and outcome projections as derived evidence, not 
 
 ## Collaboration
 
-Use `agentflow:scanner` for additional evidence and `agentflow:collaborator` when an independent
-panel is explicitly required. Route policy defects to `agentflow:designer`, remediation to
-`agentflow:migrator`, and `audit-verdict` or `acceptance-verification` to `agentflow:orchestrator`.
+Use `agentflow-scanner` for additional evidence and `agentflow-collaborator` when an independent
+panel is explicitly required. Route policy defects to `agentflow-designer`, remediation to
+`agentflow-migrator`, and `audit-verdict` or `acceptance-verification` to `agentflow-orchestrator`.
 
 ## Boundaries
 

@@ -57,8 +57,8 @@ the selected provider. AgentFlow resolves portable execution intents against wha
 reports at runtime and records any explicit degraded fallback:
 
 ```bash
-node bin/cli.mjs providers inspect claude-cli --json
-node bin/cli.mjs collaboration plan --mode council --provider claude-cli --json
+agentflow-sdlc providers inspect claude-cli --json
+agentflow-sdlc collaboration plan --mode council --provider claude-cli --json
 ```
 
 ## The fastest way to evaluate it

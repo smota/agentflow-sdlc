@@ -8,11 +8,11 @@
     "url": "https://github.com/smota/agentflow-sdlc"
   },
   "skills": [
-    "./skills/orchestrator",
-    "./skills/collaborator",
-    "./skills/scanner",
-    "./skills/designer",
-    "./skills/migrator",
-    "./skills/auditor"
+    "./skills/agentflow-orchestrator",
+    "./skills/agentflow-collaborator",
+    "./skills/agentflow-scanner",
+    "./skills/agentflow-designer",
+    "./skills/agentflow-migrator",
+    "./skills/agentflow-auditor"
   ]
 }

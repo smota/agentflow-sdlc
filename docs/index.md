@@ -130,26 +130,26 @@ The [ADR index](adr/) records accepted, proposed, and superseded decisions. ADRs
 
 ## CLI and validation reference
 
-The source CLI exposes these top-level command groups:
+The installed CLI exposes these top-level command groups:
 
 ```text
-agentflow-sdlc <doctor-env|adopt|providers|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|onboarding-prompt|release-plan>
+agentflow-sdlc <init|run|doctor-env|config|adopt|providers|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding-prompt|release-plan>
 ```
 
-Use the source checkout form until an npm package is published:
+After the npm installation in [Get started](get-started.md), use the installed command from any directory:
 
 ```bash
-node bin/cli.mjs <command> --target /path/to/project
+agentflow-sdlc <command> --target /path/to/project
 ```
 
 The `sdlc` group includes configuration, issue, role-pass, PR, release, skill, agent, evidence, lifecycle, eval, multi-agent, audit, migration, and metrics commands. Run an incomplete group command to print its exact usage, for example:
 
 ```bash
-node bin/cli.mjs sdlc
-node bin/cli.mjs skills
-node bin/cli.mjs plugins
-node bin/cli.mjs settings
-node bin/cli.mjs extensions
+agentflow-sdlc sdlc
+agentflow-sdlc skills
+agentflow-sdlc plugins
+agentflow-sdlc settings
+agentflow-sdlc extensions
 ```
 
 Repository self-checks:

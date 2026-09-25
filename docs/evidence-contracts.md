@@ -18,7 +18,7 @@ candidate makes the review stale.
 
 ```bash
 node scripts/review-digest.mjs --json
-node bin/cli.mjs sdlc validate-evidence \
+agentflow-sdlc sdlc validate-evidence \
   --type review-attestation \
   --path /path/to/attestation.json \
   --expected-digest <sha256> \
@@ -57,10 +57,10 @@ remain authoritative. Existing role-pass v1 Markdown remains readable; new porta
 this envelope.
 
 ```text
-node bin/cli.mjs sdlc validate-evidence --type artifact-ref --path artifact.json
-node bin/cli.mjs sdlc validate-evidence --type transition-envelope --path transition.json
-node bin/cli.mjs sdlc validate-evidence --type role-handoff --path role-handoff.json
-node bin/cli.mjs collaboration verify --handoff role-handoff.json --delivery delivery-receipt.json --json
+agentflow-sdlc sdlc validate-evidence --type artifact-ref --path artifact.json
+agentflow-sdlc sdlc validate-evidence --type transition-envelope --path transition.json
+agentflow-sdlc sdlc validate-evidence --type role-handoff --path role-handoff.json
+agentflow-sdlc collaboration verify --handoff role-handoff.json --delivery delivery-receipt.json --json
 ```
 
 ## Three requirement namespaces

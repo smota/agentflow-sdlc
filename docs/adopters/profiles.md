@@ -3,7 +3,7 @@
 List profiles without changing a target:
 
 ```bash
-node bin/cli.mjs adopt profiles --json
+agentflow-sdlc adopt profiles --json
 ```
 
 | Profile    | Use it for                                                    | Boundary                               |
@@ -16,7 +16,7 @@ node bin/cli.mjs adopt profiles --json
 Preview a minimal adoption:
 
 ```bash
-node bin/cli.mjs adopt plan --profile minimal --target /path/to/project --json
+agentflow-sdlc adopt plan --profile minimal --target /path/to/project --json
 ```
 
 The preview is byte-for-byte read-only. It reports `create`, `update`, `unchanged`, `conflict`,

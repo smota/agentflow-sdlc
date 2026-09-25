@@ -59,8 +59,8 @@ execution choices: branches, checks, routing, extensions, provider/source bindin
 preferences.
 
 ```bash
-node bin/cli.mjs sdlc validate-authority --target /path/to/project --json
-node bin/cli.mjs sdlc migrate-authority plan --target /path/to/project
+agentflow-sdlc sdlc validate-authority --target /path/to/project --json
+agentflow-sdlc sdlc migrate-authority plan --target /path/to/project
 ```
 
 Canonical configuration has one owner, enforced by `validate:authority` in the release and CI gate.

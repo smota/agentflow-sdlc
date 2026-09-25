@@ -307,58 +307,58 @@
       "ownership": "managed"
     },
     {
-      "source": "skills/orchestrator/SKILL.md",
-      "target": "skills/orchestrator/SKILL.md",
+      "source": "skills/agentflow-orchestrator/SKILL.md",
+      "target": "skills/agentflow-orchestrator/SKILL.md",
       "ownership": "managed"
     },
     {
-      "source": "skills/collaborator/SKILL.md",
-      "target": "skills/collaborator/SKILL.md",
+      "source": "skills/agentflow-collaborator/SKILL.md",
+      "target": "skills/agentflow-collaborator/SKILL.md",
       "ownership": "managed"
     },
     {
-      "source": "skills/collaborator/references/collaboration-modes.md",
-      "target": "skills/collaborator/references/collaboration-modes.md",
+      "source": "skills/agentflow-collaborator/references/collaboration-modes.md",
+      "target": "skills/agentflow-collaborator/references/collaboration-modes.md",
       "ownership": "managed"
     },
     {
-      "source": "skills/collaborator/references/bounded-environments.md",
-      "target": "skills/collaborator/references/bounded-environments.md",
+      "source": "skills/agentflow-collaborator/references/bounded-environments.md",
+      "target": "skills/agentflow-collaborator/references/bounded-environments.md",
       "ownership": "managed"
     },
     {
-      "source": "skills/scanner/SKILL.md",
-      "target": "skills/scanner/SKILL.md",
+      "source": "skills/agentflow-scanner/SKILL.md",
+      "target": "skills/agentflow-scanner/SKILL.md",
       "ownership": "managed"
     },
     {
-      "source": "skills/designer/SKILL.md",
-      "target": "skills/designer/SKILL.md",
+      "source": "skills/agentflow-designer/SKILL.md",
+      "target": "skills/agentflow-designer/SKILL.md",
       "ownership": "managed"
     },
     {
-      "source": "skills/designer/references/definition-completeness.md",
-      "target": "skills/designer/references/definition-completeness.md",
+      "source": "skills/agentflow-designer/references/definition-completeness.md",
+      "target": "skills/agentflow-designer/references/definition-completeness.md",
       "ownership": "managed"
     },
     {
-      "source": "skills/migrator/SKILL.md",
-      "target": "skills/migrator/SKILL.md",
+      "source": "skills/agentflow-migrator/SKILL.md",
+      "target": "skills/agentflow-migrator/SKILL.md",
       "ownership": "managed"
     },
     {
-      "source": "skills/migrator/references/preflight.md",
-      "target": "skills/migrator/references/preflight.md",
+      "source": "skills/agentflow-migrator/references/preflight.md",
+      "target": "skills/agentflow-migrator/references/preflight.md",
       "ownership": "managed"
     },
     {
-      "source": "skills/auditor/SKILL.md",
-      "target": "skills/auditor/SKILL.md",
+      "source": "skills/agentflow-auditor/SKILL.md",
+      "target": "skills/agentflow-auditor/SKILL.md",
       "ownership": "managed"
     },
     {
-      "source": "skills/auditor/references/workflow-compliance.md",
-      "target": "skills/auditor/references/workflow-compliance.md",
+      "source": "skills/agentflow-auditor/references/workflow-compliance.md",
+      "target": "skills/agentflow-auditor/references/workflow-compliance.md",
       "ownership": "managed"
     },
     {
