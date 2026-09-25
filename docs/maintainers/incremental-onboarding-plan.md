@@ -9,7 +9,25 @@ This document replaces the earlier conversational backlog. It is a design and de
 plan, not an implementation record. The current unrelated `SPEC.md` is not its specification.
 The maintainer subsequently authorized repository setup, GitHub tracking and execution
 with Agy CLI plus Codex adversarial review. Release, merge and shared installation
-changes remain outside that authorization.
+changes were initially outside that authorization. The experimental override below
+supersedes the earlier merge and human-gate restrictions for this workstream only.
+
+## Experimental execution authorization
+
+On 2026-09-25 the maintainer explicitly authorized end-to-end execution of S0–S7,
+including delegated PR acceptance and merge, without intermediate product-refinement
+stops. Agy CLI authors implementation; Codex applies bounded returned artifacts,
+runs checks and performs adversarial technical review. Mechanical evidence-format
+corrections are attributed to the coordinator instead of repeatedly redispatching them.
+The user authorization is prospective delegated authority, not evidence that a human
+reviewed a later candidate. Record the actual reviewer on every PR.
+
+This exception applies only to epic #249 and its implementation PRs. It does not
+change the default framework review policy, authorize package publication, shared
+installation changes or deleting unattributed files. Failed substantive tests and
+review findings still require remediation. Process friction is recorded for a final
+retrospective instead of introducing another approval cycle. Earlier phase-0 returns
+remain historical evidence; their retry limit is superseded by this instruction.
 
 ## Goal and acceptance
 
