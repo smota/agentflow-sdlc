@@ -140,7 +140,8 @@ describe('CLI config commands (bin/cli.mjs config)', () => {
     )
     expect(initRun.status).toBe(0)
     expect(initRun.stdout).toContain('posture: autonomous')
-    expect(initRun.stdout).toContain('synced adapters:')
+    expect(initRun.stdout).not.toContain('synced adapters:')
+    expect(existsSync(join(target, '.agents/skills'))).toBe(false)
 
     const adapter = JSON.parse(readFileSync(join(target, 'agent-workflow.config.json'), 'utf8'))
     expect(adapter.posture).toBe('autonomous')

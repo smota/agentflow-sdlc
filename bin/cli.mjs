@@ -51,6 +51,8 @@ import { runConfigSync } from '../lib/config/sync.mjs'
 import { inspectEffectiveConfig } from '../lib/config/inspect.mjs'
 import { formatContinuousConfigPrompt } from '../lib/config/prompt.mjs'
 import { setupGitHubGovernance } from '../lib/github-setup.mjs'
+import { handleOnboarding } from '../lib/onboarding/cli.mjs'
+import { formatOnboardingPrompt } from '../lib/onboarding/prompt.mjs'
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -137,6 +139,7 @@ function printInitReport(result) {
     )
   }
   if (result.assumptions.length) {
+    if (result.skillInstruction) process.stdout.write(`${result.skillInstruction}\n`)
     process.stdout.write(`Assumptions:\n`)
     for (const note of result.assumptions) process.stdout.write(`  - ${note}\n`)
   }
@@ -904,37 +907,7 @@ function handleGitHub(rest, targetDir) {
 }
 
 function printOnboardingPrompt(targetDir) {
-  process.stdout
-    .write(`You are acting as an AgentFlow SDLC assisted onboarding assistant. Follow the assisted onboarding guide:
-https://github.com/smota/agentflow-sdlc/blob/main/docs/assisted-onboarding.md
-
-Execute the automated bootstrapping and onboarding protocol on this repository: ${targetDir}
-
-0. Bootstrap Tooling:
-   - Check if \`agentflow-sdlc\` is available in PATH.
-   - If not installed, run: \`npm install -g github:smota/agentflow-sdlc\`.
-   - If global install encounters permission issues (EACCES), use \`npx -y github:smota/agentflow-sdlc <cmd>\` as the command prefix for all subsequent steps.
-
-1. Inspect & Diagnose:
-   - Run environment diagnostics in read-only mode: \`agentflow-sdlc doctor-env --target . --json\`
-   - Inspect existing instructions (AGENTS.md, README, docs, .github/). Report any missing tools or potential conflicts.
-
-2. Plan & Preview:
-   - Generate an adoption plan preview: \`agentflow-sdlc adopt plan --profile standard --target . --json\`
-   - Summarize the plan in plain English without modifying files.
-
-3. Clarify Choices & Gate:
-   - Present the adoption preview and ask for my explicit confirmation before applying.
-   - Clarify project preferences if needed (branch strategy, CI test command).
-
-4. Apply & Activate:
-   - After approval, apply the reviewed adoption plan with its confirmation token.
-   - Apply the approved branch, integration lifecycle, CI command and posture edits to agent-workflow.config.json; preserve existing instructions and settings. Supported postures: advisory, assisted, delegated, autonomous.
-   - Adoption does not perform init's detection or seed starter evidence. Do not use init --force as a shortcut. Configure delivery.candidate, delivery.checks and delivery.contracts for the actual change before its first run; report missing tests explicitly.
-   - Scaffold missing harness pillars (\`agentflow-sdlc harness scaffold --target .\`), review their defaults, then synchronize adapters (\`agentflow-sdlc config sync --target . --apply\`). Sync is sequential, not atomic; inspect partial failures before retrying.
-   - If GitHub is selected, write local governance files (\`agentflow-sdlc github setup --target . --apply\`); this does not create remote labels.
-   - Run \`agentflow-sdlc sdlc validate --target .\` and \`agentflow-sdlc config doctor --target . --json\`. Report blockers and warnings separately. Adoption completion is not a frozen contract or a verification observation.
-`)
+  process.stdout.write(`${formatOnboardingPrompt(targetDir)}\n`)
 }
 
 function positionalArgs(args) {
@@ -950,7 +923,7 @@ function positionalArgs(args) {
 }
 
 const ROOT_USAGE =
-  'Usage: agentflow-sdlc <init|run|doctor-env|config|adopt|providers|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding-prompt|release-plan> [path] [--target <dir>] [--json]\n'
+  'Usage: agentflow-sdlc <init|run|doctor-env|config|adopt|providers|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding|onboarding-prompt|release-plan> [path] [--target <dir>] [--json]\n'
 
 const COMMAND_USAGE = {
   init: 'Usage: agentflow-sdlc init [--profile <id>] [--posture <posture>] [--no-harness] [--sync] [--target <dir>] [--force] [--json]\n',
@@ -969,6 +942,8 @@ const COMMAND_USAGE = {
   methods: 'Usage: agentflow-sdlc methods <catalog|validate> [--json]\n',
   harness: 'Usage: agentflow-sdlc harness <inspect|scaffold> [--target <dir>] [--force] [--json]\n',
   github: 'Usage: agentflow-sdlc github <setup> [--target <dir>] [--dry-run|--apply] [--json]\n',
+  onboarding:
+    'Usage: agentflow-sdlc onboarding <inspect|plan|apply|verify|recover|runtime-request> [--target <dir>] [--profile <id>] [--runtime-request <file>] [--runtime-evidence <file>] [--choices <file>] [--plan <file>] [--confirm <digest>] [--json]\n',
 }
 
 function requestedHelp(args) {
@@ -1110,6 +1085,15 @@ function main() {
       )
     }
     return report.ok ? 0 : 1
+  }
+
+  if (command === 'onboarding') {
+    try {
+      return handleOnboarding(rest, targetDir)
+    } catch (error) {
+      process.stderr.write(`${error.message}\n`)
+      return 1
+    }
   }
 
   if (command === 'onboarding-prompt') {

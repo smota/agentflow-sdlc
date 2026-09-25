@@ -37,22 +37,22 @@ describe('CLI prompt helpers', () => {
     expect(output).toContain('assisted onboarding guide')
     expect(output).toContain('docs/assisted-onboarding.md')
     expect(output).toContain('tmp-app')
-    expect(output).toContain('Bootstrap Tooling')
-    expect(output).toContain('npm install -g github:smota/agentflow-sdlc')
+    expect(output).toContain('Runtime & Environment Request')
+    expect(output).not.toContain('npm install -g')
     expect(output).toContain('agentflow-sdlc doctor-env')
-    expect(output).toContain('Present the adoption preview and ask for my explicit confirmation')
-    expect(output).toContain('Do not use init --force')
-    expect(output).toContain('advisory, assisted, delegated, autonomous')
-    expect(output).toContain('blockers and warnings separately')
+    expect(output).toContain('Present the adoption preview and ask for explicit confirmation')
+    expect(output).toContain('--runtime-request runtime-request.json')
+    expect(output).toContain('--runtime-evidence runtime-evidence.json')
+    expect(output).toContain('projectReady and runtimeReady separately')
     const guide = fs.readFileSync(
       new URL('../../docs/assisted-onboarding.md', import.meta.url),
       'utf8',
     )
-    const generatedSteps = output.slice(output.indexOf('0. Bootstrap Tooling:')).trim()
-    const documentedSteps = guide
-      .slice(guide.indexOf('0. Bootstrap Tooling:'))
-      .split('\n```')[0]
+    const generatedSteps = output
+      .slice(output.indexOf('Principles:'))
       .trim()
+      .replaceAll(path.resolve('tmp-app'), '/path/to/project')
+    const documentedSteps = guide.slice(guide.indexOf('Principles:')).split('\n```')[0].trim()
     expect(generatedSteps.replaceAll('\r\n', '\n')).toBe(documentedSteps.replaceAll('\r\n', '\n'))
   })
 })

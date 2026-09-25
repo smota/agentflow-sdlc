@@ -18,123 +18,144 @@ Paste this prompt into any coding agent or harness (Antigravity, Claude Code, Co
 You are acting as an AgentFlow SDLC assisted onboarding assistant. Follow the assisted onboarding guide:
 https://github.com/smota/agentflow-sdlc/blob/main/docs/assisted-onboarding.md
 
-Execute the automated bootstrapping and onboarding protocol on this repository:
+Execute the onboarding protocol on this repository: /path/to/project
 
-0. Bootstrap Tooling:
-   - Check if `agentflow-sdlc` is available in PATH.
-   - If not installed, run: `npm install -g github:smota/agentflow-sdlc`.
-   - If global install encounters permission issues (EACCES), use `npx -y github:smota/agentflow-sdlc <cmd>` as the command prefix for all subsequent steps.
+Principles:
+- The runtime discovers and provisions tool paths using its own mechanisms; AgentFlow does not execute host installation.
+- The current runtime is the default scope; extra runtimes require an explicit request.
+- Always assess updates, but updating shared tools is a separate decision from adopting a project.
+- Unknown outcomes must be reconciled before repeating operations.
 
-1. Inspect & Diagnose:
-   - Run environment diagnostics in read-only mode: `agentflow-sdlc doctor-env --target . --json`
-   - Inspect existing instructions (AGENTS.md, README, docs, .github/). Report any missing tools or potential conflicts.
+1. Runtime & Environment Request:
+   - If the CLI is missing, the runtime first provisions it through its own installation mechanism and verifies discovery; these CLI commands start after bootstrap.
+   - Save runtime request: `agentflow-sdlc onboarding runtime-request > runtime-request.json`
+   - The runtime writes fresh observations to runtime-evidence.json matching that request ID and runtime ID. Use schemas/onboarding-runtime.schema.json; unknown observations remain unknown.
+   - Run environment diagnostics in read-only mode: `agentflow-sdlc doctor-env --target /path/to/project --json`
 
-2. Plan & Preview:
-   - Generate an adoption plan preview: `agentflow-sdlc adopt plan --profile standard --target . --json`
+2. Inspect & Diagnose:
+   - Inspect the project: `agentflow-sdlc onboarding inspect --target /path/to/project --json`
+   - Review existing instructions (AGENTS.md, README, docs, .github/) and report any conflicts.
+
+3. Plan & Preview:
+   - Save the plan preview: `agentflow-sdlc onboarding plan --target "/path/to/project" --profile standard --runtime-request runtime-request.json --runtime-evidence runtime-evidence.json > onboarding-plan.json`
    - Summarize the plan in plain English without modifying files.
 
-3. Clarify Choices & Gate:
-   - Present the adoption preview and ask for my explicit confirmation before applying.
-   - Clarify project preferences if needed (branch strategy, CI test command).
+4. Clarify Choices & Gate:
+   - Present the adoption preview and ask for explicit confirmation before applying.
+   - Clarify project preferences if needed (branch strategy, CI test command, posture).
+   - If choices or resolutions are required, provide them via a choices file.
 
-4. Apply & Activate:
-   - After approval, apply the reviewed adoption plan with its confirmation token.
-   - Apply the approved branch, integration lifecycle, CI command and posture edits to agent-workflow.config.json; preserve existing instructions and settings. Supported postures: advisory, assisted, delegated, autonomous.
-   - Adoption does not perform init's detection or seed starter evidence. Do not use init --force as a shortcut. Configure delivery.candidate, delivery.checks and delivery.contracts for the actual change before its first run; report missing tests explicitly.
-   - Scaffold missing harness pillars (`agentflow-sdlc harness scaffold --target .`), review their defaults, then synchronize adapters (`agentflow-sdlc config sync --target . --apply`). Sync is sequential, not atomic; inspect partial failures before retrying.
-   - If GitHub is selected, write local governance files (`agentflow-sdlc github setup --target . --apply`); this does not create remote labels.
-   - Run `agentflow-sdlc sdlc validate --target .` and `agentflow-sdlc config doctor --target . --json`. Report blockers and warnings separately. Adoption completion is not a frozen contract or a verification observation.
+5. Apply & Verify:
+   - After approval, apply the reviewed plan: `agentflow-sdlc onboarding apply --target "/path/to/project" --plan onboarding-plan.json --confirm <digest> --runtime-evidence runtime-evidence.json`
+   - Verify: `agentflow-sdlc onboarding verify --target "/path/to/project" --runtime-request runtime-request.json --runtime-evidence runtime-evidence.json --json`
+   - Report projectReady and runtimeReady separately. For project-only setup omit runtime files consistently; runtime readiness then remains unverified. Readiness for a governed change requires an issue contract and actual verification evidence.
 ```
 
 ---
 
 ## The assisted onboarding protocol
 
+Runtime evidence is optional for project-only setup. For a full readiness report, save
+the request and pass its matching evidence through plan, apply, and verify as shown
+above. Runtime observations use the [runtime schema](../schemas/onboarding-runtime.schema.json).
+The runtime supplies provenance for actual CLI use and skill discovery; component
+availability and release/update observations are separate. Do not fill unknown fields
+with successful examples. Additional runtimes receive their own requests.
+
+For known historical locks, select `"migrateLegacy": true` in the choices file.
+For an unrecognized lock, select `"recoverUnknown": true` and disposition every
+conflicting path through `"resolutions": {"path": "preserve"}` or `"replace"`.
+The preview binds the old lock bytes; the receipt supports restoring them. Malformed
+project configuration requires explicit repair before planning, and linked paths remain
+preserved. See [ADR 009](adr/009-incremental-onboarding.md).
+
 ```mermaid
 flowchart TD
-  S0["0. Bootstrap Tooling\n(npm install -g / npx fallback)"] --> S1["1. Inspect & Diagnose\n(doctor-env read-only)"]
-  S1 --> S2["2. Plan & Preview\n(adopt plan preview)"]
-  S2 --> S3["3. Clarify & Gate\n(Human consultation & confirmation)"]
-  S3 --> S4["4. Apply & Activate\n(apply + config sync + github setup)"]
+  S0["0. Runtime Handoff\n(runtime request & evidence)"] --> S1["1. Inspect & Diagnose\n(onboarding inspect read-only)"]
+  S1 --> S2["2. Plan & Preview\n(onboarding plan > plan.json)"]
+  S2 --> S3["3. Clarify & Gate\n(Human consultation & choices.json)"]
+  S3 --> S4["4. Apply & Verify\n(onboarding apply + verify)"]
 ```
 
-### Step 0: Bootstrap Tooling
+### Step 0: Runtime Handoff and Tooling
 
-The assistant ensures the `agentflow-sdlc` executable is ready in the environment without requiring a manual checkout:
+The connected runtime discovers and provisions tool paths using its own mechanisms; AgentFlow does not execute host installation or manage host-specific directories. The current runtime is the default scope, while additional runtimes require an explicit parameter. Emit a generic runtime request:
 
 ```bash
-# Install globally in environment:
-npm install -g github:smota/agentflow-sdlc
-
-# Or if permission-restricted (EACCES), run commands on the fly via npx:
-npx -y github:smota/agentflow-sdlc <command>
+agentflow-sdlc onboarding runtime-request --runtime current > runtime-request.json
 ```
+
+Runtime evidence is bounded data supplied back by the runtime; AgentFlow evaluates declared capabilities without executing arbitrary commands or path discovery.
 
 ### Step 1: Inspect & Diagnose
 
-The assistant validates repository health and tool availability in read-only mode:
+The assistant diagnoses project inventory and evaluates runtime evidence in read-only mode:
 
 ```bash
-agentflow-sdlc doctor-env --target /path/to/project --json
+agentflow-sdlc onboarding inspect --target /path/to/project --runtime-request runtime-request.json --runtime-evidence runtime-evidence.json
 ```
 
-- Inspects existing files (`AGENTS.md`, `CLAUDE.md`, `CODEX.md`, `AGY.md`, README, `.github/`).
-- Checks required tools (Node.js 20+, Git) and optional tools (`gh`, harness CLIs).
-- Highlights any missing tools and directs to [`environment-tools.md`](environment-tools.md) without halting.
+- Inspects existing files (`AGENTS.md`, `agent-workflow.config.json`, lockfile, `.github/`).
+- Checks capability status against runtime evidence.
+- Identifies uncommitted or conflicted states without performing writes.
 
 ### Step 2: Plan & Preview
 
-The assistant generates a non-destructive adoption plan preview:
+The assistant generates an immutable onboarding plan preview. The plan is output to stdout without modifying files; users redirect stdout to persist it:
 
 ```bash
-agentflow-sdlc adopt plan --profile standard --target /path/to/project --json
+agentflow-sdlc onboarding plan --target /path/to/project --profile standard > onboarding-plan.json
 ```
 
-- Checks `agent-framework-lock.json` and evaluates files to be added or managed.
-- Identifies any existing user-authored content to ensure nothing is overwritten without consent.
-- Summarizes the exact files to be created or modified in plain English for the human collaborator.
+- Evaluates missing assets and required transformations.
+- Produces an exact cryptographic plan digest.
+- If explicit project configurations or conflict resolutions are needed, pass a choices JSON:
+
+```json
+{
+  "config": {
+    "posture": "assisted",
+    "branching": {
+      "trunk": "main",
+      "integration": "development"
+    }
+  }
+}
+```
+
+```bash
+agentflow-sdlc onboarding plan --target /path/to/project --choices choices.json > onboarding-plan.json
+```
 
 ### Step 3: Clarify Choices & Gate (Human Confirmation)
 
-The assistant consults the human collaborator on key project decisions before taking action:
+The assistant presents the plan and explains the three distinct readiness dimensions:
 
-1. **Adoption Confirmation**: Confirm readiness to proceed with the proposed plan.
-2. **Project Defaults**:
-   - Primary branch strategy (`trunk`, `development`, or custom feature branches);
-   - CI-equivalent validation and test command (e.g. `npm test`, `pytest`, `cargo test`);
-   - Desired autonomy posture (`advisory`, `assisted`, `delegated`, or `autonomous`).
-3. **Activation Options**:
-   - Synchronize harness slash commands and skills (`config sync`);
-   - Bootstrap GitHub issue templates, labels schema, and PR checklists (`github setup`).
+1. **`projectReady`**: Project adoption assets, lockfile, and configurations are present, valid, and contain no conflicts or pending journals.
+2. **`runtimeReady`**: The connected runtime has demonstrated required capabilities through assessed evidence.
+3. **`governedChangeReady`**: Always false during onboarding. Adoption and installation alone prove neither tests nor acceptance; a governed change requires a frozen issue acceptance contract and verified observations.
 
-### Step 4: Apply & Activate
+### Step 4: Apply & Verify
 
-Upon receiving human approval, the assistant runs the activation pipeline:
+Upon human confirmation, apply the saved plan using its confirmation token digest and verify the result:
 
 ```bash
-# 1. Apply the approved adoption plan
-agentflow-sdlc adopt apply --profile standard --target /path/to/project --confirm <plan-token> --json
+# 1. Apply the reviewed plan with its cryptographic digest
+agentflow-sdlc onboarding apply --target /path/to/project --plan onboarding-plan.json --confirm <digest>
 
-# 2. After applying the approved project configuration described below, scaffold harness defaults
-agentflow-sdlc harness scaffold --target /path/to/project
-
-# 3. Activate harness slash commands and portable skills
-agentflow-sdlc config sync --target /path/to/project --apply
-
-# 4. Write local GitHub templates and a labels manifest (optional)
-agentflow-sdlc github setup --target /path/to/project --apply
-
-# 5. Verify installation integrity
-agentflow-sdlc sdlc validate --target /path/to/project
+# 2. Verify project readiness only (runtime evidence omitted in this example)
+agentflow-sdlc onboarding verify --target /path/to/project --json
 ```
+
+`init` vs `onboarding plan/apply` distinction: `init` is a backwards-compatible quick starter that detects conventional branch names and test scripts for brand-new repositories while preserving existing configuration. `onboarding plan` and `onboarding apply` provide transactional, incremental adoption with explicit plan files, drift rejection, and recovery journals.
 
 Between adoption and activation, apply the approved edits to the project-owned
 `agent-workflow.config.json`: set the actual trunk/integration branches and matching
 `integrationLifecycle` values, work-branch policy, `ciCommands`, and `posture`.
 Preserve existing instructions and settings; surface adoption conflicts before proceeding.
 Unlike `init`, `adopt apply` does not detect these values or create a starter check and
-`agentflow-acceptance.json`. Do not run `init --force` to fill this gap: it regenerates
-project-owned settings.
+`agentflow-acceptance.json`. Existing project settings are preserved even with
+`init --force`; use explicit configuration choices for changes.
 
 Before the first governed run, configure `delivery.candidate`, `delivery.checks` and
 `delivery.contracts` with an acceptance file for the actual change, following
@@ -142,7 +163,7 @@ Before the first governed run, configure `delivery.candidate`, `delivery.checks`
 prerequisite; installation validation alone is not evidence that a change passed tests.
 
 `harness scaffold` seeds missing pillars; tailor them to the approved project choices.
-`config sync` is sequential, not atomic; inspect partial failures before retrying.
+Adapter generation is an explicit maintainer operation, separate from onboarding.
 `github setup` writes local files, including `.github/labels.json`; it does not create
 remote labels. Skip it for projects that do not use GitHub.
 

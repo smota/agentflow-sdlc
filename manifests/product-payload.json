@@ -635,6 +635,56 @@
       "source": "docs/issue-standards.md",
       "target": "docs/issue-standards.md",
       "ownership": "managed"
+    },
+    {
+      "source": "lib/core/onboarding-state.mjs",
+      "target": "lib/core/onboarding-state.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/core/onboarding-plan.mjs",
+      "target": "lib/core/onboarding-plan.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "schemas/onboarding-runtime.schema.json",
+      "target": "schemas/onboarding-runtime.schema.json",
+      "ownership": "managed"
+    },
+    {
+      "source": "docs/adr/009-incremental-onboarding.md",
+      "target": "docs/adr/009-incremental-onboarding.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/application/onboarding-service.mjs",
+      "target": "lib/application/onboarding-service.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/onboarding/project-reader.mjs",
+      "target": "lib/onboarding/project-reader.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/onboarding/project-writer.mjs",
+      "target": "lib/onboarding/project-writer.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/onboarding/runtime-handoff.mjs",
+      "target": "lib/onboarding/runtime-handoff.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/onboarding/cli.mjs",
+      "target": "lib/onboarding/cli.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/onboarding/prompt.mjs",
+      "target": "lib/onboarding/prompt.mjs",
+      "ownership": "managed"
     }
   ]
 }

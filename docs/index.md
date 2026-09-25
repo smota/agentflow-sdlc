@@ -133,7 +133,7 @@ The [ADR index](adr/) records accepted, proposed, and superseded decisions. ADRs
 The installed CLI exposes these top-level command groups:
 
 ```text
-agentflow-sdlc <init|run|doctor-env|config|adopt|providers|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding-prompt|release-plan>
+agentflow-sdlc <init|run|doctor-env|config|adopt|providers|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding|onboarding-prompt|release-plan>
 ```
 
 After the npm installation in [Get started](get-started.md), use the installed command from any directory:
