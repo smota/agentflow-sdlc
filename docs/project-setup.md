@@ -200,7 +200,10 @@ Before PR readiness, also run the repository's normal validation commands and in
 
 ## Continuous configuration and synchronization
 
-Use the unified `config` command suite to monitor configuration health, synchronize local harness assets, and guide continuous maintenance:
+Use `config doctor` and `config inspect` to monitor project configuration. The `config sync`
+commands below are optional maintainer operations spanning harness assets; run them only when
+explicitly requested and after reviewing the preview. The connected runtime owns installation
+locations, managed skill links and deployment to any additional agents.
 
 ```bash
 # Check overall configuration health across authority, domain, workflow, posture, and adapters

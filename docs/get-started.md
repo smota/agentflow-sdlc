@@ -10,16 +10,31 @@ rather than left in private chat memory.
 - Git
 - GitHub CLI (`gh`) only when you want issue, PR, or release automation
 
-Runtimes provision `agentflow-sdlc` using their own mechanisms, or you can invoke it directly in your Node 20+ environment. No AgentFlow repository clone is needed. Run the commands below from any directory;
+Ask your connected runtime to inspect whether the AgentFlow CLI and required skills are already
+available, propose any available update separately, provision only missing components using its
+own installation mechanism, and verify discovery in the current session. The runtime chooses
+installation locations and manages links. Include other agents only when explicitly requested.
+Use the [runtime handoff in assisted onboarding](assisted-onboarding.md) for this path.
+No AgentFlow repository clone is needed. Once the runtime confirms the CLI is available, run the
+commands below from any directory;
 `--target` points to your own project. Replace `/path/to/your-project` with its path.
 
-## Reach your first governed change in 6 commands
+## Existing project with tests: first local evidence in 6 commands
 
-A governed change is more than files on disk: it is a run whose acceptance contract is frozen and
-whose evidence was actually collected, not asserted. That takes six commands, not three — freezing a
-contract and collecting evidence are each their own step, and skipping them would leave you with an
-installed project instead of a governed one. Here is the honest path, and every command in it does
-something the next one depends on.
+This path assumes an initialized Git repository with a user-owned source file and a working
+`package.json` test script. It records a frozen acceptance contract and an observed test result
+in a local preview; that is not PR acceptance or durable GitHub delivery.
+
+For an empty project or one without tests, run `init`, inspect its reported missing prerequisites,
+then define a meaningful check and its acceptance file using the complete example in
+[run operations](run-operations.md#inspect-and-configure). Do that before `run freeze` or
+`run verify`; `init` deliberately does not invent passing tests. For existing or partially managed
+installations, start with [incremental assisted onboarding](assisted-onboarding.md).
+
+Before the commit command, review the project changes. The example stages the whole project and
+is suitable only when every change belongs to this adoption. In a dirty project, replace that
+staging operation with explicitly reviewed adoption paths and preserve unrelated staged work.
+Keep local runtime requests, evidence and plans under ignored `.agent-runs/`, not among product files.
 
 <!-- entry-path: 6 commands to a first governed change -->
 
@@ -45,7 +60,7 @@ file of your own to check, it seeds neither the check nor the acceptance file �
 would be worse than leaving it to you — and it prints the one step to add yourself: a `test` script
 in `package.json`, or `delivery.checks` and `delivery.contracts` written by hand in
 `agent-workflow.config.json`. Either way, `init` never overwrites your project's settings file on a
-second run unless you pass `--force`.
+second run, including with `--force`. Change project settings through explicit configuration choices.
 
 **2. `sdlc validate`** checks that the settings `init` wrote are internally consistent — not just
 that the files are present, but that the roles, branches, and checks they describe actually hold
