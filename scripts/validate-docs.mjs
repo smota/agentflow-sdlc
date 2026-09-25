@@ -133,7 +133,7 @@ export function extractMarkedCommandBlock(markdown, marker) {
   const markerIndex = markdown.indexOf(marker)
   if (markerIndex === -1) return null
   const rest = markdown.slice(markerIndex + marker.length)
-  const fenceMatch = rest.match(/```[a-z]*\n([\s\S]*?)```/)
+  const fenceMatch = rest.match(/```[a-z]*\r?\n([\s\S]*?)```/)
   if (!fenceMatch) return null
   return fenceMatch[1]
     .split('\n')

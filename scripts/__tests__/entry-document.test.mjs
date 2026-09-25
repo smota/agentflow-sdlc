@@ -22,6 +22,17 @@ import {
 
 const repoRoot = resolve(fileURLToPath(new URL('../..', import.meta.url)))
 
+describe('entry commands on Windows checkouts', () => {
+  it('extracts the same documented commands with LF and CRLF', () => {
+    const text = readFileSync(resolve(repoRoot, ENTRY_DOCUMENT), 'utf8').replace(/\r\n/g, '\n')
+    const expected = extractMarkedCommandBlock(text, ENTRY_PATH_MARKER)
+    expect(expected).not.toBeNull()
+    expect(extractMarkedCommandBlock(text.replace(/\n/g, '\r\n'), ENTRY_PATH_MARKER)).toEqual(
+      expected,
+    )
+  })
+})
+
 describe('entry document surface-term check (W6b / D2, test 5)', () => {
   it('flags a glossary term used bare, with no definition at first use', () => {
     const findings = findUndefinedTerms('Start by reading your role-pass before you continue.')
