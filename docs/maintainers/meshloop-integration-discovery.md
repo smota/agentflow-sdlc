@@ -58,6 +58,30 @@ Current adapters and binary tests must determine transport capabilities; ADR0017
 older live-transport description alone cannot qualify them. Process-tree and output
 drain guarantees from ADR0025 still require concrete adapter fault tests.
 
+### Repeatable neutral-client qualification
+
+Run the standalone client with absolute paths to the installed binary, the built
+Meshloop test harness and Git:
+
+```bash
+node scripts/qualify-meshloop.mjs --binary /absolute/path/meshloop --fixture /absolute/path/fixture_harness --git /absolute/path/git
+```
+
+The script imports only Node built-ins and can be copied outside AgentFlow. It uses
+a fresh Git repository, disposable user home and allowlisted environment; it does
+not inherit AgentFlow configuration or the user's general executable search path.
+It retains the local fixture directory for inspection and prints its location to
+stderr. The JSON report omits private paths and raw process output, records exact
+binary hashes and bounds, and distinguishes this fixture result from live-model,
+human-acceptance and full integration claims. A framing test accepts only strict
+JSON or the exact observed notice prefix; other preambles, duplicate records,
+wrong graph identities and oversized output fail qualification.
+
+Verified on Windows with Node 26.10.0 and the binary identities above: exit zero,
+`AwaitingHumanAcceptance`, known-notice-prefix framing. Three framing tests passed.
+This extends the initial smoke evidence with environment isolation; it does not
+certify Node 20/24, other hosts, live harnesses or all S7 capabilities.
+
 ## Grok advisory review and Codex disposition
 
 Review completed 2026-09-25 through local `grok-cli`, requested `grok-4.7`, reported usage model `grok-4.7-build`; launcher Codex, separate local session. Reviewer consumed this supplied discovery report and boundary brief only, with no independent repository inspection or runtime qualification. Original response is advisory, not implementation acceptance. Raw runtime logs are excluded from product documentation.
