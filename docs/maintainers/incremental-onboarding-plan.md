@@ -1,8 +1,7 @@
 # Plan: incremental adoption with runtime-owned installation
 
-Status: execution authorized for this workstream; repository setup and initial Agy
-dispatch are being activated under the authority below. Product slices require their
-own phase evidence and gates before advancement.
+Status: S0–S7 implemented; complete local release validation passed (658 tests in
+91 files). Final cross-platform CI and PR integration are tracked in PR #258.
 Date: 2026-09-25. Planning method: TechLead Planner.
 
 This document replaces the earlier conversational backlog. It is a design and delivery
@@ -186,7 +185,7 @@ The configured GitHub source is `smota/agentflow-sdlc`, coordination branch
 Local `.agent-runs/` artifacts remain ignored; GitHub issues and the state branch carry
 durable records. No unattended scheduler is implied by a run being started.
 
-### Activation evidence and current gate
+### Activation evidence and subsequent execution
 
 On 2026-09-25, S0 reused the existing CLIs, configured the role routes and four local
 harness pillars, and created the GitHub-backed run `onboarding-251`. The initial
@@ -201,12 +200,21 @@ delivery fixed those claims but still failed the canonical artifact vocabulary a
 delegated action-boundary validators. In particular, its declared effective `propose`
 boundary exceeded its declared parent `observe` boundary.
 
-The repeated-rejection limit is reached. The run must remain at phase 0 with no
-accepted transition until the handoff contract/response is corrected and reviewed.
-No product source implementation, completed analyst phase, or human approval is claimed.
-The next bounded action is to provide the canonical vocabulary and issued parent
-boundary in the runtime handoff and validate the returned artifacts before advancing.
-The schemas alone did not communicate the narrower effective vocabulary to this runtime.
+The initial repeated-rejection limit was reached. The maintainer then authorized
+experimental end-to-end delivery. Agy CLI authored all seven product slices through
+bounded source-artifact returns. Codex applied them, corrected integration and review
+findings, and ran the checks. Independent Codex review contexts accepted the final
+runtime/CLI and transaction/recovery scopes. Authorship includes these disclosed Codex
+corrections; it is not exclusively Agy. The issue ledger records this compact execution;
+the stock high-assurance run engine is not represented as having accepted every formal
+role transition. Its earlier rejected evidence remains historical and available for
+retrospective analysis. No human review of the candidate is claimed.
+
+Local `pnpm validate:release` passed on Windows / Node 26.10.0, including 658 tests,
+workflow/hooks, policy, documentation, reachability, evaluations, package parity,
+sandbox adoption/rollback, Cockpit smoke and npm packaging. Inventory of a lock with
+10,000 entries took 164.9 ms on Windows 10.0.26200 / Ryzen AI 9 HX 470. These are local
+results; the PR records CI results for supported Node 20/24 on all three operating systems.
 
 The active acceptance file is an issue-revision-bound snapshot. Issue edits/comments or
 candidate changes require an explicit refresh of the contract revision and fresh
@@ -333,8 +341,7 @@ measured score for current or future code.
 
 ## Goal conditions
 
-The test filenames below are planned acceptance surfaces to be created in their slices.
-They are not currently available checks. Each future command must exit 0 and its result
+The test filenames below are implemented acceptance surfaces. Each command must exit 0 and its result
 must be shown in the conversation. A turn limit triggers scope review, not a success claim.
 
 - **S1:** Consumer policy is independently packaged and root development instructions
