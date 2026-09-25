@@ -56,6 +56,15 @@ run and grant; they do not silently mutate issued authority.
 - `safetyCheckpoint({ id, kind, reason, operationId? }, options)` supports bounded
   `checkpoint` or reconciliation of an already admitted operation. It cannot grant,
   change budgets, launch business actions or waive gates.
+- `reconcileDelegatedOperation({ operationId, authority })` queries the configured
+  authoritative outcome resolver for a previously admitted operation. A terminal
+  result must bind the operation ID, payload digest, candidate digest and observed
+  source revision. The service persists it as one reserved safety record, even
+  after business allowances are exhausted. Unknown results stay pending. A repeat
+  terminal lookup returns existing evidence without spending another reservation.
+  Public checkpoint calls cannot submit outcome claims; only the configured
+  resolver supplies them. This application boundary does not by itself qualify a
+  concrete provider's outcome lookup or advance a workflow phase.
 
 An operation contains `id`, `planDigest`, `policyDigest`, `repository`, `base`,
 `delegate`, `action`, `paths`, `capabilities`, `candidateDigest`, `workspaceDigest`,
