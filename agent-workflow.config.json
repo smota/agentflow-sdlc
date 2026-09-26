@@ -20,7 +20,7 @@
   "integrationLifecycle": {
     "integrationBranch": "development",
     "trunkBranch": "main",
-    "referenceKeywords": ["Implements", "Refs"],
+    "referenceKeywords": ["Implements", "Closes"],
     "addLabels": ["integrated:development", "awaiting-release"],
     "closeIntegratedIssues": true
   },

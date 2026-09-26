@@ -1,5 +1,14 @@
 # Upgrade and rollback
 
+## Choose the recovery path
+
+For a recognized v2 lock, use the transaction commands below. For a legacy lock, an unknown
+installation or local modifications, start with [incremental assisted onboarding](../assisted-onboarding.md).
+It diagnoses provenance and conflicts and supports selective recovery while preserving unknown files.
+Do not remove a lock or overwrite content merely to make the v2 transaction pass.
+Shared CLI/skill updates are proposed separately from project setup; a compatible update may be deferred.
+The runtime chooses installation locations and manages shared links.
+
 ## Preview
 
 ```bash

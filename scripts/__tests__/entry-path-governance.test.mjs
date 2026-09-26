@@ -38,6 +38,7 @@ function installPackage() {
       encoding: 'utf8',
     }),
   )
+  const packEntry = Array.isArray(packed) ? packed[0] : Object.values(packed)[0]
   execFileSync(
     process.execPath,
     [
@@ -45,7 +46,7 @@ function installPackage() {
       'install',
       '--prefix',
       prefix,
-      join(prefix, packed[0].filename),
+      join(prefix, packEntry.filename),
       '--ignore-scripts',
       '--no-audit',
       '--no-fund',

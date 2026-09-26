@@ -86,9 +86,15 @@ Formulate surgical edits to the target configuration files. Show the exact JSON 
 
 Do not apply changes until the user approves the preview.
 
-### Phase 4: Apply & Sync
+### Phase 4: Apply approved configuration
 
-Apply approved edits to configuration files. Then synchronize all local harness assets (skills, roles, plugins, and settings) through sequential operations:
+Apply approved edits to project configuration files, then verify with `config doctor`.
+Runtime installation, skill discovery and deployment remain the connected runtime's responsibility.
+Keep other agents unchanged unless the user explicitly includes them.
+
+The following synchronization commands are an optional maintainer operation for generating local
+adapters across harnesses. Run them only when that broader operation is explicitly in scope and
+after reviewing the preview. They are not a required step of routine adoption or configuration:
 
 ```bash
 # Preview sync actions (dry-run)
