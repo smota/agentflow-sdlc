@@ -122,7 +122,7 @@ Cockpit is optional. CLI and GitHub evidence remain authoritative without it.
 | [Release versioning](release-versioning.md) | Plan versions, tags, approval, and closeout evidence |
 | [Release publishing](release-publishing.md) | Run the maintained publication gate                  |
 
-The current release is [v1.0.0](releases/v1.0.0.md). Published history is intentionally retained as an archive: [v0.4.0](releases/v0.4.0.md), [v0.4.1](releases/v0.4.1.md), [v0.5.0](releases/v0.5.0.md), [v0.6.0](releases/v0.6.0.md), and [v0.7.0](releases/v0.7.0.md).
+The current release is [v1.1.0](releases/v1.1.0.md). Published history is intentionally retained as an archive: [v1.0.0](releases/v1.0.0.md), [v0.7.0](releases/v0.7.0.md), [v0.6.0](releases/v0.6.0.md), [v0.5.0](releases/v0.5.0.md), [v0.4.1](releases/v0.4.1.md), and [v0.4.0](releases/v0.4.0.md).
 
 ## Architecture decisions
 
@@ -133,7 +133,7 @@ The [ADR index](adr/) records accepted, proposed, and superseded decisions. ADRs
 The installed CLI exposes these top-level command groups:
 
 ```text
-agentflow-sdlc <init|run|doctor-env|config|adopt|providers|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding|onboarding-prompt|release-plan>
+agentflow-sdlc <init|run|doctor-env|config|adopt|providers|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding|onboarding-prompt|release-plan|handoff|resume>
 ```
 
 After the npm installation in [Get started](get-started.md), use the installed command from any directory:
