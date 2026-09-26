@@ -5,10 +5,7 @@ import {
   createContinuationBundle,
   reconstructContinuation,
 } from '../../lib/application/continuation-service.mjs'
-import {
-  dispatchToHarness,
-  HarnessContractError,
-} from '../../lib/providers/harness-dispatch.mjs'
+import { dispatchToHarness, HarnessContractError } from '../../lib/providers/harness-dispatch.mjs'
 import { recordDigest } from '../../lib/core/record-digest.mjs'
 import { reduceRun } from '../../lib/core/run-state.mjs'
 import { existsSync, readFileSync } from 'node:fs'

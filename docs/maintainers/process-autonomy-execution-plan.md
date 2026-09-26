@@ -133,14 +133,14 @@ Agy prepares the read-only Meshloop architecture/capability inventory and propos
 
 Track this review under S7 / issue #269. The following checkpoints are ordered deliverables, not claims of completion:
 
-| Step | Deliverable and acceptance | Dependency |
-| ---- | -------------------------- | ---------- |
-| M1 | Inventory public engineering interfaces, current ADRs, exact source/binary revisions and existing local changes; separate verified capabilities from assumptions. | Read-only discovery |
-| M2 | Agree responsibility map and neutral versioned contract/examples; Grok challenges coupling and failure semantics, Codex dispositions authority/evidence findings, engineering executor checks feasibility. | M1 |
-| M3 | Produce a remediation backlog split by repository, with issue, owner, affected public surface, acceptance checks and compatibility impact per finding. Meshloop implementation requires its own scoped workstream. | M2 |
-| M4 | Execute reusable contract fixtures with an alternate engineering provider and a neutral client; prove neither fixture requires the other product's installation or internal state. | M2 |
-| M5 | Qualify real standalone and integrated paths, then the fault matrix below; record unsupported facets explicitly and reject work requiring them before dispatch. | M3 dispositions and M4 |
-| M6 | Review adoption documentation from a fresh user's entry point: standalone use of either product, optional connection, version mismatch, disconnect and recovery. Publish capability matrix and remaining gaps. | M5; coordinates with S8 |
+| Step | Deliverable and acceptance                                                                                                                                                                                         | Dependency              |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------- |
+| M1   | Inventory public engineering interfaces, current ADRs, exact source/binary revisions and existing local changes; separate verified capabilities from assumptions.                                                  | Read-only discovery     |
+| M2   | Agree responsibility map and neutral versioned contract/examples; Grok challenges coupling and failure semantics, Codex dispositions authority/evidence findings, engineering executor checks feasibility.         | M1                      |
+| M3   | Produce a remediation backlog split by repository, with issue, owner, affected public surface, acceptance checks and compatibility impact per finding. Meshloop implementation requires its own scoped workstream. | M2                      |
+| M4   | Execute reusable contract fixtures with an alternate engineering provider and a neutral client; prove neither fixture requires the other product's installation or internal state.                                 | M2                      |
+| M5   | Qualify real standalone and integrated paths, then the fault matrix below; record unsupported facets explicitly and reject work requiring them before dispatch.                                                    | M3 dispositions and M4  |
+| M6   | Review adoption documentation from a fresh user's entry point: standalone use of either product, optional connection, version mismatch, disconnect and recovery. Publish capability matrix and remaining gaps.     | M5; coordinates with S8 |
 
 Persist the compact review index in the S7 issue and committed review documents: exact candidate references, contract version, scenario identifiers, evidence locations, verdicts, unresolved findings and next runnable checkpoint. Keep bulk execution logs outside control context. Update GitHub on checkpoint completion or a material blocker, not for every tool call. A receiving agent must be able to reconstruct the review from this index without the conversation. Current evidence is in [Meshloop integration discovery](meshloop-integration-discovery.md); the proposed translation is in [engineering provider profile](../process-autonomy/engineering-provider-profile.md). Neither document alone certifies integration readiness.
 

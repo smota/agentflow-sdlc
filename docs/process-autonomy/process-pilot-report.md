@@ -5,6 +5,7 @@ This document records the results of the autonomous process pilot (`scripts/proc
 ## Architecture & Verified Scenario
 
 The pilot executes an end-to-end autonomous delegation lifecycle with an injected crash/interruption:
+
 1. **Governed Run Initialization**: Started under generation 0 authority with baseline state.
 2. **Cooperative Scoped Grant**: Authorized with bounded path, action, and effect ceilings.
 3. **Pending Audit Journaling**: Admitted operations buffered locally in a bounded pending-audit journal (`lib/sources/pending-audit-journal.mjs`).
@@ -16,12 +17,12 @@ The pilot executes an end-to-end autonomous delegation lifecycle with an injecte
 
 ## Retrospective Dataset & Measurements
 
-| Metric | Target | Observed Result | Status |
-| --- | --- | --- | --- |
-| **Critical Event Loss** | 0 | 0 unacknowledged losses | Pass |
-| **Duplicate Effects** | 0 | 0 duplicate effects | Pass |
-| **Control Context Budget** | <= 32 KiB | 976 bytes packet size | Pass |
-| **Artifact Byte Limit** | <= 10 MiB | Verified SHA-256 byte hashing | Pass |
-| **Generation Fencing** | Prior + 1 | Advanced from generation 0 to 1 | Pass |
-| **Resume Latency** | <= 60s | < 50ms (in-memory fixture) | Pass |
-| **Orchestration Provenance** | Explicit | Recorded `antigravity-orchestrator` | Pass |
+| Metric                       | Target    | Observed Result                     | Status |
+| ---------------------------- | --------- | ----------------------------------- | ------ |
+| **Critical Event Loss**      | 0         | 0 unacknowledged losses             | Pass   |
+| **Duplicate Effects**        | 0         | 0 duplicate effects                 | Pass   |
+| **Control Context Budget**   | <= 32 KiB | 976 bytes packet size               | Pass   |
+| **Artifact Byte Limit**      | <= 10 MiB | Verified SHA-256 byte hashing       | Pass   |
+| **Generation Fencing**       | Prior + 1 | Advanced from generation 0 to 1     | Pass   |
+| **Resume Latency**           | <= 60s    | < 50ms (in-memory fixture)          | Pass   |
+| **Orchestration Provenance** | Explicit  | Recorded `antigravity-orchestrator` | Pass   |

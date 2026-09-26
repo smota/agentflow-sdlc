@@ -49,7 +49,8 @@ try {
       cwd: root,
     }),
   )
-  const tarball = join(packDir, packed[0].filename)
+  const packEntry = Array.isArray(packed) ? packed[0] : Object.values(packed)[0]
+  const tarball = join(packDir, packEntry.filename)
   run(process.execPath, [npmCli, 'init', '-y'], { cwd: consumer })
   run(
     process.execPath,
@@ -352,7 +353,7 @@ try {
   const required = JSON.parse(
     readFileSync(join(root, 'manifests', 'npm-package.json'), 'utf8'),
   ).requiredFiles
-  const packedPaths = new Set(packed[0].files.map((item) => item.path))
+  const packedPaths = new Set(packEntry.files.map((item) => item.path))
   const missing = required.filter((path) => !packedPaths.has(path))
   if (missing.length)
     throw new Error(`packed artifact misses required files: ${missing.join(', ')}`)
@@ -360,16 +361,16 @@ try {
     `${JSON.stringify(
       {
         ok: true,
-        package: packed[0].filename,
+        package: packEntry.filename,
         packageDigest: createHash('sha256').update(readFileSync(tarball)).digest('hex'),
-        packageIntegrity: packed[0].integrity,
+        packageIntegrity: packEntry.integrity,
         payloadManifestDigest: recordDigest(
           JSON.parse(readFileSync(join(packageRoot, 'manifests/product-payload.json'), 'utf8')),
         ),
         runtime: { platform: process.platform, node: process.version, arch: process.arch },
         sourceCommit: run('git', ['rev-parse', 'HEAD']).trim(),
         sourceDirty: Boolean(run('git', ['status', '--porcelain']).trim()),
-        files: packed[0].files.length,
+        files: packEntry.files.length,
         sourceAndPackedHelpMatch: true,
         symlinkRuntimeChecked,
         roleCatalogValid: roleValidation.ok,
