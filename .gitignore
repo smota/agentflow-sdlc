@@ -9,3 +9,4 @@ SPEC.md
 .agents/
 .pi/
 .pi-subagents/
+pnpm-workspace.yaml

@@ -2,7 +2,7 @@
   "name": "agentflow-sdlc",
   "private": false,
   "type": "module",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Harness-neutral roles, evidence, validators, skills, adapters, and release governance for AI-assisted software delivery.",
   "license": "Apache-2.0",
   "engines": {

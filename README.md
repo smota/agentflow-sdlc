@@ -97,7 +97,7 @@ Read [Guiding principles](docs/guiding-principles.md) for full architectural inv
 
 ### Release status
 
-The current release line is **1.0.0** and requires Node.js 20 or newer. Read the [v1.0.0 release notes](docs/releases/v1.0.0.md) for the complete user-facing capability set. No `agentflow-sdlc` package is currently published on npm, so install directly from GitHub using npm as shown above; no manual clone is required. The release badge always resolves to the newest published GitHub release.
+The current release line is **1.1.0** and requires Node.js 20 or newer. Read the [v1.1.0 release notes](docs/releases/v1.1.0.md) for the complete user-facing capability set. No `agentflow-sdlc` package is currently published on npm, so install directly from GitHub using npm as shown above; no manual clone is required. The release badge always resolves to the newest published GitHub release.
 
 ## Choose your path
 
