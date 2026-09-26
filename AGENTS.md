@@ -9,10 +9,11 @@ If this file is missing in a checkout, stop before implementation or gate decisi
 Before issue work, architecture proposals, file writes, commits, or gate decisions, read:
 
 1. `AGENTS.md`
-2. the active adapter file for the current executor (`CLAUDE.md`, `CODEX.md`, `AGY.md`, or equivalent)
-3. `docs/agent-workflow.md`
-4. `docs/issue-standards.md`
-5. the active issue or `SPEC.md`
+2. `docs/guiding-principles.md`
+3. the active adapter file for the current executor (`CLAUDE.md`, `CODEX.md`, `AGY.md`, or equivalent)
+4. `docs/agent-workflow.md`
+5. `docs/issue-standards.md`
+6. the active issue or `SPEC.md`
 
 ## Operating model
 

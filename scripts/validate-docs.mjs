@@ -25,6 +25,8 @@ const KNOWN_CLI_COMMANDS = new Set([
   'onboarding-prompt',
   'onboarding',
   'release-plan',
+  'handoff',
+  'resume',
 ])
 
 function markdownFiles(root) {
