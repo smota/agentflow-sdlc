@@ -80,6 +80,20 @@ flowchart TB
 | Lifecycle roles and methods               | Productized accountability contracts with configurable analysis and engineering approaches | [Lifecycle roles](docs/roles/index.md)                      |
 | Optional visual operations                | Cockpit goal, readiness, release, replay, approval, and follow-up views                    | [Cockpit](docs/cockpit.md)                                  |
 | Executable quality model                  | Agent eval manifests, multi-agent acceptance checks, and derived outcome metrics           | [Agent evals](docs/agent-evals.md)                          |
+| Guiding principles and core values        | Six core pillars governing autonomous AI coding, regulated assurance, and continuity       | [Guiding principles](docs/guiding-principles.md)            |
+
+### Guiding principles & core values
+
+AgentFlow SDLC is built upon six foundational pillars governing AI coding in modern engineering environments:
+
+1. **Extensibility & harness neutrality:** Agnostic across AI models and execution targets (`claude-cli`, `agy-cli`, `codex-cli`, API providers).
+2. **Regulated assurance & compliance-by-design:** Tamper-evident cryptographic span ledgers, Four-Eyes Principle dual-control, and black-box QA separation of duties.
+3. **Risk-aware card taxonomy & adaptive execution:** Proportional execution paths (`light`, `standard`, `high-assurance`) with topological dependency blocking (`blocked_by`).
+4. **Agentic flow with human decision comprehension:** Meaningful human gate oversight and transparent waiver accounting without artificial friction.
+5. **Durable continuity & portability:** Resilient cross-machine handoffs, POSIX path normalization, `.git/index.lock` cleanup, and monotonic lease fencing preventing context loss.
+6. **Bounded supervision & zero deadlock:** Guaranteed deterministic resolution of external CI gates and supervised process cleanup.
+
+Read [Guiding principles](docs/guiding-principles.md) for full architectural invariants and standards for contributing agents.
 
 ### Release status
 
