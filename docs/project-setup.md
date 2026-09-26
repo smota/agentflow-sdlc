@@ -178,8 +178,8 @@ See [`project-config.md`](project-config.md) for the full config contract and [`
 Run this before the first issue to make missing tools explicit without changing the machine:
 
 ```bash
-node /path/to/agentflow-sdlc/bin/cli.mjs doctor-env --target /path/to/project
-node /path/to/agentflow-sdlc/bin/cli.mjs doctor-env --target /path/to/project --json
+agentflow-sdlc doctor-env --target /path/to/project
+agentflow-sdlc doctor-env --target /path/to/project --json
 ```
 
 `doctor-env` is read-only. It checks required tools, configured optional agent/runtime availability commands, and prints installation options when something is missing. It never runs install commands, edits shell profiles, authenticates GitHub, or installs packages.
@@ -200,22 +200,25 @@ Before PR readiness, also run the repository's normal validation commands and in
 
 ## Continuous configuration and synchronization
 
-Use the unified `config` command suite to monitor configuration health, synchronize local harness assets, and guide continuous maintenance:
+Use `config doctor` and `config inspect` to monitor project configuration. The `config sync`
+commands below are optional maintainer operations spanning harness assets; run them only when
+explicitly requested and after reviewing the preview. The connected runtime owns installation
+locations, managed skill links and deployment to any additional agents.
 
 ```bash
 # Check overall configuration health across authority, domain, workflow, posture, and adapters
-node /path/to/agentflow-sdlc/bin/cli.mjs config doctor --target /path/to/project
-node /path/to/agentflow-sdlc/bin/cli.mjs config doctor --target /path/to/project --json
+agentflow-sdlc config doctor --target /path/to/project
+agentflow-sdlc config doctor --target /path/to/project --json
 
 # Synchronize all harness assets (skills, roles, plugins, settings) after configuration edits
-node /path/to/agentflow-sdlc/bin/cli.mjs config sync --dry-run --target /path/to/project
-node /path/to/agentflow-sdlc/bin/cli.mjs config sync --apply --target /path/to/project
+agentflow-sdlc config sync --dry-run --target /path/to/project
+agentflow-sdlc config sync --apply --target /path/to/project
 
 # Inspect composite configuration
-node /path/to/agentflow-sdlc/bin/cli.mjs config inspect --target /path/to/project
+agentflow-sdlc config inspect --target /path/to/project
 
 # Print assisted continuous configuration playbook prompt for agent sessions
-node /path/to/agentflow-sdlc/bin/cli.mjs config prompt --target /path/to/project
+agentflow-sdlc config prompt --target /path/to/project
 ```
 
 See [`assisted-configuration.md`](assisted-configuration.md) for the assisted agent workflow loop.

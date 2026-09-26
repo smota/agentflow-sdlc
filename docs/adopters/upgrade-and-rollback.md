@@ -1,9 +1,18 @@
 # Upgrade and rollback
 
+## Choose the recovery path
+
+For a recognized v2 lock, use the transaction commands below. For a legacy lock, an unknown
+installation or local modifications, start with [incremental assisted onboarding](../assisted-onboarding.md).
+It diagnoses provenance and conflicts and supports selective recovery while preserving unknown files.
+Do not remove a lock or overwrite content merely to make the v2 transaction pass.
+Shared CLI/skill updates are proposed separately from project setup; a compatible update may be deferred.
+The runtime chooses installation locations and manages shared links.
+
 ## Preview
 
 ```bash
-node bin/cli.mjs adopt plan --profile standard --target /path/to/project --json
+agentflow-sdlc adopt plan --profile standard --target /path/to/project --json
 ```
 
 The plan reads a v2 lock. Other versions, malformed entries, target conflicts,
@@ -16,7 +25,7 @@ Use physical absolute paths for transaction storage. Receipt paths reject symlin
 Keep the receipt outside the target repository:
 
 ```bash
-node bin/cli.mjs adopt apply \
+agentflow-sdlc adopt apply \
   --profile standard \
   --target /path/to/project \
   --confirm <plan-token> \
@@ -33,7 +42,7 @@ Apply keeps `.agentflow-adoption-journal.json` in the target until the lock is r
 are resolved. A new plan refuses an unfinished journal. Use its `recoveryToken` for explicit recovery:
 
 ```bash
-node bin/cli.mjs adopt recover \
+agentflow-sdlc adopt recover \
   --target /path/to/project \
   --confirm <recovery-token> \
   --json
@@ -42,9 +51,9 @@ node bin/cli.mjs adopt recover \
 ## Verify
 
 ```bash
-node bin/cli.mjs adopt plan --profile standard --target /path/to/project --json
-node bin/cli.mjs sdlc validate --target /path/to/project --json
-node bin/cli.mjs sdlc validate-authority --target /path/to/project --json
+agentflow-sdlc adopt plan --profile standard --target /path/to/project --json
+agentflow-sdlc sdlc validate --target /path/to/project --json
+agentflow-sdlc sdlc validate-authority --target /path/to/project --json
 ```
 
 ## Roll back
@@ -52,7 +61,7 @@ node bin/cli.mjs sdlc validate-authority --target /path/to/project --json
 Use the `receiptToken` returned by apply. Rollback refuses any applied file that has drifted.
 
 ```bash
-node bin/cli.mjs adopt rollback \
+agentflow-sdlc adopt rollback \
   --target /path/to/project \
   --confirm <receipt-token> \
   --receipt /outside/path/agentflow-receipt.json \

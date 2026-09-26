@@ -1,18 +1,19 @@
 # AGENTS.md — Repository Policy
 
-This file is the required first-read policy document for agents working in this repository or in a consuming project initialized from this framework. Adapter files (`CLAUDE.md`, `CODEX.md`, `AGY.md`) are entry points for specific agent CLIs; this file is the shared authority they must defer to.
+This file is the required first-read policy document for agents working in this repository to develop AgentFlow. Adapter files (`CLAUDE.md`, `CODEX.md`, `AGY.md`) are entry points for specific agent CLIs; this file is the shared authority they must defer to. Consuming projects initialized from this framework receive their own seeded policy (`defaults/AGENTS.md`).
 
-If this file is missing in a consuming checkout, stop before implementation or gate decisions and create a process follow-up unless the active issue is specifically restoring this file. Do not silently substitute another document as the single source of truth.
+If this file is missing in a checkout, stop before implementation or gate decisions and create a process follow-up unless the active issue is specifically restoring this file. Do not silently substitute another document as the single source of truth.
 
 ## Required reading order
 
 Before issue work, architecture proposals, file writes, commits, or gate decisions, read:
 
 1. `AGENTS.md`
-2. the active adapter file for the current executor (`CLAUDE.md`, `CODEX.md`, `AGY.md`, or equivalent)
-3. `docs/agent-workflow.md`
-4. `docs/issue-standards.md`
-5. the active issue or `SPEC.md`
+2. `docs/guiding-principles.md`
+3. the active adapter file for the current executor (`CLAUDE.md`, `CODEX.md`, `AGY.md`, or equivalent)
+4. `docs/agent-workflow.md`
+5. `docs/issue-standards.md`
+6. the active issue or `SPEC.md`
 
 ## Operating model
 
@@ -31,6 +32,12 @@ Before issue work, architecture proposals, file writes, commits, or gate decisio
   delegation boundary as distinct fields.
 - Durable workflow state lives in GitHub issue comments, PR bodies, commits, and closure metadata.
 - Local `.agent-runs/` files are scratch execution artifacts and must not be committed.
+
+## Development and skill guidelines
+
+- Installed skills guide agent work under this repository's policy and operating model.
+- The `skills/` directory contains product source code and is editable only when an active issue explicitly includes product skill changes in its accepted development scope.
+- Testing development versions explicitly uses checkout source files and scripts; never edit installed skill links, and never assume repository source edits automatically redeploy into installed runtime environments.
 
 ## Issue and PR governance
 

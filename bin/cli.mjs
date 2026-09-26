@@ -50,6 +50,11 @@ import { runConfigDoctor } from '../lib/config/doctor.mjs'
 import { runConfigSync } from '../lib/config/sync.mjs'
 import { inspectEffectiveConfig } from '../lib/config/inspect.mjs'
 import { formatContinuousConfigPrompt } from '../lib/config/prompt.mjs'
+import { setupGitHubGovernance } from '../lib/github-setup.mjs'
+import { handleOnboarding } from '../lib/onboarding/cli.mjs'
+import { formatOnboardingPrompt } from '../lib/onboarding/prompt.mjs'
+import os from 'node:os'
+import { createHandoffPacket, resumeHandoff } from '../lib/runtime/handover-protocol.mjs'
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -136,6 +141,7 @@ function printInitReport(result) {
     )
   }
   if (result.assumptions.length) {
+    if (result.skillInstruction) process.stdout.write(`${result.skillInstruction}\n`)
     process.stdout.write(`Assumptions:\n`)
     for (const note of result.assumptions) process.stdout.write(`  - ${note}\n`)
   }
@@ -366,9 +372,9 @@ function handleAdoption(rest, targetDir) {
   if (subcommand === 'apply') {
     const confirm = getFlag(rest, '--confirm', '')
     const receiptInput = getFlag(rest, '--receipt', '')
-    if (!confirm || (!receiptInput && storage !== 'project')) {
+    if (!confirm) {
       process.stderr.write(
-        'Usage: agentflow-sdlc adopt apply --confirm <plan-token> --receipt <outside-file> [--profile <id>] [--target <dir>] [--json]\n',
+        'Usage: agentflow-sdlc adopt apply --confirm <plan-token> [--receipt <outside-file>] [--profile <id>] [--target <dir>] [--json]\n',
       )
       return 2
     }
@@ -384,6 +390,8 @@ function handleAdoption(rest, targetDir) {
       receiptDestination: receiptPath,
     })
     if (receipt.receiptPath) receiptPath = resolve(targetDir, receipt.receiptPath)
+    else if (!receiptPath && receipt.externalReceiptDestination)
+      receiptPath = resolve(receipt.externalReceiptDestination)
     const result = {
       status: 'applied',
       target: receipt.target,
@@ -869,15 +877,39 @@ function handleHarness(rest, targetDir) {
   return 2
 }
 
+function handleGitHub(rest, targetDir) {
+  const [subcommand] = positionalArgs(rest)
+  const json = rest.includes('--json')
+  const write = rest.includes('--apply') && !rest.includes('--dry-run')
+
+  if (subcommand === 'setup' || !subcommand) {
+    const result = setupGitHubGovernance({ targetDir, write })
+    if (json) {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+    } else {
+      process.stdout.write(`GitHub Governance (${result.mode})\n`)
+      process.stdout.write(`Target: ${result.targetDir}\n`)
+      for (const op of result.operations) {
+        process.stdout.write(`  - ${op.filename}: ${op.status}\n`)
+      }
+      process.stdout.write(
+        `Summary: ${result.summary.plannedCount} planned, ${result.summary.unchangedCount} unchanged, ${result.summary.conflictCount} conflicts\n`,
+      )
+      if (!write && result.summary.plannedCount > 0) {
+        process.stdout.write(`\nRun with --apply to write templates and label definitions.\n`)
+      }
+    }
+    return 0
+  }
+
+  process.stderr.write(`Usage:
+  agentflow-sdlc github setup [--target <dir>] [--dry-run|--apply] [--json]
+`)
+  return 2
+}
+
 function printOnboardingPrompt(targetDir) {
-  process.stdout.write(`Use the AgentFlow SDLC assisted onboarding guide:\n`)
-  process.stdout.write(
-    `https://github.com/smota/agentflow-sdlc/blob/main/docs/assisted-onboarding.md\n\n`,
-  )
-  process.stdout.write(`Apply it to this existing project: ${targetDir}\n`)
-  process.stdout.write(
-    `First inspect existing agent instructions and project docs. Validate the environment read-only. Ask me to choose agents, execution mode, branch strategy, validation commands, and GitHub automation. Propose install/setup commands but do not execute them without explicit approval. Preserve or merge existing instructions instead of overwriting them. Configure tooling and harnessing intelligence (.agentflow/ with orchestration-model.json, execution-policy.json, model-catalog.json, and harness-parameters.json) and establish pre-code adversarial sparring gates for robust verification.\n`,
-  )
+  process.stdout.write(`${formatOnboardingPrompt(targetDir)}\n`)
 }
 
 function positionalArgs(args) {
@@ -892,8 +924,72 @@ function positionalArgs(args) {
   return result
 }
 
+function handleHandoff(rest, targetDir) {
+  const toAgent = getFlag(rest, '--to', null)
+  if (!toAgent) {
+    throw new Error('--to <agent> is required for handoff')
+  }
+  const issueId = getFlag(rest, '--issue', 'unspecified-issue')
+  const fromAgent = getFlag(rest, '--from', 'current-agent')
+  const branch = getFlag(rest, '--branch', 'current-branch')
+  const json = rest.includes('--json')
+
+  const packet = createHandoffPacket({
+    taskId: issueId,
+    issueId,
+    fromAgent,
+    toAgent,
+    currentBranch: branch,
+    statusSummary: `Handoff requested to ${toAgent}`,
+  })
+
+  if (json) {
+    process.stdout.write(`${JSON.stringify(packet, null, 2)}\n`)
+  } else {
+    process.stdout.write(`${packet.markdown}\n`)
+  }
+  return 0
+}
+
+function handleResume(rest, targetDir) {
+  const issueId = getFlag(rest, '--issue', null)
+  if (!issueId) {
+    throw new Error('--issue <id> is required for resume')
+  }
+  const fromAgent = getFlag(rest, '--from', 'previous-agent')
+  const targetAgent = getFlag(rest, '--agent', 'current-agent')
+  const machineId = getFlag(rest, '--machine', os.hostname())
+  const json = rest.includes('--json')
+
+  const mockPacket = {
+    taskId: issueId,
+    issueId,
+    fromAgent,
+    toAgent: targetAgent,
+    currentBranch: `work/issue-${issueId}`,
+    wipBranch: `wip/${issueId}`,
+    fencingToken: 1,
+  }
+
+  const result = resumeHandoff({
+    packet: mockPacket,
+    targetAgent,
+    machineId,
+    repoDir: targetDir,
+  })
+
+  if (json) {
+    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+  } else {
+    process.stdout.write(
+      `Resumed issue #${issueId} successfully on machine ${machineId} by ${targetAgent}.\n`,
+    )
+  }
+  return 0
+}
+
 const ROOT_USAGE =
-  'Usage: agentflow-sdlc <init|run|doctor-env|config|adopt|providers|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|onboarding-prompt|release-plan> [path] [--target <dir>] [--json]\n'
+  'Usage: agentflow-sdlc <init|run|doctor-env|config|adopt|providers|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding|onboarding-prompt|release-plan|handoff|resume> [path] [--target <dir>] [--json]\n'
 
 const COMMAND_USAGE = {
   init: 'Usage: agentflow-sdlc init [--profile <id>] [--posture <posture>] [--no-harness] [--sync] [--target <dir>] [--force] [--json]\n',
@@ -911,6 +1007,13 @@ const COMMAND_USAGE = {
     'Usage: agentflow-sdlc roles <catalog|inspect|validate|resolve|sync|status|validate-handoff> [role] [--json]\n',
   methods: 'Usage: agentflow-sdlc methods <catalog|validate> [--json]\n',
   harness: 'Usage: agentflow-sdlc harness <inspect|scaffold> [--target <dir>] [--force] [--json]\n',
+  github: 'Usage: agentflow-sdlc github <setup> [--target <dir>] [--dry-run|--apply] [--json]\n',
+  onboarding:
+    'Usage: agentflow-sdlc onboarding <inspect|plan|apply|verify|recover|runtime-request> [--target <dir>] [--profile <id>] [--runtime-request <file>] [--runtime-evidence <file>] [--choices <file>] [--plan <file>] [--confirm <digest>] [--json]\n',
+  handoff:
+    'Usage: agentflow-sdlc handoff --to <agent> [--issue <id>] [--branch <branch>] [--from <agent>] [--target <dir>] [--json]\n',
+  resume:
+    'Usage: agentflow-sdlc resume --issue <id> [--from <agent>] [--agent <agent>] [--machine <id>] [--target <dir>] [--json]\n',
 }
 
 function requestedHelp(args) {
@@ -1023,6 +1126,15 @@ function main() {
     }
   }
 
+  if (command === 'github') {
+    try {
+      return handleGitHub(rest, targetDir)
+    } catch (error) {
+      process.stderr.write(`${error.message}\n`)
+      return 1
+    }
+  }
+
   if (command === 'doctor-env') {
     if (rest.includes('--probe')) return runScript('scripts/probe-environment.mjs', rest, targetDir)
     if (rest.includes('--inspect')) {
@@ -1045,6 +1157,15 @@ function main() {
     return report.ok ? 0 : 1
   }
 
+  if (command === 'onboarding') {
+    try {
+      return handleOnboarding(rest, targetDir)
+    } catch (error) {
+      process.stderr.write(`${error.message}\n`)
+      return 1
+    }
+  }
+
   if (command === 'onboarding-prompt') {
     printOnboardingPrompt(targetDir)
     return 0
@@ -1060,6 +1181,24 @@ function main() {
     if (rest.includes('--json')) process.stdout.write(`${JSON.stringify(plan, null, 2)}\n`)
     else printReleasePlan(plan)
     return 0
+  }
+
+  if (command === 'handoff') {
+    try {
+      return handleHandoff(rest, targetDir)
+    } catch (error) {
+      process.stderr.write(`${error.message}\n`)
+      return 1
+    }
+  }
+
+  if (command === 'resume') {
+    try {
+      return handleResume(rest, targetDir)
+    } catch (error) {
+      process.stderr.write(`${error.message}\n`)
+      return 1
+    }
   }
 
   process.stderr.write(ROOT_USAGE)

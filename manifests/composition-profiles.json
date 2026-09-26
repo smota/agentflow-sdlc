@@ -75,7 +75,13 @@
         "schemas/source-adapter.schema.json",
         "schemas/transition-envelope.schema.json",
         "schemas/verification-observation.schema.json",
-        "schemas/verification-resolution.schema.json"
+        "schemas/verification-resolution.schema.json",
+        "docs/agent-workflow.md",
+        "docs/issue-standards.md",
+        "lib/core/onboarding-state.mjs",
+        "lib/core/onboarding-plan.mjs",
+        "schemas/onboarding-runtime.schema.json",
+        "docs/adr/009-incremental-onboarding.md"
       ]
     },
     "standard": {
@@ -116,17 +122,23 @@
         "scripts/run-delivery.mjs",
         "scripts/validate-role-catalog.mjs",
         "scripts/validate-skill-catalog.mjs",
-        "skills/auditor/SKILL.md",
-        "skills/auditor/references/workflow-compliance.md",
-        "skills/collaborator/SKILL.md",
-        "skills/collaborator/references/bounded-environments.md",
-        "skills/collaborator/references/collaboration-modes.md",
-        "skills/designer/SKILL.md",
-        "skills/designer/references/definition-completeness.md",
-        "skills/migrator/SKILL.md",
-        "skills/migrator/references/preflight.md",
-        "skills/orchestrator/SKILL.md",
-        "skills/scanner/SKILL.md"
+        "skills/agentflow-auditor/SKILL.md",
+        "skills/agentflow-auditor/references/workflow-compliance.md",
+        "skills/agentflow-collaborator/SKILL.md",
+        "skills/agentflow-collaborator/references/bounded-environments.md",
+        "skills/agentflow-collaborator/references/collaboration-modes.md",
+        "skills/agentflow-designer/SKILL.md",
+        "skills/agentflow-designer/references/definition-completeness.md",
+        "skills/agentflow-migrator/SKILL.md",
+        "skills/agentflow-migrator/references/preflight.md",
+        "skills/agentflow-orchestrator/SKILL.md",
+        "skills/agentflow-scanner/SKILL.md",
+        "lib/application/onboarding-service.mjs",
+        "lib/onboarding/project-reader.mjs",
+        "lib/onboarding/project-writer.mjs",
+        "lib/onboarding/runtime-handoff.mjs",
+        "lib/onboarding/cli.mjs",
+        "lib/onboarding/prompt.mjs"
       ]
     },
     "github": {

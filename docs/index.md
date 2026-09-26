@@ -122,7 +122,7 @@ Cockpit is optional. CLI and GitHub evidence remain authoritative without it.
 | [Release versioning](release-versioning.md) | Plan versions, tags, approval, and closeout evidence |
 | [Release publishing](release-publishing.md) | Run the maintained publication gate                  |
 
-The current release is [v1.0.0](releases/v1.0.0.md). Published history is intentionally retained as an archive: [v0.4.0](releases/v0.4.0.md), [v0.4.1](releases/v0.4.1.md), [v0.5.0](releases/v0.5.0.md), [v0.6.0](releases/v0.6.0.md), and [v0.7.0](releases/v0.7.0.md).
+The current release is [v1.1.0](releases/v1.1.0.md). Published history is intentionally retained as an archive: [v1.0.0](releases/v1.0.0.md), [v0.7.0](releases/v0.7.0.md), [v0.6.0](releases/v0.6.0.md), [v0.5.0](releases/v0.5.0.md), [v0.4.1](releases/v0.4.1.md), and [v0.4.0](releases/v0.4.0.md).
 
 ## Architecture decisions
 
@@ -130,26 +130,26 @@ The [ADR index](adr/) records accepted, proposed, and superseded decisions. ADRs
 
 ## CLI and validation reference
 
-The source CLI exposes these top-level command groups:
+The installed CLI exposes these top-level command groups:
 
 ```text
-agentflow-sdlc <doctor-env|adopt|providers|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|onboarding-prompt|release-plan>
+agentflow-sdlc <init|run|doctor-env|config|adopt|providers|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding|onboarding-prompt|release-plan|handoff|resume>
 ```
 
-Use the source checkout form until an npm package is published:
+After the npm installation in [Get started](get-started.md), use the installed command from any directory:
 
 ```bash
-node bin/cli.mjs <command> --target /path/to/project
+agentflow-sdlc <command> --target /path/to/project
 ```
 
 The `sdlc` group includes configuration, issue, role-pass, PR, release, skill, agent, evidence, lifecycle, eval, multi-agent, audit, migration, and metrics commands. Run an incomplete group command to print its exact usage, for example:
 
 ```bash
-node bin/cli.mjs sdlc
-node bin/cli.mjs skills
-node bin/cli.mjs plugins
-node bin/cli.mjs settings
-node bin/cli.mjs extensions
+agentflow-sdlc sdlc
+agentflow-sdlc skills
+agentflow-sdlc plugins
+agentflow-sdlc settings
+agentflow-sdlc extensions
 ```
 
 Repository self-checks:

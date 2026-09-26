@@ -7,8 +7,8 @@ Use this guide to understand the local tools that make `agentflow-sdlc` work wel
 Run environment validation from this repository or from an installed copy:
 
 ```bash
-node bin/cli.mjs doctor-env --target /path/to/project
-node bin/cli.mjs doctor-env --target /path/to/project --json
+agentflow-sdlc doctor-env --target /path/to/project
+agentflow-sdlc doctor-env --target /path/to/project --json
 ```
 
 `doctor-env` is read-only. It reports `mutated: false`, lists found and missing tools, explains why each tool matters, and prints installation options. It does **not** install packages, edit shell profiles, authenticate GitHub, or change project files.
@@ -54,8 +54,8 @@ the provider capability.
 List declared provider facets without probing, then inspect one provider read-only:
 
 ```bash
-node bin/cli.mjs providers list --json
-node bin/cli.mjs providers inspect grok-cli --json
+agentflow-sdlc providers list --json
+agentflow-sdlc providers inspect grok-cli --json
 ```
 
 ## Optional QA and integration tools

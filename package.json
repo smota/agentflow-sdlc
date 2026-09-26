@@ -2,7 +2,7 @@
   "name": "agentflow-sdlc",
   "private": false,
   "type": "module",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Harness-neutral roles, evidence, validators, skills, adapters, and release governance for AI-assisted software delivery.",
   "license": "Apache-2.0",
   "engines": {
@@ -31,6 +31,7 @@
     "validate:release": "pnpm format:check && pnpm test && pnpm test:hooks && pnpm test:workflow && pnpm validate:authority && pnpm validate:extensions && pnpm validate:skills && pnpm validate:roles && pnpm validate:docs && pnpm validate:reachability && pnpm test:evals && pnpm test:collaboration && pnpm test:package && node scripts/sdlc-sandbox-smoke.mjs && node scripts/cockpit-smoke.mjs && node scripts/validate-npm-package.mjs"
   },
   "devDependencies": {
+    "ajv": "^8.20.0",
     "prettier": "^3.3.3",
     "vitest": "^2.0.4"
   },
@@ -77,5 +78,14 @@
     "README.md",
     "LICENSE",
     "package.json"
-  ]
+  ],
+  "dependencies": {
+    "@opentelemetry/api": "1.9.1",
+    "@opentelemetry/exporter-metrics-otlp-http": "0.53.0",
+    "@opentelemetry/exporter-trace-otlp-http": "0.53.0",
+    "@opentelemetry/resources": "1.26.0",
+    "@opentelemetry/sdk-metrics": "1.26.0",
+    "@opentelemetry/sdk-trace-base": "1.26.0",
+    "@opentelemetry/semantic-conventions": "1.27.0"
+  }
 }

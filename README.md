@@ -29,9 +29,12 @@ It adds delivery governance around your existing repository. It does **not** gen
 The safest first look is read-only:
 
 ```bash
-git clone --branch v1.0.0 https://github.com/smota/agentflow-sdlc.git
-cd agentflow-sdlc
-node bin/cli.mjs doctor-env --target /path/to/your-project
+# Run directly via npx or global install:
+npx -y github:smota/agentflow-sdlc doctor-env --target /path/to/your-project
+
+# Or install globally as an application:
+npm install -g github:smota/agentflow-sdlc
+agentflow-sdlc doctor-env --target /path/to/your-project
 ```
 
 `doctor-env` reports on the target project's tooling; it does not change the target project. Ready to continue? [Get started](docs/get-started.md) is the entry document — it reaches a first governed change, a frozen acceptance contract with a recorded observation, in six commands. Prefer an assistant to drive the same steps conversationally? Use the [assisted onboarding guide](docs/assisted-onboarding.md) and [assisted configuration guide](docs/assisted-configuration.md).
@@ -77,10 +80,24 @@ flowchart TB
 | Lifecycle roles and methods               | Productized accountability contracts with configurable analysis and engineering approaches | [Lifecycle roles](docs/roles/index.md)                      |
 | Optional visual operations                | Cockpit goal, readiness, release, replay, approval, and follow-up views                    | [Cockpit](docs/cockpit.md)                                  |
 | Executable quality model                  | Agent eval manifests, multi-agent acceptance checks, and derived outcome metrics           | [Agent evals](docs/agent-evals.md)                          |
+| Guiding principles and core values        | Six core pillars governing autonomous AI coding, regulated assurance, and continuity       | [Guiding principles](docs/guiding-principles.md)            |
+
+### Guiding principles & core values
+
+AgentFlow SDLC is built upon six foundational pillars governing AI coding in modern engineering environments:
+
+1. **Extensibility & harness neutrality:** Agnostic across AI models and execution targets (`claude-cli`, `agy-cli`, `codex-cli`, API providers).
+2. **Regulated assurance & compliance-by-design:** Tamper-evident cryptographic span ledgers, Four-Eyes Principle dual-control, and black-box QA separation of duties.
+3. **Risk-aware card taxonomy & adaptive execution:** Proportional execution paths (`light`, `standard`, `high-assurance`) with topological dependency blocking (`blocked_by`).
+4. **Agentic flow with human decision comprehension:** Meaningful human gate oversight and transparent waiver accounting without artificial friction.
+5. **Durable continuity & portability:** Resilient cross-machine handoffs, POSIX path normalization, `.git/index.lock` cleanup, and monotonic lease fencing preventing context loss.
+6. **Bounded supervision & zero deadlock:** Guaranteed deterministic resolution of external CI gates and supervised process cleanup.
+
+Read [Guiding principles](docs/guiding-principles.md) for full architectural invariants and standards for contributing agents.
 
 ### Release status
 
-The current release line is **1.0.0** and requires Node.js 20 or newer. Read the [v1.0.0 release notes](docs/releases/v1.0.0.md) for the complete user-facing capability set. No `agentflow-sdlc` package is currently published on npm, so use the source-based setup above; the release badge always resolves to the newest published GitHub release.
+The current release line is **1.1.0** and requires Node.js 20 or newer. Read the [v1.1.0 release notes](docs/releases/v1.1.0.md) for the complete user-facing capability set. No `agentflow-sdlc` package is currently published on npm, so install directly from GitHub using npm as shown above; no manual clone is required. The release badge always resolves to the newest published GitHub release.
 
 ## Choose your path
 

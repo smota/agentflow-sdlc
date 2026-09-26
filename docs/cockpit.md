@@ -23,8 +23,8 @@ For the implemented product vocabulary and rules, see [`docs/cockpit-concepts-an
 ## CLI
 
 ```bash
-AGENTFLOW_REPOSITORIES=owner/repo node bin/cli.mjs cockpit
-node bin/cli.mjs cockpit doctor --json
+AGENTFLOW_REPOSITORIES=owner/repo agentflow-sdlc cockpit
+agentflow-sdlc cockpit doctor --json
 ```
 
 `cockpit doctor` validates package files and runtime configuration. AgentFlow maintainers run

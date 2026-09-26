@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "role": "agentflow:tester",
+  "actionBoundary": "observe",
+  "allowedTools": ["run_terminal", "http_client", "browser_screenshot"],
+  "deniedTools": ["write_to_file", "replace_file_content", "edit_file", "view_file", "read_file"],
+  "restrictions": {
+    "blackBoxOnly": true,
+    "allowSourceInspection": false,
+    "allowSourceModification": false,
+    "requireProcessSupervision": true
+  }
+}

@@ -21,7 +21,7 @@ External actions require an owning role and applicable human approval. Merge and
 never implied by implementation.
 
 ```text
-node bin/cli.mjs sdlc validate-lifecycle --type external-signal --path signal.json
-node bin/cli.mjs sdlc validate-lifecycle --type delivery-handoff --path handoff.json
-node bin/cli.mjs sdlc validate-lifecycle --type action-boundary --path boundary.json
+agentflow-sdlc sdlc validate-lifecycle --type external-signal --path signal.json
+agentflow-sdlc sdlc validate-lifecycle --type delivery-handoff --path handoff.json
+agentflow-sdlc sdlc validate-lifecycle --type action-boundary --path boundary.json
 ```

@@ -22,6 +22,7 @@ import { goalRevision } from '../lib/core/goal-revision.mjs'
 import { validateDeliveryContract } from '../lib/core/delivery-policy.mjs'
 import { RUN_ROLES, projectRunContext } from '../lib/core/run-state.mjs'
 import { observeLocalWriter } from '../lib/providers/writer-status.mjs'
+import { emitObservation } from '../lib/observability/observer.mjs'
 
 export const RUN_EXIT_CODES = {
   success: 0,
@@ -120,7 +121,19 @@ export async function runDelivery(
     return 0
   }
   const root = resolve(flag('--target', process.cwd()))
-  const readJson = (path) => JSON.parse(readFileSync(containedPath(root, path), 'utf8'))
+  let observer = null
+  const sessionId = randomUUID()
+  const sessionStarted = performance.now()
+  const readJson = (path) => {
+    const bytes = readFileSync(containedPath(root, path))
+    emitObservation(observer, {
+      kind: 'file_read',
+      bytes: bytes.length,
+      files: 1,
+      purpose: 'configuration',
+    })
+    return JSON.parse(bytes.toString('utf8'))
+  }
   const readExecutionAdapter = () => {
     try {
       return readJson('agent-workflow.config.json')
@@ -149,225 +162,273 @@ export async function runDelivery(
     execute,
     boundary,
   }
-  const client = external ? createGitHubApiCli() : null
-  const store = external
-    ? createGitHubRunStore({
-        ...config.source,
-        runId: id,
-        client,
-        boundary: execute ? boundary : 'observe',
-        setupConfirm: flag('--setup-confirm'),
-      })
-    : createFileRunStore({ root, runId: id })
-  const phaseContract = (state) => config.contracts?.[RUN_ROLES[state.phase]]
-  const domainPath = ['sdlc.config.json', 'defaults/sdlc.config.json'].find((path) =>
-    existsSync(containedPath(root, path, { allowMissing: true })),
-  )
-  const service = createRunService({
-    store,
-    // The run must be governed by the TARGET project's own configuration and posture. Without these,
-    // run-service loaded config from process.cwd() - the framework checkout on the documented entry
-    // path - and always used the default posture, silently ignoring what the adopter chose.
-    sdlcConfig: loadSdlcConfig(root),
-    posture: executionAdapter.posture,
-    policy: domainPath ? readJson(domainPath).deliveryPolicy : {},
-    budget: config.budget ?? null,
-    authorize: async ({ kind }) =>
-      execute &&
-      Boolean(authority.owner) &&
-      kind !== 'human-acceptance' &&
-      (!external || boundary === 'external-action'),
-    resolveContract: async (state) => {
-      const path = phaseContract(state)
-      if (!path) return null
-      return resolveDeliveryContract({
-        value: readJson(path),
-        state,
-        source: config.source,
-        client,
-      })
-    },
-    resolveCollaboration: async (state) => {
-      const path = config.collaboration?.[RUN_ROLES[state.phase]]
-      return path ? { verified: true, sources: readJson(path) } : null
-    },
-    // W8f D1 — the run and the role-pass gate (scripts/validate-sdlc-role-pass.mjs) both resolve
-    // observation trust through the ONE shared function; no second copy of this decision lives here.
-    resolveObservation: async (observation) =>
-      resolveVerifiedObservation({ root, config, observation }),
-    observeWriter: async (state) => observeLocalWriter(state.writer),
-    observeWorkspace: async () => ({
-      verified: true,
-      candidateDigest: fingerprintCandidate(root, config.candidate).digest,
-    }),
-    reconcileOperation: async (operation) =>
-      operation.kind === 'issue-projection' && client
-        ? reconcileProjection({ client, plan: operation.plan })
-        : { state: 'unknown' },
-  })
-  let result
-  if (command === 'source-plan') {
-    if (!client) throw new Error('Source setup planning requires a GitHub binding')
-    result = await planGitHubCoordination({ ...config.source, client })
-  } else if (command === 'start') {
-    result = await service.start({
-      runId: id,
-      goalRef: flag('--goal'),
-      owner: authority.owner,
-      profile: flag('--profile', 'standard'),
-      boundary,
-      writer: {
-        host: hostname(),
-        pid: Number(flag('--writer-pid', String(process.ppid))),
-        instance: randomUUID(),
+  let telemetry = { observer: () => {}, shutdown: async () => {} }
+  try {
+    const { createTelemetry } = await import('../lib/observability/otel.mjs')
+    telemetry = createTelemetry(executionAdapter.observability)
+    observer = (event) => telemetry.observer({ ...event, runId: id, sessionId })
+  } catch (err) {
+    // ignore init failure
+  }
+
+  try {
+    emitObservation(observer, { kind: 'session', state: 'started' })
+    const client = external ? createGitHubApiCli({ observer }) : null
+    const store = external
+      ? createGitHubRunStore({
+          ...config.source,
+          runId: id,
+          client,
+          boundary: execute ? boundary : 'observe',
+          setupConfirm: flag('--setup-confirm'),
+        })
+      : createFileRunStore({ root, runId: id })
+    const phaseContract = (state) => config.contracts?.[RUN_ROLES[state.phase]]
+    const domainPath = ['sdlc.config.json', 'defaults/sdlc.config.json'].find((path) =>
+      existsSync(containedPath(root, path, { allowMissing: true })),
+    )
+    const service = createRunService({
+      store,
+      // The run must be governed by the TARGET project's own configuration and posture. Without these,
+      // run-service loaded config from process.cwd() - the framework checkout on the documented entry
+      // path - and always used the default posture, silently ignoring what the adopter chose.
+      sdlcConfig: loadSdlcConfig(root),
+      posture: executionAdapter.posture,
+      policy: domainPath ? readJson(domainPath).deliveryPolicy : {},
+      budget: config.budget ?? null,
+      authorize: async ({ kind }) =>
+        execute &&
+        Boolean(authority.owner) &&
+        kind !== 'human-acceptance' &&
+        (!external || boundary === 'external-action'),
+      resolveContract: async (state) => {
+        const path = phaseContract(state)
+        if (!path) return null
+        return resolveDeliveryContract({
+          value: readJson(path),
+          state,
+          source: config.source,
+          client,
+        })
       },
-      authority,
+      resolveCollaboration: async (state) => {
+        const path = config.collaboration?.[RUN_ROLES[state.phase]]
+        return path ? { verified: true, sources: readJson(path) } : null
+      },
+      // W8f D1 — the run and the role-pass gate (scripts/validate-sdlc-role-pass.mjs) both resolve
+      // observation trust through the ONE shared function; no second copy of this decision lives here.
+      resolveObservation: async (observation) =>
+        resolveVerifiedObservation({ root, config, observation }),
+      observeWriter: async (state) => observeLocalWriter(state.writer),
+      observeWorkspace: async () => ({
+        verified: true,
+        candidateDigest: fingerprintCandidate(root, config.candidate, { observer }).digest,
+      }),
+      reconcileOperation: async (operation) =>
+        operation.kind === 'issue-projection' && client
+          ? reconcileProjection({ client, plan: operation.plan })
+          : { state: 'unknown' },
+      observer,
     })
-  } else if (command === 'status') result = await service.status()
-  else if (command === 'context') result = projectRunContext((await service.read()).state)
-  else if (command === 'next') {
-    const { state } = await service.read()
-    result = { status: await service.status() }
-    if (state?.contract && state.candidateDigest) {
-      const plan = {
-        candidateDigest: state.candidateDigest,
-        runRevision: state.revision,
-        criteria: state.contract.criteria.map((criterion) => ({
-          ...criterion,
-          observationDigest:
-            state.observations.findLast(
-              (o) =>
-                o.criterionId === criterion.id && o.definitionDigest === criterion.definitionDigest,
-            )?.digest ?? null,
-        })),
-      }
-      result.advancePlan = plan
-      result.confirm = recordDigest(plan)
-    }
-  } else if (command === 'freeze')
-    result = await service.freezeContract({
-      expectedRevision: (await service.read()).revision,
-      authority,
-    })
-  else if (command === 'verify') {
-    const check = config.checks?.[flag('--check')]
-    if (!check) throw new Error('Configured --check required')
-    let { state } = await service.read()
-    if (!state?.contract) throw new Error('Freeze criteria before execution')
-    if (state.status !== 'active') throw new Error('Active run required before provider execution')
-    const boundaries = ['observe', 'propose', 'mutate-worktree', 'open-pr', 'external-action']
-    if (
-      boundaries.indexOf(state.boundary) < 2 ||
-      boundaries.indexOf(boundary) > boundaries.indexOf(state.boundary)
-    )
-      throw new Error('Requested execution exceeds run action authority')
-    if (!execute || authority.owner !== state.owner || authority.generation !== state.generation)
-      throw new Error('Current writer execution authority required')
-    if (
-      !(await service.admitAttempt({ estimatedNext: config.budget?.estimatedNext, authority }))
-        .admitted
-    )
-      throw new Error('Budget admission blocked; checkpoint preserved')
-    state = (await service.read()).state
-    const definition = { ...check, ...config.candidate }
-    if (
-      !state.contract.criteria.some(
-        (c) => c.id === check.criterionId && c.definitionDigest === recordDigest(definition),
-      )
-    )
-      throw new Error('Check differs from frozen criterion definition')
-    const collected = collectProcessObservation({ root, definition, boundary })
-    if (state.candidateDigest !== collected.candidate.digest) {
-      await service.record(
-        'candidate',
-        { digest: collected.candidate.digest },
-        { expectedRevision: state.revision, authority },
-      )
-      state = (await service.read()).state
-    }
-    result = await service.record(
-      'observation',
-      { observation: collected.observation },
-      { expectedRevision: state.revision, authority },
-    )
-    result.verification = {
-      outcome: collected.observation.outcome,
-      observationDigest: collected.observation.digest,
-    }
-  } else if (command === 'advance') {
-    const { state } = await service.read()
-    const contract = readJson(flag('--plan'))
-    if (flag('--confirm') !== recordDigest(contract))
-      throw new Error('Advance plan confirmation mismatch')
-    if (contract.runRevision !== state.revision) throw new Error('Advance plan is stale')
-    result = await service.advance({ contract, authority })
-  } else if (command === 'checkpoint' || command === 'pause') {
-    result = await service.record(
-      command === 'pause' ? 'paused' : 'checkpoint',
-      { reason: flag('--reason', 'Requested operator checkpoint') },
-      { expectedRevision: (await service.read()).revision, authority },
-    )
-  } else if (command === 'resolve-escalation') {
-    // D5 (W8c) — the escalated gate's path to satisfaction, reachable from the product's own `run`
-    // CLI (bin/cli.mjs -> scripts/run-delivery.mjs). `--attestation` is a review-attestation record
-    // (lib/core/review-attestation.mjs); only a real human attestation resolves it
-    // (service.resolveEscalation enforces this via satisfyGate).
-    //
-    // W8c2 D2/D3 — the gate now ranges over the specific drift, not the bare candidate, so
-    // resolveEscalation needs the SAME plan (`--plan`, `--confirm`) `next`/`advance` already use to
-    // rebuild that drift deterministically — exactly the same confirmation shape `advance` requires
-    // just above, never trusted without its digest matching.
-    //
-    // Final review B1 — DEFECT FIXED. The attestation came from a file the caller writes, and
-    // "human" is a declared field on it, so any agent with a shell could resolve a weakening
-    // escalation by writing `platform: "human"`. The CLI cannot authenticate a human, exactly as
-    // `authorize` above already refuses `human-acceptance`, so it fails closed: a human resolution
-    // must arrive through an authenticated channel, never a self-supplied file.
-    throw new GovernedBlockError(
-      'Escalation resolution requires an authenticated human channel; the run CLI cannot accept a self-supplied attestation',
-    )
-  } else if (command === 'resume') {
-    if (!flag('--confirm'))
-      result = await service.recoveryPlan({
+    let result
+    if (command === 'source-plan') {
+      if (!client) throw new Error('Source setup planning requires a GitHub binding')
+      result = await planGitHubCoordination({ ...config.source, client })
+    } else if (command === 'start') {
+      result = await service.start({
+        runId: id,
+        goalRef: flag('--goal'),
         owner: authority.owner,
+        profile: flag('--profile', 'standard'),
         boundary,
         writer: {
           host: hostname(),
           pid: Number(flag('--writer-pid', String(process.ppid))),
           instance: randomUUID(),
         },
-      })
-    else {
-      const plan = readJson(flag('--plan'))
-      if (plan.digest !== flag('--confirm')) throw new Error('Recovery confirmation mismatch')
-      result = await service.resume({ plan, authority })
-    }
-  } else if (command === 'publish') {
-    if (!client) throw new Error('Publishing requires a durable GitHub source')
-    if (!flag('--confirm'))
-      result = planProjection({
-        status: await service.status(),
-        repo: config.source.repo,
-        issueNumber: Number(flag('--issue')),
-      })
-    else
-      result = await publishProjection({
-        service,
-        client,
-        plan: readJson(flag('--plan')),
-        confirm: flag('--confirm'),
         authority,
       })
-  } else throw new Error(help)
-  // W8e / D6 — a plain-language line before the JSON when `--json` was not requested; `--json`
-  // output itself is untouched (still exactly `emit({ version: 1, result })`, nothing prepended).
-  if (!args.includes('--json')) process.stdout.write(`${summarizeRunResult(command, result)}\n`)
-  emit({ version: 1, result })
-  return result?.state === 'unknown'
-    ? 6
-    : result?.blocked || result?.verification?.outcome === 'fail'
-      ? 3
-      : 0
+    } else if (command === 'status') result = await service.status()
+    else if (command === 'context') result = projectRunContext((await service.read()).state)
+    else if (command === 'next') {
+      const { state } = await service.read()
+      result = { status: await service.status() }
+      if (state?.contract && state.candidateDigest) {
+        const plan = {
+          candidateDigest: state.candidateDigest,
+          runRevision: state.revision,
+          criteria: state.contract.criteria.map((criterion) => ({
+            ...criterion,
+            observationDigest:
+              state.observations.findLast(
+                (o) =>
+                  o.criterionId === criterion.id &&
+                  o.definitionDigest === criterion.definitionDigest,
+              )?.digest ?? null,
+          })),
+        }
+        result.advancePlan = plan
+        result.confirm = recordDigest(plan)
+      }
+    } else if (command === 'freeze')
+      result = await service.freezeContract({
+        expectedRevision: (await service.read()).revision,
+        authority,
+      })
+    else if (command === 'verify') {
+      const check = config.checks?.[flag('--check')]
+      if (!check) throw new Error('Configured --check required')
+      let { state } = await service.read()
+      if (!state?.contract) throw new Error('Freeze criteria before execution')
+      if (state.status !== 'active')
+        throw new Error('Active run required before provider execution')
+      const boundaries = ['observe', 'propose', 'mutate-worktree', 'open-pr', 'external-action']
+      if (
+        boundaries.indexOf(state.boundary) < 2 ||
+        boundaries.indexOf(boundary) > boundaries.indexOf(state.boundary)
+      )
+        throw new Error('Requested execution exceeds run action authority')
+      if (!execute || authority.owner !== state.owner || authority.generation !== state.generation)
+        throw new Error('Current writer execution authority required')
+      if (
+        !(await service.admitAttempt({ estimatedNext: config.budget?.estimatedNext, authority }))
+          .admitted
+      )
+        throw new Error('Budget admission blocked; checkpoint preserved')
+      state = (await service.read()).state
+      const definition = { ...check, ...config.candidate }
+      if (
+        !state.contract.criteria.some(
+          (c) => c.id === check.criterionId && c.definitionDigest === recordDigest(definition),
+        )
+      )
+        throw new Error('Check differs from frozen criterion definition')
+      const collected = collectProcessObservation({ root, definition, boundary })
+      if (state.candidateDigest !== collected.candidate.digest) {
+        await service.record(
+          'candidate',
+          { digest: collected.candidate.digest },
+          { expectedRevision: state.revision, authority },
+        )
+        state = (await service.read()).state
+      }
+      result = await service.record(
+        'observation',
+        { observation: collected.observation },
+        { expectedRevision: state.revision, authority },
+      )
+      result.verification = {
+        outcome: collected.observation.outcome,
+        observationDigest: collected.observation.digest,
+      }
+    } else if (command === 'advance') {
+      const { state } = await service.read()
+      const contract = readJson(flag('--plan'))
+      if (flag('--confirm') !== recordDigest(contract))
+        throw new Error('Advance plan confirmation mismatch')
+      if (contract.runRevision !== state.revision) throw new Error('Advance plan is stale')
+      result = await service.advance({ contract, authority })
+    } else if (command === 'checkpoint' || command === 'pause') {
+      result = await service.record(
+        command === 'pause' ? 'paused' : 'checkpoint',
+        { reason: flag('--reason', 'Requested operator checkpoint') },
+        { expectedRevision: (await service.read()).revision, authority },
+      )
+    } else if (command === 'resolve-escalation') {
+      // D5 (W8c) — the escalated gate's path to satisfaction, reachable from the product's own `run`
+      // CLI (bin/cli.mjs -> scripts/run-delivery.mjs). `--attestation` is a review-attestation record
+      // (lib/core/review-attestation.mjs); only a real human attestation resolves it
+      // (service.resolveEscalation enforces this via satisfyGate).
+      //
+      // W8c2 D2/D3 — the gate now ranges over the specific drift, not the bare candidate, so
+      // resolveEscalation needs the SAME plan (`--plan`, `--confirm`) `next`/`advance` already use to
+      // rebuild that drift deterministically — exactly the same confirmation shape `advance` requires
+      // just above, never trusted without its digest matching.
+      //
+      // Final review B1 — DEFECT FIXED. The attestation came from a file the caller writes, and
+      // "human" is a declared field on it, so any agent with a shell could resolve a weakening
+      // escalation by writing `platform: "human"`. The CLI cannot authenticate a human, exactly as
+      // `authorize` above already refuses `human-acceptance`, so it fails closed: a human resolution
+      // must arrive through an authenticated channel, never a self-supplied file.
+      throw new GovernedBlockError(
+        'Escalation resolution requires an authenticated human channel; the run CLI cannot accept a self-supplied attestation',
+      )
+    } else if (command === 'resume') {
+      if (!flag('--confirm'))
+        result = await service.recoveryPlan({
+          owner: authority.owner,
+          boundary,
+          writer: {
+            host: hostname(),
+            pid: Number(flag('--writer-pid', String(process.ppid))),
+            instance: randomUUID(),
+          },
+        })
+      else {
+        const plan = readJson(flag('--plan'))
+        if (plan.digest !== flag('--confirm')) throw new Error('Recovery confirmation mismatch')
+        result = await service.resume({ plan, authority })
+      }
+    } else if (command === 'publish') {
+      if (!client) throw new Error('Publishing requires a durable GitHub source')
+      if (!flag('--confirm'))
+        result = planProjection({
+          status: await service.status(),
+          repo: config.source.repo,
+          issueNumber: Number(flag('--issue')),
+        })
+      else
+        result = await publishProjection({
+          service,
+          client,
+          plan: readJson(flag('--plan')),
+          confirm: flag('--confirm'),
+          authority,
+        })
+    } else throw new Error(help)
+    // W8e / D6 — a plain-language line before the JSON when `--json` was not requested; `--json`
+    // output itself is untouched (still exactly `emit({ version: 1, result })`, nothing prepended).
+    if (!args.includes('--json')) process.stdout.write(`${summarizeRunResult(command, result)}\n`)
+    emit({ version: 1, result })
+    emitObservation(observer, {
+      kind: 'session',
+      state: 'completed',
+      duration: performance.now() - sessionStarted,
+    })
+    if (command === 'verify')
+      emitObservation(observer, {
+        kind: 'verification',
+        outcome: ['pass', 'fail'].includes(result?.verification?.outcome)
+          ? result.verification.outcome
+          : 'unknown',
+        duration: performance.now() - sessionStarted,
+      })
+    if (command === 'resume')
+      emitObservation(observer, {
+        kind: 'recovery',
+        outcome: flag('--confirm') && result?.status === 'active' ? 'resumed' : 'unknown',
+        duration: performance.now() - sessionStarted,
+      })
+    return result?.state === 'unknown'
+      ? 6
+      : result?.blocked || result?.verification?.outcome === 'fail'
+        ? 3
+        : 0
+  } catch (error) {
+    emitObservation(observer, {
+      kind: 'session',
+      state: 'failed',
+      duration: performance.now() - sessionStarted,
+    })
+    throw error
+  } finally {
+    try {
+      await telemetry.shutdown()
+      if (executionAdapter.observability?.enabled && telemetry.getReport) {
+        process.stderr.write(`${JSON.stringify({ telemetry: telemetry.getReport() })}\n`)
+      }
+    } catch (e) {}
+  }
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

@@ -15,23 +15,52 @@ Documenting skills makes agent-assisted work easier to audit:
 
 ## Framework-owned skills
 
-AgentFlow ships one namespaced family. Use the qualified identity in user-facing routing and
-handoffs. Canonical folder and frontmatter names use the role slug because portable skill names are
-lowercase and hyphen-safe; the plugin namespace supplies `agentflow:`. Flat adapters without a
-plugin namespace use `agentflow-<role>`.
+AgentFlow ships six skills with one public naming rule: `agentflow-<skill>`.
+Use that exact name for discovery, invocation and handoffs. Source folders, `SKILL.md`
+frontmatter, catalog identities and generated adapters use the same name.
+Short names and colon-separated names are not supported invocation aliases.
 
-| Qualified skill          | Owns                                                                    | Does not own                                      | Local source                                      |
-| ------------------------ | ----------------------------------------------------------------------- | ------------------------------------------------- | ------------------------------------------------- |
-| `agentflow:orchestrator` | Phase state, transition and acceptance evidence, PR-readiness synthesis | Policy, migration, scans, collaboration, verdicts | [`skills/orchestrator/`](../skills/orchestrator/) |
-| `agentflow:collaborator` | Complexity routing, mode, council policy, helper bounds, synthesis      | Phase state, implementation, acceptance verdict   | [`skills/collaborator/`](../skills/collaborator/) |
-| `agentflow:scanner`      | Read-only discovery scope, findings, evidence maps                      | Remediation, audit verdicts, coordination         | [`skills/scanner/`](../skills/scanner/)           |
-| `agentflow:designer`     | Canonical policy, schemas, role boundaries                              | Consumer migration, orchestration, self-audit     | [`skills/designer/`](../skills/designer/)         |
-| `agentflow:migrator`     | Adoption inventory, mutation plans, transactions                        | Canonical policy, independent certification       | [`skills/migrator/`](../skills/migrator/)         |
-| `agentflow:auditor`      | Validation, compliance verdict, remediation advice                      | Mutation, implementation, phase coordination      | [`skills/auditor/`](../skills/auditor/)           |
+| Skill                    | Owns                                                                    | Does not own                                      | Local source                                                          |
+| ------------------------ | ----------------------------------------------------------------------- | ------------------------------------------------- | --------------------------------------------------------------------- |
+| `agentflow-orchestrator` | Phase state, transition and acceptance evidence, PR-readiness synthesis | Policy, migration, scans, collaboration, verdicts | [`skills/agentflow-orchestrator/`](../skills/agentflow-orchestrator/) |
+| `agentflow-collaborator` | Complexity routing, mode, council policy, helper bounds, synthesis      | Phase state, implementation, acceptance verdict   | [`skills/agentflow-collaborator/`](../skills/agentflow-collaborator/) |
+| `agentflow-scanner`      | Read-only discovery scope, findings, evidence maps                      | Remediation, audit verdicts, coordination         | [`skills/agentflow-scanner/`](../skills/agentflow-scanner/)           |
+| `agentflow-designer`     | Canonical policy, schemas, role boundaries                              | Consumer migration, orchestration, self-audit     | [`skills/agentflow-designer/`](../skills/agentflow-designer/)         |
+| `agentflow-migrator`     | Adoption inventory, mutation plans, transactions                        | Canonical policy, independent certification       | [`skills/agentflow-migrator/`](../skills/agentflow-migrator/)         |
+| `agentflow-auditor`      | Validation, compliance verdict, remediation advice                      | Mutation, implementation, phase coordination      | [`skills/agentflow-auditor/`](../skills/agentflow-auditor/)           |
 
 `manifests/skill-catalog.json` is the machine authority for identity, ownership, peer recognition,
 and typed handoffs. Run `agentflow-sdlc skills catalog --json` to inspect it and
 `agentflow-sdlc skills validate --json` to enforce it.
+
+### Names, installation and discovery
+
+The supported names are `agentflow-auditor`, `agentflow-collaborator`, `agentflow-designer`,
+`agentflow-migrator`, `agentflow-orchestrator` and `agentflow-scanner`.
+Each source lives in `skills/<full-skill-name>/SKILL.md`; its `name` field matches its folder.
+
+Inspect the catalog, preview synchronization, then apply it to the intended project:
+
+```bash
+agentflow-sdlc skills catalog --json
+agentflow-sdlc skills validate --json
+agentflow-sdlc skills sync --harness codex --target /path/to/project --dry-run
+agentflow-sdlc skills sync --harness codex --target /path/to/project --apply
+agentflow-sdlc skills status --harness codex --target /path/to/project --json
+```
+
+Codex and Agy flat adapters use `.agents/skills/agentflow-<role>/SKILL.md`;
+Claude Code uses `.claude/skills/`, and Pi uses `.pi/skills/`. Generated frontmatter
+must match the same full skill name for all six, including source and plugin payloads.
+
+If a Skills Manager still shows a short name, refresh or re-import the current skill source
+through that manager so both its files and indexed metadata use the full name. Confirm the
+existing entry was updated rather than creating a duplicate. AgentFlow sync updates project
+files; it does not refresh an external library or UI cache.
+
+Catalog registration, packaged files, installed adapters, runtime discovery and UI display are
+separate checks. A successful `skills status` proves adapter consistency, not that a host has
+loaded or displayed all skills. Report the host and source path when escalating a discovery issue.
 
 ### How the skills collaborate
 
@@ -40,7 +69,7 @@ and typed handoffs. Run `agentflow-sdlc skills catalog --json` to inspect it and
 3. The orchestrator validates and incorporates the result without changing its provenance.
 4. The auditor remains independent and read-only; the scanner supplies evidence but never verdicts.
 
-Only catalog identities are supported. Use the qualified names in routing and handoffs and the
+Only catalog identities are supported. Use the full skill names in routing and handoffs and the
 matching canonical source directories for local inspection.
 
 ## Metaskills companion source
@@ -91,7 +120,7 @@ These are not vendored by this repository, but they are common local companions 
 | `ccpm`                 | Spec-driven project management using PRDs, epics, GitHub Issues, worktrees, and agent execution.                               | <https://github.com/automazeio/ccpm>      | <https://github.com/automazeio/ccpm>        | Useful reference source for issue/epic management patterns.                            |
 | Agent CLI routing docs | Explain how `agy`, `codex`, `claude`, and `pi` hand work off when project routing selects them.                                | <https://github.com/smota/agentflow-sdlc> | [`docs/agent-routing.md`](agent-routing.md) | Project-configured; validate with `node scripts/validate-role-routing.mjs`.            |
 | Vibium                 | Default browser QA skill/tool for optional `qa-expert` exploratory sessions.                                                   | <https://github.com/VibiumDev/vibium>     | <https://vibium.com>                        | Opinionated default for `qa-expert`; projects may override with a documented QA stack. |
-| Adoption CLI           | Previews and transactionally applies profiles, including managed and seed-once files.                                          | <https://github.com/smota/agentflow-sdlc> | [`get-started.md`](get-started.md)          | Run `node bin/cli.mjs adopt plan`, then an approved `adopt apply`.                     |
+| Adoption CLI           | Previews and transactionally applies profiles, including managed and seed-once files.                                          | <https://github.com/smota/agentflow-sdlc> | [`get-started.md`](get-started.md)          | Run `agentflow-sdlc adopt plan`, then an approved `adopt apply`.                       |
 
 ## Original CCPM-sourced skill surfaces
 

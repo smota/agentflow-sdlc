@@ -118,7 +118,7 @@ Key routing and identity fields:
 - `roleMethods.bindings` selects typed, role-bound method plays. Methods may add inputs, outputs,
   evidence, behavior, templates, and validators, but cannot transfer ownership, change core
   transitions, widen authority, or weaken gates. Inspect the effective contract with
-  `node bin/cli.mjs roles resolve <role> --json`; see [`roles/methods.md`](roles/methods.md).
+  `agentflow-sdlc roles resolve <role> --json`; see [`roles/methods.md`](roles/methods.md).
 
 - `platformRegistry.additionalPlatforms` — optional identity-only registry entries for future
   harnesses/runtimes. Each entry has `slug`, `displayName`, `kind` (`agent-runtime | harness |
@@ -151,14 +151,14 @@ Validate branching and routing with:
 node scripts/validate-branch-strategy.mjs
 node scripts/resolve-branch-strategy.mjs --json
 node scripts/validate-role-routing.mjs
-node bin/cli.mjs sdlc validate-authority --json
+agentflow-sdlc sdlc validate-authority --json
 node scripts/resolve-role-route.mjs --role developer --current claude --json
 node scripts/resolve-execution-target.mjs --agent claude --requested "with claude" --current-agent pi --json
-node bin/cli.mjs providers inspect claude-cli --json
-node bin/cli.mjs collaboration plan --mode advisory --provider claude-cli --json
+agentflow-sdlc providers inspect claude-cli --json
+agentflow-sdlc collaboration plan --mode advisory --provider claude-cli --json
 node scripts/validate-extension-packs.mjs --allow-empty
 node scripts/integration-lifecycle.mjs --event path/to/pull_request_event.json
-node bin/cli.mjs doctor-env --json
+agentflow-sdlc doctor-env --json
 ```
 
 See `docs/agent-routing.md` for the route-resolution and ticket handover comment workflow. See
@@ -173,8 +173,8 @@ preferences. A domain field duplicated here fails `sdlc validate-authority`. Pre
 owner-precedence migration before applying it:
 
 ```bash
-node bin/cli.mjs sdlc migrate-authority plan --target /path/to/project
-node bin/cli.mjs sdlc migrate-authority apply --target /path/to/project --confirm <plan-token>
+agentflow-sdlc sdlc migrate-authority plan --target /path/to/project
+agentflow-sdlc sdlc migrate-authority apply --target /path/to/project --confirm <plan-token>
 ```
 
 ## Seed-once files

@@ -474,7 +474,7 @@ versioning strategy. The default is `main.minor.fix`:
 
 Release PRs or release manifests must record the intended version/tag, bump type, rationale,
 included integrated issues, excluded/deferred issues, validation commands, release notes path, and
-operator approval before tags or GitHub Releases are pushed. Use `node bin/cli.mjs release-plan` for
+operator approval before tags or GitHub Releases are pushed. Use `agentflow-sdlc release-plan` for
 a read-only preview and `node scripts/validate-release-versioning.mjs` for consistency checks. See
 [`docs/release-versioning.md`](release-versioning.md).
 

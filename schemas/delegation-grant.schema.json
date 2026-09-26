@@ -1,0 +1,99 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentflow.dev/schemas/delegation-grant.schema.json",
+  "title": "DelegationGrant",
+  "description": "Structural wire contract. The deterministic reducer additionally verifies configured issuer policy, request digests, ancestry, expiry, scope and budgets.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "issuedAt", "issuerActor", "parentId", "binding"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9:._-]{0,199}$" },
+    "issuedAt": { "type": "string", "minLength": 1 },
+    "issuerActor": { "type": "string", "minLength": 1 },
+    "parentId": { "type": ["string", "null"] },
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "issuerMode",
+        "issuerBinding",
+        "planDigest",
+        "policyDigest",
+        "repository",
+        "base",
+        "delegate",
+        "allowedPaths",
+        "allowedActions",
+        "capabilities",
+        "requiredChecks",
+        "reviewPolicy",
+        "materiality",
+        "allowSubdelegation",
+        "maxAttempts",
+        "maxExternalEffects",
+        "expiry"
+      ],
+      "properties": {
+        "issuerMode": { "const": "local-cooperative" },
+        "issuerBinding": {
+          "type": "object",
+          "required": [
+            "type",
+            "issuerId",
+            "mode",
+            "origin",
+            "authorityRef",
+            "policyDigest",
+            "requestDigest",
+            "decisionRef"
+          ],
+          "properties": {
+            "type": { "const": "delegation-issuance" },
+            "issuerId": { "type": "string", "minLength": 1 },
+            "mode": { "const": "local-cooperative" },
+            "origin": { "type": "string", "minLength": 1 },
+            "authorityRef": { "type": "string", "minLength": 1 },
+            "policyDigest": { "$ref": "#/definitions/digest" },
+            "requestDigest": { "$ref": "#/definitions/digest" },
+            "decisionRef": { "type": "string", "minLength": 1 }
+          }
+        },
+        "planDigest": { "$ref": "#/definitions/digest" },
+        "policyDigest": { "$ref": "#/definitions/digest" },
+        "repository": { "type": "string", "minLength": 1 },
+        "base": { "type": "string", "minLength": 1 },
+        "delegate": { "type": "string", "minLength": 1 },
+        "allowedPaths": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "allowedActions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "enum": ["edit", "commit", "push", "pr:create", "pr:update", "merge"] }
+        },
+        "capabilities": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "requiredChecks": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "reviewPolicy": { "enum": ["automated", "human"] },
+        "materiality": { "const": "fixed-scope-v1" },
+        "allowSubdelegation": { "type": "boolean" },
+        "maxAttempts": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+        "maxExternalEffects": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+        "expiry": { "type": "string", "minLength": 1 }
+      }
+    }
+  },
+  "definitions": { "digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" } }
+}

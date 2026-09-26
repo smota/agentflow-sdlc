@@ -124,6 +124,8 @@ createServer(async (req, res) => {
         session,
         url.searchParams.get('view') || 'goals',
         url.searchParams.get('release') || 'unreleased',
+        url.searchParams.get('modal') || null,
+        url.searchParams.get('issue') || null,
       )
     const replayMatch = url.pathname.match(/^\/issues\/(\d+)\/replay(\.md)?$/)
     if (replayMatch)
@@ -154,22 +156,46 @@ function selectedRepository(url) {
   return config.repositories.includes(requested) ? requested : null
 }
 
-async function home(res, repo, session, view = 'goals', release = 'unreleased') {
+async function home(
+  res,
+  repo,
+  session,
+  view = 'goals',
+  release = 'unreleased',
+  modal = null,
+  modalIssue = null,
+) {
   const issues = await github.issues(repo, { state: 'open', per_page: 50 })
   const board = buildGoalBoard({ issues: issues.filter((issue) => !issue.pull_request), repo })
   const sessionId = 'local-token'
+  const user = session?.user?.login || 'token'
+  const csrfToken = createCsrfToken({
+    sessionId,
+    secret: config.sessionSecret || 'local-development-session-secret-32',
+  })
+
+  let modalGoal = null
+  if (modal === 'gate-transition' && modalIssue) {
+    modalGoal = (board.goals || []).find((g) => g.number === Number(modalIssue))
+  }
+
   return html(
     res,
     renderCockpitPage({
       repo,
       repositories: config.repositories,
       view,
-      user: session?.user?.login || 'token',
-      csrfToken: createCsrfToken({
-        sessionId,
-        secret: config.sessionSecret || 'local-development-session-secret-32',
+      user,
+      csrfToken,
+      body: renderGoalBoard(board, {
+        repo,
+        view,
+        release,
+        modal,
+        modalGoal,
+        user,
+        csrfToken,
       }),
-      body: renderGoalBoard(board, { repo, view, release }),
     }),
   )
 }

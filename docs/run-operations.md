@@ -1,12 +1,12 @@
 # Run operations
 
-Use the CLI from the installed package or `node bin/cli.mjs` in an authorized source checkout. These commands do not replace the required project policy, issue, role passes or human review.
+Use `agentflow-sdlc` after the npm installation in [Get started](get-started.md). Pass `--target <project>` to select your project. These commands do not replace the required project policy, issue, role passes or human review.
 
 ## Inspect and configure
 
 ```text
-node bin/cli.mjs doctor-env --inspect --target <project> --json
-node bin/cli.mjs run --help
+agentflow-sdlc doctor-env --inspect --target <project> --json
+agentflow-sdlc run --help
 ```
 
 Configure `agent-workflow.config.json.delivery` with a source (`local-preview` or `github`), candidate input manifest, named checks, per-role acceptance files and per-role collaboration bundles. For GitHub also supply the exact `repo` and optional coordination `branch`. Local preview never claims durable GitHub acknowledgment.
@@ -44,11 +44,11 @@ For a GitHub source, `--goal` must be `issue:<number>` or an issue URL in the co
 ## Execute and inspect
 
 ```text
-node bin/cli.mjs run start demo --goal issue:123 --writer operator --generation 0 --execute --target <project>
-node bin/cli.mjs run freeze demo --writer operator --generation 0 --execute --target <project>
-node bin/cli.mjs run verify demo --check suite --writer operator --generation 0 --execute --target <project>
-node bin/cli.mjs run status demo --target <project> --json
-node bin/cli.mjs run next demo --target <project> --json
+agentflow-sdlc run start demo --goal issue:123 --writer operator --generation 0 --execute --target <project>
+agentflow-sdlc run freeze demo --writer operator --generation 0 --execute --target <project>
+agentflow-sdlc run verify demo --check suite --writer operator --generation 0 --execute --target <project>
+agentflow-sdlc run status demo --target <project> --json
+agentflow-sdlc run next demo --target <project> --json
 ```
 
 `next` returns the current status and, when possible, an `advancePlan` with a confirmation digest. Save the plan object to a project-local file, review it, then apply it with `run advance demo --plan <file> --confirm <digest> --writer operator --generation 0 --execute`. Confirmation checks staleness; host permissions still apply. Missing bilateral acceptance remains blocked even when tests pass. The stock CLI cannot certify human review; high-assurance advancement needs an integration that resolves actual human authority.
@@ -86,10 +86,10 @@ A compact acceptance file can include `journeys: [{"id":"search","required":true
 ## Adoption storage and recovery
 
 ```text
-node bin/cli.mjs adopt plan --profile standard --storage project --target <project> --json
-node bin/cli.mjs adopt apply --profile standard --storage project --confirm <plan-token> --target <project> --json
-node bin/cli.mjs adopt rollback --receipt <returned-receipt-path> --confirm <receipt-token> --target <project> --json
-node bin/cli.mjs adopt recover --confirm <recovery-token> --target <project> --json
+agentflow-sdlc adopt plan --profile standard --storage project --target <project> --json
+agentflow-sdlc adopt apply --profile standard --storage project --confirm <plan-token> --target <project> --json
+agentflow-sdlc adopt rollback --receipt <returned-receipt-path> --confirm <receipt-token> --target <project> --json
+agentflow-sdlc adopt recover --confirm <recovery-token> --target <project> --json
 ```
 
 The returned receipt path is authoritative; transaction IDs differ from plan tokens. External storage remains available through `--receipt <absolute-outside-file>`. A pending journal blocks new adoption. Keep receipts for the required rollback window and clean them only after confirming transaction completion and retention needs. Project-local receipts disappear if the project is deleted.

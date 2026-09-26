@@ -118,8 +118,8 @@ Write release notes so they:
 Use the CLI to preview a release without mutating files:
 
 ```bash
-node bin/cli.mjs release-plan --target . --bump minor
-node bin/cli.mjs release-plan --target . --bump fix --json
+agentflow-sdlc release-plan --target . --bump minor
+agentflow-sdlc release-plan --target . --bump fix --json
 ```
 
 The command reports `mutated: false`; it does not update package files, create tags, push branches, or create GitHub Releases.

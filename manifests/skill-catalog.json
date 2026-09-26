@@ -1,7 +1,7 @@
 {
   "version": 1,
   "namespace": "agentflow",
-  "identityFormat": "<namespace>:<role>",
+  "identityFormat": "<namespace>-<role>",
   "structure": {
     "required": ["SKILL.md"],
     "optional": ["agents", "scripts", "references", "assets"]
@@ -9,8 +9,8 @@
   "skills": [
     {
       "role": "orchestrator",
-      "qualifiedName": "agentflow:orchestrator",
-      "source": "skills/orchestrator",
+      "qualifiedName": "agentflow-orchestrator",
+      "source": "skills/agentflow-orchestrator",
       "owns": [
         "workflow.phase-state",
         "workflow.transition-evidence",
@@ -22,8 +22,8 @@
     },
     {
       "role": "collaborator",
-      "qualifiedName": "agentflow:collaborator",
-      "source": "skills/collaborator",
+      "qualifiedName": "agentflow-collaborator",
+      "source": "skills/agentflow-collaborator",
       "owns": [
         "collaboration.mode-selection",
         "collaboration.helper-boundaries",
@@ -36,16 +36,16 @@
     },
     {
       "role": "scanner",
-      "qualifiedName": "agentflow:scanner",
-      "source": "skills/scanner",
+      "qualifiedName": "agentflow-scanner",
+      "source": "skills/agentflow-scanner",
       "owns": ["discovery.scope", "discovery.findings", "discovery.evidence-map"],
       "recognizes": ["orchestrator", "collaborator", "designer", "migrator", "auditor"],
       "collaboratesWith": ["orchestrator", "collaborator", "designer", "migrator", "auditor"]
     },
     {
       "role": "designer",
-      "qualifiedName": "agentflow:designer",
-      "source": "skills/designer",
+      "qualifiedName": "agentflow-designer",
+      "source": "skills/agentflow-designer",
       "owns": [
         "definition.policy-model",
         "definition.schema-contract",
@@ -56,16 +56,16 @@
     },
     {
       "role": "migrator",
-      "qualifiedName": "agentflow:migrator",
-      "source": "skills/migrator",
+      "qualifiedName": "agentflow-migrator",
+      "source": "skills/agentflow-migrator",
       "owns": ["adoption.inventory", "adoption.mutation-plan", "adoption.transaction"],
       "recognizes": ["orchestrator", "collaborator", "scanner", "designer", "auditor"],
       "collaboratesWith": ["orchestrator", "scanner", "designer", "auditor"]
     },
     {
       "role": "auditor",
-      "qualifiedName": "agentflow:auditor",
-      "source": "skills/auditor",
+      "qualifiedName": "agentflow-auditor",
+      "source": "skills/agentflow-auditor",
       "owns": [
         "assurance.validation",
         "assurance.deterministic-acceptance-checks",
@@ -77,16 +77,60 @@
     }
   ],
   "handoffs": [
-    { "from": "orchestrator", "to": "collaborator", "artifact": "collaboration-intent" },
-    { "from": "collaborator", "to": "orchestrator", "artifact": "strategy-synthesis" },
-    { "from": "collaborator", "to": "orchestrator", "artifact": "council-synthesis" },
-    { "from": "orchestrator", "to": "scanner", "artifact": "scan-brief" },
-    { "from": "scanner", "to": "orchestrator", "artifact": "evidence-map" },
-    { "from": "orchestrator", "to": "designer", "artifact": "definition-change-request" },
-    { "from": "designer", "to": "orchestrator", "artifact": "definition-change-set" },
-    { "from": "orchestrator", "to": "migrator", "artifact": "adoption-intent" },
-    { "from": "migrator", "to": "auditor", "artifact": "migration-receipt" },
-    { "from": "auditor", "to": "orchestrator", "artifact": "audit-verdict" },
-    { "from": "auditor", "to": "orchestrator", "artifact": "acceptance-verification" }
+    {
+      "from": "orchestrator",
+      "to": "collaborator",
+      "artifact": "collaboration-intent"
+    },
+    {
+      "from": "collaborator",
+      "to": "orchestrator",
+      "artifact": "strategy-synthesis"
+    },
+    {
+      "from": "collaborator",
+      "to": "orchestrator",
+      "artifact": "council-synthesis"
+    },
+    {
+      "from": "orchestrator",
+      "to": "scanner",
+      "artifact": "scan-brief"
+    },
+    {
+      "from": "scanner",
+      "to": "orchestrator",
+      "artifact": "evidence-map"
+    },
+    {
+      "from": "orchestrator",
+      "to": "designer",
+      "artifact": "definition-change-request"
+    },
+    {
+      "from": "designer",
+      "to": "orchestrator",
+      "artifact": "definition-change-set"
+    },
+    {
+      "from": "orchestrator",
+      "to": "migrator",
+      "artifact": "adoption-intent"
+    },
+    {
+      "from": "migrator",
+      "to": "auditor",
+      "artifact": "migration-receipt"
+    },
+    {
+      "from": "auditor",
+      "to": "orchestrator",
+      "artifact": "audit-verdict"
+    },
+    {
+      "from": "auditor",
+      "to": "orchestrator",
+      "artifact": "acceptance-verification"
+    }
   ]
 }

@@ -5,6 +5,19 @@
     "machine": "sdlc.config.json"
   },
   "paths": {
+    "light": {
+      "requiredRoles": [
+        "analyst",
+        "implementation-planner",
+        "developer",
+        "tester",
+        "reviewer",
+        "pr-readiness"
+      ],
+      "optionalRoles": ["product-manager", "architect", "technical-writer"],
+      "allowsSelfReview": true,
+      "requiresHumanApproval": false
+    },
     "bounded": {
       "requiredRoles": [
         "analyst",
@@ -86,6 +99,7 @@
   },
   "actionPolicy": {
     "profileMaximums": {
+      "light": "open-pr",
       "bounded": "open-pr",
       "standard": "open-pr",
       "high-assurance": "external-action",
