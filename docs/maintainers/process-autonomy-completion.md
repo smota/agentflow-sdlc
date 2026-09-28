@@ -46,9 +46,26 @@ unobserved wait/CI/recovery dimensions unknown; unavailable model usage is never
 
 ## Live provider and source facets
 
-GitHub public run commands issued and revoked a real cooperative grant on the isolated
-`agentflow-state` source. Six commands completed; no business operation was dispatched
-in that probe. This demonstrates issuance/revocation, not the full delivery journey.
+GitHub public run commands first issued and revoked a cooperative grant without a
+business effect. The subsequent `completion-pr-1790583601119` journey froze criteria,
+collected the full regression suite and documentation checks, issued a one-effect
+grant, created PR #306, and independently confirmed the exact operation. Repeating
+the operation returned exit 6 without redispatch; explicit reconciliation confirmed
+the existing PR. The grant was then revoked.
+
+A handoff packet for target commit `7079df7` was recovered through the locally packed
+CLI in a fresh Git clone and separate OS processes. Recovery reached generation 1
+in 25.4 seconds, excluding clone/package preparation. The runtime included the
+post-revocation packet correction in `8321b42`; the preserved target was unchanged.
+An initial refusal exposed that new packets incorrectly referenced revoked grants;
+the correction selects active grants only and retains rejection of stale packets.
+
+Materialization required restoring 13 LF/CRLF variants to the packet's exact SHA-256
+bytes and refreshing the disposable clone's Git index without a tree change. This
+was an agent intervention, not a zero-intervention cold-reader pass. The implementation
+does not automatically repair line endings or accept a mismatched artifact digest.
+This live journey qualifies the exercised PR/replay/revocation/recovery path, not
+the complete fault matrix or every phase of an autonomous engineering run.
 
 Native Codex CLI 0.154.0 accepted explicit `gpt-5.6-luna` and returned the requested
 structured, identity-bound result in a disposable read-only probe. This host rejected
@@ -72,6 +89,13 @@ configuration authority, reachability and whole-tree formatting passed. Package 
 exercised a packed governed delivery and interrupted upgrade recovery, including exact
 rollback and preservation of authored application content. These checks do not qualify
 unavailable provider capabilities.
+
+The first cross-platform CI candidate passed Linux and Windows on Node 20/24. macOS
+identified noncanonical temporary fixture roots (`/var` resolves through a system
+symlink); tests now use the real temporary path, preserving the product's symlink
+refusal. The local Cockpit smoke encountered Windows `EACCES` on its fixed port;
+that local check is not claimed successful. Final CI results belong to the PR's
+exact candidate rather than being inferred from earlier green jobs.
 
 Codex Sol handled storage, recovery and engineering; Codex Luna handled bounded docs,
 telemetry measurements and a separate read-only privacy review. The parent integrated
