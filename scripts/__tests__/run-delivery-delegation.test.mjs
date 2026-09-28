@@ -139,6 +139,87 @@ async function started() {
   return { root, git }
 }
 
+it('public publish requires explicit and persisted external-action business authority before any comment POST', async () => {
+  const { root } = await started()
+  const planned = await call(root, 'publish', ['--issue', '301'])
+  writeFileSync(join(root, 'projection.json'), JSON.stringify(planned.result))
+  const apply = ['--execute', '--plan', 'projection.json', '--confirm', planned.result.digest]
+  fake.requests.length = 0
+  await expect(call(root, 'publish', apply)).rejects.toThrow(/Publication requires/)
+  await expect(call(root, 'publish', [...apply, '--boundary', 'external-action'])).rejects.toThrow(
+    /Publication requires/,
+  )
+  expect(
+    fake.requests.filter(
+      ({ path, method }) => path.includes('/issues/301/comments') && method === 'POST',
+    ),
+  ).toHaveLength(0)
+
+  const external = project()
+  const configPath = join(external.root, 'agent-workflow.config.json')
+  const config = JSON.parse(readFileSync(configPath, 'utf8'))
+  config.posture = 'autonomous'
+  writeFileSync(configPath, JSON.stringify(config))
+  const sdlc = JSON.parse(
+    readFileSync(new URL('../../defaults/sdlc.config.json', import.meta.url), 'utf8'),
+  )
+  sdlc.actionPolicy.profileMaximums.standard = 'external-action'
+  writeFileSync(join(external.root, 'sdlc.config.json'), JSON.stringify(sdlc))
+  const externalSetup = await call(external.root, 'source-plan')
+  const externalRun = await call(external.root, 'start', [
+    '--execute',
+    '--goal',
+    'issue:301',
+    '--setup-confirm',
+    externalSetup.result.digest,
+  ])
+  expect(externalRun.result.boundary).toBe('external-action')
+  const externalPlan = await call(external.root, 'publish', ['--issue', '301'])
+  writeFileSync(join(external.root, 'projection.json'), JSON.stringify(externalPlan.result))
+  fake.requests.length = 0
+  await expect(
+    call(external.root, 'publish', [
+      '--execute',
+      '--plan',
+      'projection.json',
+      '--confirm',
+      externalPlan.result.digest,
+    ]),
+  ).rejects.toThrow(/Publication requires explicit --boundary external-action/)
+  expect(fake.requests.filter(({ method }) => method === 'POST')).toHaveLength(0)
+
+  const observed = project()
+  const setup = await call(observed.root, 'source-plan')
+  await call(observed.root, 'start', [
+    '--execute',
+    '--goal',
+    'issue:301',
+    '--boundary',
+    'observe',
+    '--setup-confirm',
+    setup.result.digest,
+  ])
+  const observedPlan = await call(observed.root, 'publish', ['--issue', '301'])
+  writeFileSync(join(observed.root, 'projection.json'), JSON.stringify(observedPlan.result))
+  fake.requests.length = 0
+  await expect(
+    call(observed.root, 'publish', [
+      '--execute',
+      '--boundary',
+      'external-action',
+      '--plan',
+      'projection.json',
+      '--confirm',
+      observedPlan.result.digest,
+    ]),
+  ).rejects.toThrow(/Publication requires/)
+  expect(
+    fake.requests.filter(
+      ({ path, method }) => path.includes('/issues/301/comments') && method === 'POST',
+    ),
+  ).toHaveLength(0)
+})
+
 async function issued({ action = 'edit', maxExternalEffects = 1 } = {}) {
   const context = await started()
   writeFileSync(

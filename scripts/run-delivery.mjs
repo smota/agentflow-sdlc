@@ -9,6 +9,10 @@ import { createGitHubRunStore, planGitHubCoordination } from '../lib/sources/git
 import { createGitHubApiCli } from '../lib/sources/github-api-cli.mjs'
 import { createRunService, GovernedBlockError } from '../lib/application/run-service.mjs'
 import { loadSdlcConfig } from '../lib/sdlc-state.mjs'
+import { resolvePosture } from '../lib/core/posture.mjs'
+import { GATE_CLASSES } from '../lib/core/gate.mjs'
+import { actionBoundaryAllows, actionBoundaryRank } from '../lib/sdlc-vocabulary.mjs'
+import { createHostIntentConsent, createIntentConsentRequest } from '../lib/core/intent-consent.mjs'
 import {
   planProjection,
   publishProjection,
@@ -58,7 +62,7 @@ export const RUN_EXIT_CODES = {
   unknown: 6,
 }
 const help =
-  'Usage: agentflow-sdlc run <source-plan|start|status|context|next|freeze|verify|advance|checkpoint|pause|handoff|resume|grant-plan|grant-issue|grant-status|grant-revoke|act|reconcile|journal-reconcile|migrate|resolve-escalation|publish> <id> [--target <dir>] [--execute] [--plan <file> --confirm <digest>] [--json]'
+  'Usage: agentflow-sdlc run <source-plan|start|status|context|next|freeze|verify|intent-plan|advance|checkpoint|pause|handoff|resume|grant-plan|grant-issue|grant-status|grant-revoke|act|reconcile|journal-reconcile|migrate|resolve-escalation|publish> <id> [--target <dir>] [--execute] [--plan <file> --confirm <digest>] [--json]'
 
 // W8e / D3 — replaces message-regex classification. A GovernedBlockError carries its exit code as a
 // fact about the error (RUN_EXIT_CODES.blocked, documented and distinct from a genuine error), so
@@ -134,7 +138,10 @@ export async function resolveDeliveryContract({ value, state, source, client }) 
 
 export async function runDelivery(
   args,
-  { emit = (value) => process.stdout.write(`${JSON.stringify(value, null, 2)}\n`) } = {},
+  {
+    emit = (value) => process.stdout.write(`${JSON.stringify(value, null, 2)}\n`),
+    resolveHostIntentConsent,
+  } = {},
 ) {
   const flag = (name, fallback) => {
     const i = args.indexOf(name)
@@ -177,7 +184,49 @@ export async function runDelivery(
   const external = config.source.kind === 'github'
   if (!external && config.source.kind !== 'local-preview') throw new Error('Unsupported run source')
   const execute = args.includes('--execute')
-  const boundary = flag('--boundary', external ? 'external-action' : 'mutate-worktree')
+  const sdlcConfig = loadSdlcConfig(root)
+  const profile = flag('--profile', 'standard')
+  const maximum = resolvePosture({
+    posture: executionAdapter.posture,
+    changeClass: profile,
+    config: sdlcConfig,
+  }).maxBoundary
+  const boundary = flag('--boundary', external ? maximum : 'mutate-worktree')
+  // Source-branch writes are coordination transport; they do not widen the run's business ceiling.
+  const coordinationBoundary = execute && external ? 'external-action' : 'observe'
+  const intentDestinations = (state) => {
+    if (!external) return ['local-preview']
+    const postureMaximum = resolvePosture({
+      posture: executionAdapter.posture,
+      changeClass: state.profile,
+      config: sdlcConfig,
+    }).maxBoundary
+    const permits = (required) =>
+      actionBoundaryAllows(state.boundary, required, sdlcConfig) &&
+      actionBoundaryAllows(postureMaximum, required, sdlcConfig)
+    if (!permits('open-pr')) return ['source-coordination-only']
+    return permits('external-action') &&
+      !resolvePosture({
+        posture: executionAdapter.posture,
+        changeClass: state.profile,
+        config: sdlcConfig,
+      }).humanGateClasses.includes(GATE_CLASSES.releaseOfCandidate) &&
+      config.delegation?.policy?.issuers?.some((issuer) => issuer.allowThroughMerge)
+      ? ['ready-pr', 'named-merge']
+      : ['ready-pr']
+  }
+  const intentScope = (state) => ({
+    repository: external ? config.source.repo : null,
+    coordinationBranch: external ? (config.source.branch ?? 'agentflow-state') : null,
+    businessBoundary: state.boundary,
+    destinations: intentDestinations(state),
+    checks: Object.entries(config.checks ?? {})
+      .map(([name, definition]) => ({ name, digest: recordDigest(definition) }))
+      .sort((a, b) => a.name.localeCompare(b.name)),
+    expiry: { effectGrant: 'separate-typed-grant-required' },
+    budget: config.budget ?? null,
+    assurance: 'agent-observed-local-cooperative',
+  })
   // W8e / D4 — `--writer` used to be required plumbing typed on three of the six entry-path
   // commands. It now defaults to the local operator identity (the OS user name); `--writer` stays
   // available to override it (a shared machine, CI, or a name that differs from the OS account).
@@ -209,7 +258,7 @@ export async function runDelivery(
           ...config.source,
           runId: id,
           client,
-          boundary: execute ? boundary : 'observe',
+          boundary: coordinationBoundary,
           setupConfirm: flag('--setup-confirm'),
         })
       : createFileRunStore({ root, runId: id })
@@ -233,7 +282,11 @@ export async function runDelivery(
           policy: config.delegation.policy,
           issuerId: config.delegation.issuerId,
           approve: async (context) => {
-            if (!execute || !authority.owner || (external && boundary !== 'external-action'))
+            if (
+              !execute ||
+              !authority.owner ||
+              (external && coordinationBoundary !== 'external-action')
+            )
               return false
             if (context.kind === 'issue-grant') {
               const approvedPlan = readJson(flag('--plan'))
@@ -272,11 +325,25 @@ export async function runDelivery(
       // The run must be governed by the TARGET project's own configuration and posture. Without these,
       // run-service loaded config from process.cwd() - the framework checkout on the documented entry
       // path - and always used the default posture, silently ignoring what the adopter chose.
-      sdlcConfig: loadSdlcConfig(root),
+      sdlcConfig,
       posture: executionAdapter.posture,
       policy: domainPath ? readJson(domainPath).deliveryPolicy : {},
       budget: config.budget ?? null,
       delegationPolicy: config.delegation?.policy ?? null,
+      intentScope,
+      platformConfig: executionAdapter,
+      resolveHostIntentConsent: async (request) => {
+        if (typeof resolveHostIntentConsent === 'function') return resolveHostIntentConsent(request)
+        const receiptPath = flag('--consent')
+        if (!receiptPath) return null
+        const receipt = readJson(receiptPath)
+        if (flag('--consent-confirm') !== recordDigest(receipt))
+          throw new GovernedBlockError('Current intent consent digest confirmation required')
+        const canonical = createHostIntentConsent({ request, ...receipt })
+        if (canonical.digest !== receipt.digest)
+          throw new GovernedBlockError('Exact typed intent consent required')
+        return canonical
+      },
       authorize: async (context) =>
         ['issue-grant', 'resolve-grant', 'revoke-grant'].includes(context.kind)
           ? issuer
@@ -285,7 +352,7 @@ export async function runDelivery(
           : execute &&
             Boolean(authority.owner) &&
             context.kind !== 'human-acceptance' &&
-            (!external || boundary === 'external-action'),
+            (!external || coordinationBoundary === 'external-action'),
       resolveContract: async (state) => {
         const path = phaseContract(state)
         if (!path) return null
@@ -341,11 +408,11 @@ export async function runDelivery(
       const preview = await previewMigration(options)
       if (!execute) result = { plan: preview, confirm: preview.digest }
       else {
-        if (boundary !== 'external-action' || flag('--confirm') !== preview.digest)
+        if (coordinationBoundary !== 'external-action' || flag('--confirm') !== preview.digest)
           throw new Error('Current migration preview confirmation required')
         result = await migrateRunStore({
           ...options,
-          boundary,
+          boundary: coordinationBoundary,
           expectedSourceRevision: preview.sourceRevision,
         })
       }
@@ -509,11 +576,13 @@ export async function runDelivery(
       if (!client) throw new Error('Source setup planning requires a GitHub binding')
       result = await planGitHubCoordination({ ...config.source, client })
     } else if (command === 'start') {
+      if (actionBoundaryRank(boundary, sdlcConfig) > actionBoundaryRank(maximum, sdlcConfig))
+        throw new GovernedBlockError('Business boundary exceeds configured posture or profile')
       result = await service.start({
         runId: id,
         goalRef: flag('--goal'),
         owner: authority.owner,
-        profile: flag('--profile', 'standard'),
+        profile,
         boundary,
         writer: {
           host: hostname(),
@@ -650,6 +719,24 @@ export async function runDelivery(
           stage: 'first-evidence',
           duration: Math.max(0, Date.now() - Date.parse(runStartedAt)),
         })
+    } else if (command === 'intent-plan') {
+      const { state } = await service.read()
+      if (!state || state.phase !== 0) throw new GovernedBlockError('Phase-zero run required')
+      const plan = readJson(flag('--plan'))
+      if (flag('--confirm') !== recordDigest(plan))
+        throw new Error('Advance plan confirmation mismatch')
+      const acceptance = await service.verifyCriteria(plan)
+      if (acceptance.status !== 'pass')
+        throw new GovernedBlockError('Current acceptance evidence required for intent plan')
+      result = {
+        request: createIntentConsentRequest({
+          state,
+          planDigest: recordDigest(plan),
+          scope: intentScope(state),
+          platformConfig: executionAdapter,
+        }),
+        assurance: 'agent-observed-local-cooperative',
+      }
     } else if (command === 'advance') {
       const { state } = await service.read()
       const contract = readJson(flag('--plan'))
@@ -775,7 +862,9 @@ export async function runDelivery(
           repo: config.source.repo,
           issueNumber: Number(flag('--issue')),
         })
-      else
+      else {
+        if (flag('--boundary') !== 'external-action')
+          throw new GovernedBlockError('Publication requires explicit --boundary external-action')
         result = await publishProjection({
           service,
           client,
@@ -783,6 +872,7 @@ export async function runDelivery(
           confirm: flag('--confirm'),
           authority,
         })
+      }
     } else throw new Error(help)
     // W8e / D6 — a plain-language line before the JSON when `--json` was not requested; `--json`
     // output itself is untouched (still exactly `emit({ version: 1, result })`, nothing prepended).

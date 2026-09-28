@@ -942,7 +942,7 @@ const COMMAND_USAGE = {
   init: 'Usage: agentflow-sdlc init [--profile <id>] [--posture <posture>] [--no-harness] [--sync] [--target <dir>] [--force] [--json]\n',
   config:
     'Usage: agentflow-sdlc config <doctor|check|sync|inspect|prompt> [--target <dir>] [--harness <name>] [--dry-run|--apply] [--json]\n',
-  run: 'Usage: agentflow-sdlc run <source-plan|start|status|context|next|freeze|verify|advance|checkpoint|pause|handoff|resume|grant-plan|grant-issue|grant-status|grant-revoke|act|reconcile|journal-reconcile|migrate|resolve-escalation|publish> <id> [--target <dir>] [--execute] [--plan <file> --confirm <digest>] [--json]\n',
+  run: 'Usage: agentflow-sdlc run <source-plan|start|status|context|next|freeze|verify|intent-plan|advance|checkpoint|pause|handoff|resume|grant-plan|grant-issue|grant-status|grant-revoke|act|reconcile|journal-reconcile|migrate|resolve-escalation|publish> <id> [--target <dir>] [--execute] [--plan <file> --confirm <digest>] [--json]\n',
   'doctor-env': 'Usage: agentflow-sdlc doctor-env [--inspect] [--target <dir>] [--json]\n',
   adopt:
     'Usage: agentflow-sdlc adopt <profiles|plan|apply|rollback|recover> [--profile <id>] [--target <dir>] [--json]\n',
