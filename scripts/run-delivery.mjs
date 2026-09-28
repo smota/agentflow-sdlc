@@ -385,7 +385,15 @@ export async function runDelivery(
     } else if (command === 'journal-reconcile') {
       if (!execute || !store.reconcileJournal)
         throw new Error('Configured journal and execution authority required')
-      result = await store.reconcileJournal({ replay: args.includes('--replay'), authority })
+      if (args.includes('--recover-lock-owner') && !args.includes('--recover-stages'))
+        throw new Error('--recover-lock-owner requires --recover-stages')
+      if (args.includes('--recover-lock-owner'))
+        await store.journal.recoverLock(readJson(flag('--recover-lock-owner')))
+      result = await store.reconcileJournal({
+        replay: args.includes('--replay'),
+        recoverStages: args.includes('--recover-stages'),
+        authority,
+      })
     } else if (command === 'act' || command === 'reconcile') {
       if (!actions || !issuer) throw new Error('Configured delegated GitHub actions required')
       if (command === 'reconcile') {
