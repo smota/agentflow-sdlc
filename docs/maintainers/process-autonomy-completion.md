@@ -5,6 +5,11 @@ This implementation follows the [reconciliation](process-autonomy-reconciliation
 acceptance criteria. Implementation, fixture qualification, live qualification and
 production readiness are separate claims. Release and global installation are excluded.
 
+For the subsequent #301 phase-zero consent, ready-PR/named-merge journey and
+layered live fault qualification, see
+[public delivery qualification](../process-autonomy/live-delivery-qualification.md).
+The remaining-qualification statements below describe the earlier PR #306 snapshot.
+
 ## Implemented boundaries
 
 | Scope           | Delivered behavior                                                                                                                                                                              | Evidence boundary                                                                                                                     |

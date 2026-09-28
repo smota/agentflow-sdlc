@@ -70,6 +70,9 @@ Read the first command's `result.confirm` value from its version-1 JSON envelope
 
 ## Cooperative delegation and bounded GitHub actions
 
+For the exact exercised environment, failure windows and remaining qualification
+limits, see [public delivery qualification](process-autonomy/live-delivery-qualification.md).
+
 Delegation is available only for a GitHub-backed durable run configured with a cooperative issuer. Add `delivery.delegation` before starting the run; its policy is captured when the run starts, so changing policy requires a new run. `reviewCheck` names a configured check that produces fresh, independently resolved automated-review evidence for the exact candidate.
 
 ```json
@@ -121,6 +124,19 @@ agentflow-sdlc run journal-reconcile demo --execute --target <project> --json
 ```
 
 `reconcile` resolves an admitted external action by operation ID. `journal-reconcile` checks the local write-ahead journal against the durable source; add `--replay` only when the unchanged source and current writer are eligible to replay the exact pending event. The journal is recovery data, not a replacement for source acknowledgment. Never repeat an uncertain business operation merely because its first command returned an error. For interrupted local stages, use the explicit `--recover-stages` and optional `--recover-lock-owner` procedure in [pending audit journal recovery](process-autonomy/pending-audit-journal.md#recover-an-interrupted-write); source absence is not permission to redispatch.
+
+For a named merge, the run and current posture must permit `external-action`, and
+the captured issuer policy must include `merge` with `allowThroughMerge: true`.
+Create a new request restricted to `allowedActions: ["merge"]`, the exact repository
+and base, required checks, a concrete expiry and one attempt/effect. Its preview
+must report `destination: "named-merge"`. Issue that exact plan, then use the same
+`act`/`reconcile` commands with an operation whose action is `merge` and whose
+arguments are `{"prNumber":123,"headSha":"<exact-40-character-SHA>","mergeMethod":"squash"}`.
+The operation also binds the grant's plan/policy, paths, candidate/workspace digests,
+checks and review. Reconciliation requires the observed merged PR, exact head/base
+and merge commit. GitHub's conditional merge protects the head SHA, not an atomic
+base-branch comparison; cooperative deployments must exclude concurrent retargeting.
+A human candidate-release gate blocks this cooperative merge path.
 
 The `edit` action reaches a configured engineering provider and records its bounded receipt/output, but this command path does not establish a qualified end-to-end autonomous coding model. A provider must pass its actual target, model, capability, boundary and receipt checks. Default models have no qualification claim, and the currently available Meshloop binary does not match the required adapter qualification. A returned edit result is not proof that the integrated workflow, tests, review, or final candidate were accepted. Keep human high-assurance security and acceptance review on the open PR before merge.
 
