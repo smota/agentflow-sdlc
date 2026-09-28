@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, realpathSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { execFileSync } from 'node:child_process'
@@ -39,7 +39,7 @@ const policy = {
 
 function project() {
   fake = fakeGitHub()
-  const root = mkdtempSync(join(tmpdir(), 'agentflow-public-delegation-'))
+  const root = mkdtempSync(join(realpathSync(tmpdir()), 'agentflow-public-delegation-'))
   roots.push(root)
   mkdirSync(join(root, 'src'))
   writeFileSync(join(root, 'src', 'candidate.js'), 'export const candidate = true\n')
