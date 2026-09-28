@@ -1,1 +1,1 @@
-Baseline for disposable qualification.
+AgentFlow public CLI qualification candidate.
