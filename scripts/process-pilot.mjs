@@ -316,7 +316,10 @@ export async function runProcessPilot({
     }
   } finally {
     const cleanupTarget = realpathSync(directory)
-    if (dirname(cleanupTarget) !== tempRoot || !basename(cleanupTarget).startsWith('af-pilot-journal-'))
+    if (
+      dirname(cleanupTarget) !== tempRoot ||
+      !basename(cleanupTarget).startsWith('af-pilot-journal-')
+    )
       throw new Error('Refusing cleanup outside the pilot temporary directory')
     rmSync(cleanupTarget, { recursive: true, force: true })
   }
