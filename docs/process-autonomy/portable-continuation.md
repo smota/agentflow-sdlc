@@ -25,11 +25,11 @@ governed runs without relying on past conversation transcripts or scratch files.
      If liveness is unknown or active, resumption is refused to prevent split-brain.
    - Verifies the referenced grant on the authoritative ledger (unexpired, unrevoked,
      matching envelope digest).
-   - Re-resolves all referenced artifacts and cryptographically verifies digests.
+   - Re-resolves all referenced artifacts and verifies SHA-256 over their original bytes and their declared byte lengths, including empty and binary artifacts.
      Any missing or tampered artifact refuses resumption.
-   - Returns verified reconstruction state with next generation writer authority.
+   - Returns verified reconstruction state and a proposed next generation. This result grants no writer authority.
 
 4. **Generation fencing**:
-   The newly acquired writer session advances `generation = priorGeneration + 1`.
+   The caller must obtain a current recovery plan and call the run service resume operation. Only its acknowledged resumed event advances `generation = priorGeneration + 1`.
    Any subsequent append attempt by an obsolete/stale writer is rejected by generation
    fencing.
