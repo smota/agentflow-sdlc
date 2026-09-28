@@ -1,16 +1,20 @@
 {
   "tiers": {
     "architect-lead": {
-      "capabilities": ["high-context", "formal-logic", "deep-reasoning"]
+      "capabilities": ["high-context", "formal-logic", "deep-reasoning"],
+      "preferredModel": "gpt-6-astra"
     },
     "deep-reasoning": {
-      "capabilities": ["adversarial-audit", "security-analysis"]
+      "capabilities": ["adversarial-audit", "security-analysis"],
+      "preferredModel": "gpt-6-astra"
     },
     "balanced": {
-      "capabilities": ["fast-implementation", "unit-testing"]
+      "capabilities": ["fast-implementation", "unit-testing"],
+      "preferredModel": "gpt-6-sol"
     },
     "lightweight": {
-      "capabilities": ["fixtures", "formatting", "inventory"]
+      "capabilities": ["fixtures", "formatting", "inventory"],
+      "preferredModel": "gpt-5.6-luna"
     }
   },
   "roleAssignments": {

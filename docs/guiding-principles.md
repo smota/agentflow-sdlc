@@ -40,7 +40,7 @@ Rather than treating AI coding agents as opaque, unconstrained code generators, 
 
 - **Normative Rules:**
   - `INVARIANT`: All completed role transitions produce tamper-evident, cryptographically chained records.
-  - `MUST`: Enforce the **Four-Eyes Principle (Dual-Control)** on standard and high-assurance artifacts. An author cannot approve their own transition gate without a formalized, auditable emergency waiver.
+  - `MUST`: Apply the review model in `AGENTS.md` and `docs/agent-workflow.md`: bounded work may use explicit, evidence-backed self-review; standard work may use explicit, evidence-backed self-review; high-assurance work requires human security and acceptance review on the open PR before merge. Self-review cannot satisfy the high-assurance gate.
   - `MUST`: Enforce strict Separation of Duties. The `tester` and `reviewer` roles are strictly read-only (`observe` boundary) and must never repair or modify candidate source code directly.
 - **Codebase Manifestation:**
   - Cryptographic Span Ledger: `lib/audit/role-flow-span.mjs` (`verifySpanChain`)
@@ -87,7 +87,7 @@ Rather than treating AI coding agents as opaque, unconstrained code generators, 
   - `INVARIANT`: Uncommitted work and pipeline state must never be trapped on a single physical machine.
   - `MUST`: Automatically synchronize WIP checkpoint branches (`wip/<task-id>`) upon quota exhaustion or executor handoff.
   - `MUST`: Enforce monotonic fencing tokens to prevent split-brain write collisions if multiple machines or executors attempt to work on the same task.
-  - `MUST`: Normalize file paths to POSIX (`/`), clean up stale lock files (`.git/index.lock`), and aggressively scrub credentials, API keys, and local PII before pushing state.
+  - `MUST`: Normalize file paths to POSIX (`/`), preserve Git lock files unless ownership and safe removal are proven (age alone is insufficient), and aggressively scrub credentials, API keys, and local PII before pushing state.
   - `MUST`: Compress handover payloads to strictly remain within <= 15% of the target agent's context window.
 - **Codebase Manifestation:**
   - Cross-Platform Sanitizer: `lib/runtime/context-sanitizer.mjs`

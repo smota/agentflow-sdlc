@@ -6,6 +6,10 @@ Tracking: [#299](https://github.com/smota/agentflow-sdlc/issues/299).
 Original contract: [execution plan](process-autonomy-execution-plan.md), A1-A9,
 S0-S9 including S4a/S4b, five adoption journeys and Meshloop M1-M6.
 
+For the subsequent implementation and measured qualification limits, read the
+[completion evidence](process-autonomy-completion.md). The findings below describe
+the audited base, not an assertion that later fixes remain absent.
+
 ## Decision and scope
 
 **The original plan is not delivered.** All nine aggregate acceptance criteria remain

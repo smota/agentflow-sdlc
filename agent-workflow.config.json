@@ -48,27 +48,27 @@
     },
     "roles": {
       "product-manager": {
-        "owner": "agy",
+        "owner": "codex",
         "fallbacks": []
       },
       "analyst": {
-        "owner": "agy",
+        "owner": "codex",
         "fallbacks": []
       },
       "architect": {
-        "owner": "agy",
+        "owner": "codex",
         "fallbacks": []
       },
       "implementation-planner": {
-        "owner": "agy",
+        "owner": "codex",
         "fallbacks": []
       },
       "developer": {
-        "owner": "agy",
+        "owner": "codex",
         "fallbacks": []
       },
       "tester": {
-        "owner": "agy",
+        "owner": "codex",
         "fallbacks": []
       },
       "reviewer": {
@@ -76,7 +76,7 @@
         "fallbacks": []
       },
       "technical-writer": {
-        "owner": "agy",
+        "owner": "codex",
         "fallbacks": []
       },
       "pr-readiness": {
@@ -140,25 +140,75 @@
     },
     "candidate": {
       "inputs": [
+        ".agentflow/model-catalog.json",
         "AGENTS.md",
-        "defaults",
-        "bin",
-        "lib",
-        "schemas",
-        "manifests",
-        "docs",
-        "scripts",
+        "CODEX.md",
+        "agent-workflow.config.json",
+        "bin/cli.mjs",
+        "defaults/sdlc.config.json",
+        "docs/adr/index.md",
+        "docs/agent-workflow.md",
+        "docs/guiding-principles.md",
+        "docs/issue-standards.md",
+        "docs/maintainers/process-autonomy-completion.md",
+        "docs/maintainers/process-autonomy-reconciliation.md",
+        "docs/process-autonomy/adoption-matrix.md",
+        "docs/process-autonomy/harness-dispatch.md",
+        "docs/process-autonomy/meshloop-review.md",
+        "docs/run-operations.md",
+        "lib/__tests__/codex-engineering.test.mjs",
+        "lib/__tests__/context-service.test.mjs",
+        "lib/__tests__/delegation-source-races.test.mjs",
+        "lib/__tests__/engineering-evidence.test.mjs",
+        "lib/__tests__/engineering-neutral-conformance.test.mjs",
+        "lib/__tests__/github-delivery-actions.test.mjs",
+        "lib/__tests__/handover-protocol.test.mjs",
+        "lib/__tests__/harness-execution-contract.test.mjs",
+        "lib/__tests__/journal-process-recovery.test.mjs",
+        "lib/__tests__/journaled-run-store.test.mjs",
+        "lib/__tests__/onboarding-retrospective.test.mjs",
+        "lib/__tests__/portable-continuation.test.mjs",
+        "lib/__tests__/process-analysis-dimensions.test.mjs",
+        "lib/__tests__/run-service.test.mjs",
+        "lib/__tests__/run-store-migration.test.mjs",
+        "lib/__tests__/telemetry-boundary-review.test.mjs",
+        "lib/application/context-service.mjs",
+        "lib/application/continuation-service.mjs",
+        "lib/application/run-service.mjs",
+        "lib/core/run-state.mjs",
+        "lib/observability/analysis.mjs",
+        "lib/observability/events.mjs",
+        "lib/providers/codex-engineering.mjs",
+        "lib/providers/engineering-evidence.mjs",
+        "lib/providers/github-delivery-actions.mjs",
+        "lib/providers/governed-engineering.mjs",
+        "lib/providers/harness-dispatch.mjs",
+        "lib/providers/local-cli.mjs",
+        "lib/providers/registry.mjs",
+        "lib/runtime/context-sanitizer.mjs",
+        "lib/runtime/handover-protocol.mjs",
+        "lib/sources/github-api-cli.mjs",
+        "lib/sources/journaled-run-store.mjs",
+        "lib/sources/pending-audit-journal.mjs",
+        "lib/sources/segmented-run-store.mjs",
         "package.json",
         "pnpm-lock.yaml",
-        "agent-workflow.config.json",
-        ".agentflow/orchestration-model.json",
-        ".agentflow/execution-policy.json",
-        ".agentflow/model-catalog.json",
-        ".agentflow/harness-parameters.json"
+        "schemas/delivery-config.schema.json",
+        "schemas/engineering-capability.schema.json",
+        "schemas/engineering-lifecycle.schema.json",
+        "schemas/engineering-request.schema.json",
+        "schemas/engineering-result.schema.json",
+        "scripts/__tests__/delegation-journey.test.mjs",
+        "scripts/__tests__/run-delivery-delegation.test.mjs",
+        "scripts/__tests__/run-delivery-replay-exit.test.mjs",
+        "scripts/benchmark-process-telemetry.mjs",
+        "scripts/benchmark-run-telemetry.mjs",
+        "scripts/benchmark-segmented-run-store.mjs",
+        "scripts/run-delivery.mjs"
       ],
       "context": {
-        "workstream": "incremental-onboarding",
-        "scope": "product-implementation"
+        "workstream": "autonomy-completion",
+        "scope": "explicit changed files and repository policy; refresh before a new workstream"
       }
     },
     "checks": {
@@ -189,6 +239,41 @@
         "assertions": ["incremental onboarding regression suite passes"],
         "format": "exit-code",
         "timeoutMs": 120000
+      },
+      "autonomy": {
+        "id": "autonomy",
+        "criterionId": "autonomy-regression",
+        "executable": "node",
+        "args": ["node_modules/vitest/vitest.mjs", "run"],
+        "assertions": ["complete regression suite passes"],
+        "format": "exit-code",
+        "timeoutMs": 180000,
+        "inheritEnv": ["TEMP", "TMP", "HOME", "USERPROFILE"]
+      }
+    },
+    "contracts": {
+      "product-manager": ".agent-runs/completion/acceptance.json"
+    },
+    "delegation": {
+      "issuerId": "local",
+      "reviewCheck": "documentation-integrity",
+      "policy": {
+        "version": 1,
+        "issuers": [
+          {
+            "id": "local",
+            "mode": "local-cooperative",
+            "origin": "cli",
+            "authorityRef": "user:authorized-autonomy-completion",
+            "allowedActions": ["pr:create", "pr:update"],
+            "allowThroughMerge": false
+          }
+        ],
+        "requiredChecks": ["autonomy-regression"],
+        "reviewPolicy": "automated",
+        "materiality": "fixed-scope-v1",
+        "allowSubdelegation": false,
+        "safetyReserve": 4
       }
     }
   }

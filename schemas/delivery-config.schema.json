@@ -17,6 +17,9 @@
         "branch": {
           "type": "string",
           "minLength": 1
+        },
+        "format": {
+          "enum": ["v1", "segmented-v2"]
         }
       },
       "additionalProperties": false
@@ -105,7 +108,7 @@
             }
           },
           "format": {
-            "enum": ["structured", "junit-stdout"]
+            "enum": ["structured", "junit-stdout", "exit-code"]
           }
         },
         "additionalProperties": false
@@ -177,6 +180,54 @@
         "estimatedNext": {
           "type": "number",
           "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "delegation": {
+      "type": "object",
+      "required": ["policy", "issuerId", "reviewCheck"],
+      "properties": {
+        "policy": {
+          "type": "object"
+        },
+        "issuerId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reviewCheck": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "engineeringProvider": {
+      "type": "object",
+      "required": ["id", "executionTarget"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "executionTarget": {
+          "type": "string",
+          "minLength": 1
+        },
+        "requestedModel": {
+          "type": ["string", "null"]
+        },
+        "requiredCapabilities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "permissionBoundary": {
+          "enum": ["observe", "propose", "mutate-worktree"]
+        },
+        "sourceEvidenceDisclosure": {
+          "const": "bounded-output-and-artifacts"
         }
       },
       "additionalProperties": false
