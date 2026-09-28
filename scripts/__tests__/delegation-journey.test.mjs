@@ -114,11 +114,25 @@ describe('Autonomous Delegation Journey (S8)', () => {
       id: 'agy-cli',
       targets: ['agy-cli'],
       intentSupport: [
-        { id: 'plan-before-edit', implementation: 'native' },
-        { id: 'file-edit', implementation: 'native' },
+        {
+          id: 'plan-before-edit',
+          implementation: 'native',
+          fidelity: 'full',
+          evidence: 'contract-tested',
+        },
+        {
+          id: 'file-edit',
+          implementation: 'native',
+          fidelity: 'full',
+          evidence: 'contract-tested',
+        },
       ],
       async inspect() {
-        return { availability: 'available', reason: 'ready' }
+        return {
+          availability: 'available',
+          reason: 'ready',
+          qualification: { capabilities: ['plan-before-edit', 'file-edit'] },
+        }
       },
       plan(req) {
         return {
@@ -166,9 +180,16 @@ describe('Autonomous Delegation Journey (S8)', () => {
     const provider = {
       id: 'agy-cli',
       targets: ['agy-cli'],
-      intentSupport: [{ id: 'file-edit', implementation: 'native' }],
+      intentSupport: [
+        {
+          id: 'file-edit',
+          implementation: 'native',
+          fidelity: 'full',
+          evidence: 'contract-tested',
+        },
+      ],
       async inspect() {
-        return { availability: 'available' }
+        return { availability: 'available', qualification: { capabilities: ['file-edit'] } }
       },
       plan() {
         return { provider: 'agy-cli', token: 'tok' }

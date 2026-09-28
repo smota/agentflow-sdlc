@@ -9,14 +9,20 @@ New decisions get the next available number.
 
 ## Index
 
-| ADR                                                            | Title                                                       | Status   | Date       |
-| -------------------------------------------------------------- | ----------------------------------------------------------- | -------- | ---------- |
-| [ADR 001](001-role-based-single-agent-workflow.md)             | Role-based single-agent, phase-driven workflow              | Accepted | 2026-07-07 |
-| [ADR 002](002-npx-skills-plus-sync-cli-distribution.md)        | Distribution via npx skills + a companion sync CLI          | Accepted | 2026-07-07 |
-| [ADR 003](003-cross-platform-node-tooling-no-shell-scripts.md) | Cross-platform Node.js tooling — no bash/PowerShell scripts | Accepted | 2026-07-07 |
-| [ADR 004](004-separate-sdlc-policy-from-harness-execution.md)  | Separate SDLC policy from harness execution                 | Accepted | 2026-09-01 |
-| [ADR 005](005-versioned-provider-and-source-ports.md)          | Versioned provider and source ports                         | Accepted | 2026-09-01 |
-| [ADR 006](006-preview-first-transactional-adoption.md)         | Preview-first transactional adoption                        | Accepted | 2026-09-01 |
+| ADR                                                                              | Title                                                                                     | Status                                                                                       | Date       |
+| -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | ---------- |
+| [ADR 001](001-role-based-single-agent-workflow.md)                               | Role-based single-agent, phase-driven workflow                                            | Accepted                                                                                     | 2026-07-07 |
+| [ADR 002](002-npx-skills-plus-sync-cli-distribution.md)                          | Distribution via npx skills + a companion sync CLI                                        | Accepted                                                                                     | 2026-07-07 |
+| [ADR 003](003-cross-platform-node-tooling-no-shell-scripts.md)                   | Cross-platform Node.js tooling, no bash/PowerShell scripts                                | Accepted                                                                                     | 2026-07-07 |
+| [ADR 004](004-separate-sdlc-policy-from-harness-execution.md)                    | Separate SDLC policy from harness execution                                               | Accepted                                                                                     | 2026-09-01 |
+| [ADR 005](005-versioned-provider-and-source-ports.md)                            | Versioned provider and source ports                                                       | Accepted                                                                                     | 2026-09-01 |
+| [ADR 006](006-preview-first-transactional-adoption.md)                           | Preview-first transactional adoption                                                      | Accepted                                                                                     | 2026-09-01 |
+| [ADR 007](007-verifiable-recoverable-delivery.md)                                | Verifiable and recoverable delivery                                                       | Implemented proposal; high-assurance review and release acceptance pending                   | 2026-09-03 |
+| [ADR 008](008-single-skill-name.md)                                              | One public name for each AgentFlow skill                                                  | Accepted by explicit maintainer direction on 2026-09-25                                      | 2026-09-25 |
+| [ADR 009](009-incremental-onboarding.md)                                         | Incremental onboarding, runtime-owned installation, and explicit legacy/unknown migration | Accepted; supersedes the previous broad no-legacy policy specifically via explicit migration | 2026-09-25 |
+| [ADR 010](010-delegation-origin-assurance-and-admitted-action-race-semantics.md) | Delegation origin, assurance, and admitted-action race semantics                          | Proposed                                                                                     | 2026-09-25 |
+| [ADR 011](011-versioned-persistence-and-portable-continuation.md)                | Versioned persistence and portable continuation                                           | Proposed                                                                                     | 2026-09-25 |
+| [ADR 012](012-execution-provider-and-observability-boundaries.md)                | Execution-provider and observability boundaries                                           | Proposed                                                                                     | 2026-09-25 |
 
 ---
 
@@ -43,7 +49,3 @@ What was decided.
 **Positive:** …
 **Negative:** …
 ```
-
-- [ADR 007 — Verifiable and recoverable delivery](007-verifiable-recoverable-delivery.md)
-- [ADR 008 — One public name for each AgentFlow skill](008-single-skill-name.md)
-- [ADR 009 — Incremental onboarding and runtime installation authority](009-incremental-onboarding.md)
