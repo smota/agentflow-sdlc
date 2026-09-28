@@ -1,0 +1,97 @@
+{
+  "posture": "autonomous",
+  "delivery": {
+    "source": {
+      "kind": "github",
+      "format": "segmented-v2",
+      "repo": "smota/agentflow-sdlc",
+      "branch": "agentflow-301-qualification"
+    },
+    "candidate": {
+      "inputs": [
+        "candidate.txt"
+      ],
+      "context": {
+        "scope": "Disposable public CLI qualification drill, not full issue acceptance"
+      }
+    },
+    "checks": {
+      "candidate-check": {
+        "id": "candidate-check",
+        "criterionId": "candidate-check",
+        "executable": "node",
+        "args": [
+          "check.mjs"
+        ],
+        "assertions": [
+          "Disposable candidate has exactly the approved qualification text"
+        ],
+        "format": "exit-code",
+        "timeoutMs": 10000
+      },
+      "candidate-review": {
+        "id": "candidate-review",
+        "criterionId": "candidate-review",
+        "executable": "node",
+        "args": [
+          "check.mjs"
+        ],
+        "assertions": [
+          "Disposable candidate has exactly the approved qualification text"
+        ],
+        "format": "exit-code",
+        "timeoutMs": 10000
+      }
+    },
+    "contracts": {
+      "product-manager": ".agent-runs/contracts/product-manager.json",
+      "analyst": ".agent-runs/contracts/analyst.json",
+      "architect": ".agent-runs/contracts/architect.json",
+      "implementation-planner": ".agent-runs/contracts/implementation-planner.json",
+      "developer": ".agent-runs/contracts/developer.json",
+      "tester": ".agent-runs/contracts/tester.json",
+      "reviewer": ".agent-runs/contracts/reviewer.json",
+      "technical-writer": ".agent-runs/contracts/technical-writer.json",
+      "pr-readiness": ".agent-runs/contracts/pr-readiness.json"
+    },
+    "collaboration": {
+      "product-manager": ".agent-runs/collaboration/product-manager.json",
+      "analyst": ".agent-runs/collaboration/analyst.json",
+      "architect": ".agent-runs/collaboration/architect.json",
+      "implementation-planner": ".agent-runs/collaboration/implementation-planner.json",
+      "developer": ".agent-runs/collaboration/developer.json",
+      "tester": ".agent-runs/collaboration/tester.json",
+      "reviewer": ".agent-runs/collaboration/reviewer.json",
+      "technical-writer": ".agent-runs/collaboration/technical-writer.json",
+      "pr-readiness": ".agent-runs/collaboration/pr-readiness.json"
+    },
+    "delegation": {
+      "issuerId": "local",
+      "reviewCheck": "candidate-review",
+      "policy": {
+        "version": 1,
+        "issuers": [
+          {
+            "id": "local",
+            "mode": "local-cooperative",
+            "origin": "cli",
+            "authorityRef": "authorized-agentflow-301-disposable-qualification",
+            "allowedActions": [
+              "pr:create",
+              "pr:update",
+              "merge"
+            ],
+            "allowThroughMerge": true
+          }
+        ],
+        "requiredChecks": [
+          "candidate-check"
+        ],
+        "reviewPolicy": "automated",
+        "materiality": "fixed-scope-v1",
+        "allowSubdelegation": false,
+        "safetyReserve": 8
+      }
+    }
+  }
+}
