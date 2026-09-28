@@ -71,6 +71,15 @@ accepts those descriptor-owned values without modifying this table. `manifests/r
 separately governs top-level identity; for example `cowork` can launch `pi-subagent-model` without
 either field being relabeled.
 
+For PR evidence about an already-running Codex desktop session, use `Executor:
+codex-desktop-session` with `Transport: desktop-runtime` and `Implemented by: codex`.
+This pair is accepted by the PR manifest validator only. It is absent from
+`EXECUTION_TARGETS_BY_AGENT`, cannot be selected by `resolveExecutionTarget`, and does
+not claim that `codex exec` or a provider API was launched. Record the parent
+session as `Delegation boundary: current-session`; disclose actual child subagents
+separately. `Mode: single-agent` still describes one accountable parent role owner
+with optional helpers, and same-platform self-review remains a disclosed review.
+
 The delegation boundary column is a **default**, not a fixed property of the target. A launcher must
 override it when the actual mechanism differs — for example, `codex` spawning `claude-cli` into a
 fresh worktree is `child-worktree`, not `current-session`, even though `claude-cli`'s default is

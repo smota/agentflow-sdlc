@@ -55,8 +55,8 @@ the phase. See docs/agent-workflow.md §4a and lib/role-attribution.mjs. -->
 
 - Implemented by: <registered platform slug; see manifests/runtime-platforms.json>
 - Launcher: <registered platform slug; see manifests/runtime-platforms.json> <!-- who initiated implementation work; equal to "Implemented by" in single-agent execution -->
-- Executor: <claude-cli | anthropic-api | agy-cli | agy-session | pi-parent | pi-subagent | pi-session | pi-subagent-model | codex-cli | provider-api | human> <!-- see docs/execution-targets.md -->
-- Transport: <local-cli | provider-api | pi-subagent | intercom-session | orchestrated-worktree | manual>
+- Executor: <claude-cli | anthropic-api | agy-cli | agy-session | pi-parent | pi-subagent | pi-session | pi-subagent-model | codex-cli | provider-api | human | codex-desktop-session (PR evidence only)> <!-- see docs/execution-targets.md -->
+- Transport: <local-cli | provider-api | pi-subagent | intercom-session | orchestrated-worktree | manual | desktop-runtime (PR evidence only)>
 - Delegation boundary: <current-session | child-subagent | separate-local-session | child-worktree | human-handoff>
 - Model / runtime: <freeform identifier>
 - Review: self-review | human-review-requested | human-reviewed
