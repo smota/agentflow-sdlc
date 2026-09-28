@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentflow.dev/schemas/engineering-lifecycle.schema.json",
+  "title": "Neutral engineering lifecycle observation v1",
+  "type": "object",
+  "required": ["version", "operationId", "status", "observedAt"],
+  "properties": {
+    "version": { "const": 1 },
+    "operationId": { "type": "string", "minLength": 1 },
+    "status": {
+      "enum": ["running", "pending", "unknown", "pass", "failed", "blocked", "cancelled"]
+    },
+    "observedAt": { "type": "string", "format": "date-time" },
+    "providerOperationId": { "type": ["string", "null"] },
+    "reason": { "type": ["string", "null"] }
+  },
+  "additionalProperties": false
+}
