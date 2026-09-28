@@ -44,6 +44,16 @@ Reproduce the filesystem experiment with
 `node scripts/qualification/journal-enospc.mjs` in its documented isolated Linux
 environment; it does not fill the workstation filesystem.
 
+Initial PR CI exposed a Windows/Node 20 fixture defect: unlinking the still-open
+lock left its name delete-pending, so recreation failed before a replacement
+existed. The corrected test renames the held file before creating a replacement,
+including a zero-byte case. Cleanup additionally compares the original identity,
+fresh open-handle identity and current path. All 26 journal tests passed on an
+isolated official Node 20.20.2 runtime, and the real tmpfs ENOSPC probe passed again.
+This does not establish an atomic unlink-if-same operation; cooperative filesystem
+access remains the boundary. The original CI failure is not evidence that a
+successfully created replacement was deleted by the product.
+
 ## Completed phase and merge qualification
 
 A fresh source read verified completion at coordination commit
