@@ -1,24 +1,50 @@
 # Meshloop interface review and optional provider adapter — S7
 
-`lib/providers/meshloop-provider.mjs` delivers the optional adapter for Meshloop engineering execution under issue #269, fulfilling checkpoints M1–M6 from `docs/maintainers/process-autonomy-execution-plan.md`.
+The adapter in `lib/providers/meshloop-provider.mjs` connects AgentFlow to Meshloop
+through its public CLI. The implementation and qualification are separate: checkpoints
+M1–M6 in the [execution plan](../maintainers/process-autonomy-execution-plan.md) remain
+subject to live compatibility, recovery and cancellation evidence.
 
-## Architecture & Guarantees
+## Responsibilities
 
-1. **Bidirectional independence**:
-   - AgentFlow core never imports Meshloop packages, reads Meshloop configuration, or accesses its private SQLite database (`.meshloop/state.sqlite`).
-   - Meshloop remains independent of AgentFlow; it requires no AgentFlow packages, GitHub workflows, or durable run stores.
-   - When Meshloop is absent or unconfigured, AgentFlow completes all SDLC workflows directly through built-in local CLI or API providers (`claude-cli`, `codex-cli`, `agy-cli`, `grok`).
+AgentFlow owns intent, delegation, workflow transitions and delivery acceptance.
+Meshloop owns engineering execution and its technical graph. Neither product imports
+the other's packages or reads the other's private database. An absent Meshloop provider
+leaves direct AgentFlow execution available.
 
-2. **Responsibility & authority boundary**:
-   - **AgentFlow**: Owns approved intent, governance policy, delegation grants, phase transitions, evidence evaluation, and authoritative delivery/merge decisions.
-   - **Meshloop**: Owns bounded technical task execution, DAG decomposition, and execution verification.
-   - **Technical vs SDLC boundary**: Technical execution states (such as `AwaitingHumanAcceptance` or `data.status: 'ok'`) produce technical execution receipts (`status: 'pass'`), but never satisfy AgentFlow SDLC acceptance gates or bypass human review.
+A successful technical receipt never grants SDLC acceptance. A running detached graph
+is unfinished, and `AwaitingHumanAcceptance` describes Meshloop's wait state. AgentFlow
+must evaluate its own run policy and delegated authority before integration or merge.
 
-3. **Framing & output integrity**:
-   - Bounded framing handles both strict JSON output and the known CLI notice prefix (`Note: worktrees are kept...`).
-   - Unrecognized preambles, corrupted output, or payloads exceeding 64 KiB (`MAX_OUTPUT_FRAME_BYTES`) are rejected (`UNQUALIFIED_OUTPUT_FRAMING`, `OUTPUT_FRAME_OVERSIZED`).
-   - Foreign 16-hex digit hashes (`DefaultHasher`) or foreign `plan_sha256` are treated as unverified correlation markers; all returned artifacts are independently hashed and verified using SHA-256 byte hashing.
+## Qualification checklist
 
-4. **Destructive continuation fencing**:
-   - ADR0021 and `reset_graph_execution` in Meshloop delete graph events, attempts, and evidence on `--restart` or `--reset`.
-   - The adapter strictly prohibits `--restart` and `--reset` as ordinary continuations (`DESTRUCTIVE_CONTINUATION_PROHIBITED`) to prevent data and audit loss.
+Issue #296 requalifies the adapter after inspection of the #294 implementation found
+negative envelopes accepted as success, incorrect artifact hashing, lost lifecycle
+namespace and unbounded stream handling. Acceptance requires:
+
+- Check JSON framing, `ok`, command and lifecycle state before producing receipts.
+- Retrieve returned artifacts within the selected workspace, then compare original
+  byte SHA-256 and declared byte length. Input content and foreign hashes alone are
+  not verified output evidence.
+- Preserve database, configuration and working-directory selection across execution,
+  status and cancellation.
+- Bound output while reading and settle timeouts without claiming an unobserved child
+  or process tree has stopped.
+- Bind advertised capabilities to qualified support. A version probe or mocked test
+  does not qualify installed detached execution.
+
+Commit inspection validates local commit metadata and its exported branch binding.
+It is read-only: `integrated: false` means no checkout, import or merge occurred;
+`artifactBytesVerified: false` means artifact integrity needs separate verification.
+The retained `ingestWorktreeCommit` name is a legacy API name, not proof of integration.
+
+## Live evidence still required
+
+At the September 28 refresh, async `--detach` and `--session-id` behavior was present
+in the inspected Meshloop working changes, but absent from its committed `efa4352`
+revision. Those changes and the installed binary were not modified or qualified by
+this review. Confirm the executable version and public command contract before a live
+pilot; preserve technical receipts, cancellation observations and recovery evidence.
+
+The adapter prohibits `--restart` and `--reset` as ordinary continuation because they
+can erase execution history. Unsupported facets remain explicit until qualified.
