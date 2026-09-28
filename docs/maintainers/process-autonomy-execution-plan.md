@@ -3,22 +3,23 @@
 Status: final planning proposal after three council rounds; conditional findings dispositioned by Codex below. Approved for execution by the maintainer in the active session on 2026-09-25; implementation and verification in progress, not yet delivered.
 Date: 2026-09-25. Planning method: installed TechLead Planner, Clean Architecture and Writing for Agents. Follow-up source: retrospective #259; prior implementation #249/#258 is complete, not reopened.
 
-## September 28 requalification checkpoint
+## September 28 full reconciliation
 
-The original implementation was integrated by PR #272; later PR #294 added async
-Meshloop behavior. Refresh against development `1baed7b` found evidence and integration
-defects despite closed implementation issues. Issue closure is not completion of A1–A9.
+Current acceptance audit: [A1-A9 and S0-S9 reconciliation](process-autonomy-reconciliation.md),
+source `b0b01cb20afd716a4c1692807a9a90237b57b7b0`, tracking #299. All aggregate
+acceptance criteria remain partial or unqualified; closed implementation issues and
+passing regression CI are not complete delivery evidence.
 
-- #295 replaces synthetic pilot claims with measured production-service fixture events
-  and exact-byte continuation verification. Live source, crash and harness qualification remain open.
-- #296 repairs Meshloop receipt/namespace verification and connects Git metadata inspection
-  to the execution path. Installed binary and detached-process qualification remain open.
-- #297 separates cold 10,000-event replay from append performance and tracks bounded
-  source-efficiency work. A seeded replay fixture cannot qualify sequential append throughput.
+PR #298 corrected specific pilot and Meshloop defects after #272/#294. The full audit
+also found unconnected production autonomy paths and concrete recovery, receipt and
+segmented-history defects. Remaining order: #300 recovery safety, #302 receipt/neutral
+contract and #297 storage integrity; then #301 governed public composition; then #303
+telemetry/efficiency qualification and #304 adoption/final evidence. Documentation and
+policy contradictions in #304 should be corrected early. Dependencies and acceptance
+checks are in the reconciliation; the original A1-A9/S0-S9 scope below remains intact.
 
-Continue from these issue records and the current branch/PR evidence, preserving the
-full scope below. Historical council observations remain dated evidence, not current
-source versions or implementation acceptance.
+Historical council observations remain dated evidence, not current source versions
+or implementation acceptance. Meshloop changes require their own repository scope.
 
 ## Goal and acceptance
 
@@ -292,4 +293,4 @@ Round3 candidate SHA-256:dc25316691ba88cadba0662e138a50b40dfad0e55d01691d5d6bd92
 
 Remaining implementation risks, not concealed planning consensus: the first real issuer binding may lack through-merge assurance; GitHub admission protocol must prove the stated invariant; supported Meshloop facets need real qualification; measurable performance targets may require adjustment with evidence. None is marked tested now.
 
-Approve this final scope with destination ready-PR or merge into development, or request changes. The supplied approval must select a supportable authority mode. It authorizes a new workstream only when explicitly granted, not release/shared install and not a fabricated human review. This was the planning-stage approval request; current delivery status is recorded in the requalification checkpoint above.
+Approve this final scope with destination ready-PR or merge into development, or request changes. The supplied approval must select a supportable authority mode. It authorizes a new workstream only when explicitly granted, not release/shared install and not a fabricated human review. This was the planning-stage approval request; current delivery status is recorded in the full reconciliation above.
