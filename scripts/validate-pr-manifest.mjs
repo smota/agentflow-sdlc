@@ -10,9 +10,10 @@ import {
 } from '../lib/markdown-sections.mjs'
 import { rowsFromTable, validateRoleAttributionMatrix } from '../lib/role-attribution.mjs'
 import {
-  ALL_EXECUTION_TARGETS,
+  EVIDENCE_ONLY_EXECUTION_TARGET_TRANSPORT,
   DELEGATION_BOUNDARIES,
-  TRANSPORTS,
+  PR_MANIFEST_EXECUTION_TARGETS,
+  PR_MANIFEST_TRANSPORTS,
 } from '../lib/execution-targets.mjs'
 import { loadProjectConfig } from '../lib/role-routing.mjs'
 import { runtimePlatformSlugs } from '../lib/runtime-platforms.mjs'
@@ -56,8 +57,8 @@ const isOneOf = (values) => (value) => values.includes(value)
 const agentReviewFields = {
   'Implemented by': isOneOf(registeredPlatforms),
   Launcher: isOneOf(registeredPlatforms),
-  Executor: isOneOf(ALL_EXECUTION_TARGETS),
-  Transport: isOneOf(TRANSPORTS),
+  Executor: isOneOf(PR_MANIFEST_EXECUTION_TARGETS),
+  Transport: isOneOf(PR_MANIFEST_TRANSPORTS),
   'Delegation boundary': isOneOf(DELEGATION_BOUNDARIES),
   'Model / runtime': matches(/^(?!<freeform identifier>$).+/),
   Review: matches(/^(self-review|human-review-requested|human-reviewed)$/),
@@ -75,6 +76,15 @@ const agentReviewFields = {
 const regressionTestValue = fieldValue(agentReview, 'Regression test')
 const regressionTestValid =
   regressionTestValue === null || /^(added|not-applicable:.+)$/.test(regressionTestValue)
+
+const executor = fieldValue(agentReview, 'Executor')
+const transport = fieldValue(agentReview, 'Transport')
+const desktopEvidence = executor === 'codex-desktop-session' || transport === 'desktop-runtime'
+const desktopEvidenceValid =
+  !desktopEvidence ||
+  (executor === 'codex-desktop-session' &&
+    transport === EVIDENCE_ONLY_EXECUTION_TARGET_TRANSPORT[executor] &&
+    fieldValue(agentReview, 'Implemented by') === 'codex')
 
 const missingAgentFields = []
 const invalidAgentFields = []
@@ -149,6 +159,13 @@ const checks = [
           ]
             .filter(Boolean)
             .join('; '),
+  },
+  {
+    name: 'desktop-session-evidence',
+    ok: desktopEvidenceValid,
+    detail: desktopEvidenceValid
+      ? 'evidence vocabulary is consistent'
+      : 'codex-desktop-session requires Implemented by: codex and Transport: desktop-runtime',
   },
   {
     name: 'ci-equivalent-validation',

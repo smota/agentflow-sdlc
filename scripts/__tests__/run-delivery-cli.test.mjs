@@ -109,7 +109,7 @@ describe('run CLI consumer journey', () => {
     // generic invalid code. It is now a typed GovernedBlockError and classifies to the documented
     // governed-block code (3), the same code an escalated gate produces.
     expect(advance.code).toBe(3)
-    expect(advance.value.error).toContain('Human acceptance is unresolved')
+    expect(advance.value.error).toContain('Current bilateral role acceptance is required')
     writeFileSync(join(root, 'app.cjs'), 'module.exports = () => "broken"')
     expect(invoke('verify', 'demo', '--check', 'suite', ...mutation).code).toBe(3)
     expect(invoke('pause', 'demo', ...mutation).code).toBe(0)

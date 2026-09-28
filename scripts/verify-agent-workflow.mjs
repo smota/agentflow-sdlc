@@ -56,20 +56,16 @@ try {
   assert.match(manifestTemplate, /Closes #496/)
   assert.match(manifestTemplate, /## Agent review/)
   assert.match(manifestTemplate, /## CI-equivalent validation/)
+  assert.match(manifestTemplate, /^- Executor: .+$/m)
+  assert.match(manifestTemplate, /^- Transport: .+$/m)
 
   writeFileSync(
     manifestPath,
     manifestTemplate
       .replace('Implemented by: <registered platform slug>', 'Implemented by: cowork')
       .replace('Launcher: <registered platform slug>', 'Launcher: cowork')
-      .replace(
-        'Executor: claude-cli | anthropic-api | agy-cli | agy-session | pi-parent | pi-subagent | pi-session | pi-subagent-model | codex-cli | provider-api | human',
-        'Executor: codex-cli',
-      )
-      .replace(
-        'Transport: local-cli | provider-api | pi-subagent | intercom-session | orchestrated-worktree | manual',
-        'Transport: local-cli',
-      )
+      .replace(/^- Executor: .+$/m, '- Executor: codex-cli')
+      .replace(/^- Transport: .+$/m, '- Transport: local-cli')
       .replace(
         'Delegation boundary: current-session | child-subagent | separate-local-session | child-worktree | human-handoff',
         'Delegation boundary: current-session',

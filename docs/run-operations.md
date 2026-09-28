@@ -70,6 +70,9 @@ Read the first command's `result.confirm` value from its version-1 JSON envelope
 
 ## Cooperative delegation and bounded GitHub actions
 
+For the exact exercised environment, failure windows and remaining qualification
+limits, see [public delivery qualification](process-autonomy/live-delivery-qualification.md).
+
 Delegation is available only for a GitHub-backed durable run configured with a cooperative issuer. Add `delivery.delegation` before starting the run; its policy is captured when the run starts, so changing policy requires a new run. `reviewCheck` names a configured check that produces fresh, independently resolved automated-review evidence for the exact candidate.
 
 ```json
@@ -112,7 +115,7 @@ agentflow-sdlc run grant-revoke demo --grant <grant-id> --reason "Operator revok
 
 The CLI's issuance decision is `local-cooperative`: the explicit digest confirmation binds the local decision to the request, plan, run revision and candidate. It does not authenticate a human or distinguish hostile processes sharing the same account. `trusted-host` binding and hard token/currency ceilings remain unsupported. Attempts, external-effect limits, paths, actions, checks, candidate identity and expiry are enforced from the grant; an already admitted action may finish after a later revocation, while new admissions after recorded revocation are denied.
 
-Operations follow the source contract and require current exact-candidate checks, the configured automated review check, a clean tracked Git candidate at the operation's exact `headSha`, and a matching repository/candidate. `act` supports the configured `edit` provider plus the GitHub `pr:create`, `pr:update` and `merge` actions. `pr:create` creates a **draft** pull request. An uncertain outcome must be reconciled before any retry:
+Operations follow the source contract and require current exact-candidate checks, the configured automated review check, a clean tracked Git candidate at the operation's exact `headSha`, and a matching repository/candidate. `act` supports the configured `edit` provider plus the GitHub `pr:create`, `pr:update` and `merge` actions. `pr:create` defaults to a **draft** pull request; explicitly set `arguments.draft: false` in the admitted operation to create a PR ready for review. The operation digest binds this choice, and reconciliation checks GitHub's observed draft state. Creation consumes one external-effect allowance; a later merge requires its own admitted operation and allowance. `pr:update` does not change draft state. An uncertain outcome must be reconciled before any retry:
 
 ```text
 agentflow-sdlc run act demo --operation operation.json --grant <grant-id> --execute --boundary external-action --target <project> --json
@@ -120,7 +123,20 @@ agentflow-sdlc run reconcile demo --operation <operation-id> --execute --boundar
 agentflow-sdlc run journal-reconcile demo --execute --target <project> --json
 ```
 
-`reconcile` resolves an admitted external action by operation ID. `journal-reconcile` checks the local write-ahead journal against the durable source; add `--replay` only when the unchanged source and current writer are eligible to replay the exact pending event. The journal is recovery data, not a replacement for source acknowledgment. Never repeat an uncertain business operation merely because its first command returned an error.
+`reconcile` resolves an admitted external action by operation ID. `journal-reconcile` checks the local write-ahead journal against the durable source; add `--replay` only when the unchanged source and current writer are eligible to replay the exact pending event. The journal is recovery data, not a replacement for source acknowledgment. Never repeat an uncertain business operation merely because its first command returned an error. For interrupted local stages, use the explicit `--recover-stages` and optional `--recover-lock-owner` procedure in [pending audit journal recovery](process-autonomy/pending-audit-journal.md#recover-an-interrupted-write); source absence is not permission to redispatch.
+
+For a named merge, the run and current posture must permit `external-action`, and
+the captured issuer policy must include `merge` with `allowThroughMerge: true`.
+Create a new request restricted to `allowedActions: ["merge"]`, the exact repository
+and base, required checks, a concrete expiry and one attempt/effect. Its preview
+must report `destination: "named-merge"`. Issue that exact plan, then use the same
+`act`/`reconcile` commands with an operation whose action is `merge` and whose
+arguments are `{"prNumber":123,"headSha":"<exact-40-character-SHA>","mergeMethod":"squash"}`.
+The operation also binds the grant's plan/policy, paths, candidate/workspace digests,
+checks and review. Reconciliation requires the observed merged PR, exact head/base
+and merge commit. GitHub's conditional merge protects the head SHA, not an atomic
+base-branch comparison; cooperative deployments must exclude concurrent retargeting.
+A human candidate-release gate blocks this cooperative merge path.
 
 The `edit` action reaches a configured engineering provider and records its bounded receipt/output, but this command path does not establish a qualified end-to-end autonomous coding model. A provider must pass its actual target, model, capability, boundary and receipt checks. Default models have no qualification claim, and the currently available Meshloop binary does not match the required adapter qualification. A returned edit result is not proof that the integrated workflow, tests, review, or final candidate were accepted. Keep human high-assurance security and acceptance review on the open PR before merge.
 
@@ -152,7 +168,7 @@ agentflow-sdlc run status demo --target <project> --json
 agentflow-sdlc run next demo --target <project> --json
 ```
 
-`next` returns the current status and, when possible, an `advancePlan` with a confirmation digest. Save the plan object to a project-local file, review it, then apply it with `run advance demo --plan <file> --confirm <digest> --writer operator --generation 0 --execute`. Confirmation checks staleness; host permissions still apply. Missing bilateral acceptance remains blocked even when tests pass. The stock CLI cannot certify human review; high-assurance advancement needs an integration that resolves actual human authority.
+`next` returns a JSON envelope whose `result.advancePlan` is the plan object and `result.confirm` is its digest. Save only `result.advancePlan` to a project-local file. For phase zero, use `run intent-plan demo --plan <file> --confirm <digest>` to obtain the exact sealed scope, then follow the [host-observed intent consent protocol](process-autonomy/host-intent-consent.md). Apply a current typed receipt with `run advance demo --plan <file> --confirm <digest> --consent <receipt.json> --consent-confirm <receipt-digest> --writer operator --generation 0 --execute`. Missing bilateral acceptance remains blocked even when tests pass. This cooperative receipt records actual session consent for frozen intent only; it does not certify human identity or satisfy later high-assurance review.
 
 All run output is a versioned JSON envelope. Exit codes: `0` success, `2` invalid input, `3` blocked/evidence missing, `4` stale/conflict, `5` unavailable dependency, `6` external outcome unknown. An absent run is reported explicitly.
 
@@ -172,7 +188,7 @@ agentflow-sdlc resume --run demo --packet continuation.json --plan recovery-plan
 
 The packet-backed resume checks the packet against the authoritative run and source revision, its recorded writer generation, exact workspace branch and commit, candidate digest, candidate input bytes, and prior-writer liveness. It then produces a recovery plan; applying that plan rechecks pending operations and liveness before generation transfer. A packet alone neither copies files nor starts an agent. The stock liveness observer can prove a writer stopped only when it can inspect that PID on its recorded host; a different host or uncertain PID remains blocked. No timeout grants takeover. Never delete a lock or journal to force recovery; preserve the evidence and resolve the specific unknown state.
 
-`run publish demo --issue <number>` previews a versioned issue comment for a GitHub-backed run. Apply the saved plan with `--confirm`, the current writer/generation, `--execute` and `--boundary external-action`, under applicable publication authority. It preserves the issue body. A repeated invocation reconciles the original operation and does not submit another comment. If source acknowledgment succeeds but projection publication fails, inspect the pending operation before retrying.
+`run publish demo --issue <number>` previews a versioned issue comment for a GitHub-backed run. Apply the saved plan with `--confirm`, the current writer/generation, `--execute` and `--boundary external-action`. Publication also requires the persisted run boundary and effective posture/profile ceiling to allow `external-action`; coordination-branch write permission alone is insufficient. It preserves the issue body. Planned, submitted, unknown and confirmed projection records account for this comment separately from delegated grant attempts and external-effect allowances. Grant `maxExternalEffects` counts admitted logical business effects, not each GitHub request; source blob, tree, commit and ref requests are outside that allowance. This protocol does not enforce a total API-spend ceiling. A repeated invocation reconciles the original operation and does not submit another comment. If source acknowledgment succeeds but projection publication fails, inspect the pending operation before retrying.
 
 Cockpit exposes the same source-derived run at `/runs/<id>` and JSON at `/runs/<id>.json`, within its configured repository and authorization boundary. It is optional and does not unlock a gate unavailable in the CLI.
 

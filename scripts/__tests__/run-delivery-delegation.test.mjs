@@ -6,15 +6,47 @@ import { execFileSync } from 'node:child_process'
 import { fakeGitHub } from '../../lib/__tests__/github-run-store.fixture.mjs'
 import { recordDigest } from '../../lib/core/record-digest.mjs'
 import { fingerprintCandidate } from '../../lib/verification/workspace.mjs'
-import { createRunEvent } from '../../lib/core/run-state.mjs'
+import { createRunEvent, reduceRun } from '../../lib/core/run-state.mjs'
+import { createGitHubRunStore } from '../../lib/sources/github-run-store.mjs'
+import { createSegmentedRunStore } from '../../lib/sources/segmented-run-store.mjs'
+import { collectProcessObservation } from '../../lib/verification/process-collector.mjs'
 
 let fake
+const actionHarness = vi.hoisted(() => ({ dispatches: [], mockProvider: false }))
 vi.mock('../../lib/sources/github-api-cli.mjs', () => ({
   createGitHubApiCli: () => fake.client,
 }))
+vi.mock('../../lib/providers/github-delivery-actions.mjs', async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    createGitHubDeliveryActions: (...args) => {
+      if (!actionHarness.mockProvider) return actual.createGitHubDeliveryActions(...args)
+      return {
+        // The policy/collector checks run in production code. Only the provider-side preflight and
+        // effect boundary are substituted so admission denials can be measured without an API write.
+        preflight: async () => ({ verified: true, paths: ['src/candidate.js'] }),
+        dispatch: async (operation) => {
+          actionHarness.dispatches.push(operation.id)
+          return { state: 'requires-reconciliation' }
+        },
+        reconcile: async (_record, admission) => ({
+          verified: true,
+          state: 'confirmed',
+          operationId: admission.operation.id,
+          payloadDigest: admission.operationDigest,
+          candidateDigest: admission.operation.candidateDigest,
+          sourceRevision: `fixture:${admission.operation.id}`,
+        }),
+      }
+    },
+  }
+})
 const { runDelivery } = await import('../run-delivery.mjs')
 const roots = []
 afterEach(() => {
+  actionHarness.dispatches.length = 0
+  actionHarness.mockProvider = false
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true })
 })
 
@@ -55,6 +87,20 @@ function project() {
           branch: 'agentflow-state',
         },
         candidate: { inputs: ['src/candidate.js'] },
+        checks: Object.fromEntries(
+          ['test', 'review'].map((name) => [
+            name,
+            {
+              id: name,
+              criterionId: name,
+              executable: process.execPath,
+              args: ['-e', 'process.exit(0)'],
+              assertions: [`${name}-passed`],
+              timeoutMs: 5000,
+              format: 'exit-code',
+            },
+          ]),
+        ),
         delegation: { policy, issuerId: 'local', reviewCheck: 'review' },
       },
     }),
@@ -93,9 +139,93 @@ async function started() {
   return { root, git }
 }
 
-async function issued() {
+it('public publish requires explicit and persisted external-action business authority before any comment POST', async () => {
+  const { root } = await started()
+  const planned = await call(root, 'publish', ['--issue', '301'])
+  writeFileSync(join(root, 'projection.json'), JSON.stringify(planned.result))
+  const apply = ['--execute', '--plan', 'projection.json', '--confirm', planned.result.digest]
+  fake.requests.length = 0
+  await expect(call(root, 'publish', apply)).rejects.toThrow(/Publication requires/)
+  await expect(call(root, 'publish', [...apply, '--boundary', 'external-action'])).rejects.toThrow(
+    /Publication requires/,
+  )
+  expect(
+    fake.requests.filter(
+      ({ path, method }) => path.includes('/issues/301/comments') && method === 'POST',
+    ),
+  ).toHaveLength(0)
+
+  const external = project()
+  const configPath = join(external.root, 'agent-workflow.config.json')
+  const config = JSON.parse(readFileSync(configPath, 'utf8'))
+  config.posture = 'autonomous'
+  writeFileSync(configPath, JSON.stringify(config))
+  const sdlc = JSON.parse(
+    readFileSync(new URL('../../defaults/sdlc.config.json', import.meta.url), 'utf8'),
+  )
+  sdlc.actionPolicy.profileMaximums.standard = 'external-action'
+  writeFileSync(join(external.root, 'sdlc.config.json'), JSON.stringify(sdlc))
+  const externalSetup = await call(external.root, 'source-plan')
+  const externalRun = await call(external.root, 'start', [
+    '--execute',
+    '--goal',
+    'issue:301',
+    '--setup-confirm',
+    externalSetup.result.digest,
+  ])
+  expect(externalRun.result.boundary).toBe('external-action')
+  const externalPlan = await call(external.root, 'publish', ['--issue', '301'])
+  writeFileSync(join(external.root, 'projection.json'), JSON.stringify(externalPlan.result))
+  fake.requests.length = 0
+  await expect(
+    call(external.root, 'publish', [
+      '--execute',
+      '--plan',
+      'projection.json',
+      '--confirm',
+      externalPlan.result.digest,
+    ]),
+  ).rejects.toThrow(/Publication requires explicit --boundary external-action/)
+  expect(fake.requests.filter(({ method }) => method === 'POST')).toHaveLength(0)
+
+  const observed = project()
+  const setup = await call(observed.root, 'source-plan')
+  await call(observed.root, 'start', [
+    '--execute',
+    '--goal',
+    'issue:301',
+    '--boundary',
+    'observe',
+    '--setup-confirm',
+    setup.result.digest,
+  ])
+  const observedPlan = await call(observed.root, 'publish', ['--issue', '301'])
+  writeFileSync(join(observed.root, 'projection.json'), JSON.stringify(observedPlan.result))
+  fake.requests.length = 0
+  await expect(
+    call(observed.root, 'publish', [
+      '--execute',
+      '--boundary',
+      'external-action',
+      '--plan',
+      'projection.json',
+      '--confirm',
+      observedPlan.result.digest,
+    ]),
+  ).rejects.toThrow(/Publication requires/)
+  expect(
+    fake.requests.filter(
+      ({ path, method }) => path.includes('/issues/301/comments') && method === 'POST',
+    ),
+  ).toHaveLength(0)
+})
+
+async function issued({ action = 'edit', maxExternalEffects = 1 } = {}) {
   const context = await started()
-  writeFileSync(join(context.root, 'request.json'), JSON.stringify(grantRequest()))
+  writeFileSync(
+    join(context.root, 'request.json'),
+    JSON.stringify(grantRequest({ action, maxExternalEffects })),
+  )
   const planned = await call(context.root, 'grant-plan', ['--request', 'request.json'])
   writeFileSync(join(context.root, 'plan.json'), JSON.stringify(planned.result.plan))
   const result = await call(context.root, 'grant-issue', [
@@ -108,7 +238,7 @@ async function issued() {
   return { ...context, grantId: result.result.grantId }
 }
 
-function grantRequest() {
+function grantRequest({ action = 'edit', maxExternalEffects = 1 } = {}) {
   return {
     issuerMode: 'local-cooperative',
     planDigest: 'a'.repeat(64),
@@ -117,16 +247,100 @@ function grantRequest() {
     base: 'main',
     delegate: 'codex',
     allowedPaths: ['src/*'],
-    allowedActions: ['edit'],
-    capabilities: ['edit'],
+    allowedActions: [action],
+    capabilities: [action],
     requiredChecks: ['test'],
     reviewPolicy: 'automated',
     materiality: 'fixed-scope-v1',
     allowSubdelegation: false,
     maxAttempts: 2,
-    maxExternalEffects: 1,
+    maxExternalEffects,
     expiry: '2099-01-01T00:00:00.000Z',
   }
+}
+
+async function observeActionPrerequisites(root) {
+  const config = JSON.parse(readFileSync(join(root, 'agent-workflow.config.json'), 'utf8'))
+  const candidateDigest = fingerprintCandidate(root, config.delivery.candidate).digest
+  const store = actionRunStore(root)
+  let snapshot = await store.read()
+  let state = reduceRun(snapshot.events)
+  if (state.candidateDigest !== candidateDigest) {
+    const candidate = createRunEvent({
+      runId: 'public-run',
+      id: 'action-candidate',
+      previousDigest: snapshot.revision,
+      generation: state.generation,
+      kind: 'candidate',
+      payload: { digest: candidateDigest },
+    })
+    await store.append(candidate, snapshot.revision)
+    snapshot = await store.read()
+    state = reduceRun(snapshot.events)
+  }
+  for (const check of Object.values(config.delivery.checks)) {
+    const collected = collectProcessObservation({
+      root,
+      definition: { ...check, ...config.delivery.candidate },
+      boundary: 'external-action',
+    })
+    const observation = createRunEvent({
+      runId: 'public-run',
+      id: `observation-${check.id}`,
+      previousDigest: snapshot.revision,
+      generation: state.generation,
+      kind: 'observation',
+      payload: { observation: collected.observation },
+    })
+    await store.append(observation, snapshot.revision)
+    snapshot = await store.read()
+    state = reduceRun(snapshot.events)
+  }
+  return candidateDigest
+}
+
+function actionRunStore(root) {
+  const config = JSON.parse(readFileSync(join(root, 'agent-workflow.config.json'), 'utf8'))
+  const options = {
+    ...config.delivery.source,
+    runId: 'public-run',
+    client: fake.client,
+    boundary: 'external-action',
+  }
+  return config.delivery.source.format === 'segmented-v2'
+    ? createSegmentedRunStore(options)
+    : createGitHubRunStore(options)
+}
+
+function admittedOperation({ id, candidateDigest, headSha }) {
+  return {
+    id,
+    planDigest: 'a'.repeat(64),
+    policyDigest: recordDigest(policy),
+    repository: 'test/repo',
+    base: 'main',
+    delegate: 'codex',
+    action: 'pr:create',
+    paths: ['src/candidate.js'],
+    capabilities: ['pr:create'],
+    candidateDigest,
+    workspaceDigest: candidateDigest,
+    checks: [
+      { name: 'test', outcome: 'pass', candidateDigest },
+      { name: 'review', outcome: 'pass', candidateDigest },
+    ],
+    review: { policy: 'automated', outcome: 'pass', candidateDigest },
+    arguments: { headSha, head: 'feature', title: `Fixture ${id}`, body: `Fixture ${id}` },
+  }
+}
+
+async function attemptAction(root, operation, grantId) {
+  writeFileSync(join(root, 'operation.json'), JSON.stringify(operation))
+  return call(root, 'act', ['--execute', '--grant', grantId, '--operation', 'operation.json'])
+}
+
+async function currentRun(root) {
+  return actionRunStore(root).read()
 }
 
 function seedLegacy(events) {
@@ -213,6 +427,59 @@ describe('public run delegation with a fake GitHub source', () => {
     const after = await call(root, 'grant-status', ['--grant', grantId])
     expect(after.result.status).toBe('revoked')
     expect(after.result.revocationEpoch).toBeGreaterThan(before.result.revocationEpoch)
+  })
+
+  it('denies an exact-candidate action after collector checks and review, before mocked provider dispatch', async () => {
+    const { root, git, grantId } = await issued({ action: 'pr:create' })
+    const candidateDigest = await observeActionPrerequisites(root)
+    actionHarness.mockProvider = true
+    const operation = admittedOperation({
+      id: 'revoked-effect',
+      candidateDigest,
+      headSha: git('rev-parse', 'HEAD'),
+    })
+    await call(root, 'grant-revoke', [
+      '--execute',
+      '--grant',
+      grantId,
+      '--reason',
+      'Fixture revocation before action',
+    ])
+    const before = await currentRun(root)
+    await expect(attemptAction(root, operation, grantId)).rejects.toThrow(
+      /Admission rejected: REVOKED/i,
+    )
+    const after = await currentRun(root)
+    expect(after.revision).toBe(before.revision)
+    expect(after.events.filter((event) => event.kind === 'operation-admitted')).toHaveLength(0)
+    expect(actionHarness.dispatches).toEqual([])
+  })
+
+  it('denies the second exact-candidate action after one mocked provider effect exhausts the grant', async () => {
+    const { root, git, grantId } = await issued({
+      action: 'pr:create',
+      maxExternalEffects: 1,
+    })
+    const candidateDigest = await observeActionPrerequisites(root)
+    actionHarness.mockProvider = true
+    const headSha = git('rev-parse', 'HEAD')
+    const first = admittedOperation({ id: 'first-effect', candidateDigest, headSha })
+    const completed = await attemptAction(root, first, grantId)
+    expect(completed.result.state).toBe('confirmed')
+    expect(actionHarness.dispatches).toEqual(['first-effect'])
+
+    const before = await currentRun(root)
+    const second = admittedOperation({ id: 'second-effect', candidateDigest, headSha })
+    await expect(attemptAction(root, second, grantId)).rejects.toThrow(
+      /Admission rejected: BUDGET: external effects exhausted/i,
+    )
+    const after = await currentRun(root)
+    const state = reduceRun(after.events)
+    expect(state.grants[grantId].budgetUsed.externalEffects).toBe(1)
+    expect(state.admissions['second-effect']).toBeUndefined()
+    expect(after.events.filter((event) => event.kind === 'operation-admitted')).toHaveLength(1)
+    expect(after.events.length).toBe(before.events.length)
+    expect(actionHarness.dispatches).toEqual(['first-effect'])
   })
 
   it('refuses an action before exact candidate checks and review exist', async () => {
