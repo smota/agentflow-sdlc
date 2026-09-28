@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { mkdtempSync, writeFileSync, unlinkSync } from 'node:fs'
+import { mkdtempSync, writeFileSync, unlinkSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { builtInProviders, providerById } from '../../lib/providers/registry.mjs'
@@ -12,7 +12,6 @@ import { parseFixtureEnvelope } from '../qualify-meshloop.mjs'
 import {
   ingestWorktreeCommit,
   evaluateTechnicalReceiptGate,
-  WorktreeIngestionError,
 } from '../../lib/verification/workspace.mjs'
 
 describe('E2E Meshloop Conformance & Adversarial Fault Injection Matrix (#293)', () => {
@@ -51,7 +50,7 @@ describe('E2E Meshloop Conformance & Adversarial Fault Injection Matrix (#293)',
           data: {
             graph_id: 'neutral-client-fixture',
             idle: 'AwaitingHumanAcceptance',
-            status: 'completed',
+            status: 'awaiting_acceptance',
           },
         })
 
@@ -63,7 +62,7 @@ describe('E2E Meshloop Conformance & Adversarial Fault Injection Matrix (#293)',
 
   // Scenario C: Integrated Happy Path
   describe('Scenario C: Integrated Happy Path (Dispatch -> Ingest -> Gate)', async () => {
-    it('dispatches task, ingests worktree commit, streams metrics, and mandates human review gate', async () => {
+    it('dispatches fixture task, inspects exported commit, and preserves separate acceptance', async () => {
       const observations = []
       const observer = (obs) => observations.push(obs)
 
@@ -74,9 +73,9 @@ describe('E2E Meshloop Conformance & Adversarial Fault Injection Matrix (#293)',
             status: 0,
             stdout: JSON.stringify({
               ok: true,
-              command: 'run',
+              command: 'meshloop:run',
               data: {
-                status: 'completed',
+                status: 'awaiting_acceptance',
                 idle: 'AwaitingHumanAcceptance',
                 git_export: {
                   commit_sha: mockCommitSha,
@@ -95,16 +94,21 @@ describe('E2E Meshloop Conformance & Adversarial Fault Injection Matrix (#293)',
           }
         }
         if (args.includes('cat-file')) {
-          return { status: 0, stdout: '', stderr: '' }
+          return { status: 0, stdout: 'commit', stderr: '' }
         }
+        if (args.includes('rev-parse')) return { status: 0, stdout: mockCommitSha, stderr: '' }
         if (args.includes('diff-tree')) {
-          return { status: 0, stdout: 'src/lib.rs\nsrc/engine.rs\n', stderr: '' }
+          return { status: 0, stdout: 'src/lib.rs\0src/engine.rs\0', stderr: '' }
         }
         return { status: 0, stdout: '', stderr: '' }
       }
 
-      const provider = createMeshloopProvider({ spawn: fakeIntegratedSpawn, observer })
-      const plan = provider.plan({ detach: true })
+      const provider = createMeshloopProvider({
+        spawn: fakeIntegratedSpawn,
+        gitSpawn: fakeIntegratedSpawn,
+        observer,
+      })
+      const plan = provider.plan({ cwd: process.cwd() })
       const receipt = await provider.execute(plan, { confirm: plan.token })
 
       // 1. Receipt validation
@@ -113,13 +117,11 @@ describe('E2E Meshloop Conformance & Adversarial Fault Injection Matrix (#293)',
       expect(receipt.metadata.engineeringMetrics.astReductionRatio).toBe(0.88)
       expect(receipt.metadata.engineeringMetrics.lyapunovIterations).toBe(2)
 
-      // 2. Ingest worktree commit into verification harness
-      const ingestion = ingestWorktreeCommit({
-        gitExport: receipt.metadata.gitExport,
-        spawn: fakeIntegratedSpawn,
-        observer,
-      })
+      // The actual receipt path inspects commit metadata; it does not integrate a worktree.
+      const ingestion = receipt.metadata.verifiedCommit
       expect(ingestion.verified).toBe(true)
+      expect(ingestion.integrated).toBe(false)
+      expect(ingestion.artifactBytesVerified).toBe(false)
       expect(ingestion.changedFiles).toEqual(['src/lib.rs', 'src/engine.rs'])
 
       // 3. Gate evaluation: technical pass MUST NOT bypass SDLC gate
@@ -133,20 +135,20 @@ describe('E2E Meshloop Conformance & Adversarial Fault Injection Matrix (#293)',
       const kinds = observations.map((o) => o.kind)
       expect(kinds).toContain('meshloop_execution_attempt')
       expect(kinds).toContain('meshloop_engineering_metrics')
-      expect(kinds).toContain('meshloop_commit_ingested')
+      expect(kinds).toContain('meshloop_commit_inspected')
     })
   })
 
   // Scenario D: Fault Injection - Abrupt Cancellation
   describe('Scenario D: Fault Injection - Abrupt Cancellation', () => {
-    it('cancels active session cleanly and guarantees zero orphaned processes', async () => {
+    it('validates the cancellation acknowledgement without claiming process liveness', async () => {
       const fakeCancelSpawn = (exe, args) => {
         if (args.includes('cancel')) {
           return {
             status: 0,
             stdout: JSON.stringify({
               ok: true,
-              command: 'cancel',
+              command: 'meshloop:cancel',
               data: {
                 session_id: 'session-cancel-test',
                 status: 'cancelled',
@@ -160,7 +162,10 @@ describe('E2E Meshloop Conformance & Adversarial Fault Injection Matrix (#293)',
       }
 
       const provider = createMeshloopProvider({ spawn: fakeCancelSpawn })
-      const cancelResult = await provider.cancel({ sessionId: 'session-cancel-test' })
+      const cancelResult = await provider.cancel({
+        sessionId: 'session-cancel-test',
+        cwd: process.cwd(),
+      })
 
       expect(cancelResult.status).toBe('cancelled')
       expect(cancelResult.sessionId).toBe('session-cancel-test')
@@ -170,7 +175,7 @@ describe('E2E Meshloop Conformance & Adversarial Fault Injection Matrix (#293)',
 
   // Scenario E: Fault Injection - Git Lock Contention
   describe('Scenario E: Fault Injection - Git Lock Contention', () => {
-    it('detects .git/index.lock contention and protects against workspace corruption', () => {
+    it('leaves an existing index lock untouched during read-only metadata inspection', () => {
       const tempRepo = mkdtempSync(join(tmpdir(), 'git-lock-test-'))
       const gitDir = join(tempRepo, '.git')
       const { mkdirSync } = require('node:fs')
@@ -180,25 +185,19 @@ describe('E2E Meshloop Conformance & Adversarial Fault Injection Matrix (#293)',
       writeFileSync(lockFile, 'lock-active')
 
       try {
-        expect(() =>
-          ingestWorktreeCommit({
-            root: tempRepo,
-            gitExport: {
-              commit_sha: '1234567890abcdef1234567890abcdef12345678',
-              branch_ref: 'refs/heads/lock-test',
-            },
+        const commit = '1234567890abcdef1234567890abcdef12345678'
+        const inspected = ingestWorktreeCommit({
+          root: tempRepo,
+          gitExport: { commit_sha: commit, branch_ref: 'refs/heads/lock-test' },
+          spawn: (exe, args) => ({
+            status: 0,
+            stdout:
+              args[0] === 'cat-file' ? 'commit' : args[0] === 'rev-parse' ? commit : 'file.txt\0',
           }),
-        ).toThrow(WorktreeIngestionError)
-
-        expect(() =>
-          ingestWorktreeCommit({
-            root: tempRepo,
-            gitExport: {
-              commit_sha: '1234567890abcdef1234567890abcdef12345678',
-              branch_ref: 'refs/heads/lock-test',
-            },
-          }),
-        ).toThrowError(/Repository index is locked/)
+        })
+        expect(inspected.verified).toBe(true)
+        expect(inspected.integrated).toBe(false)
+        expect(readFileSync(lockFile, 'utf8')).toBe('lock-active')
       } finally {
         // Cleanup lock file to verify recovery
         unlinkSync(lockFile)
