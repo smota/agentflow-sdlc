@@ -37,3 +37,20 @@ node scripts/analyze-telemetry.mjs /absolute/path/to/spool
 This read-only command validates owned record checksums and produces bounded JSON aggregates. It reports source calls/bytes per observed accepted delivery or checkpoint, physical read bytes, admitted/repeated context when observed, usage when observed, dispatch/rework counts and available durations. Missing measurements and zero denominators produce `null`; the export lists unresolved coverage. Expired/evicted history cannot be reconstructed from surviving records, so historical loss is unknown unless separately retained. Checksums detect accidental changes; they do not authenticate a producer or authorize SDLC acceptance.
 
 Validation at this checkpoint uses a real local OTLP HTTP receiver, offline spool round-trip, privacy fixtures, queue failure/overflow tests, and existing run CLI journeys. Mocked provider execution does not establish live harness coverage. Do not interpret these tests as completion of the S1 baseline or S9 pilot.
+
+## Process transition metadata (#303)
+
+Run event observations carry optional finite fromPhase/fromRole and toPhase/toRole
+fields derived from the validated reducer states. Start has no previous state
+(null source phase/role). Completion retains the last phase; it does not invent
+another role. Same-phase events retain the same source and target.
+
+For run_event_attempted and run_event_failed, the target describes a validated
+proposal, not a committed transition. Only run_event_appended reports an
+acknowledged append. Correlated event IDs join the proposal and result. These
+fields do not export payloads, grant content or acceptance evidence and do not add
+metric dimensions. Existing records without them remain readable.
+
+The [approved #303 scope](../maintainers/process-autonomy-execution-plan.md#approved-scope-amendment-process-observability-303)
+supersedes historical savings and full-matrix requirements above. This increment
+does not qualify cross-session correlation or the full process-observability issue.
