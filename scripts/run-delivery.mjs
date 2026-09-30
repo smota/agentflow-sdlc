@@ -468,6 +468,55 @@ export async function runDelivery(
       if (!actions || !issuer) throw new Error('Configured delegated GitHub actions required')
       if (command === 'reconcile') {
         if (!execute) throw new Error('Execution authority required')
+        if (args.includes('--observe-provider')) {
+          const snapshot = await service.read()
+          const operationId = flag('--operation')
+          const admitted = snapshot.state?.admissions?.[operationId]
+          const operation = admitted?.operation
+          if (!engineering || operation?.action !== 'edit')
+            throw new Error('Admitted engineering operation required')
+          if (
+            snapshot.state.owner !== authority.owner ||
+            snapshot.state.generation !== authority.generation
+          )
+            throw new Error('Current writer identity required')
+          assertEngineeringEvidenceDisclosure(executionAdapter, operation)
+          if (
+            operation.candidateDigest !== fingerprintCandidate(root, config.candidate).digest ||
+            operation.arguments.headSha !==
+              execFileSync('git', ['rev-parse', 'HEAD'], {
+                cwd: root,
+                encoding: 'utf8',
+                windowsHide: true,
+              }).trim()
+          )
+            throw new Error('Operation candidate changed')
+          const recorded = snapshot.events.some(
+            (event) =>
+              event.kind === 'checkpoint' &&
+              event.payload?.kind === 'engineering-result' &&
+              event.payload.operationId === operationId,
+          )
+          if (!recorded) {
+            // Observation never invokes provider execution or grants new work.
+            const observed = await engineering.observe(operation)
+            if (observed.status === 'pass' && observed.verifiedOutput) {
+              const payload = {
+                kind: 'engineering-result',
+                operationId,
+                receipt: observed.receipt,
+                output: observed.verifiedOutput,
+              }
+              assertPublishableEngineeringEvidence(payload, operation)
+              if (Buffer.byteLength(JSON.stringify(payload)) > 32 * 1024)
+                throw new Error('Engineering evidence exceeds bounded checkpoint')
+              await service.record('checkpoint', payload, {
+                expectedRevision: snapshot.revision,
+                authority,
+              })
+            }
+          }
+        }
         result = await service.reconcileDelegatedOperation({
           operationId: flag('--operation'),
           authority,
