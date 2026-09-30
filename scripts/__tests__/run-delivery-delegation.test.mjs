@@ -667,3 +667,15 @@ describe('public run delegation with a fake GitHub source', () => {
     expect(status.result.revision).toBeTruthy()
   })
 })
+
+it('provider observation requires execution authority and an existing admitted engineering operation', async () => {
+  const { root } = await started()
+  await expect(
+    call(root, 'reconcile', ['--observe-provider', '--operation', 'missing']),
+  ).rejects.toThrow('Execution authority required')
+  const before = fake.requests.filter(({ method }) => method === 'POST').length
+  await expect(
+    call(root, 'reconcile', ['--execute', '--observe-provider', '--operation', 'missing']),
+  ).rejects.toThrow('Admitted engineering operation required')
+  expect(fake.requests.filter(({ method }) => method === 'POST')).toHaveLength(before)
+})

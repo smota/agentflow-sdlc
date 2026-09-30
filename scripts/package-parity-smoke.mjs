@@ -61,6 +61,15 @@ try {
   )
   const packageRoot = join(consumer, 'node_modules', 'agentflow-sdlc')
   const installedCli = join(packageRoot, 'bin', 'cli.mjs')
+  const skillCatalog = JSON.parse(readFileSync(join(root, 'manifests/skill-catalog.json'), 'utf8'))
+  for (const skill of skillCatalog.skills) {
+    const relativePath = join(skill.source, 'SKILL.md')
+    if (
+      !readFileSync(join(packageRoot, relativePath)).equals(readFileSync(join(root, relativePath)))
+    )
+      throw new Error(`Packed skill differs from canonical source: ${skill.qualifiedName}`)
+  }
+
   let symlinkRuntimeChecked = false
   if (process.platform === 'linux') {
     const { inspectProcessRuntime } = await import(

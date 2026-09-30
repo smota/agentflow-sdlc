@@ -112,7 +112,7 @@ adds latency to each dispatch.
 
 - Exact OTel semantic convention version pins for GenAI attributes (S1 deliverable; use
   stable attributes, pin developmental ones explicitly).
-- Telemetry overhead measurement (target ≤5% p95 vs disabled; S1 acceptance criterion).
+- Telemetry overhead measurement: the historical ≤5% p95 target is superseded for #303 by the [approved scope amendment](../maintainers/process-autonomy-execution-plan.md#approved-scope-amendment-process-observability-303). Equivalent-boundary measurement and explicit regression assessment remain required; no replacement numeric gate is approved.
 - Specific provider capability matrix for Meshloop integration (S7 deliverable; Grok boundary
   review required before S7 acceptance).
 - Whether `local-cooperative` assurance is sufficient to claim advisory budget enforcement

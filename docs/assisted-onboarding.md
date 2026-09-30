@@ -65,7 +65,13 @@ with successful examples. Additional runtimes receive their own requests.
 For known historical locks, select `"migrateLegacy": true` in the choices file.
 For an unrecognized lock, select `"recoverUnknown": true` and disposition every
 conflicting path through `"resolutions": {"path": "preserve"}` or `"replace"`.
-The preview binds the old lock bytes; the receipt supports restoring them. Malformed
+The preview binds the old lock bytes; the receipt supports restoring them. The successful `onboarding apply` result includes `externalReceiptDestination` and `receiptToken`.
+Preserve that receipt. For explicit undo, use
+`agentflow-sdlc adopt rollback --target <project> --receipt <externalReceiptDestination> --confirm <receiptToken> --json`.
+For an interrupted apply, use the recovery token from the retained transaction journal with
+`agentflow-sdlc onboarding recover --target <project> --confirm <recoveryToken>`.
+Do not confuse the saved plan's digest, the completed receipt token and the interrupted journal's
+recovery token. Rollback refuses drift and preserves unrelated files. Malformed
 project configuration requires explicit repair before planning, and linked paths remain
 preserved. See [ADR 009](adr/009-incremental-onboarding.md).
 

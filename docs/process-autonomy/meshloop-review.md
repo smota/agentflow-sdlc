@@ -1,5 +1,7 @@
 # Meshloop interface review and optional provider adapter — S7
 
+Current #302 scope and the September 30 qualification are in [minimal integration](meshloop-minimal-integration.md). The dated findings below are historical; they do not override the approved narrowed scope.
+
 The adapter in `lib/providers/meshloop-provider.mjs` connects AgentFlow to Meshloop
 through its public CLI. The implementation and qualification are separate: checkpoints
 M1–M6 in the [execution plan](../maintainers/process-autonomy-execution-plan.md) remain
