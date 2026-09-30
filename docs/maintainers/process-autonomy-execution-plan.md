@@ -21,6 +21,55 @@ checks are in the reconciliation; the original A1-A9/S0-S9 scope below remains i
 Historical council observations remain dated evidence, not current source versions
 or implementation acceptance. Meshloop changes require their own repository scope.
 
+## Approved scope amendment: process observability (#303)
+
+On 2026-09-30 the maintainer explicitly approved separating telemetry enablement
+from efficiency optimization. This amendment governs the remaining #303 work and
+supersedes conflicting historical A4/A5, S1/S4a/S9 and quantitative acceptance
+language for that issue. It does not rewrite historical measurements or claim that
+the original targets passed.
+
+AgentFlow owns process events and their meaning: phases, handovers, validation,
+approval, pause, failure, recovery and delivery outcomes. Runtimes and optional
+engineering providers own their internal execution telemetry. Correlation crosses
+a documented optional interface; neither product requires the other or a shared
+telemetry backend.
+
+In scope:
+- Optional OpenTelemetry/OTLP export and bounded local capture.
+- Run/session/attempt correlation and explicitly documented supported event coverage.
+- Available durations, outcomes and boundary measurements, with unavailable data
+  reported as unknown and collection losses visible.
+- Privacy protection and identical workflow decisions with collection disabled,
+  enabled, offline or exporter failure.
+- Adoption instructions and a reproducible representative workflow demonstrating
+  collection, consumption and cross-session correlation.
+
+Out of scope:
+- Guaranteed source-call, common-context, token or financial-cost reductions.
+- Prompt/model/inference-cache optimization, persistence or transport redesign
+  solely to achieve savings, and instrumentation of inaccessible harness internals.
+- Collector installation, dashboard development or an analytics platform.
+
+Historical >=50% source HTTP/common-context reduction targets are explicitly
+retired from #303 acceptance by this scope decision, not recorded as achieved.
+Historical <=5% p95 OTel overhead is not an inherited release gate: first measure
+instrumentation with equivalent timing boundaries, report local and export costs
+separately, and explicitly evaluate material regressions. No replacement numeric
+threshold has been approved. Bounded queues, storage and shutdown remain required.
+
+Execution order: (1) define event/coverage and correlation contracts against existing
+producers; (2) fill necessary process-boundary instrumentation and privacy gaps;
+(3) qualify disabled/enabled/offline/export-failure parity and bounded losses;
+(4) document enablement and data consumption with representative end-to-end evidence.
+Efficiency measurements may inform later prioritization but do not require an
+optimization campaign. Any proposed optimization needs separately scoped backlog
+work; none is automatically transferred to Meshloop or scheduled by this amendment.
+
+Approval concerns scope only. Implementation, validation and issue closure are not
+claimed by this amendment. Historical results remain available in the completion
+report and issue history.
+
 ## Goal and acceptance
 
 Make AgentFlow the portable SDLC process owner: intent, scope, authority, handovers, evidence, acceptance and delivery state. Reduce coordination and context cost without weakening recovery. Add OpenTelemetry and a simple explicit delegation to execute an approved plan to a ready PR or a named merge. Keep technical execution replaceable, including a minimal direct executor and optional Meshloop.
