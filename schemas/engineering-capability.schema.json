@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentflow.dev/schemas/engineering-capability.schema.json",
+  "title": "Neutral engineering capability v1",
+  "type": "object",
+  "required": [
+    "version",
+    "provider",
+    "executionTarget",
+    "availability",
+    "qualifiedCapabilities",
+    "qualifiedModels",
+    "liveBinaryQualified"
+  ],
+  "properties": {
+    "version": { "const": 1 },
+    "provider": { "type": "string", "minLength": 1 },
+    "executionTarget": { "type": "string", "minLength": 1 },
+    "availability": { "enum": ["available", "unavailable", "unknown"] },
+    "qualifiedCapabilities": {
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true
+    },
+    "qualifiedModels": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+    "liveBinaryQualified": { "type": "boolean" },
+    "binarySha256": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" }
+  },
+  "additionalProperties": false
+}

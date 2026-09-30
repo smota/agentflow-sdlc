@@ -84,7 +84,8 @@ Telemetry eviction cannot release, consume or delete journal entries.
 Business updates write a uniquely named stage, fsync the file, atomically rename it
 over the snapshot, then attempt directory fsync. The previous snapshot remains in
 place until promotion. Orphaned stages are retained and listed as recovery-required;
-new business writes stop until explicit inspection/reconciliation. Safety writes
+new business writes stop until explicit inspection/reconciliation. Complete stages
+can be recovered through the public command below; malformed stages remain in place. Safety writes
 remain available when an ordinary business stage is unpromoted.
 Atomic replacement temporarily needs space for both snapshots: up to another 8 MiB
 in addition to the logical business ceiling. Only one unpromoted stage is allowed;
@@ -117,6 +118,12 @@ needs explicit operator investigation; there is no recursive automatic lock thef
 The host should re-resolve run/writer authority before continuing after local lock
 recovery. Local recovery never acquires a new authoritative writer generation.
 
+If initialization fails after this process exclusively creates a lock, it removes
+only that same regular file, verified against the still-open descriptor's device,
+nonzero inode and single-link identity. A replacement or unverifiable file remains
+in place. Physical ENOSPC can still prevent a safety write; after space is restored,
+a failed initialization must not leave its own empty lock blocking normal access.
+
 The host selects a dedicated private directory. The adapter checks existing ancestors
 and managed entries for symlinks/junctions, checks real-path equality, and uses only
 fixed internally generated filenames. It refuses unsupported versions, nonregular
@@ -124,6 +131,36 @@ entries, malformed identities and oversized data. The cooperative threat model d
 not claim protection against a malicious same-account process replacing filesystem
 objects between checks. Host ACLs and execution adapters remain responsible for
 that stronger boundary.
+
+## Recover an interrupted write
+
+Use the original run owner and generation. The source writer must be observably
+stopped; an unknown or still-live writer blocks recovery. The recorded run writer
+may be the CLI's parent process, distinct from the process holding the local lock.
+Stopping a CLI child alone does not authorize takeover of a live parent.
+
+```text
+agentflow-sdlc run journal-reconcile demo --execute --recover-stages --writer original-writer --generation 0 --json
+```
+
+If a stale local lock also remains, add
+`--recover-lock-owner .agent-runs/runs/demo/audit/writer.lock`. The command verifies
+that exact owner against the lock and OS liveness before removing it. Never delete
+or edit a lock, snapshot or stage to force progress.
+
+Physical recovery validates one complete business stage as a permitted transition
+from the retained snapshot. A complete uncommitted safety frame must have a valid
+length, checksum and event. A fresh source read must agree with pending identities,
+ACK tombstones and retirements. Invalid or conflicting evidence stays untouched.
+The standalone journal requires a configured `verifyPhysicalRecovery` verifier;
+`createJournaledRunStore` supplies the source and stopped-writer checks.
+
+This command restores local framing and reconciles exact source acknowledgments.
+An event absent from the source remains unknown. Add `--replay` only to append
+that exact event when the original writer is stopped and the source predecessor
+and generation are unchanged. This never dispatches the business operation.
+Finish only when the command reports `acknowledged`; use the normal continuation
+flow to transfer writer authority afterward.
 
 ## Observed tests
 
@@ -136,3 +173,28 @@ fsync; the parent verifies retained evidence and explicitly recovers only a prov
 dead writer. No test dispatches business work based solely on local journal success.
 Service/CLI wiring and source-outage end-to-end behavior belong to the parent S3
 integration, not this standalone adapter's test claim.
+
+The recovery regressions also exercise interrupted stage promotion before and after
+source commit, interrupted ACK compaction, complete uncommitted safety framing,
+source conflicts and concurrent physical recovery. The public delegation fixtures
+retain segmented storage and distinguish mocked provider effects from actual
+collector observations.
+
+For actual OS disk pressure on Linux, run the opt-in probe in a private user/mount
+namespace (WSL supports this where user namespaces are enabled):
+
+```sh
+unshare -Urnm sh <<'SH'
+set -eu
+probe_dir=$(mktemp -d /tmp/agentflow-journal-pressure-XXXXXX)
+mount -t tmpfs -o size=256k,nr_inodes=128 tmpfs "$probe_dir"
+trap 'umount "$probe_dir"; rmdir "$probe_dir"' EXIT
+node scripts/qualification/journal-enospc.mjs "$probe_dir"
+SH
+```
+
+The probe refuses a non-tmpfs, oversized or unexpected target. It fills only that
+bounded mount, checks retained evidence and absence of an abandoned lock, releases
+its filler, then verifies a new safety write. This qualifies recovery after space
+returns; it does not claim stop persistence while storage is full, power-loss
+durability or a live provider effect.

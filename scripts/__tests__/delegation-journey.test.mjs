@@ -6,7 +6,7 @@ import {
   reconstructContinuation,
 } from '../../lib/application/continuation-service.mjs'
 import { dispatchToHarness, HarnessContractError } from '../../lib/providers/harness-dispatch.mjs'
-import { recordDigest } from '../../lib/core/record-digest.mjs'
+import { createHash } from 'node:crypto'
 import { reduceRun } from '../../lib/core/run-state.mjs'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -114,11 +114,25 @@ describe('Autonomous Delegation Journey (S8)', () => {
       id: 'agy-cli',
       targets: ['agy-cli'],
       intentSupport: [
-        { id: 'plan-before-edit', implementation: 'native' },
-        { id: 'file-edit', implementation: 'native' },
+        {
+          id: 'plan-before-edit',
+          implementation: 'native',
+          fidelity: 'full',
+          evidence: 'contract-tested',
+        },
+        {
+          id: 'file-edit',
+          implementation: 'native',
+          fidelity: 'full',
+          evidence: 'contract-tested',
+        },
       ],
       async inspect() {
-        return { availability: 'available', reason: 'ready' }
+        return {
+          availability: 'available',
+          reason: 'ready',
+          qualification: { capabilities: ['plan-before-edit', 'file-edit'] },
+        }
       },
       plan(req) {
         return {
@@ -166,9 +180,16 @@ describe('Autonomous Delegation Journey (S8)', () => {
     const provider = {
       id: 'agy-cli',
       targets: ['agy-cli'],
-      intentSupport: [{ id: 'file-edit', implementation: 'native' }],
+      intentSupport: [
+        {
+          id: 'file-edit',
+          implementation: 'native',
+          fidelity: 'full',
+          evidence: 'contract-tested',
+        },
+      ],
       async inspect() {
-        return { availability: 'available' }
+        return { availability: 'available', qualification: { capabilities: ['file-edit'] } }
       },
       plan() {
         return { provider: 'agy-cli', token: 'tok' }
@@ -191,12 +212,12 @@ describe('Autonomous Delegation Journey (S8)', () => {
     })
   })
 
-  it('proves fresh agent continues seamlessly via continuation packet without re-approval', async () => {
+  it('verifies continuation artifacts against a supplied grant fixture without acquiring writer authority', async () => {
     const { store, service } = await setupJourneyFixture()
     const { state, revision } = await service.read()
 
     const part1Content = '// part 1 verified code\n'
-    const part1Digest = recordDigest(part1Content)
+    const part1Digest = createHash('sha256').update(part1Content).digest('hex')
     const artifactsMap = new Map([
       ['lib/part1.mjs', { content: part1Content, digest: part1Digest }],
     ])
@@ -221,7 +242,7 @@ describe('Autonomous Delegation Journey (S8)', () => {
     expect(bundle.type).toBe('continuation-packet')
     expect(bundle.writer.owner).toBe('writer-1')
 
-    // Agent B resumes in clean environment from bundle
+    // Reconstruction verifies the supplied fixture; writer acquisition is tested by the process pilot.
     const resolveArtifact = async (ref) => artifactsMap.get(ref.path) ?? null
     const resumed = await reconstructContinuation({
       bundle,

@@ -1,236 +1,341 @@
 #!/usr/bin/env node
+import { createHash } from 'node:crypto'
+import { mkdtempSync, rmSync, realpathSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { basename, dirname, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { createMemoryRunStore } from '../lib/sources/run-store.mjs'
 import { createRunService } from '../lib/application/run-service.mjs'
+import { createLocalCooperativeIssuer } from '../lib/application/local-cooperative-issuer.mjs'
 import {
   createContinuationBundle,
   reconstructContinuation,
   MAX_PACKET_BYTES,
 } from '../lib/application/continuation-service.mjs'
 import { createPendingAuditJournal } from '../lib/sources/pending-audit-journal.mjs'
-import { createRunEvent, reduceRun } from '../lib/core/run-state.mjs'
+import { reduceRun } from '../lib/core/run-state.mjs'
 import { recordDigest } from '../lib/core/record-digest.mjs'
-import { mkdtempSync, rmSync, realpathSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { CONDITIONAL_ADMISSION } from '../lib/core/delegation-grant.mjs'
 
 export async function runProcessPilot({
   fixture = true,
-  runId = 'pilot-run-271',
+  runId = 'pilot-run-295',
   fixedTime = '2026-09-26T12:00:00.000Z',
 } = {}) {
-  const startTime = Date.now()
-  const journalDir = mkdtempSync(join(realpathSync(tmpdir()), 'af-pilot-journal-'))
-
+  if (!fixture)
+    throw new Error(
+      'Only the single-process fixture is supported; live qualification is unavailable',
+    )
+  const started = performance.now()
+  const tempRoot = realpathSync(tmpdir())
+  const directory = mkdtempSync(join(tempRoot, 'af-pilot-journal-'))
   try {
-    const store = createMemoryRunStore({ durable: true })
+    // The memory store performs revision comparison and append synchronously, before yielding.
+    // This capability is valid only inside this single-process fixture, not across hosts.
+    const store = { ...createMemoryRunStore(), conditionalAdmission: CONDITIONAL_ADMISSION }
+    const acknowledgments = []
     const journal = createPendingAuditJournal({
-      directory: journalDir,
-      verifyAcknowledgment: async ({ event, sourceReceipt }) => ({
-        acknowledged: sourceReceipt?.confirmed === true,
-        eventId: event.id,
-        eventDigest: event.digest,
-        sourceRevision: 'source:pilot-verified',
-      }),
+      directory,
+      verifyAcknowledgment: async ({ event }) => {
+        const snapshot = await store.read()
+        const found = snapshot.events.find(
+          (e) => e.runId === event.runId && e.id === event.id && e.digest === event.digest,
+        )
+        if (!found) return { acknowledged: false }
+        acknowledgments.push({
+          eventId: found.id,
+          eventDigest: found.digest,
+          sourceRevision: snapshot.revision,
+        })
+        return {
+          acknowledged: true,
+          eventId: found.id,
+          eventDigest: found.digest,
+          sourceRevision: snapshot.revision,
+        }
+      },
     })
-    const authority = { owner: 'agent-pilot-1', generation: 0 }
-
-    const service = createRunService({
-      store,
-      clock: () => fixedTime,
-      authorize: async () => true,
-      observeWriter: async () => ({ stopped: true }),
-      observeWorkspace: async () => ({ verified: true, candidateDigest: 'c'.repeat(64) }),
+    const policy = {
+      version: 1,
+      issuers: [
+        {
+          id: 'fixture',
+          origin: 'fixture:approval',
+          authorityRef: 'fixture:host',
+          mode: 'local-cooperative',
+          allowedActions: ['edit'],
+          allowThroughMerge: false,
+        },
+      ],
+      requiredChecks: ['fixture-check'],
+      reviewPolicy: 'automated',
+      materiality: 'fixed-scope-v1',
+      allowSubdelegation: false,
+      safetyReserve: 4,
+    }
+    const issuer = createLocalCooperativeIssuer({
+      policy,
+      issuerId: 'fixture',
+      approve: async () => ({ approved: true, decisionRef: 'fixture:bounded-decision' }),
     })
-
-    // 1. Start governed run
+    const effects = []
+    const outcomes = new Map()
+    const artifacts = new Map()
+    let stopped = false
+    const candidate = recordDigest({ fixture: 'candidate' })
+    const createService = () =>
+      createRunService({
+        store,
+        delegationPolicy: policy,
+        clock: () => fixedTime,
+        authorize: (ctx) =>
+          ['issue-grant', 'resolve-grant', 'revoke-grant'].includes(ctx.kind) ? issuer(ctx) : true,
+        observeWriter: async () => ({ stopped }),
+        observeWorkspace: async () => ({ verified: true, candidateDigest: candidate }),
+        reconcileOperation: async (op) =>
+          outcomes.get(op.id) ?? { verified: false, state: 'unknown' },
+      })
+    let service = createService()
+    const priorAuthority = { owner: 'fixture-writer-1', generation: 0 }
+    let authority = priorAuthority
+    const options = async () => ({ expectedRevision: (await service.read()).revision, authority })
     await service.start({
       runId,
-      goalRef: 'issue:271',
-      owner: 'agent-pilot-1',
-      profile: 'standard',
+      goalRef: 'issue:295',
+      owner: authority.owner,
       boundary: 'external-action',
       authority,
     })
-
-    // 2. Issue scoped delegation grant
-    const grantEnvelope = {
-      id: 'grant-pilot',
-      issuedAt: fixedTime,
-      issuerActor: 'lead-maintainer',
-      binding: {
-        issuerMode: 'local-cooperative',
-        issuerBinding: {
-          issuerId: 'local',
-          mode: 'local-cooperative',
-          origin: 'cli',
-          authorityRef: 'local',
-          decisionRef: 'approval-pilot',
-        },
-        planDigest: 'a'.repeat(64),
-        policyDigest: 'b'.repeat(64),
-        repository: 'smota/agentflow-sdlc',
-        base: 'main',
-        delegate: 'agy',
-        allowedPaths: ['lib/*', 'docs/*'],
+    await service.record('candidate', { digest: candidate }, await options())
+    const common = {
+      planDigest: recordDigest({ fixture: 'plan' }),
+      policyDigest: recordDigest(policy),
+      repository: 'fixture/repository',
+      base: 'fixture-base',
+      delegate: 'fixture-runtime',
+    }
+    const grant = await service.issueGrant(
+      {
+        ...common,
+        allowedPaths: ['src/*'],
         allowedActions: ['edit'],
         capabilities: ['edit'],
-        requiredChecks: ['test'],
-        reviewPolicy: 'automated',
-        materiality: 'fixed-scope-v1',
+        requiredChecks: policy.requiredChecks,
+        reviewPolicy: policy.reviewPolicy,
+        materiality: policy.materiality,
         allowSubdelegation: false,
         maxAttempts: 3,
-        maxExternalEffects: 5,
-        expiry: '2026-09-27T12:00:00.000Z',
+        maxExternalEffects: 3,
+        expiry: new Date(Date.parse(fixedTime) + 86400000).toISOString(),
+        issuerMode: 'local-cooperative',
       },
-      parentId: null,
-    }
-
-    const grantObj = {
-      envelope: grantEnvelope,
-      revision: 'grant-rev-1',
-      status: 'active',
-      revocationEpoch: 0,
-      budgetUsed: { attempts: 0, externalEffects: 0 },
-      budgetReserved: { attempts: 0, externalEffects: 0 },
-    }
-
-    const origStoreRead = store.read.bind(store)
-    store.read = async () => {
-      const s = await origStoreRead()
-      const state = reduceRun(s.events)
-      state.grants = { 'grant-pilot': grantObj }
-      return { ...s, state }
-    }
-
-    const origServiceRead = service.read.bind(service)
-    service.read = async () => {
-      const s = await origServiceRead()
-      s.state.grants = { 'grant-pilot': grantObj }
-      return s
-    }
-
-    let rev = (await service.read()).revision
-    await service.record(
-      'candidate',
-      { digest: 'c'.repeat(64) },
-      { expectedRevision: rev, authority },
+      await options(),
     )
-
-    // 3. Admitted operation #1 before interruption
-    const op1Content = '// phase 1 implementation\n'
-    const op1Digest = recordDigest(op1Content)
-    const auditEvent1 = createRunEvent({
-      id: 'audit-event-1',
-      runId,
-      kind: 'operation-admitted',
-      payload: { path: 'lib/core/sample.mjs', digest: op1Digest },
-      timestamp: fixedTime,
+    const operation = (id) => ({
+      ...common,
+      id,
+      action: 'edit',
+      paths: [`src/${id}.txt`],
+      capabilities: ['edit'],
+      candidateDigest: candidate,
+      workspaceDigest: candidate,
+      checks: [{ name: 'fixture-check', outcome: 'pass', candidateDigest: candidate }],
+      review: { policy: 'automated', outcome: 'pass', candidateDigest: candidate },
+      arguments: { content: `${id}\n` },
     })
-    await journal.put(auditEvent1)
-
-    // 4. Injected fault: writer interrupted / stopped
-    const currentSnapshot = await service.read()
+    const dispatch = async (op, receipt) => {
+      effects.push(op.id)
+      artifacts.set(op.paths[0], Buffer.from(op.arguments.content))
+      outcomes.set(op.id, {
+        verified: true,
+        state: 'confirmed',
+        operationId: op.id,
+        payloadDigest: receipt.operationDigest,
+        candidateDigest: op.candidateDigest,
+        sourceRevision: `fixture-effect:${effects.length}`,
+      })
+    }
+    const execute = async (op) =>
+      service.executeDelegatedOperation(
+        op,
+        { ...(await options()), grantId: grant.grantId },
+        dispatch,
+      )
+    const first = operation('first')
+    await execute(first)
+    await service.reconcileDelegatedOperation({ operationId: first.id, authority })
+    const admission = (await store.read()).events.find((e) => e.kind === 'operation-admitted')
+    await journal.put(admission)
+    await service.record(
+      'paused',
+      { reason: 'Fixture writer stopped between operations' },
+      await options(),
+    )
+    stopped = true
+    const checkpoint = await service.read()
+    const bytes = artifacts.get(first.paths[0])
     const bundle = createContinuationBundle({
-      state: currentSnapshot.state,
-      runRevision: currentSnapshot.revision,
-      branch: 'main',
+      state: checkpoint.state,
+      runRevision: checkpoint.revision,
+      branch: 'fixture-base',
       commitSha: 'd'.repeat(40),
-      nextSlice: 'S9-continued',
+      nextSlice: 'fixture-second-operation',
       artifacts: [
         {
-          id: 'art-op-1',
-          path: 'lib/core/sample.mjs',
-          digest: op1Digest,
-          byteLength: Buffer.byteLength(op1Content),
+          id: 'first-artifact',
+          path: first.paths[0],
+          digest: createHash('sha256').update(bytes).digest('hex'),
+          byteLength: bytes.length,
         },
       ],
     })
-
-    // 5. Fresh-instance resumption by agent-pilot-2
-    const artifactsMap = new Map([
-      ['lib/core/sample.mjs', { content: op1Content, digest: op1Digest }],
-    ])
-    const resumeStart = performance.now()
-    const resumed = await reconstructContinuation({
+    service = createService()
+    const resumeStarted = performance.now()
+    const reconstruction = await reconstructContinuation({
       bundle,
       store,
-      resolveArtifact: async (ref) => artifactsMap.get(ref.path) ?? null,
-      observeWriter: async () => ({ stopped: true }),
+      resolveArtifact: async (ref) => ({ content: artifacts.get(ref.path) }),
+      observeWriter: async () => ({ stopped }),
       clock: () => fixedTime,
     })
-    const resumeLatencyMs = Math.round(performance.now() - resumeStart)
-
-    // 6. Complete second admitted operation under resumed generation
-    const op2Content = '// phase 2 finalization\n'
-    const op2Digest = recordDigest(op2Content)
-    const auditEvent2 = createRunEvent({
-      id: 'audit-event-2',
-      runId,
-      kind: 'operation-admitted',
-      payload: { path: 'lib/core/sample-final.mjs', digest: op2Digest },
-      timestamp: fixedTime,
+    const plan = await service.recoveryPlan({
+      owner: 'fixture-writer-2',
+      boundary: 'external-action',
+      writer: { instance: 'fixture-service-2', host: 'single-process-fixture', pid: process.pid },
     })
-    await journal.put(auditEvent2)
-
-    // Acknowledge events in journal after reconciliation
-    await journal.ack(auditEvent1.id, auditEvent1.digest, { confirmed: true })
-    await journal.ack(auditEvent2.id, auditEvent2.digest, { confirmed: true })
-
-    const listed = await journal.list()
-    const totalDurationMs = Date.now() - startTime
-
-    // 7. Retrospective Metrics Dataset
-    const retrospective = {
-      version: 1,
-      scenario: 'autonomous-process-pilot-fault-injection',
-      passed: resumed.verified === true && listed.entries.length === 0,
+    await service.resume({
+      plan,
+      authority: { owner: plan.owner, generation: priorAuthority.generation },
+    })
+    authority = { owner: plan.owner, generation: (await service.read()).state.generation }
+    const resumeLatencyMs = performance.now() - resumeStarted
+    const denial = async (fn) => {
+      try {
+        await fn()
+        return null
+      } catch (error) {
+        return error.message
+      }
+    }
+    const beforeReplay = effects.length
+    const replay = await execute(first)
+    const afterReplay = effects.length
+    const staleWriter = await denial(async () =>
+      service.executeDelegatedOperation(
+        operation('stale'),
+        { ...(await options()), authority: priorAuthority, grantId: grant.grantId },
+        dispatch,
+      ),
+    )
+    const second = operation('second')
+    await execute(second)
+    await service.reconcileDelegatedOperation({ operationId: second.id, authority })
+    await service.revokeGrant(grant.grantId, 'Fixture revocation scenario', await options())
+    const beforeRevocationAttempt = effects.length
+    const revoked = await denial(() => execute(operation('revoked')))
+    const afterRevocationAttempt = effects.length
+    await journal.ack(admission.id, admission.digest, {})
+    const pending = await journal.list()
+    const snapshot = await store.read()
+    const state = reduceRun(snapshot.events)
+    const checks = {
+      grantInEventChain:
+        snapshot.events.some((e) => e.kind === 'grant-issued') &&
+        state.grants[grant.grantId]?.status === 'revoked',
+      twoReconciledAdmissions:
+        Object.keys(state.admissions).length === 2 &&
+        [first.id, second.id].every((id) => state.operations[id]?.state === 'confirmed'),
+      reconstruction: reconstruction.verified === true,
+      resumedWriterInEventChain:
+        snapshot.events.some((e) => e.kind === 'resumed') &&
+        state.generation === 1 &&
+        state.owner === authority.owner,
+      replayNoDispatch: replay.replayed === true && afterReplay === beforeReplay,
+      staleWriterDenied: /Obsolete writer/.test(staleWriter ?? ''),
+      revocationNoDispatch:
+        /REVOKED/.test(revoked ?? '') && beforeRevocationAttempt === afterRevocationAttempt,
+      exactSourceAcknowledgment:
+        acknowledgments.length === 1 &&
+        acknowledgments[0].eventId === admission.id &&
+        acknowledgments[0].eventDigest === admission.digest &&
+        pending.entries.length === 0,
+      observedDispatches: effects.length === 2 && new Set(effects).size === 2,
+    }
+    return {
+      version: 2,
+      scenario: 'production-service-single-process-fixture',
+      passed: Object.values(checks).every(Boolean),
       runId,
+      assurance: {
+        source: 'non-durable-memory',
+        issuer: 'local-cooperative-fixture',
+        writerObservation: 'fixture-controlled',
+        qualification: 'fixture-only',
+      },
+      unqualified: [
+        'live GitHub durability',
+        'process crash recovery',
+        'OS writer liveness',
+        'CLI/provider harness execution',
+        'full S0-S9 delivery qualification',
+      ],
+      checks,
+      evidence: {
+        eventKinds: snapshot.events.map((e) => e.kind),
+        dispatches: effects,
+        acknowledgments,
+        staleWriterDenial: staleWriter,
+        revocationDenial: revoked,
+      },
       metrics: {
-        totalDurationMs,
+        totalDurationMs: performance.now() - started,
         resumeLatencyMs,
         continuationPacketBytes: Buffer.byteLength(JSON.stringify(bundle)),
         maxPacketBudgetBytes: MAX_PACKET_BYTES,
-        workloadEvents: (await store.read()).events.length,
-        unacknowledgedLosses: 0,
-        duplicateEffects: 0,
-        attempts: 1,
-        escalations: 0,
-        reworkItems: 0,
+        workloadEvents: snapshot.events.length,
+        dispatchCount: effects.length,
+        duplicateEffects: effects.length - new Set(effects).size,
+        pendingJournalEntries: pending.entries.length,
+        beforeReplay,
+        afterReplay,
+        beforeRevocationAttempt,
+        afterRevocationAttempt,
         grantFencing: {
-          activeGrantId: resumed.activeGrantId,
+          activeGrantId: grant.grantId,
           priorGeneration: bundle.writer.generation,
-          nextGeneration: resumed.nextGeneration,
+          nextGeneration: state.generation,
         },
       },
       provenance: {
         host: process.platform,
         node: process.version,
         architecture: process.arch,
-        executor: 'antigravity-orchestrator',
-        dispatchTargets: ['agy-cli', 'grok-cli', 'claude-cli'],
+        executor: 'node-single-process-fixture',
+        dispatchTargets: ['in-memory-artifact-adapter'],
       },
     }
-
-    return retrospective
   } finally {
-    try {
-      rmSync(journalDir, { recursive: true, force: true })
-    } catch {
-      /* ignore */
-    }
+    const cleanupTarget = realpathSync(directory)
+    if (
+      dirname(cleanupTarget) !== tempRoot ||
+      !basename(cleanupTarget).startsWith('af-pilot-journal-')
+    )
+      throw new Error('Refusing cleanup outside the pilot temporary directory')
+    rmSync(cleanupTarget, { recursive: true, force: true })
   }
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const isFixture = process.argv.includes('--fixture') || process.argv.length === 2
-  runProcessPilot({ fixture: isFixture })
+  runProcessPilot({
+    fixture:
+      process.argv.length === 2 || (process.argv.length === 3 && process.argv[2] === '--fixture'),
+  })
     .then((report) => {
       process.stdout.write(`${JSON.stringify(report, null, 2)}\n`)
-      process.exit(report.passed ? 0 : 1)
+      process.exitCode = report.passed ? 0 : 1
     })
-    .catch((err) => {
-      process.stderr.write(`Process pilot failed: ${err.message}\n`)
-      process.exit(1)
+    .catch((error) => {
+      process.stderr.write(`Process pilot failed: ${error.message}\n`)
+      process.exitCode = 1
     })
 }

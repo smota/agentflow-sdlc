@@ -1,28 +1,35 @@
 # Autonomous process pilot and retrospective dataset — S9
 
-This document records the results of the autonomous process pilot (`scripts/process-pilot.mjs`) implementing fault-injection, fresh-instance recovery, bounded context enforcement, and retrospective metrics under issue #271.
+Run `node scripts/process-pilot.mjs --fixture` to exercise production run-service
+calls with a single-process memory source and an in-memory effect adapter. The JSON
+report is the measurement for that invocation. Its `passed` field covers only the
+listed fixture checks; it is not acceptance of the complete S0–S9 execution plan.
 
-## Architecture & Verified Scenario
+## Exercised scenario
 
-The pilot executes an end-to-end autonomous delegation lifecycle with an injected crash/interruption:
+The pilot issues a local cooperative grant through the service, admits and dispatches
+an operation, reconciles it, and records a pause. A new service instance reconstructs
+an exact-byte-verified continuation and calls the recovery/resume service to acquire
+the next writer generation. It then checks replay, stale-writer refusal, a second
+execution, and revocation refusal. Journal compaction verifies the original event ID
+and digest against a fresh source read.
 
-1. **Governed Run Initialization**: Started under generation 0 authority with baseline state.
-2. **Cooperative Scoped Grant**: Authorized with bounded path, action, and effect ceilings.
-3. **Pending Audit Journaling**: Admitted operations buffered locally in a bounded pending-audit journal (`lib/sources/pending-audit-journal.mjs`).
-4. **Injected Interruption / Crash**: Simulates an abrupt writer interruption.
-5. **Portable Continuation**: Exports a lightweight, content-addressed continuation bundle (`createContinuationBundle`) strictly bounded within `<= 32 KiB`.
-6. **Fresh-Root Reconstruction**: Fresh agent session validates authoritative revision, writer liveness, unexpired grant, and independently verifies artifact SHA-256 digests (`reconstructContinuation`).
-7. **Writer Generation Fencing**: Advances writer generation to `generation = 1` and prevents stale writer append collisions.
-8. **Audit Reconciliation & Compaction**: Compacts journal entries upon durable acknowledgment.
+The report derives event, dispatch, duplicate and pending-journal counts from those
+observations. It records Node, OS and fixture-adapter provenance. No model CLI is
+invoked. Timings describe this local fixture only.
 
-## Retrospective Dataset & Measurements
+## Qualification boundary
 
-| Metric                       | Target    | Observed Result                     | Status |
-| ---------------------------- | --------- | ----------------------------------- | ------ |
-| **Critical Event Loss**      | 0         | 0 unacknowledged losses             | Pass   |
-| **Duplicate Effects**        | 0         | 0 duplicate effects                 | Pass   |
-| **Control Context Budget**   | <= 32 KiB | 976 bytes packet size               | Pass   |
-| **Artifact Byte Limit**      | <= 10 MiB | Verified SHA-256 byte hashing       | Pass   |
-| **Generation Fencing**       | Prior + 1 | Advanced from generation 0 to 1     | Pass   |
-| **Resume Latency**           | <= 60s    | < 50ms (in-memory fixture)          | Pass   |
-| **Orchestration Provenance** | Explicit  | Recorded `antigravity-orchestrator` | Pass   |
+The memory source is non-durable. Reconstructing a service object is not a process
+crash, a new machine or independent OS liveness verification. The fixture cannot
+establish GitHub durability, cross-process races, CLI/provider cancellation, event
+loss under a machine failure, or production performance targets.
+
+Issue #295 replaces the synthetic grant, hardcoded counters and unsupported harness
+attribution in the original #271 report. Earlier reported values must not be reused
+as qualification evidence. Live source/harness execution, the 10,000-event workload,
+context/source efficiency comparisons and telemetry overhead measurements remain
+requirements of the [execution plan](../maintainers/process-autonomy-execution-plan.md).
+
+A nonzero exit or a false required check fails this fixture. Inspect `unqualified`
+before using a passing report in a delivery or adoption decision.

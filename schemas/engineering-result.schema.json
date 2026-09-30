@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentflow.dev/schemas/engineering-result.schema.json",
+  "title": "Neutral engineering terminal result v1",
+  "type": "object",
+  "required": [
+    "version",
+    "provider",
+    "executionTarget",
+    "operationId",
+    "candidateDigest",
+    "status",
+    "artifacts",
+    "observedModel"
+  ],
+  "properties": {
+    "version": { "const": 1 },
+    "provider": { "type": "string", "minLength": 1 },
+    "executionTarget": { "type": "string", "minLength": 1 },
+    "operationId": { "type": "string", "minLength": 1 },
+    "candidateDigest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "status": { "enum": ["pass", "failed", "blocked", "cancelled"] },
+    "observedModel": { "type": ["string", "null"] },
+    "qualification": { "type": ["object", "null"] },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "sha256", "byteLength"],
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "byteLength": { "type": "integer", "minimum": 0 }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
