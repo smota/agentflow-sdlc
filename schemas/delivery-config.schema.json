@@ -228,6 +228,33 @@
         },
         "sourceEvidenceDisclosure": {
           "const": "bounded-output-and-artifacts"
+        },
+        "connection": {
+          "additionalProperties": false,
+          "properties": {
+            "binarySha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "configFile": {
+              "type": "string",
+              "minLength": 1
+            },
+            "worktreeBase": {
+              "type": "string",
+              "minLength": 1
+            },
+            "dbFile": {
+              "type": "string",
+              "minLength": 1
+            },
+            "executable": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "type": "object",
+          "required": ["executable", "binarySha256", "configFile", "dbFile", "worktreeBase"]
         }
       },
       "additionalProperties": false
