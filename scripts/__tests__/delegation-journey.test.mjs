@@ -8,7 +8,7 @@ import {
 import { dispatchToHarness, HarnessContractError } from '../../lib/providers/harness-dispatch.mjs'
 import { createHash } from 'node:crypto'
 import { reduceRun } from '../../lib/core/run-state.mjs'
-import { existsSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const fixedTime = '2026-09-26T10:00:00.000Z'
@@ -258,11 +258,16 @@ describe('Autonomous Delegation Journey (S8)', () => {
     expect(resumed.activeGrantId).toBe('grant-270')
   })
 
-  it('verifies checkout source skills are isolated and intact', () => {
-    const skillPath = join(process.cwd(), 'skills/agentflow-coordinator/SKILL.md')
-    if (existsSync(skillPath)) {
-      const content = readFileSync(skillPath, 'utf8')
-      expect(content).toContain('agentflow-coordinator')
+  it('requires every canonical checkout skill instead of skipping absent legacy names', () => {
+    const catalog = JSON.parse(
+      readFileSync(join(process.cwd(), 'manifests/skill-catalog.json'), 'utf8'),
+    )
+    expect(catalog.skills.some((skill) => skill.qualifiedName === 'agentflow-orchestrator')).toBe(
+      true,
+    )
+    for (const skill of catalog.skills) {
+      const content = readFileSync(join(process.cwd(), skill.source, 'SKILL.md'), 'utf8')
+      expect(content).toContain(`name: ${skill.qualifiedName}`)
     }
   })
 })

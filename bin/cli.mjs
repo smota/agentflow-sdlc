@@ -923,16 +923,16 @@ function positionalArgs(args) {
   return result
 }
 
-async function handleHandoff(rest, targetDir) {
+function handleHandoff(rest, targetDir) {
   const runId = getFlag(rest, '--run', null)
   if (!runId) throw new Error('--run <id> is required for source-backed handoff')
-  return runDelivery(['handoff', runId, ...rest, '--target', targetDir])
+  return runScript('scripts/run-delivery.mjs', ['handoff', runId, ...rest], targetDir)
 }
 
-async function handleResume(rest, targetDir) {
+function handleResume(rest, targetDir) {
   const runId = getFlag(rest, '--run', null)
   if (!runId) throw new Error('--run <id> is required for source-backed resume')
-  return runDelivery(['resume', runId, ...rest, '--target', targetDir])
+  return runScript('scripts/run-delivery.mjs', ['resume', runId, ...rest], targetDir)
 }
 
 const ROOT_USAGE =
@@ -957,9 +957,10 @@ const COMMAND_USAGE = {
   github: 'Usage: agentflow-sdlc github <setup> [--target <dir>] [--dry-run|--apply] [--json]\n',
   onboarding:
     'Usage: agentflow-sdlc onboarding <inspect|plan|apply|verify|recover|runtime-request> [--target <dir>] [--profile <id>] [--runtime-request <file>] [--runtime-evidence <file>] [--choices <file>] [--plan <file>] [--confirm <digest>] [--json]\n',
-  handoff: 'Usage: agentflow-sdlc handoff --run <id> --execute [--target <dir>] [--json]\n',
+  handoff:
+    'Usage: agentflow-sdlc handoff --run <id> --writer <owner> --generation <n> --execute [--target <dir>] [--json]\n',
   resume:
-    'Usage: agentflow-sdlc resume --run <id> --packet <file> [--plan <file> --confirm <digest> --execute] [--target <dir>] [--json]\n',
+    'Usage: agentflow-sdlc resume --run <id> --packet <file> --writer <replacement> --writer-pid <pid> [--plan <file> --confirm <digest> --generation <old-n> --execute] [--target <dir>] [--json]\n',
 }
 
 function requestedHelp(args) {

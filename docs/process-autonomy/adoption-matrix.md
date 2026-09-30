@@ -15,7 +15,28 @@ and [run operations](../run-operations.md); internal APIs and proposed interface
 | **4. Governed execution and interruption recovery**  | Configured GitHub source, candidate inputs, checks, per-role acceptance/collaboration contracts, cooperative delegation policy, and required human review authority. | Execute a governed run, issue bounded authority, perform supported GitHub actions, and recover recorded state after interruption. | Follow the `run start/freeze/verify/next/advance` flow. Delegation uses `run grant-plan`, `grant-issue`, `grant-status`, `grant-revoke`, `act`, `reconcile`, and `journal-reconcile`. Portable handoff uses `agentflow-sdlc handoff --run <id>`; durable resume requires its packet via `agentflow-sdlc resume --run <id> --packet <file>`. See [run operations](../run-operations.md). | Grant confirmation is local-cooperative, not authenticated human identity. GitHub PR creation produces a draft. `act edit` reaches a configured engineering provider and records bounded output, but the complete autonomous coding journey and default model qualifications remain unqualified. | Re-resolve exact-candidate checks and automated review before delegated actions; reconcile unknown effects. Complete human security and acceptance review on the open PR before merge for high-assurance work. | Keep the source branch at the exact handoff commit and preserve the packet/artifacts. Resume requires verified branch, SHA, candidate, source revision, and prior-writer liveness; unknown liveness blocks transfer. Never delete a lock or journal to force recovery.                        |
 | **5. Optional integrations and troubleshooting**     | A supported host adapter/integration and its own declared capabilities; core run configuration.                                                                      | Add a supported integration or diagnose its availability while retaining explicit readiness boundaries.                           | Use the configured source and checks in run operations. Optional host ports such as `observeUsage`, `requestSafeStop`, GitHub check/lifecycle observers, and deployment/rollback observers require an integration; they are not generic `meshloop`/`otel` configuration switches.                                                                                                       | Only an integration's returned, re-resolved observations can establish its declared outcome. The stock CLI does not claim to deploy, operate a scheduler, enforce provider cancellation, or gracefully fall back for an unavailable optional adapter.                                            | Record supported facets and their evidence; keep unsupported or unavailable facets explicit and continue only through a separately configured direct path.                                                     | Disable or remove an integration through its documented host configuration and reconcile pending operations first. Keep source events and receipts; do not discard uncertain outcomes.                                                                                                        |
 
-The public delegation journey test at `scripts/__tests__/delegation-journey.test.mjs` conditionally checks the checkout source skill only when `skills/agentflow-coordinator/SKILL.md` exists. If that file is absent, the test skips the assertion; a green run therefore does not prove the skill is present in source or package output. This remains separate from documentation coverage and end-to-end qualification.
+## Current qualification and remaining adoption proof
+
+The canonical skills are defined by `manifests/skill-catalog.json`. Source checks require every
+catalogued `SKILL.md`; package parity compares their bytes. The obsolete coordinator name is not
+a supported installation target. Installed runtime links remain outside these source checks.
+
+For journey 4, reuse [public delivery qualification](live-delivery-qualification.md) for the
+actual GitHub action, replay, revocation and layered fault evidence. Its stated environment and
+limitations remain binding; it is not a clean-context adoption proof.
+For journey 5, configure [minimal Meshloop integration](meshloop-minimal-integration.md) only for
+its pinned supported facet, or [optional observability](observability.md) for process telemetry.
+The generic host ports in the table are separate from these implemented optional adapters.
+A verified engineering result never accepts an SDLC gate or applies a commit automatically.
+
+Issue #304 qualifies the five journeys above from packaged entrypoints. Existing/partial setup
+includes shared skills; old/unknown setup includes separate update deferral and selective recovery.
+These variants do not require duplicating the whole delivery/fault matrix. Existing #301-303
+receipts and regression tests are reused with explicit boundaries. Prior evidence is not relabeled
+as a fresh cold-reader pass; broad model/host qualification and efficiency targets are excluded.
+
+For the actual package versions, journey results and interventions, see
+[packaged adoption qualification](adoption-qualification.md).
 
 ## Documentation integrity rules
 

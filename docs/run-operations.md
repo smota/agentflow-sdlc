@@ -9,6 +9,13 @@ agentflow-sdlc doctor-env --inspect --target <project> --json
 agentflow-sdlc run --help
 ```
 
+Run input files (`--plan`, `--request`, `--operation`, `--packet`, consent and acceptance files)
+must be regular files inside `--target`, without symlink/junction traversal. Prefer ignored
+`.agent-runs/` for temporary inputs; keep them outside `delivery.candidate.inputs`. Relative paths
+are resolved against the target, not the shell's directory. An absolute path is allowed only if it
+is still inside that target. For fresh-root resume, copy the preserved packet into the new target's
+ignored `.agent-runs/` before invoking the command.
+
 Configure `agent-workflow.config.json.delivery` with a source (`local-preview` or `github`), candidate input manifest, named checks, per-role acceptance files and per-role collaboration bundles. For GitHub also supply the exact `repo` and optional coordination `branch`. Local preview never claims durable GitHub acknowledgment.
 
 For a GitHub source, `format` selects the coordination store. Omit it or set `"v1"` for the legacy single-file store; `"segmented-v2"` selects segmented storage. Migration and this project configuration change are separate actions: `run migrate` never flips `source.format` for you.
@@ -56,6 +63,58 @@ The acceptance file uses `delivery-acceptance-v2.schema.json`. Its criterion `de
 Input files must exist. Include the actual project dependency lock, not an invented filename. Freeze criteria before running checks. Updating a requirement or check means freezing its new version and collecting current evidence again.
 
 For a GitHub source, `--goal` must be `issue:<number>` or an issue URL in the configured repository. The acceptance file's `goalRevision` is `recordDigest({repo, number, title, body, updatedAt})` from the current GitHub issue, with `updatedAt` taken from `updated_at`. The CLI re-fetches it when freezing and accepting; a human edit invalidates the frozen revision. A local preview uses its local contract digest and does not claim external source verification.
+
+### Prepare a GitHub acceptance revision without importing package internals
+
+After `init` has seeded a meaningful project check, keep its criterion definition digest unchanged
+unless the check or candidate inputs change. Switching to a GitHub source requires replacing the
+starter acceptance file's `goalRevision` with the exact issue revision. Read the issue through
+`gh api repos/OWNER/REPO/issues/NUMBER` and save its JSON outside candidate inputs. Use the returned
+`updated_at` field, not the timestamp of this local command.
+
+For JSON records, `recordDigest` means SHA-256 of UTF-8 canonical JSON: remove only the top-level
+`digest` property, sort object keys recursively, retain array order, and omit undefined object
+properties. Use ordinary JSON values (no undefined array entries or nonfinite numbers).
+This standalone Node recipe can prepare the documented acceptance file without package imports:
+
+```javascript
+// Save as prepare-goal.mjs outside the candidate. Run:
+// node prepare-goal.mjs OWNER/REPO issue.json /target/agentflow-acceptance.json
+import { readFileSync, writeFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+const [repo, issueFile, acceptanceFile] = process.argv.slice(2)
+const canonical = (value) =>
+  Array.isArray(value)
+    ? `[${value.map(canonical).join(',')}]`
+    : value && typeof value === 'object'
+      ? `{${Object.keys(value)
+          .filter((key) => value[key] !== undefined)
+          .sort()
+          .map((key) => `${JSON.stringify(key)}:${canonical(value[key])}`)
+          .join(',')}}`
+      : JSON.stringify(value)
+const issue = JSON.parse(readFileSync(issueFile, 'utf8'))
+const acceptance = JSON.parse(readFileSync(acceptanceFile, 'utf8'))
+acceptance.goalRevision = createHash('sha256')
+  .update(
+    canonical({
+      repo,
+      number: issue.number,
+      title: issue.title,
+      body: issue.body,
+      updatedAt: issue.updated_at,
+    }),
+  )
+  .digest('hex')
+writeFileSync(acceptanceFile, JSON.stringify(acceptance, null, 2) + '\n')
+```
+
+Review and commit the target's configuration and acceptance file before the durable run. Use
+`run source-plan` and its `result.digest` with `run start --setup-confirm`; select a dedicated
+coordination branch, distinct from the candidate branch. Start with the real issue goal, explicit
+writer and writer PID. `freeze` and `verify` establish a supported observed result; they do not
+require or imply phase acceptance. To advance, additionally supply the bilateral bundle and
+phase-zero consent described below. Never fabricate either to make the starter pass a later gate.
 
 ### Migrate a GitHub run to segmented storage
 
@@ -138,7 +197,7 @@ and merge commit. GitHub's conditional merge protects the head SHA, not an atomi
 base-branch comparison; cooperative deployments must exclude concurrent retargeting.
 A human candidate-release gate blocks this cooperative merge path.
 
-The `edit` action reaches a configured engineering provider and records its bounded receipt/output, but this command path does not establish a qualified end-to-end autonomous coding model. A provider must pass its actual target, model, capability, boundary and receipt checks. Default models have no qualification claim, and the currently available Meshloop binary does not match the required adapter qualification. A returned edit result is not proof that the integrated workflow, tests, review, or final candidate were accepted. Keep human high-assurance security and acceptance review on the open PR before merge.
+The `edit` action reaches a configured engineering provider and records its bounded receipt/output, but this command path does not establish a qualified end-to-end autonomous coding model. A provider must pass its actual target, model, capability, boundary and receipt checks. Default models have no qualification claim. The optional Meshloop path requires the explicitly pinned binary and configuration in [minimal Meshloop integration](process-autonomy/meshloop-minimal-integration.md); that qualification uses a deterministic worker and does not qualify arbitrary LLM models. A returned edit result is not proof that the integrated workflow, tests, review, or final candidate were accepted. Keep human high-assurance security and acceptance review on the open PR before merge.
 
 For a durable GitHub run, the engineering checkpoint can contain provider output and inline artifact bytes. It is withheld by default. To authorize publishing this bounded evidence to the configured coordination branch, set the exact `sourceEvidenceDisclosure` value below before issuing an edit operation:
 
@@ -178,13 +237,28 @@ All run output is a versioned JSON envelope. Exit codes: `0` success, `2` invali
 
 For a local-preview run, `agentflow-sdlc run resume demo --writer replacement --writer-pid <pid>` previews recovery. Save the returned plan and apply with `--plan <file> --confirm <digest> --generation <old-generation> --execute`. The plan includes the replacement identity. An unknown prior writer, changed preconditions or unresolved operation blocks transfer. Use the returned generation for subsequent commands.
 
-For a durable GitHub run, the supported entrypoints are top-level `handoff` and `resume`; pass the run ID as `--run`. Handoff requires `--execute`, a clean checkout with all work committed, and the configured source branch already pointing at the exact local `HEAD`. The run's candidate digest must match. The emitted continuation packet records that branch and commit SHA, source revision, run state, and SHA-256 references with byte lengths for every configured candidate input. Save the JSON `result` as a packet file for the next invocation.
+For a durable GitHub run, the supported entrypoints are top-level `handoff` and `resume`; pass the run ID as `--run`. Handoff requires `--execute`, a clean checkout with all work committed, and the candidate branch in the configured GitHub repository already pointing at the exact local `HEAD`. The run's candidate digest must match. The emitted continuation packet records that branch and commit SHA, source revision, run state, and SHA-256 references with byte lengths for every configured candidate input. Save the JSON `result` as a packet file for the next invocation.
 
 ```text
-agentflow-sdlc handoff --run demo --target <project> --execute --json
-agentflow-sdlc resume --run demo --packet continuation.json --target <project> --json
-agentflow-sdlc resume --run demo --packet continuation.json --plan recovery-plan.json --confirm <plan-digest> --execute --generation <old-generation> --target <project> --json
+agentflow-sdlc handoff --run demo --writer operator --generation <current-generation> --target <project> --execute --json
+agentflow-sdlc resume --run demo --packet .agent-runs/continuation.json --writer replacement --writer-pid <replacement-pid> --target <project> --json
+agentflow-sdlc resume --run demo --packet .agent-runs/continuation.json --plan .agent-runs/recovery-plan.json --confirm <plan-digest> --writer replacement --writer-pid <replacement-pid> --execute --generation <old-generation> --target <project> --json
 ```
+
+For a fresh-root continuation, push the candidate branch to the configured repository before
+handoff. The packet records the candidate branch, not the separate coordination branch. Clone that exact branch and commit for resume; retain target configuration and any required
+untracked input files through an explicitly reviewed transfer. Keep packets/plans outside candidate
+inputs. Configure Git line-ending policy before creating the original candidate and use the same
+policy in the new checkout (for example, a project-owned `.gitattributes` with `* text eol=lf` for
+an LF-only project). A clean Git status alone does not prove byte identity under different checkout
+filters. If the packet's byte digests differ, stop and correct the materialization policy; do not
+rewrite the packet or silently repair individual bytes to manufacture a passing qualification.
+
+For handoff, use the current owner and generation from `run status`; the implicit OS-user
+identity will be stale if the run was started with another `--writer`. For resume preview and
+apply, use the same explicit replacement name and its actual live process PID. Save the preview's
+`result` as the plan and use its `result.digest` as confirmation; apply with the packet's old generation, then use the returned
+new generation. Do not use a made-up PID to bypass the recorded prior-writer liveness check.
 
 The packet-backed resume checks the packet against the authoritative run and source revision, its recorded writer generation, exact workspace branch and commit, candidate digest, candidate input bytes, and prior-writer liveness. It then produces a recovery plan; applying that plan rechecks pending operations and liveness before generation transfer. A packet alone neither copies files nor starts an agent. The stock liveness observer can prove a writer stopped only when it can inspect that PID on its recorded host; a different host or uncertain PID remains blocked. No timeout grants takeover. Never delete a lock or journal to force recovery; preserve the evidence and resolve the specific unknown state.
 

@@ -40,6 +40,32 @@ A changed executable digest fails preflight rather than silently requalifying it
 Model selection remains in the Meshloop config; requestedModel must be null.
 Keep the configured database/worktree namespace stable across observation/cancel.
 
+For example, merge this optional selection into the existing project configuration. Replace
+all placeholders with runtime-resolved absolute paths and the actual binary hash; paths are not
+AgentFlow installation instructions. Do not add the disclosure setting without the project's
+explicit decision to publish bounded evidence to its coordination source.
+
+```json
+{
+  "delivery": {
+    "engineeringProvider": {
+      "id": "meshloop-engineering-cli",
+      "executionTarget": "meshloop-cli",
+      "requestedModel": null,
+      "permissionBoundary": "mutate-worktree",
+      "sourceEvidenceDisclosure": "bounded-output-and-artifacts",
+      "connection": {
+        "executable": "/runtime/meshloop",
+        "binarySha256": "<SHA-256 of executable bytes>",
+        "configFile": "/runtime/meshloop.toml",
+        "dbFile": "/runtime/qualification.sqlite",
+        "worktreeBase": "/runtime/worktrees"
+      }
+    }
+  }
+}
+```
+
 For source-backed engineering evidence, the existing
 sourceEvidenceDisclosure = bounded-output-and-artifacts setting still requires
 the project's explicit disclosure decision. This integration does not enable it.
@@ -48,7 +74,11 @@ Prepare the normal Meshloop nodes in a bounded JSON plan. Set graph_id using the
 exported meshloopGraphId(identity, nodes, configSha256) helper from
 lib/providers/meshloop-engineering.mjs, where identity is
 { version: 1, operationId, candidateDigest } and configSha256 hashes original
-config bytes. This opaque ID binds the graph to the operation, candidate, nodes
+config bytes. Without a package import, the same public wire ID is `af-` plus the first
+40 lowercase hex characters of SHA-256 over UTF-8 `JSON.stringify({ identity, nodes, configSha256 })`.
+Preserve that insertion order, including `identity` keys `version`, `operationId`, `candidateDigest`;
+this graph recipe is not the recursively sorted record-digest algorithm. Use the candidate digest
+reported by the current run and the exact operation ID that will be admitted. This opaque ID binds the graph to the operation, candidate, nodes
 and runtime configuration. Meshloop itself need not understand AgentFlow fields.
 
 The admitted edit operation supplies arguments.requestPayload.planFile, explicit
@@ -98,9 +128,12 @@ out-of-scope files, stale branch, ambiguous existence, and cancellation.
 Existing Meshloop/provider suites retain parser, timeout, output-bound and byte
 integrity regressions. Missing optional configuration preserves the direct path.
 
-Run pnpm exec vitest run lib/**tests**/meshloop-engineering.test.mjs
-lib/**tests**/meshloop-provider.test.mjs
-lib/**tests**/engineering-neutral-conformance.test.mjs.
+For maintainers testing the checkout source:
+
+```text
+pnpm exec vitest run lib/__tests__/meshloop-engineering.test.mjs lib/__tests__/meshloop-provider.test.mjs lib/__tests__/engineering-neutral-conformance.test.mjs
+```
+
 The tests use controlled envelopes and real Git; the pinned Windows CLI evidence
 above is a separate qualification claim. Other binary/model/host combinations
 need qualification before equivalent claims.
