@@ -1,5 +1,10 @@
 # Process autonomy completion evidence
 
+> Current scope for #303 was amended with maintainer approval on 2026-09-30:
+> [process observability scope](process-autonomy-execution-plan.md#approved-scope-amendment-process-observability-303).
+> Historical efficiency targets and results below are retained as evidence, not
+> current #303 acceptance gates.
+
 This implementation follows the [reconciliation](process-autonomy-reconciliation.md) of
 #297 and #300–304, based on development `67bb34f`. It preserves the original A1–A9
 acceptance criteria. Implementation, fixture qualification, live qualification and

@@ -1,5 +1,10 @@
 # Process autonomy: full acceptance reconciliation
 
+> Current scope for #303 was amended with maintainer approval on 2026-09-30:
+> [process observability scope](process-autonomy-execution-plan.md#approved-scope-amendment-process-observability-303).
+> Historical efficiency targets and results below are retained as evidence, not
+> current #303 acceptance gates.
+
 Audit date: 2026-09-28. Subject: AgentFlow development
 `b0b01cb20afd716a4c1692807a9a90237b57b7b0` (PR #298).
 Tracking: [#299](https://github.com/smota/agentflow-sdlc/issues/299).
