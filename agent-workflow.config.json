@@ -113,7 +113,10 @@
   },
   "delivery": {
     "source": {
-      "kind": "local-preview"
+      "kind": "github",
+      "repo": "smota/agentflow-sdlc",
+      "branch": "qualification304-cold-20260930-202014",
+      "format": "v1"
     },
     "candidate": {
       "inputs": [
