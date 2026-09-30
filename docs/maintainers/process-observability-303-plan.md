@@ -2,29 +2,29 @@
 
 Date: 2026-09-30. Issue: [#303](https://github.com/smota/agentflow-sdlc/issues/303).
 Inspected product source: development 2f13fca; scope amendment b965299.
-This is a source inspection, not runtime qualification. The approved scope in
+This map records the pre-implementation source inspection. Subsequent implementation and qualification are recorded in [the qualification report](process-observability-303-qualification.md). The approved scope in
 [the execution plan](process-autonomy-execution-plan.md#approved-scope-amendment-process-observability-303)
 governs this work.
 
 ## Existing boundaries and gaps
 
-| Concern | Existing producer or consumer | Remaining work |
-| --- | --- | --- |
-| Durable process transitions | application/run-service.mjs emits run_event_attempted/appended/failed with eventKind, runId and eventId | Append observations describe event kinds but omit phase/role context. Define bounded process metadata so handovers and validation transitions can be interpreted without exporting payloads. Preserve attempted versus acknowledged semantics. |
-| Sessions | scripts/run-delivery.mjs supplies runId/sessionId; observability/otel.mjs parents events under a session span | Prove stable run correlation across fresh processes and distinct session identity. Each session currently starts at ROOT_CONTEXT; do not claim remote parent propagation. |
-| Execution attempts | run-delivery verification has attemptId; delegated act events carry operationId | Distinguish invocation attempts from durable operations and close observational attempts on exceptions without falsely claiming provider cancellation or known outcome. |
-| Verification and recovery | run-delivery emits outcome/duration; lifecycle events represent observations and resumed state | Test failure, pause and fresh-session continuation together. Recovery temperature is not consistently produced; report unknown rather than expand into a cold/warm optimization campaign. |
-| Source and context | github-api-cli emits client/CLI observations; run-delivery emits context_admitted | Document exact measured boundaries. CLI invocation and observed client response are not two independent HTTP calls; packet bytes are not provider token usage. No savings qualification required. |
-| Optional collection | observability/observer.mjs, otel.mjs, bounded-trace-processor.mjs and local spool | Reuse architecture and bounds. Qualify disabled/enabled/offline/export-failure equivalence for the representative process. |
-| Privacy | events.mjs rejects unknown fields and hashes identifiers | Extend planted-value tests for any new phase/role/attempt metadata and export paths. Hashing identifiers is not a universal anonymity guarantee. |
-| Consumption | analysis.mjs and scripts/analyze-telemetry.mjs aggregate surviving records | Provide process-oriented coverage and usable correlation evidence. Do not infer complete history or absent failures from missing records; historical losses remain unknown without a retained report. |
-| Adoption | docs/process-autonomy/observability.md describes setup and analysis | Refresh stale producer claims and historical full-matrix requirement. Demonstrate enablement, verification and consumption without this conversation or mandatory Meshloop. |
-| Instrumentation overhead | scripts/benchmark-run-telemetry.mjs compares local-preview modes | Equalize timing boundaries: disabled currently uses caller duration while enabled/offline use emitted internal session duration. Report cost, not savings; no inherited numeric release gate. |
+| Concern                     | Existing producer or consumer                                                                                 | Remaining work                                                                                                                                                                                                                                 |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Durable process transitions | application/run-service.mjs emits run_event_attempted/appended/failed with eventKind, runId and eventId       | Append observations describe event kinds but omit phase/role context. Define bounded process metadata so handovers and validation transitions can be interpreted without exporting payloads. Preserve attempted versus acknowledged semantics. |
+| Sessions                    | scripts/run-delivery.mjs supplies runId/sessionId; observability/otel.mjs parents events under a session span | Prove stable run correlation across fresh processes and distinct session identity. Each session currently starts at ROOT_CONTEXT; do not claim remote parent propagation.                                                                      |
+| Execution attempts          | run-delivery verification has attemptId; delegated act events carry operationId                               | Distinguish invocation attempts from durable operations and close observational attempts on exceptions without falsely claiming provider cancellation or known outcome.                                                                        |
+| Verification and recovery   | run-delivery emits outcome/duration; lifecycle events represent observations and resumed state                | Test failure, pause and fresh-session continuation together. Recovery temperature is not consistently produced; report unknown rather than expand into a cold/warm optimization campaign.                                                      |
+| Source and context          | github-api-cli emits client/CLI observations; run-delivery emits context_admitted                             | Document exact measured boundaries. CLI invocation and observed client response are not two independent HTTP calls; packet bytes are not provider token usage. No savings qualification required.                                              |
+| Optional collection         | observability/observer.mjs, otel.mjs, bounded-trace-processor.mjs and local spool                             | Reuse architecture and bounds. Qualify disabled/enabled/offline/export-failure equivalence for the representative process.                                                                                                                     |
+| Privacy                     | events.mjs rejects unknown fields and hashes identifiers                                                      | Extend planted-value tests for any new phase/role/attempt metadata and export paths. Hashing identifiers is not a universal anonymity guarantee.                                                                                               |
+| Consumption                 | analysis.mjs and scripts/analyze-telemetry.mjs aggregate surviving records                                    | Provide process-oriented coverage and usable correlation evidence. Do not infer complete history or absent failures from missing records; historical losses remain unknown without a retained report.                                          |
+| Adoption                    | docs/process-autonomy/observability.md describes setup and analysis                                           | Refresh stale producer claims and historical full-matrix requirement. Demonstrate enablement, verification and consumption without this conversation or mandatory Meshloop.                                                                    |
+| Instrumentation overhead    | scripts/benchmark-run-telemetry.mjs compares local-preview modes                                              | Equalize timing boundaries: disabled currently uses caller duration while enabled/offline use emitted internal session duration. Report cost, not savings; no inherited numeric release gate.                                                  |
 
 Paths in the table are under lib/ unless explicitly prefixed scripts/ or docs/.
 Existing tests include telemetry, telemetry-producers, telemetry-privacy,
 telemetry-boundary-review, telemetry-queue, telemetry-spool, telemetry-analysis
-and process-analysis-dimensions suites in lib/__tests__/. Their presence is not
+and process-analysis-dimensions suites in lib/**tests**/. Their presence is not
 a claim that the updated acceptance passes.
 
 ## Ordered implementation slices

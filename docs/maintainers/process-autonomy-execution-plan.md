@@ -36,6 +36,7 @@ a documented optional interface; neither product requires the other or a shared
 telemetry backend.
 
 In scope:
+
 - Optional OpenTelemetry/OTLP export and bounded local capture.
 - Run/session/attempt correlation and explicitly documented supported event coverage.
 - Available durations, outcomes and boundary measurements, with unavailable data
@@ -46,6 +47,7 @@ In scope:
   collection, consumption and cross-session correlation.
 
 Out of scope:
+
 - Guaranteed source-call, common-context, token or financial-cost reductions.
 - Prompt/model/inference-cache optimization, persistence or transport redesign
   solely to achieve savings, and instrumentation of inaccessible harness internals.

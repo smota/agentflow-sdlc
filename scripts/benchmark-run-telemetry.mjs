@@ -54,25 +54,6 @@ const summary = (values) => ({
   p50Ms: Number(percentile(values, 0.5).toFixed(3)),
   p95Ms: Number(percentile(values, 0.95).toFixed(3)),
 })
-const attrs = (span) =>
-  Object.fromEntries(
-    (span.attributes ?? []).map(({ key, value }) => [
-      key,
-      value?.intValue === undefined
-        ? (value?.doubleValue ?? value?.stringValue)
-        : Number(value.intValue),
-    ]),
-  )
-function readSessionDurations(payload) {
-  const spans =
-    payload?.resourceSpans
-      ?.flatMap((resource) => resource.scopeSpans ?? [])
-      .flatMap((scope) => scope.spans ?? []) ?? []
-  return spans
-    .filter((span) => span.name === 'session')
-    .map((span) => attrs(span).duration)
-    .filter((value) => Number.isFinite(value) && value >= 0)
-}
 function freshFixture(mode, sample) {
   const root = mkdtempSync(join(tempRoot, `${mode}-${sample}-`))
   const app = 'module.exports = (value) => value.trim().toLowerCase()\n'
@@ -131,21 +112,6 @@ function payloadsFromSpool(root) {
     .filter((name) => name.endsWith('.json'))
     .map((name) => JSON.parse(readFileSync(join(dir, name), 'utf8')).payload)
 }
-function spansIn(payload) {
-  return (
-    payload?.resourceSpans
-      ?.flatMap((resource) => resource.scopeSpans ?? [])
-      .flatMap((scope) => scope.spans ?? []) ?? []
-  )
-}
-function offlineSessionDurations(payloads) {
-  return payloads
-    .flatMap((payload) => (payload.kind === 'traces' ? payload.records : []))
-    .filter((record) => record.name === 'session')
-    .map((record) => record.attributes?.duration)
-    .filter((value) => Number.isFinite(value) && value >= 0)
-}
-
 let otlpEndpoint
 await new Promise((resolveListen, reject) => {
   server.once('error', reject)
@@ -161,7 +127,7 @@ try {
     const order = MODES.slice(rotate).concat(MODES.slice(0, rotate))
     for (const mode of order) {
       const root = freshFixture(mode, sample)
-      const durations = []
+
       const commandResults = []
       const outputs = []
       const requestStart = requests.length
@@ -171,14 +137,18 @@ try {
         const originalWrite = process.stderr.write
         if (mode !== 'disabled') process.stderr.write = () => true
         let code
+        let timing
         try {
           code = await runDelivery([...commandArgs, '--target', root, '--json'], {
             emit: (value) => outputs.push(value),
+            onTiming: (value) => {
+              timing = value
+            },
           })
         } finally {
           process.stderr.write = originalWrite
         }
-        return { code, wallMs: performance.now() - start }
+        return { code, wallMs: performance.now() - start, ...timing }
       }
       const journeyStart = performance.now()
       commandResults.push(await runOne(['start', 'bench', '--goal', 'fixture:1', ...mutation]))
@@ -203,18 +173,11 @@ try {
           observed?.assertions?.map(({ id, outcome }) => ({ id, outcome })) ?? null,
       }
       const payloads = mode === 'offline' ? payloadsFromSpool(root) : []
-      const sessionDurations =
-        mode === 'disabled'
-          ? commandResults.map((item) => item.wallMs)
-          : mode === 'offline'
-            ? offlineSessionDurations(payloads)
-            : requests.slice(requestStart).flatMap(({ payload }) =>
-                spansIn(payload)
-                  .filter((span) => span.name === 'session')
-                  .map((span) => attrs(span).duration)
-                  .filter((value) => Number.isFinite(value) && value >= 0),
-              )
-      if (sessionDurations.length !== 3)
+      const sessionDurations = commandResults.map((item) => item.applicationMs)
+      if (
+        sessionDurations.length !== 3 ||
+        sessionDurations.some((value) => !Number.isFinite(value))
+      )
         throw new Error(
           `${mode} sample ${sample}: expected three application session durations; got ${sessionDurations.length}`,
         )
@@ -235,7 +198,7 @@ try {
           sample,
           journeyWallMs,
           appElapsedMs,
-          outsideApplicationMs: Math.max(0, journeyWallMs - appElapsedMs),
+          outsideApplicationMs: commandResults.reduce((sum, item) => sum + item.shutdownMs, 0),
           decision,
           collectorRequests: telemetryRequests.length,
           collectorBytes: telemetryRequests.reduce((total, request) => total + request.bytes, 0),
@@ -292,7 +255,13 @@ for (const mode of MODES) {
     const halfWidth = 2.201 * Math.sqrt(variance / deltas.length) // two-sided 95% t interval, df=11
     results[mode].pairedApplicationOverhead = {
       deltaMs: summary(deltas),
-      percent: finiteRatios.length === ratios.length ? summary(finiteRatios) : null,
+      percent:
+        finiteRatios.length === ratios.length
+          ? (() => {
+              const value = summary(finiteRatios)
+              return { count: value.count, p50Percent: value.p50Ms, p95Percent: value.p95Ms }
+            })()
+          : null,
       meanDeltaMs: Number(mean.toFixed(3)),
       confidence95MeanDeltaMs: [
         Number((mean - halfWidth).toFixed(3)),
@@ -326,7 +295,7 @@ const output = {
   },
   results,
   interpretation:
-    'Application elapsed is the runDelivery session duration emitted before exporter shutdown (disabled mode uses caller timing). Total journey wall includes exporter shutdown. A confidence interval crossing zero is reported as unstable; no target or qualification is implied.',
+    'Application elapsed uses the same invocation-start to pre-shutdown callback boundary in all modes. Outside application measures shutdown/flush including exporter work, not pure network latency. Total journey wall includes shutdown. This is a warm in-process local-preview workload, not cold process or full delivery qualification. A confidence interval crossing zero is reported as unstable; no target or qualification is implied.',
 }
 const outputPath = join(rootDir, 'integrated-telemetry.json')
 writeFileSync(outputPath, `${JSON.stringify(output, null, 2)}\n`)

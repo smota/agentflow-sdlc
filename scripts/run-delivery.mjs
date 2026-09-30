@@ -141,6 +141,7 @@ export async function runDelivery(
   {
     emit = (value) => process.stdout.write(`${JSON.stringify(value, null, 2)}\n`),
     resolveHostIntentConsent,
+    onTiming,
   } = {},
 ) {
   const flag = (name, fallback) => {
@@ -153,7 +154,9 @@ export async function runDelivery(
     return 0
   }
   const root = resolve(flag('--target', process.cwd()))
+  const invocationStarted = performance.now()
   let observer = null
+  let activeAttempt = null
   const sessionId = randomUUID()
   const sessionStarted = performance.now()
   const readJson = (path) => {
@@ -521,8 +524,14 @@ export async function runDelivery(
         const adapter = operation.action === 'edit' ? engineering : actions
         if (!adapter) throw new Error('Configured qualified engineering provider required')
         if (adapter.preflight) await adapter.preflight(operation)
+        activeAttempt = {
+          attemptId: randomUUID(),
+          operationId: operation.id,
+          started: performance.now(),
+        }
         emitObservation(observer, {
           kind: 'execution_attempt',
+          attemptId: activeAttempt.attemptId,
           state: 'started',
           operationId: operation.id,
         })
@@ -568,9 +577,11 @@ export async function runDelivery(
         emitObservation(observer, {
           kind: 'execution_attempt',
           operationId: operation.id,
+          attemptId: activeAttempt.attemptId,
           state: result.state === 'confirmed' ? 'completed' : 'unknown',
           duration: performance.now() - attemptStarted,
         })
+        activeAttempt = null
       }
     } else if (command === 'source-plan') {
       if (!client) throw new Error('Source setup planning requires a GitHub binding')
@@ -689,6 +700,7 @@ export async function runDelivery(
       const attemptId = randomUUID()
       const attemptStarted = performance.now()
       emitObservation(observer, { kind: 'execution_attempt', state: 'started', attemptId })
+      activeAttempt = { attemptId, started: attemptStarted }
       const collected = collectProcessObservation({ root, definition, boundary })
       emitObservation(observer, {
         kind: 'execution_attempt',
@@ -696,6 +708,7 @@ export async function runDelivery(
         state: collected.observation.outcome === 'pass' ? 'completed' : 'failed',
         duration: performance.now() - attemptStarted,
       })
+      activeAttempt = null
       if (state.candidateDigest !== collected.candidate.digest) {
         await service.record(
           'candidate',
@@ -903,6 +916,16 @@ export async function runDelivery(
         ? 3
         : 0
   } catch (error) {
+    if (activeAttempt) {
+      emitObservation(observer, {
+        kind: 'execution_attempt',
+        attemptId: activeAttempt.attemptId,
+        operationId: activeAttempt.operationId,
+        state: 'unknown',
+        duration: performance.now() - activeAttempt.started,
+      })
+      activeAttempt = null
+    }
     emitObservation(observer, {
       kind: 'session',
       state: 'failed',
@@ -910,12 +933,20 @@ export async function runDelivery(
     })
     throw error
   } finally {
+    const shutdownStarted = performance.now()
+    const applicationMs = shutdownStarted - invocationStarted
     try {
       await telemetry.shutdown()
       if (executionAdapter.observability?.enabled && telemetry.getReport) {
         process.stderr.write(`${JSON.stringify({ telemetry: telemetry.getReport() })}\n`)
       }
     } catch (e) {}
+    // Measurement is advisory and uses the same boundaries in every mode.
+    emitObservation(onTiming, {
+      applicationMs,
+      shutdownMs: performance.now() - shutdownStarted,
+      totalMs: performance.now() - invocationStarted,
+    })
   }
 }
 
