@@ -11,6 +11,34 @@ afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true })
 })
 describe('run CLI consumer journey', () => {
+  it.each(['handoff', 'resume'])(
+    'routes the public %s alias to the run service and preserves its error envelope',
+    (command) => {
+      const root = mkdtempSync(join(tmpdir(), 'agentflow-continuation-alias-'))
+      roots.push(root)
+      writeFileSync(
+        join(root, 'agent-workflow.config.json'),
+        JSON.stringify({
+          delivery: { source: { kind: 'local-preview' }, candidate: { inputs: [] } },
+        }),
+      )
+      const invoke = (args) =>
+        spawnSync(process.execPath, [cli, ...args, '--execute', '--target', root, '--json'], {
+          encoding: 'utf8',
+          timeout: 15000,
+        })
+      const direct = invoke(['run', command, 'missing'])
+      const alias = invoke([command, '--run', 'missing'])
+      expect(direct.status).not.toBe(0)
+      expect(alias.status).toBe(direct.status)
+      expect(JSON.parse(alias.stdout)).toEqual(JSON.parse(direct.stdout))
+      expect(alias.stderr).not.toMatch(/Promise|ReferenceError|ERR_INVALID_ARG_TYPE/)
+      const missingId = invoke([command])
+      expect(missingId.status).toBe(1)
+      expect(missingId.stderr).toContain('--run <id> is required')
+    },
+  )
+
   it('starts, freezes, observes real tests, and reports a blocked gate without inventing acceptance', () => {
     const root = mkdtempSync(join(tmpdir(), 'agentflow-run-cli-'))
     roots.push(root)
