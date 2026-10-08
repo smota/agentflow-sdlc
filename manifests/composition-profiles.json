@@ -45,6 +45,7 @@
         "roles/pr-readiness/ROLE.md",
         "roles/product-manager/ROLE.md",
         "roles/qa-expert/ROLE.md",
+        "roles/requester/ROLE.md",
         "roles/reviewer/ROLE.md",
         "roles/technical-writer/ROLE.md",
         "roles/tester/ROLE.md",

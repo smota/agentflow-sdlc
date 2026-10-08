@@ -37,14 +37,14 @@ async function project() {
   const bilateral = createAcceptanceContract({
     id: 'handover-policy',
     subject: 'issue:301',
-    ownerRole: 'agentflow:product-manager',
+    ownerRole: 'agentflow:requester',
     deliveryRole: 'agentflow:product-manager',
     collaborationClass: 'linear',
     candidateDigest: digest,
     criteria: [
       { id: 'test', description: 'Observed check', verification: 'deterministic', required: true },
     ],
-    councilPolicy: { required: false, seats: [], decisionOwner: 'agentflow:product-manager' },
+    councilPolicy: { required: false, seats: [], decisionOwner: 'agentflow:requester' },
   })
   const handoff = createRoleHandoff({
     id: 'handover',

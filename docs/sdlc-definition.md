@@ -65,6 +65,10 @@ The product catalog maps the workflow slugs to qualified identities such as
 [`roles/index.md`](roles/index.md). Roles are accountability contracts; actors execute them, skills
 supply capabilities, and method plays customize how they operate.
 
+Phase 0 is entered by a catalog handoff from `agentflow:requester`. That bootstrap role is not a
+numbered lifecycle phase. The product manager remains phase 0 and owns delivery; the requester owns
+acceptance.
+
 Canonical sequence:
 
 0. Product manager
@@ -90,7 +94,8 @@ Each role pass records issue, branch, role, profile, owner/executor/provenance, 
 
 | Role                   | Owns                                           | Reads                          | Writes                                 | Handoff                                     |
 | ---------------------- | ---------------------------------------------- | ------------------------------ | -------------------------------------- | ------------------------------------------- |
-| Product manager        | goal purpose, user/job framing, release intent | user request, product docs     | goal/epic framing                      | clear job/problem to Analyst                |
+| Requester              | opening request                                | user request                   | request record                         | opening handoff to Product manager          |
+| Product manager        | goal purpose, user/job framing, release intent | opening request, product docs  | goal/epic framing                      | clear job/problem to Analyst                |
 | Analyst                | requirements, acceptance, scope boundary       | goal framing, comments         | acceptance criteria, open questions    | testable scope to Architect                 |
 | Architect              | path selection, technical design, risk         | requirements, constraints      | design, risk, profile                  | plan-ready design to Implementation planner |
 | Implementation planner | implementation and validation plan             | design, repo context           | file/test/doc plan                     | executable plan to Developer                |
