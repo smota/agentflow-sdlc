@@ -58,7 +58,7 @@ that skip is recorded with a reason.
 | 7     | Technical writer       | Confirm technical/user docs and screenshot decisions     | role-pass       |
 | 8     | PR readiness           | Confirm merge contract and closeout state                | role-pass       |
 
-`qa-expert` is an optional exploratory QA sidecar role, not a numbered phase in the deterministic sequence. Use it when exploratory/manual testing can add value beyond Phase 5 `tester` evidence. See [`docs/agents/qa-expert.md`](agents/qa-expert.md).
+`agentflow:requester` is the bootstrap sender into phase 0. It is not a numbered phase. The product manager remains phase 0, owns that phase's delivery, and does not accept a self-handoff. `qa-expert` is an optional exploratory QA sidecar role, not a numbered phase and not the phase-0 sender. Use it when exploratory/manual testing can add value beyond Phase 5 `tester` evidence. See [`docs/agents/qa-expert.md`](agents/qa-expert.md).
 
 ### Allowed transitions
 
@@ -74,9 +74,11 @@ Any other transition is a workflow defect and must be logged in the workflow art
 ### Bilateral handover acceptance
 
 Every executed transition issues an immutable `RoleHandoff` with an embedded
-`AcceptanceContract`. The next role returns a `DeliveryReceipt`; deterministic validation runs
-before the sending role records an `AcceptanceDecision` or a bounded `ReworkRequest`. The sender
-accepts only the criteria it handed over and does not replace the receiver's specialist ownership.
+`AcceptanceContract`. Phase 0 is the same shape: `agentflow:requester` accepts and
+`agentflow:product-manager` delivers. The next role returns a `DeliveryReceipt`; deterministic
+validation runs before the sending role records an `AcceptanceDecision` or a bounded
+`ReworkRequest`. The sender accepts only the criteria it handed over and does not replace the
+receiver's specialist ownership.
 
 Complexity rules select `linear`, `bilateral`, `council`, or `human-gated` collaboration. Councils
 are advisory role perspectives over one evidence digest. The current accountable role dispositions

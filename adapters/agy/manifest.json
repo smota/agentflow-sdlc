@@ -15,6 +15,7 @@
     "agentflow-auditor"
   ],
   "roles": [
+    "requester",
     "product-manager",
     "analyst",
     "architect",

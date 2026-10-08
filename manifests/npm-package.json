@@ -94,6 +94,7 @@
     "roles/technical-writer/ROLE.md",
     "roles/pr-readiness/ROLE.md",
     "roles/qa-expert/ROLE.md",
+    "roles/requester/ROLE.md",
     "skills/agentflow-orchestrator/SKILL.md",
     "skills/agentflow-collaborator/SKILL.md",
     "skills/agentflow-collaborator/references/collaboration-modes.md",
