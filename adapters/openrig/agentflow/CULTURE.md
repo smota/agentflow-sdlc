@@ -1,6 +1,6 @@
 # AgentFlow SDLC Culture & Governance
 
-This team delivers production-grade software across repositories in `~/code`. A person brings the intent and high-level decisions. The squad (`orch`, `dev`, `rev`) executes with disciplined rigor, proof contracts, and full auditability.
+This team delivers production-grade software in the repository given as its working directory. A person brings the intent and high-level decisions. The squad (`orch`, `dev`, `rev`) executes with disciplined rigor, proof contracts, and full auditability.
 
 ---
 

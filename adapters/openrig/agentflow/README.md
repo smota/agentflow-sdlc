@@ -1,6 +1,6 @@
 # AgentFlow SDLC Rig
 
-An autonomous, full-lifecycle engineering squad for parallel, independent software development across projects in `~/code`. Governed by AgentFlow SDLC contracts, Four-Eyes independence, isolated Git Worktrees, proof-driven delivery, and Council deliberation for complex decisions.
+An autonomous, full-lifecycle engineering squad for parallel, independent software development in the repository given as its working directory. Governed by AgentFlow SDLC contracts, Four-Eyes independence, isolated Git Worktrees, proof-driven delivery, and Council deliberation for complex decisions.
 
 ---
 
@@ -72,13 +72,13 @@ Launch the squad attached to any project directory with `--cwd`:
 
 ```bash
 # Recommended preset (balanced-grok-lead)
-rig up agentflow --cwd /home/sam/code/holoself
+rig up agentflow --cwd /path/to/project
 
 # Inverted Codex lead preset
-rig up agentflow --cwd /home/sam/code/holoself --preset inverted-codex-lead
+rig up agentflow --cwd /path/to/project --preset inverted-codex-lead
 
 # Dry run / inspection
-rig up agentflow --cwd /home/sam/code/holoself --plan
+rig up agentflow --cwd /path/to/project --plan
 ```
 
 ### Inspecting Rig Status
