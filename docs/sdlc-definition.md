@@ -169,16 +169,18 @@ work is on, so a reader needs no rig, seat, or team name to tell them apart.
 
 The phase 1 handoff names the outcome, the public journey, the constraints, the anti-goals, the
 references to read, and the unknowns. Verification steps are allowed. File-by-file edit
-instructions are not a product handoff. The machine check is that those fields are present.
-Whether the body prescribes how to build is a reviewer judgment.
+instructions are not a product handoff. `phase append` does not check this prose; its machine check
+is the transition envelope. Whether the fields are present, and whether the body prescribes files,
+is a reviewer judgment.
 
 When the built candidate and the spec disagree:
 
 - If the candidate violates frozen acceptance, delivery reworks it through the allowed returns, and
   the tester checks the remedy.
 - If the outcome, a constraint, or an anti-goal was wrong or has changed, that is an intent defect,
-  not delivery's to fix. Delivery stops through the agent escalation gate. The analyst revises the
-  acceptance criteria, and the person accepts the revised intent before delivery continues.
+  not delivery's to fix. Delivery stops, and the person accepts revised intent before delivery
+  continues. The phase graph has no edge from delivery back to phase 1, so this stop is not recorded
+  as a phase 1 pass.
 - If the spec is silent, delivery decides and records the decision in its role pass.
 
 Four acts stay separate. None stands in for another.
@@ -194,7 +196,7 @@ The door journey is written into the phase 1 acceptance criteria before the buil
 of that journey is tester evidence only. It does not show the goal was the right goal, and it does
 not authorize publish. Phase 6 does not perform the door test and does not read a door note as
 approval. The door judgment is not a numbered phase and adds no gate class and no record type. It
-is made through the existing person gates, and it names the goal revision, the spec revision, the
+is made through the existing `adequacy-of-intent` gate, and it names the goal revision, the spec revision, the
 candidate SHA, the journey, and what was observed. A bare "looks good" is not a door judgment.
 
 One actor may hold more than one role. The same actor must not be the developer, the reviewer, and
