@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { allowedNext, currentPhase, seatsFor } from '../lib/core/phase-graph.mjs'
 import { createFilesystemMedium } from '../lib/sources/filesystem-medium.mjs'
+import { resolveGitHubToken } from '../lib/sources/github-credential.mjs'
 import { createGitHubMedium } from '../lib/sources/github-medium.mjs'
 
 function flag(args, name) {
@@ -30,6 +31,7 @@ function mediumFrom(args) {
     return createGitHubMedium({
       repo: flag(args, '--repo'),
       number: flag(args, '--issue') ? Number(flag(args, '--issue')) : null,
+      token: resolveGitHubToken(),
     })
   }
   throw new Error('Set --medium filesystem or --medium github')
