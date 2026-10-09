@@ -1,0 +1,132 @@
+version: "0.2"
+name: agentflow
+summary: >
+  AgentFlow SDLC delivery squad for parallel, independent development across
+  projects with rigorous proof contracts, worktree isolation, dynamic complexity
+  matching, Council deliberation, and Grok 4.7 lead architecture and review.
+
+culture_file: CULTURE.md
+
+docs:
+  - path: README.md
+
+startup:
+  files:
+    - path: startup/context.md
+      delivery_hint: send_text
+      required: true
+  actions:
+    - type: startup_proof
+      value: authenticated
+      idempotent: true
+
+managed_blocks:
+  claude-code: CLAUDE.local.md
+
+permission_policy: builtin:yolo
+non_interruptive: true
+
+pods:
+  - id: orch
+    label: Orchestration & Governance
+    summary: Architect lead decomposes goals, sets workflow profiles (P0-P4), enforces proof contracts and convenes Council.
+    members:
+      - id: arch
+        agent_ref: "local:agents/agentflow"
+        profile: architect-pi
+        runtime: pi
+        model: "grok-cli/grok-4.7"
+        cwd: "."
+        startup:
+          files:
+            - path: startup/arch-lead.md
+              delivery_hint: send_text
+              required: true
+    edges: []
+
+  - id: dev
+    label: Development & Verification
+    summary: Capability ladder builders (Jr/Standard/Sr) implement in isolated worktrees; QA validates proof contracts.
+    members:
+      - id: build-jr
+        agent_ref: "local:agents/agentflow"
+        profile: builder-jr
+        runtime: claude-code
+        cwd: "."
+      - id: build
+        agent_ref: "local:agents/agentflow"
+        profile: builder
+        runtime: claude-code
+        cwd: "."
+      - id: build-sr
+        agent_ref: "local:agents/agentflow"
+        profile: builder-sr
+        runtime: claude-code
+        cwd: "."
+      - id: qa
+        agent_ref: "local:agents/agentflow"
+        profile: qa
+        runtime: codex
+        cwd: "."
+    edges:
+      - kind: delegates_to
+        from: build
+        to: qa
+      - kind: delegates_to
+        from: build-jr
+        to: qa
+      - kind: delegates_to
+        from: build-sr
+        to: qa
+
+  - id: rev
+    label: Independent Audit & Council
+    summary: Four-Eyes independent reviewer issues digest-bound verdicts and participates in Council deliberation.
+    members:
+      - id: review
+        agent_ref: "local:agents/agentflow"
+        profile: reviewer-pi
+        runtime: pi
+        model: "grok-cli/grok-4.7"
+        cwd: "."
+        startup:
+          files:
+            - path: startup/review-lead.md
+              delivery_hint: send_text
+              required: true
+    edges: []
+
+edges:
+  - kind: delegates_to
+    from: orch.arch
+    to: dev.build
+  - kind: delegates_to
+    from: orch.arch
+    to: dev.build-jr
+  - kind: delegates_to
+    from: orch.arch
+    to: dev.build-sr
+  - kind: delegates_to
+    from: dev.build
+    to: rev.review
+  - kind: delegates_to
+    from: dev.build-jr
+    to: rev.review
+  - kind: delegates_to
+    from: dev.build-sr
+    to: rev.review
+  - kind: can_observe
+    from: orch.arch
+    to: rev.review
+  - kind: can_observe
+    from: orch.arch
+    to: dev.qa
+  - kind: can_observe
+    from: rev.review
+    to: orch.arch
+  - kind: can_observe
+    from: orch.arch
+    to: dev.build
+  - kind: can_observe
+    from: orch.arch
+    to: dev.build-sr

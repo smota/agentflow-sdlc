@@ -1,0 +1,99 @@
+schema: openrig.bundle-configurations/v1
+recommended: balanced-claude-lead
+
+seats:
+  orch.arch:
+    runtimes:
+      pi: architect-pi
+      claude-code: architect
+      codex: architect
+  dev.build-jr:
+    runtimes:
+      claude-code: builder-jr
+      codex: builder-jr
+      pi: builder-jr-pi
+  dev.build:
+    runtimes:
+      claude-code: builder
+      codex: builder
+      pi: builder-pi
+  dev.build-sr:
+    runtimes:
+      claude-code: builder-sr
+      codex: builder-sr
+      pi: builder-sr-pi
+  dev.qa:
+    runtimes:
+      codex: qa
+      claude-code: qa
+      pi: qa-pi
+  rev.review:
+    runtimes:
+      pi: reviewer-pi
+      claude-code: reviewer
+      codex: reviewer
+
+presets:
+  balanced-claude-lead:
+    orch.arch: pi
+    dev.build-jr: claude-code
+    dev.build: claude-code
+    dev.build-sr: claude-code
+    dev.qa: codex
+    rev.review: pi
+
+  inverted-codex-lead:
+    orch.arch: codex
+    dev.build-jr: codex
+    dev.build: codex
+    dev.build-sr: codex
+    dev.qa: claude-code
+    rev.review: pi
+
+  grok-heavy:
+    orch.arch: pi
+    dev.build-jr: pi
+    dev.build: pi
+    dev.build-sr: pi
+    dev.qa: codex
+    rev.review: pi
+
+  claude-heavy:
+    orch.arch: claude-code
+    dev.build-jr: claude-code
+    dev.build: claude-code
+    dev.build-sr: claude-code
+    dev.qa: codex
+    rev.review: claude-code
+
+  codex-heavy:
+    orch.arch: codex
+    dev.build-jr: codex
+    dev.build: codex
+    dev.build-sr: codex
+    dev.qa: codex
+    rev.review: codex
+
+  all-grok:
+    orch.arch: pi
+    dev.build-jr: pi
+    dev.build: pi
+    dev.build-sr: pi
+    dev.qa: pi
+    rev.review: pi
+
+  all-claude:
+    orch.arch: claude-code
+    dev.build-jr: claude-code
+    dev.build: claude-code
+    dev.build-sr: claude-code
+    dev.qa: claude-code
+    rev.review: claude-code
+
+  all-codex:
+    orch.arch: codex
+    dev.build-jr: codex
+    dev.build: codex
+    dev.build-sr: codex
+    dev.qa: codex
+    rev.review: codex

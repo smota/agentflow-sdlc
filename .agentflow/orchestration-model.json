@@ -9,6 +9,6 @@
   "concurrency": {
     "maxWriters": 1,
     "maxAdvisors": 3,
-    "isolatedWorktreeRequired": false
+    "isolatedWorktreeRequired": true
   }
 }

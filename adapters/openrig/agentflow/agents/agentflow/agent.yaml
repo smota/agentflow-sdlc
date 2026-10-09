@@ -1,0 +1,203 @@
+name: agentflow-seat
+version: "1.0"
+description: >
+  Squad member on the agentflow rig delivering AgentFlow SDLC governance, proof contracts,
+  and worktree isolation. The profile selects the role: architect, builder-jr, builder,
+  builder-sr, qa, or reviewer.
+
+resources:
+  skills:
+    - { id: agent-operated-software, path: skills/agent-operated-software }
+    - { id: agent-operated-workflows, path: skills/agent-operated-workflows }
+    - { id: agentflow-auditor, path: skills/agentflow-auditor }
+    - { id: agentflow-collaborator, path: skills/agentflow-collaborator }
+    - { id: agentflow-designer, path: skills/agentflow-designer }
+    - { id: agentflow-migrator, path: skills/agentflow-migrator }
+    - { id: agentflow-orchestrator, path: skills/agentflow-orchestrator }
+    - { id: agentflow-scanner, path: skills/agentflow-scanner }
+    - { id: applying-a-permission-policy, path: skills/applying-a-permission-policy }
+    - { id: claude-compaction-restore, path: skills/claude-compaction-restore }
+    - { id: delegating-work, path: skills/delegating-work }
+    - { id: developing-openrig, path: skills/developing-openrig }
+    - { id: forming-an-openrig-mental-model, path: skills/forming-an-openrig-mental-model }
+    - { id: loading-addressable-markdown, path: skills/loading-addressable-markdown }
+    - { id: messaging-the-human, path: skills/messaging-the-human }
+    - { id: mission-slice-sop, path: skills/mission-slice-sop }
+    - { id: openrig-operating-model, path: skills/openrig-operating-model }
+    - { id: openrig-skills, path: skills/openrig-skills }
+    - { id: openrig-user, path: skills/openrig-user }
+    - { id: orienting-to-an-inherited-seat, path: skills/orienting-to-an-inherited-seat }
+    - { id: queue-handoff, path: skills/queue-handoff }
+    - { id: refocusing, path: skills/refocusing }
+    - { id: retiring-and-inheriting-a-seat, path: skills/retiring-and-inheriting-a-seat }
+    - { id: seat-continuity-and-handover, path: skills/seat-continuity-and-handover }
+    - { id: session-compaction-and-restore, path: skills/session-compaction-and-restore }
+    - { id: software-for-agents, path: skills/software-for-agents }
+  runtime_resources:
+    - id: claude-activity-hooks
+      path: runtime/claude-activity-hooks.json
+      runtime: claude-code
+      type: claude_activity_hooks
+
+profiles:
+  architect:
+    summary: Architect Lead governing delivery, complexity ladders, proof contracts, and Council.
+    preferences:
+      runtime: claude-code
+    uses:
+      skills: &arch-skills [agent-operated-software, agent-operated-workflows, agentflow-orchestrator, agentflow-designer, agentflow-scanner, applying-a-permission-policy, claude-compaction-restore, delegating-work, forming-an-openrig-mental-model, loading-addressable-markdown, messaging-the-human, mission-slice-sop, openrig-operating-model, openrig-user, orienting-to-an-inherited-seat, queue-handoff, refocusing, retiring-and-inheriting-a-seat, seat-continuity-and-handover, session-compaction-and-restore]
+      runtime_resources: [claude-activity-hooks]
+    startup:
+      files:
+        - path: guidance/architect.md
+          delivery_hint: send_text
+          required: true
+      actions: []
+
+  architect-pi:
+    summary: Architect Lead on Pi (Grok 4.7) governing delivery, complexity ladders, and Council.
+    preferences:
+      runtime: pi
+    uses:
+      skills: &arch-pi-skills [agent-operated-software, agent-operated-workflows, agentflow-orchestrator, agentflow-designer, agentflow-scanner, applying-a-permission-policy, delegating-work, forming-an-openrig-mental-model, loading-addressable-markdown, messaging-the-human, mission-slice-sop, openrig-operating-model, openrig-skills, openrig-user, orienting-to-an-inherited-seat, queue-handoff, refocusing, retiring-and-inheriting-a-seat, seat-continuity-and-handover, session-compaction-and-restore, software-for-agents]
+    startup:
+      files:
+        - path: guidance/architect.md
+          delivery_hint: send_text
+          required: true
+      actions: []
+
+  builder-jr:
+    summary: Junior Builder handling linear, low-risk P0 tasks in isolated worktrees.
+    preferences:
+      runtime: claude-code
+    uses:
+      skills: &builder-skills [agent-operated-software, agent-operated-workflows, agentflow-collaborator, agentflow-scanner, applying-a-permission-policy, claude-compaction-restore, delegating-work, forming-an-openrig-mental-model, loading-addressable-markdown, messaging-the-human, mission-slice-sop, openrig-operating-model, openrig-user, orienting-to-an-inherited-seat, queue-handoff, refocusing, retiring-and-inheriting-a-seat, seat-continuity-and-handover, session-compaction-and-restore]
+      runtime_resources: [claude-activity-hooks]
+    startup:
+      files:
+        - path: guidance/builder-jr.md
+          delivery_hint: send_text
+          required: true
+      actions: []
+
+  builder-jr-pi:
+    summary: Junior Builder on Pi handling linear, low-risk P0 tasks in isolated worktrees.
+    preferences:
+      runtime: pi
+    uses:
+      skills: &builder-pi-skills [agent-operated-software, agent-operated-workflows, agentflow-collaborator, agentflow-scanner, applying-a-permission-policy, delegating-work, forming-an-openrig-mental-model, loading-addressable-markdown, messaging-the-human, mission-slice-sop, openrig-operating-model, openrig-skills, openrig-user, orienting-to-an-inherited-seat, queue-handoff, refocusing, retiring-and-inheriting-a-seat, seat-continuity-and-handover, session-compaction-and-restore, software-for-agents]
+    startup:
+      files:
+        - path: guidance/builder-jr.md
+          delivery_hint: send_text
+          required: true
+      actions: []
+
+  builder:
+    summary: Standard Builder handling bilateral P1 features in isolated worktrees.
+    preferences:
+      runtime: claude-code
+    uses:
+      skills: *builder-skills
+      runtime_resources: [claude-activity-hooks]
+    startup:
+      files:
+        - path: guidance/builder.md
+          delivery_hint: send_text
+          required: true
+      actions: []
+
+  builder-pi:
+    summary: Standard Builder on Pi handling bilateral P1 features in isolated worktrees.
+    preferences:
+      runtime: pi
+    uses:
+      skills: *builder-pi-skills
+    startup:
+      files:
+        - path: guidance/builder.md
+          delivery_hint: send_text
+          required: true
+      actions: []
+
+  builder-sr:
+    summary: Senior Builder handling complex P2-P3 architectural tasks and Council deliberation.
+    preferences:
+      runtime: claude-code
+    uses:
+      skills: *builder-skills
+      runtime_resources: [claude-activity-hooks]
+    startup:
+      files:
+        - path: guidance/builder-sr.md
+          delivery_hint: send_text
+          required: true
+      actions: []
+
+  builder-sr-pi:
+    summary: Senior Builder on Pi handling complex P2-P3 architectural tasks and Council deliberation.
+    preferences:
+      runtime: pi
+    uses:
+      skills: *builder-pi-skills
+    startup:
+      files:
+        - path: guidance/builder-sr.md
+          delivery_hint: send_text
+          required: true
+      actions: []
+
+  qa:
+    summary: QA & Verification Engineer validating proof contracts and automated test suites.
+    preferences:
+      runtime: codex
+    uses:
+      skills: *builder-skills
+      runtime_resources: [claude-activity-hooks]
+    startup:
+      files:
+        - path: guidance/qa.md
+          delivery_hint: send_text
+          required: true
+      actions: []
+
+  qa-pi:
+    summary: QA & Verification Engineer on Pi validating proof contracts.
+    preferences:
+      runtime: pi
+    uses:
+      skills: *builder-pi-skills
+    startup:
+      files:
+        - path: guidance/qa.md
+          delivery_hint: send_text
+          required: true
+      actions: []
+
+  reviewer:
+    summary: Independent Reviewer & Auditor enforcing Four-Eyes Principle and Council deliberation.
+    preferences:
+      runtime: codex
+    uses:
+      skills: &reviewer-skills [agent-operated-software, agent-operated-workflows, agentflow-auditor, agentflow-scanner, applying-a-permission-policy, claude-compaction-restore, delegating-work, forming-an-openrig-mental-model, loading-addressable-markdown, messaging-the-human, mission-slice-sop, openrig-operating-model, openrig-user, orienting-to-an-inherited-seat, queue-handoff, refocusing, retiring-and-inheriting-a-seat, seat-continuity-and-handover, session-compaction-and-restore]
+      runtime_resources: [claude-activity-hooks]
+    startup:
+      files:
+        - path: guidance/reviewer.md
+          delivery_hint: send_text
+          required: true
+      actions: []
+
+  reviewer-pi:
+    summary: Independent Reviewer & Auditor on Pi (Grok 4.7) enforcing Four-Eyes and Council.
+    preferences:
+      runtime: pi
+    uses:
+      skills: &reviewer-pi-skills [agent-operated-software, agent-operated-workflows, agentflow-auditor, agentflow-scanner, applying-a-permission-policy, delegating-work, forming-an-openrig-mental-model, loading-addressable-markdown, messaging-the-human, mission-slice-sop, openrig-operating-model, openrig-skills, openrig-user, orienting-to-an-inherited-seat, queue-handoff, refocusing, retiring-and-inheriting-a-seat, seat-continuity-and-handover, session-compaction-and-restore, software-for-agents]
+    startup:
+      files:
+        - path: guidance/reviewer.md
+          delivery_hint: send_text
+          required: true
+      actions: []

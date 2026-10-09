@@ -27,14 +27,23 @@
   "routing": {
     "defaultMode": "optional-multi-agent",
     "agents": {
-      "agy": {
+      "grok": {
         "enabled": true,
         "availabilityProbe": {
-          "executable": "agy",
+          "executable": "grok",
           "args": ["--version"]
         },
-        "defaultExecutionTarget": "agy-cli",
-        "callWorkflowDoc": "docs/agents/agy-routing.md"
+        "defaultExecutionTarget": "grok-cli",
+        "callWorkflowDoc": "docs/agents/grok-routing.md"
+      },
+      "claude": {
+        "enabled": true,
+        "availabilityProbe": {
+          "executable": "claude",
+          "args": ["--version"]
+        },
+        "defaultExecutionTarget": "claude-cli",
+        "callWorkflowDoc": "docs/agents/claude-routing.md"
       },
       "codex": {
         "enabled": true,
@@ -44,44 +53,53 @@
         },
         "defaultExecutionTarget": "codex-cli",
         "callWorkflowDoc": "docs/agents/codex-routing.md"
+      },
+      "agy": {
+        "enabled": true,
+        "availabilityProbe": {
+          "executable": "agy",
+          "args": ["--version"]
+        },
+        "defaultExecutionTarget": "agy-cli",
+        "callWorkflowDoc": "docs/agents/agy-routing.md"
       }
     },
     "roles": {
       "product-manager": {
-        "owner": "codex",
-        "fallbacks": []
+        "owner": "grok",
+        "fallbacks": ["claude", "codex"]
       },
       "analyst": {
-        "owner": "codex",
-        "fallbacks": []
+        "owner": "grok",
+        "fallbacks": ["claude", "codex"]
       },
       "architect": {
-        "owner": "codex",
-        "fallbacks": []
+        "owner": "grok",
+        "fallbacks": ["claude", "codex"]
       },
       "implementation-planner": {
-        "owner": "codex",
-        "fallbacks": []
+        "owner": "grok",
+        "fallbacks": ["claude", "codex"]
       },
       "developer": {
-        "owner": "codex",
-        "fallbacks": []
+        "owner": "claude",
+        "fallbacks": ["grok", "codex"]
       },
       "tester": {
         "owner": "codex",
-        "fallbacks": []
+        "fallbacks": ["claude", "grok"]
       },
       "reviewer": {
-        "owner": "codex",
-        "fallbacks": []
+        "owner": "grok",
+        "fallbacks": ["codex", "claude"]
       },
       "technical-writer": {
-        "owner": "codex",
-        "fallbacks": []
+        "owner": "claude",
+        "fallbacks": ["grok", "codex"]
       },
       "pr-readiness": {
-        "owner": "codex",
-        "fallbacks": []
+        "owner": "grok",
+        "fallbacks": ["codex", "claude"]
       }
     }
   },

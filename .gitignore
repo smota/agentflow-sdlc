@@ -10,3 +10,8 @@ SPEC.md
 .pi/
 .pi-subagents/
 pnpm-workspace.yaml
+.claude/commands/
+.agentflow-*.lock.json
+.agentflow/roles/
+.agentflow/role-catalog.json
+.agentflow/method-catalog.json

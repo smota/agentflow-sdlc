@@ -2,25 +2,34 @@
   "tiers": {
     "architect-lead": {
       "capabilities": ["high-context", "formal-logic", "deep-reasoning"],
-      "preferredModel": "gpt-6-astra"
+      "preferredModel": "grok-4.7",
+      "fallbacks": ["claude-opus-4-6", "o1"]
     },
     "deep-reasoning": {
       "capabilities": ["adversarial-audit", "security-analysis"],
-      "preferredModel": "gpt-6-astra"
+      "preferredModel": "grok-4.7",
+      "fallbacks": ["claude-opus-4-6", "o3-mini"]
     },
     "balanced": {
       "capabilities": ["fast-implementation", "unit-testing"],
-      "preferredModel": "gpt-6-sol"
+      "preferredModel": "claude-sonnet-4-5",
+      "fallbacks": ["gpt-4o", "grok-composer-2.5-fast"]
     },
     "lightweight": {
       "capabilities": ["fixtures", "formatting", "inventory"],
-      "preferredModel": "gpt-5.6-luna"
+      "preferredModel": "grok-fast",
+      "fallbacks": ["claude-haiku-3-5", "gpt-4o-mini"]
     }
   },
   "roleAssignments": {
     "coordinator": "architect-lead",
+    "architect": "architect-lead",
     "adversarial-reviewer": "deep-reasoning",
+    "reviewer": "deep-reasoning",
     "developer": "balanced",
+    "developer-jr": "lightweight",
+    "tester": "deep-reasoning",
     "fixture-builder": "lightweight"
   }
 }
+

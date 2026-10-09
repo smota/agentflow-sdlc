@@ -1,0 +1,31 @@
+{
+  "id": "agentflow-sdlc.openrig",
+  "name": "AgentFlow SDLC for OpenRig",
+  "version": "1.0.0",
+  "harness": "openrig",
+  "namespace": "agentflow",
+  "entry": "agentflow",
+  "rigs": ["agentflow"],
+  "skills": [
+    "agentflow-orchestrator",
+    "agentflow-collaborator",
+    "agentflow-scanner",
+    "agentflow-designer",
+    "agentflow-migrator",
+    "agentflow-auditor"
+  ],
+  "roles": [
+    "architect",
+    "developer",
+    "developer-jr",
+    "tester",
+    "reviewer"
+  ],
+  "commands": [
+    "rig up agentflow --cwd <project>",
+    "rig down agentflow --snapshot",
+    "rig up agentflow --existing",
+    "rig ps --nodes --rig agentflow"
+  ],
+  "scripts": ["adapters/openrig/scripts/install-rig.sh"]
+}
