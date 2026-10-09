@@ -34,16 +34,17 @@ describe('CLI prompt helpers', () => {
       },
     )
 
-    expect(output).toContain('assisted onboarding guide')
-    expect(output).toContain('docs/assisted-onboarding.md')
+    // The prompt follows the one adoption page; it is not a second manual.
+    expect(output).toContain('docs/get-started.md')
+    expect(output).not.toContain('docs/assisted-onboarding.md')
     expect(output).toContain('tmp-app')
-    expect(output).toContain('Runtime & Environment Request')
     expect(output).not.toContain('npm install -g')
-    expect(output).toContain('agentflow-sdlc doctor-env')
-    expect(output).toContain('Present the adoption preview and ask for explicit confirmation')
-    expect(output).toContain('--runtime-request runtime-request.json')
-    expect(output).toContain('--runtime-evidence runtime-evidence.json')
-    expect(output).toContain('projectReady and runtimeReady separately')
+    expect(output).toContain('Nothing is written before I confirm the exact preview')
+    expect(output).toContain('ask for explicit confirmation')
+    expect(output).toContain('--runtime-request .agent-runs/runtime-request.json')
+    expect(output).toContain('--runtime-evidence .agent-runs/runtime-evidence.json')
+    expect(output).toContain('agentflow-sdlc onboarding apply')
+    expect(output).toContain('project, runtime, and governed-change readiness separately')
     const guide = fs.readFileSync(
       new URL('../../docs/assisted-onboarding.md', import.meta.url),
       'utf8',

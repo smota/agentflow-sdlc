@@ -3,7 +3,7 @@
 | Symptom                                      | Current effect                                       | Non-mutating next check                                              |
 | -------------------------------------------- | ---------------------------------------------------- | -------------------------------------------------------------------- |
 | Provider is unavailable                      | Optional binding degrades or required binding blocks | `providers inspect <id> --json`                                      |
-| Adoption plan is stale                       | Apply refuses all writes                             | Rerun `adopt plan`; review the new token                             |
+| Adoption plan is stale                       | Apply refuses all writes                             | Rerun `onboarding plan`; review the new digest                       |
 | Adoption plan has conflicts                  | Apply is blocked                                     | Inspect each reported target; preserve or reconcile it               |
 | Lock version is unknown                      | Adoption fails closed                                | Preserve the lock and use a compatible AgentFlow version             |
 | Applied file drifted                         | Rollback refuses                                     | Review the local change before choosing a recovery path              |

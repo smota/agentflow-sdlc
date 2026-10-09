@@ -4,7 +4,7 @@ Operators diagnose installed state, provider availability, source connectivity, 
 and optional Cockpit behavior.
 
 ```bash
-agentflow-sdlc adopt plan --profile standard --target /path/to/project --json
+agentflow-sdlc onboarding verify --target /path/to/project --json
 agentflow-sdlc sdlc validate-authority --target /path/to/project --json
 agentflow-sdlc providers list --json
 agentflow-sdlc providers inspect <id> --json
