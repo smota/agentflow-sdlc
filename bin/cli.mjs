@@ -936,7 +936,7 @@ function handleResume(rest, targetDir) {
 }
 
 const ROOT_USAGE =
-  'Usage: agentflow-sdlc <init|run|doctor-env|config|adopt|providers|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding|onboarding-prompt|release-plan|handoff|resume> [path] [--target <dir>] [--json]\n'
+  'Usage: agentflow-sdlc <init|run|doctor-env|config|adopt|providers|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding|onboarding-prompt|release-plan|handoff|resume|phase> [path] [--target <dir>] [--json]\n'
 
 const COMMAND_USAGE = {
   init: 'Usage: agentflow-sdlc init [--profile <id>] [--posture <posture>] [--no-harness] [--sync] [--target <dir>] [--force] [--json]\n',
@@ -959,6 +959,8 @@ const COMMAND_USAGE = {
     'Usage: agentflow-sdlc onboarding <inspect|plan|apply|verify|recover|runtime-request> [--target <dir>] [--profile <id>] [--runtime-request <file>] [--runtime-evidence <file>] [--choices <file>] [--plan <file>] [--confirm <digest>] [--json]\n',
   handoff:
     'Usage: agentflow-sdlc handoff --run <id> --writer <owner> --generation <n> --execute [--target <dir>] [--json]\n',
+  phase:
+    'Usage: agentflow-sdlc phase <append|read> --medium <filesystem|github> --phase <0-8> --status <pass|skipped> --seat <id> --key <id> [--root <dir> | --repo <owner/repo> [--issue <n>]] [--title <text>] [--body <text>] [--reason <text>]\n',
   resume:
     'Usage: agentflow-sdlc resume --run <id> --packet <file> --writer <replacement> --writer-pid <pid> [--plan <file> --confirm <digest> --generation <old-n> --execute] [--target <dir>] [--json]\n',
 }
@@ -1128,6 +1130,10 @@ function main() {
     if (rest.includes('--json')) process.stdout.write(`${JSON.stringify(plan, null, 2)}\n`)
     else printReleasePlan(plan)
     return 0
+  }
+
+  if (command === 'phase') {
+    return runScript('scripts/phase-handoff.mjs', rest, targetDir)
   }
 
   if (command === 'handoff') {
