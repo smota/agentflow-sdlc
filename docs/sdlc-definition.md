@@ -64,10 +64,10 @@ intent.
   capability's change class.
 - A spec is refused unless its parent capability carries that admission, and the admission still
   matches the change class stored on the capability now.
-- A matching stored admission is not enough to open a spec. The admission lives in the record it
-  vouches for, so anyone who can edit that record can replace the change class and the admission
-  together with a freshly sealed pair. A spec under a standard capability, or any capability that is
-  not high-assurance, is refused even when its stored admission matches.
+- A standard spec does not open on a stored admission or on any consent this module can check.
+  The admission lives in the record it vouches for, so anyone who can edit that record can replace
+  the change class and the admission together with a freshly sealed pair. A spec under any
+  capability that is not high-assurance is refused, even when its stored admission matches.
 - A spec under a high-assurance capability opens only when a person agreed to that capability's
   current revision in a separate review passed by the caller. A person can only review a capability
   that exists, so the review gates the specs under it. The stored admission passed as that review
