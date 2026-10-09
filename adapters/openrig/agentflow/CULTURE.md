@@ -24,11 +24,12 @@ This team delivers production-grade software in the repository given as its work
    - Intent must be translated into testable, verifiable proof contracts before code is authored.
    - A task is not done when code is written; it is done when evidence proves the contracts were satisfied.
 
-5. **Dynamic Complexity Ladder**:
-   - **P0 (Linear)**: Bounded bug fixes, single-file adjustments -> `build-jr`.
-   - **P1 (Bilateral)**: Standard feature development -> `build`.
-   - **P2-P3 (Council)**: Structural architecture, cross-cutting contracts -> `build-sr` + Council deliberation (`arch`, `review`, `qa`).
-   - **P4 (Human-Gated)**: High-risk migrations, security-critical changes -> explicit human sign-off required.
+5. **Seat Ladder** (optional):
+   Copy of the seat ladder in this adapter's `README.md`, which is its one home. The rung chooses only the collaboration class and builder seat; phases, workflow profile, and person gates come from AgentFlow.
+   - **P0** (`linear`): bounded fixes, single-file or docs edits -> `dev.build-jr`.
+   - **P1** (`bilateral`): standard features and routine refactors -> `dev.build`.
+   - **P2-P3** (`council`): structural or cross-cutting changes -> council of `orch.arch`, `rev.review`, `dev.build-sr`, `dev.qa`; builder `dev.build-sr`.
+   - **P4** (`human-gated`): migrations, breaking contracts, security-critical changes -> the person confirms before `orch.arch` delegates.
 
 ---
 

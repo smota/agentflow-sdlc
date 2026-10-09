@@ -506,6 +506,31 @@ also valid when a project wants a fully chronological issue timeline.
 PR readiness must cite the required handover comment/thread URL, or document an explicit exception
 when no role transition occurred.
 
+### Handover decision
+
+The handover decision is the phase comment. A queue item or chat message only wakes the next role;
+it is not the record. The comment has these fields and no others:
+
+- `phase`: 0 to 8
+- `role`: the role that owns that phase
+- `status`: `pass` or `skipped`
+- `seat`: who performed the phase
+- `reason`: required for `skipped`; may be empty for `pass`
+- `body`: the role-pass content
+
+A defect return is a `skipped` status whose reason names an allowed return with the existing
+phrase, for example `Return to phase 4.` A skip without that phrase is a real skip of that phase.
+
+Lessons from earlier runs, kept as rules rather than new machinery:
+
+- A blank `reason:` stays empty. It never absorbs the next line.
+- Council prose is advice. It is not a phase, and it does not advance the state.
+- The PR manifest `Handover comments:` field starts with a bare URL (or `exception:<reason>`), not
+  prose around a link.
+
+Assisted path: `agentflow-sdlc phase append` writes the comment and validates the transition. The
+unassisted path writes the same comment, in the same shape, with no rig and no queue.
+
 ## 8. Review model
 
 - **Bounded**: self-review allowed

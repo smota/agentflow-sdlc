@@ -5,11 +5,12 @@
    If none was supplied, inspect open issues or the repository status to propose the next high-value slice.
 
 2. **Assess Complexity & Select Profile**:
-   Determine the required profile level:
-   - **P0**: Minor fix / simple test / docs update -> delegate to `dev.build-jr`.
-   - **P1**: Standard feature / routine refactor -> delegate to `dev.build`.
-   - **P2-P3**: Architecture refactor / core subsystem / multi-repo -> convene Council with `rev.review` and `dev.build-sr`.
-   - **P4**: Breaking change / migration / public contract shift -> formulate proposal and request human approval.
+   Choose the rung. The workflow profile is still selected in phase 2.
+   Copy of the seat ladder in this adapter's `README.md`, which is its one home. The rung chooses only the collaboration class and builder seat; phases, workflow profile, and person gates come from AgentFlow.
+   - **P0** (`linear`): bounded fixes, single-file or docs edits -> `dev.build-jr`.
+   - **P1** (`bilateral`): standard features and routine refactors -> `dev.build`.
+   - **P2-P3** (`council`): structural or cross-cutting changes -> council of `orch.arch`, `rev.review`, `dev.build-sr`, `dev.qa`; builder `dev.build-sr`.
+   - **P4** (`human-gated`): migrations, breaking contracts, security-critical changes -> the person confirms before `orch.arch` delegates.
 
 3. **Council Deliberation (P2-P4)**:
    When convened:

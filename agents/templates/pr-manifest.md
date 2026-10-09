@@ -11,7 +11,7 @@
 ## Workflow evidence
 
 - Workflow-status comment: <GitHub issue comment URL or "to be posted before PR">
-- Handover comments: <GitHub issue comment/thread URL(s) for role handovers> | exception:<reason no role transition occurred>
+- Handover comments: https://github.com/<owner>/<repo>/issues/<issue>#issuecomment-<id> <!-- start with the bare URL (more URLs may follow), or write exception:<reason no role transition occurred>; scripts/validate-pr-manifest.mjs rejects prose before the URL -->
 - Role-pass summary: <summarize completed phases and any blockers>
 - Capability evidence: <PLAN/WORKFLOW/LOOP/SUB-AGENTS capabilities used, resolution modes, fallbacks, and artifacts; use `not-applicable:<reason>` when none were requested>
 - Collaboration evidence: <collaboration mode, smallest-sufficient reason, helpers/gates used, synthesis/dissent summary, or `single-agent:<reason>`>

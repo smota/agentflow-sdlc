@@ -16,12 +16,17 @@ This is the complete map of maintained product, adoption, architecture, operatio
 
 ## Role routes
 
-| Role            | Shortest maintained path                                                                   |
-| --------------- | ------------------------------------------------------------------------------------------ |
-| Adopter         | [Evaluate, preview, adopt, and recover](adopters/index.md)                                 |
-| Maintainer      | [Protect architecture, compatibility, validation, and release truth](maintainers/index.md) |
-| Provider author | [Implement and prove a capability-based provider](providers/index.md)                      |
-| Operator        | [Inspect health, availability, evidence, and recovery](operators/index.md)                 |
+| Role                    | Shortest maintained path                                                                                                                             |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Adopting user           | [AgentFlow in 5 minutes](agentflow-in-5-minutes.md), then [Get started](get-started.md)                                                              |
+| Adopting architect      | [Project setup](project-setup.md), [Project configuration](project-config.md), and [ADR 004](adr/004-separate-sdlc-policy-from-harness-execution.md) |
+| Adopter                 | [Evaluate, preview, adopt, and recover](adopters/index.md)                                                                                           |
+| Product maintainer      | [Protect architecture, compatibility, validation, and release truth](maintainers/index.md)                                                           |
+| Development contributor | [Contribution workflow](guides/contribution-workflow.md)                                                                                             |
+| Provider author         | [Implement and prove a capability-based provider](providers/index.md)                                                                                |
+| Operator                | [Inspect health, availability, evidence, and recovery](operators/index.md)                                                                           |
+
+Product work and delivery work are split at phase 1; the [SDLC definition](sdlc-definition.md#product-and-delivery-seam) is the one home for that seam.
 
 ## Getting started
 
