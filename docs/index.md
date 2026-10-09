@@ -133,7 +133,7 @@ The [ADR index](adr/) records accepted, proposed, and superseded decisions. ADRs
 The installed CLI exposes these top-level command groups:
 
 ```text
-agentflow-sdlc <init|run|doctor-env|config|adopt|providers|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding|onboarding-prompt|release-plan|handoff|resume>
+agentflow-sdlc <init|run|doctor-env|config|adopt|providers|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding|onboarding-prompt|release-plan|handoff|resume|phase>
 ```
 
 After the npm installation in [Get started](get-started.md), use the installed command from any directory:
@@ -142,7 +142,7 @@ After the npm installation in [Get started](get-started.md), use the installed c
 agentflow-sdlc <command> --target /path/to/project
 ```
 
-The `sdlc` group includes configuration, issue, role-pass, PR, release, skill, agent, evidence, lifecycle, eval, multi-agent, audit, migration, and metrics commands. Run an incomplete group command to print its exact usage, for example:
+The `sdlc` group includes configuration, issue, role-pass, PR, release, skill, agent, evidence, lifecycle, eval, multi-agent, audit, migration, and metrics commands. `phase append` writes one SDLC transition to the configured medium, and `phase read` shows whether the next phase is allowed. Run an incomplete group command to print its exact usage, for example:
 
 ```bash
 agentflow-sdlc sdlc

@@ -27,6 +27,7 @@ const KNOWN_CLI_COMMANDS = new Set([
   'release-plan',
   'handoff',
   'resume',
+  'phase',
 ])
 
 function markdownFiles(root) {
