@@ -84,7 +84,7 @@ Run node scripts/benchmark-run-telemetry.mjs to reproduce the overhead measureme
 
 The continuity test creates a temporary configured project and invokes eight fresh
 Node processes for start, freeze, verification, failure, pause and confirmed resume.
-It requires neither GitHub writes, Meshloop nor an installed collector. The receiver
+It requires neither GitHub writes nor an installed collector. The receiver
 test checks actual local OTLP requests and unavailable-exporter decision parity.
 The benchmark writes ignored local results and is a warm in-process local-preview
 measurement, not complete-delivery or cold-start qualification. Application and

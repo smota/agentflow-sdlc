@@ -86,7 +86,7 @@ host. Model invocation binding is not independent evidence of the server's resol
 
 Installed Meshloop 0.1.0 lacks the lifecycle flags expected by the adapter. It remains
 unsupported for the integrated live path. See the exact inventory and per-repository
-dispositions in [Meshloop review](../process-autonomy/meshloop-review.md). AgentFlow
+dispositions in Meshloop review (removed; see [ADR 013](../adr/013-remove-optional-meshloop-adapter.md)). AgentFlow
 does not modify Meshloop or depend on its private state. A separately scoped Meshloop
 implementation and compatible runtime are required for those qualification facets.
 
