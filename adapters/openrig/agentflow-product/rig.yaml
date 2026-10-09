@@ -1,0 +1,56 @@
+version: '0.2'
+name: agentflow-product
+summary: >
+  AgentFlow product squad. The product manager frames the job and the outcome.
+  The analyst owns testable acceptance. Neither seat implements.
+
+culture_file: CULTURE.md
+
+docs:
+  - path: README.md
+
+startup:
+  files:
+    - path: startup/context.md
+      delivery_hint: send_text
+      required: true
+  actions:
+    - type: startup_proof
+      value: authenticated
+      idempotent: true
+
+pods:
+  - id: pm
+    label: Product
+    summary: Phase 0 and phase 1 for one project. Propose only.
+    members:
+      - id: manager
+        agent_ref: 'local:agents/agentflow'
+        profile: product-manager
+        runtime: pi
+        model: 'grok-cli/grok-4.7'
+        cwd: '.'
+        startup:
+          files:
+            - path: startup/manager.md
+              delivery_hint: send_text
+              required: true
+      - id: analyst
+        agent_ref: 'local:agents/agentflow'
+        profile: analyst
+        runtime: claude-code
+        cwd: '.'
+        startup:
+          files:
+            - path: startup/analyst.md
+              delivery_hint: send_text
+              required: true
+    edges:
+      - kind: delegates_to
+        from: manager
+        to: analyst
+      - kind: escalates_to
+        from: analyst
+        to: manager
+
+edges: []

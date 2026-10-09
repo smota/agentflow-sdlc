@@ -168,7 +168,11 @@ describe('install-rig.sh preset', () => {
     const result = installRig(home, '--preset', 'balanced-grok-lead')
 
     expect(result.status, result.stderr).toBe(0)
-    expect(piSeats(home)).toEqual(['orch-arch@agentflow', 'rev-review@agentflow'])
+    expect(piSeats(home)).toEqual([
+      'orch-arch@agentflow',
+      'pm-manager@agentflow-product',
+      'rev-review@agentflow',
+    ])
     const written = JSON.parse(readFileSync(auth, 'utf8'))
     expect(written.existing).toEqual({ type: 'api' })
     expect(written['grok-cli']).toMatchObject({ access: 'pi-grok-cli-account-vault-v1' })
@@ -190,7 +194,18 @@ describe('install-rig.sh preset', () => {
 
     expect(result.status, result.stderr).toBe(0)
     expect(result.stdout).toContain('Preset: balanced-grok-lead')
-    expect(piSeats(home)).toEqual(['orch-arch@agentflow', 'rev-review@agentflow'])
+    expect(piSeats(home)).toEqual([
+      'orch-arch@agentflow',
+      'pm-manager@agentflow-product',
+      'rev-review@agentflow',
+    ])
+    expect(existsSync(join(home, '.openrig/specs/agentflow/rig.yaml'))).toBe(true)
+    expect(readFileSync(join(home, '.openrig/specs/agentflow-product/rig.yaml'), 'utf8')).toContain(
+      'id: manager',
+    )
+    expect(readFileSync(join(home, '.openrig/specs/agentflow-product/rig.yaml'), 'utf8')).not.toContain(
+      'permission_policy',
+    )
   })
 
   it('exits 1 for an unknown preset before step 1', () => {
