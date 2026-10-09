@@ -64,9 +64,14 @@ intent.
   capability's change class.
 - A spec is refused unless its parent capability carries that admission, and the admission still
   matches the change class stored on the capability now.
-- A spec under a high-assurance capability is also refused unless a person agreed to that
-  capability's current revision. A person can only review a capability that exists, so the review
-  gates the specs under it. Other change classes need no review.
+- A standard spec does not open on a stored admission or on any consent this module can check.
+  The admission lives in the record it vouches for, so anyone who can edit that record can replace
+  the change class and the admission together with a freshly sealed pair. A spec under any
+  capability that is not high-assurance is refused, even when its stored admission matches.
+- A spec under a high-assurance capability opens only when a person agreed to that capability's
+  current revision in a separate review passed by the caller. A person can only review a capability
+  that exists, so the review gates the specs under it. The stored admission passed as that review
+  is refused.
 - The kinds cannot stand in for each other.
 - A record with no `kind` is legacy. It stays legal, and it is never read as a goal.
 
@@ -80,7 +85,10 @@ The subject is what the person agreed to. For a capability, it is the digest of 
 the change class together (`admissionDigest`), because the class decides whether its specs need a
 review. The capability keeps that gate and attestation as its admission. When a spec opens, the
 admission is checked again against the change class stored at that moment. Downgrading the class,
-on disk or in an issue body, no longer matches, and the spec is refused. For a high-assurance
+on disk or in an issue body, no longer matches, and the spec is refused. Replacing the class and the
+admission together with a newly sealed pair does match, which is why a passing check never opens a
+spec on its own (#344). There is no witness outside the record yet, so no stored value can. For a
+high-assurance
 review, the subject is the capability's current revision. Editing a record after the person agreed
 changes what it digests to, so the consent no longer applies.
 
