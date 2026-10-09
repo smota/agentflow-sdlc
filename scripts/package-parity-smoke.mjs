@@ -190,7 +190,7 @@ try {
   const contract = createAcceptanceContract({
     id: 'consumer-contract',
     subject: 'issue:1',
-    ownerRole: 'agentflow:product-manager',
+    ownerRole: 'agentflow:requester',
     deliveryRole: 'agentflow:product-manager',
     collaborationClass: 'linear',
     candidateDigest,
@@ -202,7 +202,7 @@ try {
         required: true,
       },
     ],
-    councilPolicy: { required: false, seats: [], decisionOwner: 'agentflow:product-manager' },
+    councilPolicy: { required: false, seats: [], decisionOwner: 'agentflow:requester' },
   })
   const handoff = createRoleHandoff({
     id: 'consumer-handoff',

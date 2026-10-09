@@ -262,6 +262,11 @@
       "ownership": "managed"
     },
     {
+      "source": "roles/requester/ROLE.md",
+      "target": "roles/requester/ROLE.md",
+      "ownership": "managed"
+    },
+    {
       "source": "roles/analyst/ROLE.md",
       "target": "roles/analyst/ROLE.md",
       "ownership": "managed"

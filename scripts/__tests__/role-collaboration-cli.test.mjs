@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { createRoleHandoff } from '../../lib/role-catalog.mjs'
+import { phaseZeroCollaboration } from '../../lib/__tests__/phase-zero-bootstrap.mjs'
 import {
   createAcceptanceContract,
   createAcceptanceDecision,
@@ -12,6 +13,7 @@ import {
 } from '../../lib/core/role-collaboration.mjs'
 
 const cli = fileURLToPath(new URL('../../bin/cli.mjs', import.meta.url))
+const collaborationScript = fileURLToPath(new URL('../role-collaboration.mjs', import.meta.url))
 
 describe('role collaboration CLI', () => {
   it('verifies delivery and gates advancement against source evidence and the rework ledger', () => {
@@ -151,6 +153,64 @@ describe('role collaboration CLI', () => {
       expect(result.status, result.stderr || result.stdout).toBe(0)
       const built = JSON.parse(result.stdout)
       expect(built).toEqual(createAcceptanceContract(input))
+    } finally {
+      rmSync(target, { recursive: true, force: true })
+    }
+  })
+
+  it('verifies and advances the phase-0 bootstrap handoff and rejects a self-handoff', () => {
+    const target = mkdtempSync(join(tmpdir(), 'agentflow-phase-zero-'))
+    try {
+      const write = (name, value) => writeFileSync(join(target, name), JSON.stringify(value))
+      const records = phaseZeroCollaboration({
+        subject: 'issue:1',
+        candidateDigest: 'a'.repeat(64),
+      })
+      write('handoff.json', records.handoff)
+      write('delivery.json', records.delivery)
+      write('decision.json', records.decision)
+      write('rework.json', [])
+      const run = (args) =>
+        spawnSync(process.execPath, [collaborationScript, ...args], { encoding: 'utf8' })
+      const base = [
+        '--target',
+        target,
+        '--handoff',
+        'handoff.json',
+        '--delivery',
+        'delivery.json',
+        '--json',
+      ]
+      const verification = run(['verify', ...base])
+      expect(verification.status, verification.stderr || verification.stdout).toBe(0)
+      expect(JSON.parse(verification.stdout).ok).toBe(true)
+      const advancement = run([
+        'advance',
+        ...base,
+        '--decision',
+        'decision.json',
+        '--rework',
+        'rework.json',
+      ])
+      expect(advancement.status, advancement.stderr || advancement.stdout).toBe(0)
+      expect(JSON.parse(advancement.stdout).ok).toBe(true)
+
+      const self = phaseZeroCollaboration({
+        subject: 'issue:1',
+        candidateDigest: 'b'.repeat(64),
+        fromRole: 'agentflow:product-manager',
+        toRole: 'agentflow:product-manager',
+        id: 'self',
+      })
+      write('handoff.json', self.handoff)
+      write('delivery.json', self.delivery)
+      const rejected = run(['verify', ...base])
+      expect(rejected.status).not.toBe(0)
+      const report = JSON.parse(rejected.stdout)
+      expect(report.ok).toBe(false)
+      expect(report.findings).toEqual(
+        expect.arrayContaining([expect.objectContaining({ code: 'handoff.transition' })]),
+      )
     } finally {
       rmSync(target, { recursive: true, force: true })
     }
