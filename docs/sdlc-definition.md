@@ -60,21 +60,28 @@ intent.
 
 `lib/core/work-altitude.mjs` checks these rules when a record opens:
 
-- A capability without a parent goal that a person accepted is refused.
+- A capability is refused unless a person agreed to its parent goal's current revision.
 - A spec without a parent capability is refused.
-- A spec under a high-assurance capability is refused until a person has reviewed that capability.
-  A person can only review a capability that exists, so the review gates the specs under it.
+- A spec under a high-assurance capability is refused unless a person agreed to that capability's
+  current revision. A person can only review a capability that exists, so the review gates the
+  specs under it. Other change classes need no review.
 - The kinds cannot stand in for each other.
 - A record with no `kind` is legacy. It stays legal, and it is never read as a goal.
 
-`agentflow-sdlc phase append` applies these rules when it creates a record with `--kind`, reading
-`--parent` through the same medium. A medium stores the kind, the parent, and the change class. It
-never reads a person's acceptance or review back from its own storage, because anything that can
-write that storage could write one. Until a person's acceptance is recorded through a gate, a
-capability cannot be opened from the command line.
+Consent is never a field on a record. It is a sealed `adequacy-of-intent` gate whose subject digest
+is the parent's current revision, plus a person's attestation, checked by `satisfyGate` in
+`lib/core/gate.mjs`. Only decision `agree` from a `human-gate` reviewer on the registered human
+platform counts. `blocked` and `changes-requested` are refusals. A gate bound to another revision,
+another gate class, or altered after sealing is refused. Editing the parent after the person agreed
+changes its revision, so the consent no longer applies.
 
-The capability review is the existing high-assurance human approval gate. These altitudes add no
-new person gate. The person gates are the gate classes in `lib/core/gate.mjs`,
+`agentflow-sdlc phase append` applies these rules when it creates a record with `--kind`. It reads
+`--parent` through the same medium, and takes consent as `--gate-file` and `--attestation-file`.
+A medium stores the kind, the parent, and the change class. It never reads consent back from its
+own storage.
+
+The high-assurance capability review uses the existing `adequacy-of-intent` gate class over the
+capability. These altitudes add no new gate class and no new person gate. The person gates are the gate classes in `lib/core/gate.mjs`,
 resolved by `lib/core/posture.mjs`:
 
 - **Intent freeze** (`adequacy-of-intent`): a person accepts the goal. This is required at every
