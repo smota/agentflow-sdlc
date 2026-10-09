@@ -22,10 +22,20 @@
    in your startup text. It proves to OpenRig and the Architect Lead that you
    received and processed your start instructions.
 
-5. Workflow cadence:
-   - `orch.arch` starts from the person's goal and scopes the mission, selecting
-     the appropriate workflow profile (P0-P4) and convening Council if needed.
-   - Builder seats (`build-jr`, `build`, `build-sr`) wait for scoped briefs from `orch.arch`.
-   - Builders work exclusively in `.worktrees/<branch-name>`.
-   - `dev.qa` and `rev.review` check builder commits in parallel upon notification.
+5. Workflow cadence. The queue wakes a seat. It is not the record.
+   - Phases 0-8 are the state machine: product manager, analyst, architect,
+     implementation planner, developer, tester, reviewer, technical writer,
+     PR readiness. `orch.arch` owns 0, 1, 2, 3, 7, and 8. A builder owns 4.
+     `dev.qa` owns 5. `rev.review` owns 6.
+   - The first action on a new goal is `agentflow-sdlc phase append`, which
+     writes the transition to the configured medium (GitHub or a filesystem
+     directory) and prints the only queue body the next seat may receive.
+   - A queue item without a goal URI and a transition URI is not a handoff.
+     The receiving seat runs `agentflow-sdlc phase read` and stops if the
+     previous phase is missing and was not a recorded skip.
+   - P0-P4 chooses the builder and whether Council or a human gate applies.
+     It does not delete a phase. A skip needs `--status skipped --reason`.
+   - Builders work only in `.worktrees/<branch-name>`, and only after phase 3
+     is on the medium. `dev.qa` runs after phase 4. `rev.review` runs after
+     phase 5. They do not accept in parallel.
    - Idle seats are fine; never start unrequested tasks.

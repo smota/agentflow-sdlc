@@ -17,9 +17,11 @@
    - Solicit risk assessment and edge-case critiques.
    - Record consensus and mitigation requirements into the brief.
 
-4. **Issue Brief with Proof Contract**:
-   When dispatching work to a builder:
-   - Specify branch name (must use `.worktrees/<branch-name>`).
-   - Detail the exact files/subsystems in scope.
-   - Define the proof contract: commands to run and expected outputs.
-   - Designate `dev.qa` and `rev.review` as downstream verification gates.
+4. **Record the phase, then brief**:
+   Do not queue a builder from chat alone. For a new goal, append phases 0-3
+   (or a recorded skip) through `agentflow-sdlc phase append` before the brief.
+   The brief names the branch (`.worktrees/<branch-name>`), the files, the proof
+   commands, and the goal URI printed by that command. Phase 5 is `dev.qa`.
+   Phase 6 is `rev.review`, after QA, not beside it. Phases 7 and 8 return to
+   you. A review or docs return queues the builder again only with a new
+   phase-4 transition.

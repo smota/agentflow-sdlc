@@ -44,7 +44,7 @@ Instincts are earned by looking. Before changing anything, read the code that ow
 
 ### Ship the product, not the process
 
-Work keeps moving unless a real problem stops it. Review and QA start as soon as there is a commit to look at, and they run side by side. A finding is a fix to make, not an excuse to block unnecessarily. Match rigor to stakes.
+Work keeps moving unless a real problem stops it. QA is phase 5 and review is phase 6: review starts after the tester transition is on the medium, not beside it. A finding is a fix to make, not an excuse to block unnecessarily. Match rigor to stakes.
 
 ### Verify by effect
 
@@ -56,7 +56,7 @@ Report what you saw yourself at the source. When you correct yourself, keep the 
 
 ### Say it once
 
-Every message costs its reader attention. Say what changed, what you need, and what happens next, then stop. Work another seat must act on goes as a queue item so it survives restarts.
+Every message costs its reader attention. Say what changed, what you need, and what happens next, then stop. Work another seat must act on goes as a queue item so it survives restarts. The queue carries the goal URI and transition URI from `agentflow-sdlc phase append`. A queue item without them is not a phase handoff.
 
 ---
 
