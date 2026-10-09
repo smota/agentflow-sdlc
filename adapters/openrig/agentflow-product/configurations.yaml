@@ -1,0 +1,47 @@
+schema: openrig.bundle-configurations/v1
+recommended: balanced-grok-lead
+
+seats:
+  pm.manager:
+    runtimes:
+      pi: product-manager
+      claude-code: product-manager
+      codex: product-manager
+  pm.analyst:
+    runtimes:
+      pi: analyst
+      claude-code: analyst
+      codex: analyst
+
+presets:
+  balanced-grok-lead:
+    pm.manager: pi
+    pm.analyst: claude-code
+
+  inverted-codex-lead:
+    pm.manager: codex
+    pm.analyst: claude-code
+
+  grok-heavy:
+    pm.manager: pi
+    pm.analyst: pi
+
+  claude-heavy:
+    pm.manager: claude-code
+    pm.analyst: claude-code
+
+  codex-heavy:
+    pm.manager: codex
+    pm.analyst: codex
+
+  all-grok:
+    pm.manager: pi
+    pm.analyst: pi
+
+  all-claude:
+    pm.manager: claude-code
+    pm.analyst: claude-code
+
+  all-codex:
+    pm.manager: codex
+    pm.analyst: codex

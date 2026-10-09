@@ -1,0 +1,28 @@
+name: agentflow-product-seat
+version: '1.0'
+description: >
+  Product squad seat. The profile is the product manager or the analyst.
+  Neither profile implements.
+
+profiles:
+  product-manager:
+    summary: Frames the job, the outcome, and release intent. Propose only.
+    preferences:
+      runtime: pi
+    startup:
+      files:
+        - path: guidance/manager.md
+          delivery_hint: send_text
+          required: true
+      actions: []
+
+  analyst:
+    summary: Writes testable acceptance and scope. Propose only.
+    preferences:
+      runtime: claude-code
+    startup:
+      files:
+        - path: guidance/analyst.md
+          delivery_hint: send_text
+          required: true
+      actions: []

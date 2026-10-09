@@ -8,7 +8,9 @@ set -euo pipefail
 #   With a repository path, also applies the Git hygiene excludes to that repository.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 OPENRIG_SOURCE_DIR="$(cd "$SCRIPT_DIR/../agentflow" && pwd)"
+PRODUCT_SOURCE_DIR="$(cd "$SCRIPT_DIR/../agentflow-product" && pwd)"
 TARGET_SPEC_DIR="$HOME/.openrig/specs/agentflow"
+PRODUCT_SPEC_DIR="$HOME/.openrig/specs/agentflow-product"
 PRESET=""
 TARGET_REPO=""
 
@@ -46,12 +48,13 @@ if ! command -v node >/dev/null 2>&1; then
   exit 1
 fi
 
-# Print the selected preset name, then one line per Pi seat as <seat-id-with-hyphens>@agentflow.
+# Print the selected preset name, then one line per Pi seat as <seat-id-with-hyphens>@<rig>.
 # configurations.yaml is flat two-level YAML, so a line scan is enough; no YAML dependency.
-PRESET_SEATS="$(
+# The product base must declare the same preset name. Nothing is copied if either file rejects it.
+read_preset_seats() {
   node -e '
     const fs = require("fs");
-    const [file, requested] = process.argv.slice(1);
+    const [file, requested, rigName] = process.argv.slice(1);
     const presets = {};
     let recommended = "";
     let section = "";
@@ -74,20 +77,31 @@ PRESET_SEATS="$(
     }
     const preset = requested || recommended;
     if (!presets[preset]) {
-      console.error(`ERROR: Unknown preset "${preset}". Known presets: ${Object.keys(presets).join(", ")}.`);
+      console.error(`ERROR: Unknown preset "${preset}" in ${file}. Known presets: ${Object.keys(presets).join(", ")}.`);
       process.exit(1);
     }
     console.log(preset);
     for (const [seat, runtime] of Object.entries(presets[preset])) {
-      if (runtime === "pi") console.log(`${seat.replace(/\./g, "-")}@agentflow`);
+      if (runtime === "pi") console.log(`${seat.replace(/\./g, "-")}@${rigName}`);
     }
-  ' "$OPENRIG_SOURCE_DIR/configurations.yaml" "$PRESET"
-)" || exit 1
-PRESET="$(printf '%s\n' "$PRESET_SEATS" | head -n 1)"
+  ' "$1" "$PRESET" "$2"
+}
+
+DELIVERY_SEATS="$(read_preset_seats "$OPENRIG_SOURCE_DIR/configurations.yaml" agentflow)" || exit 1
+PRODUCT_SEATS="$(read_preset_seats "$PRODUCT_SOURCE_DIR/configurations.yaml" agentflow-product)" || exit 1
+PRESET="$(printf '%s\n' "$DELIVERY_SEATS" | head -n 1)"
+PRODUCT_PRESET="$(printf '%s\n' "$PRODUCT_SEATS" | head -n 1)"
+if [ "$PRESET" != "$PRODUCT_PRESET" ]; then
+  echo "ERROR: Delivery preset '$PRESET' and product preset '$PRODUCT_PRESET' differ." >&2
+  exit 1
+fi
 PI_SEATS=()
 while IFS= read -r seat; do
   [ -n "$seat" ] && PI_SEATS+=("$seat")
-done < <(printf '%s\n' "$PRESET_SEATS" | tail -n +2)
+done < <({
+  printf '%s\n' "$DELIVERY_SEATS" | tail -n +2
+  printf '%s\n' "$PRODUCT_SEATS" | tail -n +2
+})
 
 # A linked worktree has a .git file, not a directory, so ask Git instead of testing for .git/.
 if [ -n "$TARGET_REPO" ] &&
@@ -98,9 +112,10 @@ fi
 
 echo "==> Preset: $PRESET (Pi seats: ${PI_SEATS[*]:-none})"
 
-echo "==> 1. Syncing AgentFlow rig spec to OpenRig user library..."
-mkdir -p "$TARGET_SPEC_DIR"
+echo "==> 1. Syncing AgentFlow delivery and product bases to the OpenRig user library..."
+mkdir -p "$TARGET_SPEC_DIR" "$PRODUCT_SPEC_DIR"
 cp -r "$OPENRIG_SOURCE_DIR"/* "$TARGET_SPEC_DIR"/
+cp -r "$PRODUCT_SOURCE_DIR"/* "$PRODUCT_SPEC_DIR"/
 
 echo "==> 2. Ensuring Pi state bridges for Grok 4.7 seats..."
 if [ ${#PI_SEATS[@]} -eq 0 ]; then
@@ -182,5 +197,7 @@ if command -v rig >/dev/null 2>&1; then
   fi
 fi
 
-echo "==> AgentFlow SDLC rig installed successfully!"
-echo "    Launch with: rig up agentflow --cwd /path/to/project"
+echo "==> AgentFlow SDLC bases installed successfully!"
+echo "    Delivery base: rig up agentflow --cwd /path/to/project"
+echo "    Product base:  rig up agentflow-product --cwd /path/to/project"
+echo "    Per-project copies: adapters/openrig/scripts/spawn-squad.sh --kind delivery|product <name> <path>"

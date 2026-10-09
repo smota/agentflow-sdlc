@@ -25,8 +25,13 @@
 5. Workflow cadence. The queue wakes a seat. It is not the record.
    - Phases 0-8 are the state machine: product manager, analyst, architect,
      implementation planner, developer, tester, reviewer, technical writer,
-     PR readiness. `orch.arch` owns 0, 1, 2, 3, 7, and 8. A builder owns 4.
+     PR readiness. `orch.arch` owns 2, 3, 7, and 8. A builder owns 4.
      `dev.qa` owns 5. `rev.review` owns 6.
+   - Phases 0 and 1 belong to the product squad named in `sibling.md` when
+     this copy has one. They are not this squad's seats. With no sibling
+     recorded, one agent may still run phases 0 and 1; do not treat that as
+     `orch.arch` owning product. Read `sibling.md` before talking to another
+     squad. Use the session names it lists, and no other project's squad.
    - The first action on a new goal is `agentflow-sdlc phase append`, which
      writes the transition to the configured medium (GitHub or a filesystem
      directory) and prints the only queue body the next seat may receive.

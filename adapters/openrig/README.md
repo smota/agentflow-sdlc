@@ -64,6 +64,10 @@ Best when running completely concurrent squads on separate projects at the same 
 rig up agentflow-my-project --cwd /path/to/my-project
 rig up agentflow-other-project --cwd /path/to/other-project
 
+# Product squad for the same project. This is not the delivery topology.
+./adapters/openrig/scripts/spawn-squad.sh --kind product --sibling agentflow-my-project pm /path/to/my-project
+rig up agentflow-pm --cwd /path/to/my-project
+
 # 3. Monitor both squads concurrently
 rig ps
 
