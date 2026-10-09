@@ -531,7 +531,7 @@ A complete comment:
 phase: 1
 role: analyst
 status: pass
-seat: orch.arch
+seat: pm.analyst
 reason:
 body:
 Acceptance criteria for the goal, written for the architect.
