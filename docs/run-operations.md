@@ -66,7 +66,7 @@ For a GitHub source, `--goal` must be `issue:<number>` or an issue URL in the co
 
 ### Prepare a GitHub acceptance revision without importing package internals
 
-After `init` has seeded a meaningful project check, keep its criterion definition digest unchanged
+After adoption has seeded a meaningful project check, keep its criterion definition digest unchanged
 unless the check or candidate inputs change. Switching to a GitHub source requires replacing the
 starter acceptance file's `goalRevision` with the exact issue revision. Read the issue through
 `gh api repos/OWNER/REPO/issues/NUMBER` and save its JSON outside candidate inputs. Use the returned
@@ -285,6 +285,10 @@ Domain constraints belong in `sdlc.config.json.deliveryPolicy`. Set `requiredJou
 A compact acceptance file can include `journeys: [{"id":"search","required":true,"criteria":["query"]}]`. Every required journey must reference currently verified criteria. Non-UI changes can omit journeys. Coverage keeps verified, accepted and deployed states separate.
 
 ## Adoption storage and recovery
+
+These are the low-level transaction commands under the [adoption journey](get-started.md). Use the
+journey's own [undo](get-started.md#undo) and [recover](get-started.md#recover-an-interrupted-apply)
+commands, which its readiness report prints; the commands below are for scripts and maintainers.
 
 ```text
 agentflow-sdlc adopt plan --profile standard --storage project --target <project> --json

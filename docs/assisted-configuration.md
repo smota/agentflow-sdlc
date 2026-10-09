@@ -1,167 +1,129 @@
-# Assisted configuration
+# Refine your setup
 
-Use this guide for continuous, day-two configuration and maintenance of **AgentFlow SDLC** in an existing project. Where [assisted onboarding](assisted-onboarding.md) gets a project initialized, this guide governs ongoing changes: tuning autonomy postures, adjusting branch strategies, updating CI validation commands, binding role methods, enabling extension packs, and synchronizing harness intelligence and adapters.
+Use this page for a later, small change to a project that already uses AgentFlow: its posture,
+branches, a check, or its CI commands. The entry is `agentflow-sdlc onboarding refine`. It works
+like [adoption](get-started.md): preview, confirm, apply, read the same readiness report, and undo
+if you need to.
 
-This workflow is designed for a human and an agent working in tandem, paired with the deterministic client CLI (`agentflow-sdlc config`).
+Refinement changes only this project's `agent-workflow.config.json` and AgentFlow's record of it.
+It never installs anything, and it never changes another agent's harness. A project that is not
+adopted yet, or that has a framework update waiting, is sent to [adoption](get-started.md#preview)
+first.
 
-## Core principle: inspect before mutate, preview before apply
+## Look at the current settings
 
-Configuration changes alter how agents behave, which branches they touch, and what gates block delivery. An assisted configuration collaborator must:
-
-1. **Never mutate blindly**: inspect current configuration and adapter drift read-only first.
-2. **Clarify human intent**: ask focused, multiple-choice or direct questions instead of guessing intent.
-3. **Preview exact diffs**: present proposed changes clearly before writing to disk.
-4. **Synchronize and inspect results**: run `agentflow-sdlc config sync --apply` to update skills, roles, plugins, and settings in sequence; inspect failures and warnings.
-5. **Verify health**: confirm that `agentflow-sdlc config doctor` reports zero blockers.
-
----
-
-## The 5-Phase continuous configuration loop
-
-```mermaid
-flowchart TD
-  P1["1. Inspect & Diagnose\n(config doctor / inspect)"] --> P2["2. Clarify Intent\n(Human consultation)"]
-  P2 --> P3["3. Preview & Propose\n(Read-only diffs)"]
-  P3 --> P4["4. Apply & Sync\n(config sync --apply)"]
-  P4 --> P5["5. Verify & Close\n(Zero blockers check)"]
-```
-
-### Phase 1: Inspect & Diagnose
-
-Run diagnostic inspection commands in read-only mode to determine project health and identify any configuration drift:
+These are read-only:
 
 ```bash
-# Comprehensive diagnostic report across authority, domain, workflow, posture, harness, and adapters
-agentflow-sdlc config doctor
-agentflow-sdlc config doctor --json
-
-# Inspect effective composite configuration
-agentflow-sdlc config inspect --json
+agentflow-sdlc config doctor --target /path/to/project --json
+agentflow-sdlc config inspect --target /path/to/project --json
+agentflow-sdlc onboarding verify --target /path/to/project --json
 ```
 
-Key facets evaluated by `config doctor`:
+`config doctor` reports blockers and warnings across configuration authority, workflow settings,
+domain policy, posture capability, harness defaults, roles and methods, extension packs, and
+adapters. Zero blockers does not certify readiness for any posture.
 
-- **Config Authority**: verifies clean separation between domain policy (`sdlc.config.json`) and workflow settings (`agent-workflow.config.json`).
-- **Workflow Configuration**: checks presence and JSON validity in `agent-workflow.config.json`.
-- **SDLC Domain Policy**: validates policy shape against schema and rules.
-- **Autonomy Posture Capability**: evaluates if repo tooling (tests, CI, observation fixtures) can sustain the configured posture (`advisory`, `assisted`, `delegated`, or `autonomous`).
-- **Harness Intelligence**: checks configuration of the 4 pillars in `.agentflow/` (`orchestration-model.json`, `execution-policy.json`, `model-catalog.json`, `harness-parameters.json`).
-- **Role & Method Catalog**: verifies role definitions and role-method bindings (e.g. TDD, event-storming).
-- **Extension Packs**: checks validity of enabled extension packs.
-- **Harness Adapters**: checks if skills, roles, plugins, or settings are stale and require synchronization.
+## Preview a change
 
-### Phase 2: Clarify Intent
-
-The agent should interview the human operator on the specific dimensions being reconfigured:
-
-1. **Autonomy Posture**:
-   - `advisory`: agent observes and proposes; mutations require a different authorized posture.
-   - `assisted` (default): agent executes role phases with human approval for intent freeze and high-assurance gates.
-   - `delegated`: agent carries work autonomously within bounded limits.
-   - `autonomous`: agent executes end-to-end delivery within strict budget and policy constraints.
-2. **Branch Strategy**:
-   - Trunk and integration branches (e.g. `main` only vs `development` -> `main`).
-   - Allowed work branch prefixes (e.g. `work/`, `feature/`, `fix/`, `chore/`).
-   - Protected branches where direct edits are denied.
-3. **CI Validation Commands**:
-   - List of CI-equivalent test, lint, and build commands copied into PR manifests.
-4. **Harness Intelligence & Sparring**:
-   - Pre-code specification sparring gates.
-   - Concurrency limits, execution escalation tiers, and fallback cascades.
-5. **Role Routing & Methods**:
-   - Preferred executors and fallbacks per role.
-   - Specialist methods (e.g. TDD for developer, event storming for analyst).
-
-### Phase 3: Preview & Propose
-
-Formulate surgical edits to the target configuration files. Show the exact JSON diff to the human operator:
+Write only the settings to change in a changes file. Objects merge into the current
+configuration; a list or a value replaces the current one.
 
 ```json
-// Example: Updating posture and CI commands in agent-workflow.config.json
 {
   "posture": "delegated",
-  "ciCommands": ["pnpm lint", "pnpm test", "pnpm build"]
+  "ciCommands": ["pnpm lint", "pnpm test"],
+  "branching": { "trunk": "main", "integration": "development" }
 }
 ```
 
-Do not apply changes until the user approves the preview.
-
-### Phase 4: Apply approved configuration
-
-Apply approved edits to project configuration files, then verify with `config doctor`.
-Runtime installation, skill discovery and deployment remain the connected runtime's responsibility.
-Keep other agents unchanged unless the user explicitly includes them.
-
-The following synchronization commands are an optional maintainer operation for generating local
-adapters across harnesses. Run them only when that broader operation is explicitly in scope and
-after reviewing the preview. They are not a required step of routine adoption or configuration:
-
 ```bash
-# Preview sync actions (dry-run)
-agentflow-sdlc config sync --dry-run
-
-# Apply sync across all harnesses
-agentflow-sdlc config sync --apply
+agentflow-sdlc onboarding refine --target /path/to/project --changes changes.json
 ```
 
-This command is not a transaction: an error can leave earlier operations applied.
-Inspect the report and `config doctor --json`, correct the reported conflict or failure,
-preview again, and retry the sync. Use version control to review or restore affected files;
-there is no automatic rollback across all four operations.
+This writes nothing. The `preview` lists the configuration file, the lock that records it, and the
+transaction record kept for undo. The `report` is the readiness report the change would lead to,
+and `digest` is what you confirm.
 
-This synchronizes:
+The postures are `advisory`, `assisted`, `delegated`, and `autonomous`. Choose one the project's
+tests and CI can sustain; `config doctor` reports when they cannot.
 
-- **Skill Adapters**: prompts and adapters for Claude Code, Pi, Agy, and Codex in `.agentflow/skills/` and harness directories.
-- **Role Adapters**: phase role instructions in `.agentflow/roles/`.
-- **Plugin Manifests**: harness plugins generated from current capabilities.
-- **Harness Settings**: structurally merges settings into harness configuration files without overwriting user customizations.
+## Add a check
 
-### Phase 5: Verify & Close
+A project with no test command or check cannot verify any change, and the readiness report says
+so. Add the command your project already runs:
 
-Re-run the configuration doctor to confirm that zero blockers remain and review every warning:
-
-```bash
-agentflow-sdlc config doctor
+```json
+{ "ciCommands": ["npm test"] }
 ```
 
-Zero blockers does not mean every facet passed: missing harness pillars, stale adapters and
-posture capability limitations can remain warnings. Report them explicitly, resolve actionable
-items or record why they are accepted. This diagnostic does not certify readiness for any posture.
-Report the final configuration state and summarize the changes made.
+For a check a run can verify against an acceptance contract, add `delivery.checks` and
+`delivery.contracts` the same way, as described in [run operations](run-operations.md#inspect-and-configure).
 
----
+## Confirm and apply
 
-## Deterministic client vs Assisted agent workflow comparison
+```bash
+agentflow-sdlc onboarding apply --target /path/to/project --changes changes.json --confirm <digest>
+```
 
-| Capability                     | Deterministic Client (CLI)                  | Assisted Agent Workflow                    |
-| :----------------------------- | :------------------------------------------ | :----------------------------------------- |
-| **Initial Setup**              | `agentflow-sdlc init --posture <id> --sync` | `agentflow-sdlc onboarding-prompt`         |
-| **Configuration Health Check** | `agentflow-sdlc config doctor`              | Agent inspects `config doctor --json`      |
-| **View Effective Config**      | `agentflow-sdlc config inspect`             | Agent reads `config inspect --json`        |
-| **Adapter Synchronization**    | `agentflow-sdlc config sync --apply`        | Agent runs `config sync --apply` post-edit |
-| **Guided Reconfiguration**     | Manual editing of config files              | `agentflow-sdlc config prompt`             |
-| **Harness Scaffolding**        | `agentflow-sdlc harness scaffold`           | Agent scaffolds and tailors pillars        |
+Apply previews again from the same changes file and writes only when `--confirm` matches. Leaving
+out `--confirm` declines, and a preview that no longer matches the project is refused as stale.
+Either way nothing is written, and the report says why.
 
----
+## Verify
 
-## Copy-paste agent handoff for continuous configuration
+The apply prints the readiness report. To read it again:
 
-To start an assisted continuous configuration session with an agent, copy and paste this prompt:
+```bash
+agentflow-sdlc onboarding verify --target /path/to/project --journey refinement --json
+```
+
+Governed-change readiness stays `false`: changing settings is not a product change.
+
+## Undo
+
+The apply's report gives the exact command:
+
+```bash
+agentflow-sdlc onboarding undo --target /path/to/project --receipt .agentflow/transactions/<id>/receipt.json --confirm <receipt-token> --journey refinement
+```
+
+Undo restores the prior configuration bytes exactly. It refuses when the file changed after the
+apply.
+
+## Other settings
+
+`sdlc.config.json`, the harness defaults under `.agentflow/`, role routing and extension packs are
+not part of refinement. Change them with your usual review, and check them with `config doctor`.
+
+## Sync other agents' harnesses (only on request)
+
+`config sync` generates skill, role, plugin and settings adapters for other agent harnesses. It is
+a maintainer operation, separate from refinement. Run it only when you ask for exactly that, after
+reviewing its preview:
+
+```bash
+agentflow-sdlc config sync --dry-run --target /path/to/project
+agentflow-sdlc config sync --apply --target /path/to/project
+```
+
+It is not a transaction: an error can leave earlier operations applied, and there is no automatic
+undo. Use version control to review or restore affected files.
+
+## Hand a refinement to an agent
+
+Print the handoff prompt with `agentflow-sdlc config prompt --target /path/to/project`, or copy it:
 
 ```text
-Use the AgentFlow SDLC assisted configuration guide:
+Use the AgentFlow SDLC refinement guide:
 https://github.com/smota/agentflow-sdlc/blob/main/docs/assisted-configuration.md
 
-Apply it to this project. You are acting as an assisted configuration collaborator. Follow the 5-phase loop:
-1. Inspect: Run `agentflow-sdlc config doctor --json` and `agentflow-sdlc config inspect --json` read-only to understand the current configuration state, posture, and any adapter drift.
-2. Clarify Intent: Ask me what you want to adjust (autonomy posture, branching strategy, CI commands, role routing, adversarial sparring gates, harness intelligence, or extension packs).
-3. Preview & Propose: Propose exact changes to agent-workflow.config.json, sdlc.config.json, or .agentflow/ files without mutating them until approved.
-4. Apply & Sync: Once approved, apply the changes and synchronize harness adapters using `agentflow-sdlc config sync --apply`.
-5. Verify: Re-run `agentflow-sdlc config doctor` to check blockers and warnings; report unresolved warnings and their disposition.
-```
+Apply it to this project: /path/to/project
 
-Or print it with the installed CLI:
-
-```bash
-agentflow-sdlc config prompt
+You are acting as an assisted configuration collaborator. Follow the refinement journey:
+1. Inspect: Run `agentflow-sdlc config doctor --json` and `agentflow-sdlc config inspect --json` read-only to understand the current configuration state and posture.
+2. Clarify Intent: Ask me what to change (autonomy posture, branches, a check, or CI commands).
+3. Preview: Write only those settings to changes.json and run `agentflow-sdlc onboarding refine --target "/path/to/project" --changes changes.json`. Show me the preview and its readiness report. Do not apply until I confirm.
+4. Apply: Once I confirm, run `agentflow-sdlc onboarding apply --target "/path/to/project" --changes changes.json --confirm <digest>`. It changes only this project. Runtimes manage their own skill discovery; change no other agent's harness unless I ask for that by name.
+5. Verify: Report the readiness report and its undo command, then re-run `agentflow-sdlc config doctor`; report unresolved warnings and their disposition.
 ```

@@ -1,13 +1,20 @@
 # Upgrade and rollback
 
-## Choose the recovery path
+## Bring an installation forward
 
-For a recognized v2 lock, use the transaction commands below. For a legacy lock, an unknown
-installation or local modifications, start with [incremental assisted onboarding](../assisted-onboarding.md).
-It diagnoses provenance and conflicts and supports selective recovery while preserving unknown files.
-Do not remove a lock or overwrite content merely to make the v2 transaction pass.
-Shared CLI/skill updates are proposed separately from project setup; a compatible update may be deferred.
+Upgrading an installation is the [adoption journey](../get-started.md): preview, make the choices
+it asks for, confirm, and read the readiness report. A legacy lock needs an explicit
+[migration choice](../get-started.md#a-legacy-lock), an unknown lock an explicit
+[recovery choice](../get-started.md#an-unknown-or-malformed-lock), and a file both sides changed a
+[preserve or replace choice](../get-started.md#a-file-both-agentflow-and-the-project-changed).
+A compatible update may be [deferred](../get-started.md#defer-a-framework-update).
+[Undo](../get-started.md#undo) restores the exact prior bytes.
+Do not remove a lock or overwrite content merely to make the transaction pass.
+Shared CLI/skill updates are proposed separately from project setup.
 The runtime chooses installation locations and manages shared links.
+
+The rest of this page documents the low-level `adopt` transaction commands under that journey,
+for scripts and maintainers. They are not a separate way in.
 
 ## Preview
 

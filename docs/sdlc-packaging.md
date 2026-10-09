@@ -8,7 +8,7 @@ Install the CLI directly from GitHub using npm; no manual source checkout is req
 
 ```bash
 npm install -g github:smota/agentflow-sdlc
-agentflow-sdlc adopt plan --profile standard --target /path/to/project --json
+agentflow-sdlc onboarding plan --profile standard --target /path/to/project
 agentflow-sdlc sdlc validate --target /path/to/project --json
 ```
 
@@ -22,7 +22,7 @@ Logical composition precedes physical package extraction. `minimal`, `standard`,
 
 ```bash
 agentflow-sdlc adopt profiles --json
-agentflow-sdlc adopt plan --profile standard --target /path/to/project --json
+agentflow-sdlc onboarding plan --profile standard --target /path/to/project
 ```
 
 `manifests/composition-profiles.json` is the profile authority. Contract and installed-payload tests
