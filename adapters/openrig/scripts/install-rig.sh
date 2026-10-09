@@ -9,7 +9,9 @@ OPENRIG_SOURCE_DIR="$(cd "$SCRIPT_DIR/../agentflow" && pwd)"
 TARGET_SPEC_DIR="$HOME/.openrig/specs/agentflow"
 TARGET_REPO="${1:-}"
 
-if [ -n "$TARGET_REPO" ] && [ ! -d "$TARGET_REPO/.git" ]; then
+# A linked worktree has a .git file, not a directory, so ask Git instead of testing for .git/.
+if [ -n "$TARGET_REPO" ] &&
+  [ "$(git -C "$TARGET_REPO" rev-parse --is-inside-work-tree 2>/dev/null)" != "true" ]; then
   echo "ERROR: '$TARGET_REPO' is not a Git repository." >&2
   exit 1
 fi
@@ -71,7 +73,8 @@ EXCLUDES=(
 if [ -z "$TARGET_REPO" ]; then
   echo "   (No target repository given; skipping. Pass a repository path to apply the excludes.)"
 else
-  excludefile="$TARGET_REPO/.git/info/exclude"
+  # Git resolves info/exclude to the common git dir, which is the file it reads for every worktree.
+  excludefile="$(git -C "$TARGET_REPO" rev-parse --path-format=absolute --git-path info/exclude)"
   mkdir -p "$(dirname "$excludefile")"
   touch "$excludefile"
   for line in "${EXCLUDES[@]}"; do
