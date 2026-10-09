@@ -67,6 +67,10 @@ To run simultaneous squads on different projects at the same time:
 rig up agentflow-my-project --cwd /path/to/my-project
 rig up agentflow-other-project --cwd /path/to/other-project
 
+# Product copy for that project. Not a renamed delivery squad.
+./adapters/openrig/scripts/spawn-squad.sh --kind product --sibling agentflow-my-project pm /path/to/my-project
+rig up agentflow-pm --cwd /path/to/my-project
+
 # Monitor all squads
 rig ps
 
