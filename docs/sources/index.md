@@ -27,8 +27,8 @@ Any adapter, GitHub or otherwise, must satisfy:
   case-folding, or numeric coercion of a digest silently breaks every equality check built on it.
 
 Accepted cost: because `partOf` is reconstructed by AgentFlow rather than read from the source
-system's native hierarchy, the source system's own UI will not show the true tree. A source with only
-single-level grouping (for example, GitHub issues with no native sub-issues) can still carry an
-arbitrarily deep AgentFlow tree; that tree is simply invisible outside AgentFlow. Where the source
-does have a native hierarchy, such as GitHub sub-issues, it may mirror `partOf` for navigation. The
-mirror is never read back as the authority.
+system's native hierarchy, the source system's own UI will not show the true tree on its own. A source
+with only single-level grouping can still carry an arbitrarily deep AgentFlow tree; that tree is
+simply invisible outside AgentFlow. A source that can mirror the parent does so, and a source that
+cannot keeps the text link: the GitHub medium always writes `Part of #n` and, when the host supports
+it, also links the native sub-issue for navigation. The mirror is never read back as the authority.
