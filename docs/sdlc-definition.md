@@ -25,7 +25,9 @@ Harness-specific directories such as `.pi`, `.claude`, `.agy`, and `.codex` are 
 | ---------------------- | ---------------------------------------------------------------------- | ------------------------------------------- |
 | Workspace              | Configured repository/project boundary                                 | config, Cockpit query state                 |
 | Goal Group             | Parent objective/epic                                                  | issue body, relationships                   |
-| Goal                   | Delivery objective with acceptance                                     | issue body, labels, comments                |
+| Goal                   | Outcome a person accepts before breakdown (see Work altitudes)         | issue body, labels, comments                |
+| Capability             | Specification agents write under an accepted goal                      | issue body, comments                        |
+| Spec                   | Implementation unit where phases 0-8 run                               | issue body, role passes, PR                 |
 | Delivery               | Implementation and PR activity                                         | PR, commits, checks                         |
 | Role Flow              | Ordered role contributions and returns                                 | role-pass, workflow-status, handover        |
 | Readiness              | Path-aware applicable quality state                                    | issue/PR evidence, checks                   |
@@ -40,6 +42,53 @@ GitHub is the first and default `SourceAdapter`. AgentFlow core remains source-n
 language leads with AgentFlow concepts.
 
 Cockpit is an official optional projection of this model. It may visualize goals, readiness, role flow, release state, replay, approvals, and follow-ups, but it must not own unique SDLC state or be required by adoption, validators, skills, plugins, or settings merge.
+
+## Work altitudes
+
+Work is held at three altitudes. Each one is a different record, with a `kind` of `goal`,
+`capability`, or `spec`. One record is never all three.
+
+| Kind       | Holds                                    | Parent                        | Person                                    |
+| ---------- | ---------------------------------------- | ----------------------------- | ----------------------------------------- |
+| Goal       | the outcome or job to be done            | none                          | accepts it before any capability opens    |
+| Capability | the specification of how the goal is met | a goal that a person accepted | reviews it only when it is high-assurance |
+| Spec       | one implementation unit                  | a capability                  | none at this altitude                     |
+
+Phases 0-8 are the lifecycle inside a spec. They are not extra records, and they are not seats.
+A follow-up is a capability or a spec under an existing goal. It is not a second goal for the same
+intent.
+
+`lib/core/work-altitude.mjs` checks these rules when a record opens:
+
+- A capability without a parent goal that a person accepted is refused.
+- A spec without a parent capability is refused.
+- A spec under a high-assurance capability is refused until a person has reviewed that capability.
+  A person can only review a capability that exists, so the review gates the specs under it.
+- The kinds cannot stand in for each other.
+- A record with no `kind` is legacy. It stays legal, and it is never read as a goal.
+
+`agentflow-sdlc phase append` applies these rules when it creates a record with `--kind`, reading
+`--parent` through the same medium. A medium stores the kind, the parent, and the change class. It
+never reads a person's acceptance or review back from its own storage, because anything that can
+write that storage could write one. Until a person's acceptance is recorded through a gate, a
+capability cannot be opened from the command line.
+
+The capability review is the existing high-assurance human approval gate. These altitudes add no
+new person gate. The person gates are the gate classes in `lib/core/gate.mjs`,
+resolved by `lib/core/posture.mjs`:
+
+- **Intent freeze** (`adequacy-of-intent`): a person accepts the goal. This is required at every
+  posture.
+- **Agent escalation** (`agent-escalation`): an agent stops and asks. This is required at every
+  posture.
+- **Release or merge** (`release-of-candidate`): required when the posture or the change class asks
+  for it. Merge and other external actions stay with the person.
+
+A role acknowledgement, a seat choice, and a phase transition inside a spec are not person gates.
+
+The altitudes are harness-neutral. One agent with no rig applies the same rules as a squad. A
+harness may run them; it does not define them (see
+[ADR 004](adr/004-separate-sdlc-policy-from-harness-execution.md)).
 
 ## Paths
 
