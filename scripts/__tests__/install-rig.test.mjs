@@ -1,8 +1,17 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { execFileSync, spawnSync } from 'node:child_process'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, describe, expect, it } from 'vitest'
 
 const INSTALL_RIG = resolve('adapters/openrig/scripts/install-rig.sh')
 const EXCLUDES = [
@@ -41,9 +50,14 @@ function initRepo(dir) {
   runGit(['commit', '-m', 'initial'], dir)
 }
 
+// The installer reads configurations.yaml with node. Expose only node, not its install directory,
+// which can also hold a globally installed rig.
+const NODE_BIN = mkdtempSync(join(tmpdir(), 'agentflow-node-bin-'))
+symlinkSync(process.execPath, join(NODE_BIN, 'node'))
+
 // HOME is an empty sandbox and PATH has no rig, so the installer touches nothing real.
 function installRig(home, ...args) {
-  const env = { HOME: home, PATH: '/usr/bin:/bin' }
+  const env = { HOME: home, PATH: `${NODE_BIN}:/usr/bin:/bin` }
   return spawnSync('bash', [INSTALL_RIG, ...args], { encoding: 'utf8', env })
 }
 
@@ -55,6 +69,10 @@ afterEach(() => {
   for (const dir of dirs.splice(0)) {
     rmSync(dir, { recursive: true, force: true })
   }
+})
+
+afterAll(() => {
+  rmSync(NODE_BIN, { recursive: true, force: true })
 })
 
 describe('install-rig.sh target repository', () => {
@@ -113,5 +131,102 @@ describe('install-rig.sh target repository', () => {
     expect(result.status, result.stderr).toBe(0)
     expect(result.stdout).toContain('No target repository given; skipping')
     expect(readFileSync(join(decoy, '.git/info/exclude'), 'utf8')).toBe(before)
+  })
+})
+
+const AUTH = '{\n  "existing": {\n    "type": "api"\n  }\n}\n'
+
+function plantAuth(home) {
+  const file = join(home, '.pi/agent/auth.json')
+  mkdirSync(join(home, '.pi/agent'), { recursive: true })
+  writeFileSync(file, AUTH)
+  return file
+}
+
+function piSeats(home) {
+  const dir = join(home, '.openrig/state/pi')
+  return existsSync(dir) ? readdirSync(dir).sort() : []
+}
+
+describe('install-rig.sh preset', () => {
+  it('leaves auth.json untouched and creates no Pi seats for a preset without Pi', () => {
+    const home = tempDir('agentflow-home-')
+    const auth = plantAuth(home)
+
+    const result = installRig(home, '--preset', 'all-claude')
+
+    expect(result.status, result.stderr).toBe(0)
+    expect(result.stdout).toContain('Preset: all-claude (Pi seats: none)')
+    expect(readFileSync(auth, 'utf8')).toBe(AUTH)
+    expect(existsSync(join(home, '.openrig/state/pi'))).toBe(false)
+  })
+
+  it('bridges only the Pi seats of balanced-grok-lead and adds the grok-cli marker', () => {
+    const home = tempDir('agentflow-home-')
+    const auth = plantAuth(home)
+
+    const result = installRig(home, '--preset', 'balanced-grok-lead')
+
+    expect(result.status, result.stderr).toBe(0)
+    expect(piSeats(home)).toEqual(['orch-arch@agentflow', 'rev-review@agentflow'])
+    const written = JSON.parse(readFileSync(auth, 'utf8'))
+    expect(written.existing).toEqual({ type: 'api' })
+    expect(written['grok-cli']).toMatchObject({ access: 'pi-grok-cli-account-vault-v1' })
+  })
+
+  it('does not create auth.json for a Pi preset when none exists', () => {
+    const home = tempDir('agentflow-home-')
+
+    const result = installRig(home, '--preset', 'balanced-grok-lead')
+
+    expect(result.status, result.stderr).toBe(0)
+    expect(existsSync(join(home, '.pi/agent/auth.json'))).toBe(false)
+  })
+
+  it('defaults to the recommended preset, balanced-grok-lead', () => {
+    const home = tempDir('agentflow-home-')
+
+    const result = installRig(home)
+
+    expect(result.status, result.stderr).toBe(0)
+    expect(result.stdout).toContain('Preset: balanced-grok-lead')
+    expect(piSeats(home)).toEqual(['orch-arch@agentflow', 'rev-review@agentflow'])
+  })
+
+  it('exits 1 for an unknown preset before step 1', () => {
+    const home = tempDir('agentflow-home-')
+
+    const result = installRig(home, '--preset', 'no-such')
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('Unknown preset "no-such"')
+    expect(existsSync(join(home, '.openrig'))).toBe(false)
+  })
+
+  it.each([
+    ['before the path', (repo) => ['--preset', 'all-claude', repo]],
+    ['after the path', (repo) => [repo, '--preset=all-claude']],
+  ])('keeps the repository path positional with --preset %s', (_label, args) => {
+    const home = tempDir('agentflow-home-')
+    const repo = tempDir('agentflow-repo-')
+    initRepo(repo)
+
+    const result = installRig(home, ...args(repo))
+
+    expect(result.status, result.stderr).toBe(0)
+    expect(result.stdout).toContain('Preset: all-claude')
+    expect(excludeLines(join(repo, '.git/info/exclude'))).toEqual(expect.arrayContaining(EXCLUDES))
+  })
+
+  it('rejects a second positional argument before step 1', () => {
+    const home = tempDir('agentflow-home-')
+    const repo = tempDir('agentflow-repo-')
+    initRepo(repo)
+
+    const result = installRig(home, repo, 'all-claude')
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain("Unexpected argument 'all-claude'")
+    expect(existsSync(join(home, '.openrig'))).toBe(false)
   })
 })
