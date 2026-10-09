@@ -6,14 +6,14 @@ AgentFlow SDLC provides first-class support for [OpenRig](https://openrig.dev/),
 
 ## Rig Topology (`agentflow`)
 
-| Pod | Seat | Role | Default Runtime | Default Model | Responsibility |
-| --- | --- | --- | --- | --- | --- |
-| `orch` | `arch` | Architect Lead | `pi` (Grok bridge) | `grok-cli/grok-4.7` | Goal intake, task decomposition, complexity rating (P0-P4), proof contracts, Council convener |
-| `dev` | `build-jr` | Junior Builder | `claude-code` | Claude | Linear bug fixes, minor tasks, single-file edits (P0) |
-| `dev` | `build` | Standard Builder | `claude-code` | Claude | Feature delivery, subsystem extensions, bilateral workflows (P1) |
-| `dev` | `build-sr` | Senior Builder | `claude-code` | Claude | Core refactorings, multi-module architecture, Council participant (P2-P3) |
-| `dev` | `qa` | QA & Verification | `codex` | Codex | Test matrix execution, regression proof verification, edge cases |
-| `rev` | `review` | Independent Auditor | `pi` (Grok bridge) | `grok-cli/grok-4.7` | Four-Eyes review, digest-bound verdicts, risk audits, Council peer |
+| Pod    | Seat       | Role                | Default Runtime    | Default Model       | Responsibility                                                                                |
+| ------ | ---------- | ------------------- | ------------------ | ------------------- | --------------------------------------------------------------------------------------------- |
+| `orch` | `arch`     | Architect Lead      | `pi` (Grok bridge) | `grok-cli/grok-4.7` | Goal intake, task decomposition, complexity rating (P0-P4), proof contracts, Council convener |
+| `dev`  | `build-jr` | Junior Builder      | `claude-code`      | Claude              | Linear bug fixes, minor tasks, single-file edits (P0)                                         |
+| `dev`  | `build`    | Standard Builder    | `claude-code`      | Claude              | Feature delivery, subsystem extensions, bilateral workflows (P1)                              |
+| `dev`  | `build-sr` | Senior Builder      | `claude-code`      | Claude              | Core refactorings, multi-module architecture, Council participant (P2-P3)                     |
+| `dev`  | `qa`       | QA & Verification   | `codex`            | Codex               | Test matrix execution, regression proof verification, edge cases                              |
+| `rev`  | `review`   | Independent Auditor | `pi` (Grok bridge) | `grok-cli/grok-4.7` | Four-Eyes review, digest-bound verdicts, risk audits, Council peer                            |
 
 ---
 
@@ -21,14 +21,14 @@ AgentFlow SDLC provides first-class support for [OpenRig](https://openrig.dev/),
 
 OpenRig bundle configuration schema: `openrig.bundle-configurations/v1`:
 
-* `balanced-claude-lead` *(Recommended)*: Grok 4.7 Lead/Review + Claude Builders + Codex QA
-* `inverted-codex-lead`: Codex Lead/Builders + Claude QA + Grok 4.7 Review
-* `grok-heavy`: Grok 4.7 Lead/Review/Builders + Codex QA
-* `claude-heavy`: Claude Lead/Review/Builders + Codex QA
-* `codex-heavy`: Codex Lead/Review/Builders/QA
-* `all-grok`: All 6 seats on Grok 4.7 via Pi
-* `all-claude`: All 6 seats on Claude Code
-* `all-codex`: All 6 seats on Codex
+- `balanced-claude-lead` _(Recommended)_: Grok 4.7 Lead/Review + Claude Builders + Codex QA
+- `inverted-codex-lead`: Codex Lead/Builders + Claude QA + Grok 4.7 Review
+- `grok-heavy`: Grok 4.7 Lead/Review/Builders + Codex QA
+- `claude-heavy`: Claude Lead/Review/Builders + Codex QA
+- `codex-heavy`: Codex Lead/Review/Builders/QA
+- `all-grok`: All 6 seats on Grok 4.7 via Pi
+- `all-claude`: All 6 seats on Claude Code
+- `all-codex`: All 6 seats on Codex
 
 ---
 
@@ -73,4 +73,3 @@ rig ps
 # Teardown when done
 ./adapters/openrig/scripts/spawn-squad.sh --remove holoself
 ```
-

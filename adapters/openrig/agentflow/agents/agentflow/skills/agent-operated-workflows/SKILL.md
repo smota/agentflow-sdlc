@@ -42,12 +42,12 @@ better because an agent drives it.
 
 ## Keep ownership explicit
 
-| Owner | Responsibility |
-|---|---|
-| Runbook | owns policy, the mental model, checkpoints, stop conditions, and escalation rules |
-| Deterministic tools | own context gathering and bounded exact actions |
-| Agent | owns interpretation, sequencing, adaptation, and effect verification |
-| Human | owns destructive ambiguity and product policy |
+| Owner               | Responsibility                                                                    |
+| ------------------- | --------------------------------------------------------------------------------- |
+| Runbook             | owns policy, the mental model, checkpoints, stop conditions, and escalation rules |
+| Deterministic tools | own context gathering and bounded exact actions                                   |
+| Agent               | owns interpretation, sequencing, adaptation, and effect verification              |
+| Human               | owns destructive ambiguity and product policy                                     |
 
 The runbook guides judgment; tools enforce the invariants that must not be arguable.
 

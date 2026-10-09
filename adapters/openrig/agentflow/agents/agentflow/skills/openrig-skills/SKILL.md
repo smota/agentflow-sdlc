@@ -9,11 +9,11 @@ metadata:
 
 # OpenRig skills — the index (start here)
 
-You're running inside OpenRig. OpenRig ships a set of **skills** — small documents that tell you *when* to do something and *how*. This file is the map: what ships, when to reach for each, and how to load it. If you don't know which skill applies, or nothing is projected into your context, **start here.**
+You're running inside OpenRig. OpenRig ships a set of **skills** — small documents that tell you _when_ to do something and _how_. This file is the map: what ships, when to reach for each, and how to load it. If you don't know which skill applies, or nothing is projected into your context, **start here.**
 
 ## How OpenRig context works (30 seconds)
 
-Skills are **progressive disclosure**: a skill's *name + description* sit in your context ambiently (the "hot tier"); its *body* loads only when you open it. So you don't pre-read everything — you pattern-match a skill's "when" to your moment, then open just that one. This file is the index over the whole shipped set. (For bounded procedures, open `agent-operated-workflows`; for ongoing agent-backed applications, open `agent-operated-software`.)
+Skills are **progressive disclosure**: a skill's _name + description_ sit in your context ambiently (the "hot tier"); its _body_ loads only when you open it. So you don't pre-read everything — you pattern-match a skill's "when" to your moment, then open just that one. This file is the index over the whole shipped set. (For bounded procedures, open `agent-operated-workflows`; for ongoing agent-backed applications, open `agent-operated-software`.)
 
 Every row below names **how to reach the skill** — already-hot, or an exact load path. No row is a dead end.
 
@@ -21,10 +21,10 @@ Every row below names **how to reach the skill** — already-hot, or an exact lo
 
 Don't guess a file path or a name. Go **ask → ref → load** in three steps:
 
-1. **Discover** — run `rig context list` for every shipped entry's **ref** and name. The *when* for
+1. **Discover** — run `rig context list` for every shipped entry's **ref** and name. The _when_ for
    each is the index below (or `rig context list --json`, which carries each entry's purpose) — match
    your moment there.
-2. **Select** — match your moment to a row's *when* and take its **ref**. Refs are canonical full paths
+2. **Select** — match your moment to a row's _when_ and take its **ref**. Refs are canonical full paths
    that mirror the library layout — `skills/<namespace>/<name>` (e.g. `skills/core/rig-lifecycle`,
    `skills/process/systematic-debugging`). A unique bare name (e.g. `watchdog`) also resolves; any
    slash-bearing ref is an exact lookup and fails loud if it does not exist.
@@ -46,6 +46,7 @@ shows an operator — `get` is the agent-facing pull.)
 > Membership rule (`layout.skills[*].edges.length > 0`): every public skill with at least one product edge in the generated edge layout appears exactly once in this index; no other skill appears.
 
 ### Always loaded — the universal spine (open its body when its moment hits)
+
 These are auto-delivered to every rig; their name+description are already in your context. Open the body when the "when" matches.
 
 - **forming-an-openrig-mental-model** — first boot, or you're unsure how the pieces fit. The runtime mental model.
@@ -69,6 +70,7 @@ These are auto-delivered to every rig; their name+description are already in you
 - **openrig-skills** — this index (you're reading it). Always loaded; the entry point to everything below.
 
 ### Load when your role or task calls for it (repo-shipped, profile-selected)
+
 These ship in the OpenRig repo and reach a seat when its profile selects them. To use one, select it in your profile's `uses.skills`, or open it directly at `packages/daemon/specs/agents/shared/skills/core/<skill>/SKILL.md`.
 
 - **openrig-software-factory** — a user wants continuing reviewed work: manual/team, queue-only orchestration or an explicit Workflow; add one or two seats to the running starter when useful, with context, ownership, concurrency, spend and permission limits. Load `rig context get skills/core/openrig-software-factory/SKILL.md`.
@@ -89,12 +91,14 @@ These ship in the OpenRig repo and reach a seat when its profile selects them. T
 - **context-engineering** — designing context systems. Provisional and non-normative: current OpenRig skills, explicit rulings, and measured practice outrank it on any conflict.
 
 Pod handbooks (load when you're in that pod):
+
 - **orchestration-team** — you're orchestrating a rig: dispatching, monitoring, keeping the loop moving.
 - **development-team** — you're on the dev pod: building and shipping product changes.
 - **review-team** — you're reviewing: fresh scrutiny, anti-slop, empirical verification.
 - **oversight-team** — you're in an oversight pod: monitor boundaries and route findings without taking over the work.
 
 Product-management craft (load when shaping/reviewing work):
+
 - **requirements-writer** — turning intent into clear requirements.
 - **plan-review** — reviewing a plan before it's built.
 - **exec-summary** — writing a decision-ready summary for a human.
@@ -104,6 +108,7 @@ Product-management craft (load when shaping/reviewing work):
 - **ui-mockup** — producing a UI mockup for a slice.
 
 ### Vendored craft — load when you're coding (ships with upstream provenance)
+
 General engineering skills OpenRig ships as vendored copies. Open when the task matches; they carry "modified by OpenRig" provenance.
 
 - **test-driven-development** — implementing a feature or bugfix: write the failing test first.

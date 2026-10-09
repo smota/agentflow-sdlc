@@ -33,7 +33,7 @@ quickly understand what kind of system this is, what your seat is, and what
 the moves are. This skill is the fast on-ramp.
 
 For depth, read the canonical reference docs the skill points to. This
-skill's job is to get you *oriented* — accurate enough to operate, fast
+skill's job is to get you _oriented_ — accurate enough to operate, fast
 enough to be useful — not to replace the canonical docs.
 
 ---
@@ -62,12 +62,12 @@ a single system.
 Everything in agent engineering happens at one of four layers. **OpenRig
 operates at Layer 3.**
 
-| Layer | Name | Analogy | What it is |
-|---|---|---|---|
-| L0 | Model | CPU | Foundation model — Claude, GPT, Gemini. Stateless tokens-in/tokens-out. |
-| L1 | Agent Core | Process loop | The reason-and-act cycle: observe, plan, choose, act, repeat. |
-| L2 | Harness | Container / OS | Tools, memory, lifecycle around the model. Examples: Claude Code, Codex CLI. |
-| L3 | Rig | Docker Compose / Terraform | Multi-agent topology — what agents exist, how they relate. **OpenRig.** |
+| Layer | Name       | Analogy                    | What it is                                                                   |
+| ----- | ---------- | -------------------------- | ---------------------------------------------------------------------------- |
+| L0    | Model      | CPU                        | Foundation model — Claude, GPT, Gemini. Stateless tokens-in/tokens-out.      |
+| L1    | Agent Core | Process loop               | The reason-and-act cycle: observe, plan, choose, act, repeat.                |
+| L2    | Harness    | Container / OS             | Tools, memory, lifecycle around the model. Examples: Claude Code, Codex CLI. |
+| L3    | Rig        | Docker Compose / Terraform | Multi-agent topology — what agents exist, how they relate. **OpenRig.**      |
 
 You are an agent at L1 inside an L2 harness, configured by L3 OpenRig.
 OpenRig manages your harness; the harness wraps the model; the model
@@ -80,11 +80,11 @@ generates your tokens.
 OpenRig is built on three context-engineering pillars. When you're oriented,
 you should know which pillar you're operating in:
 
-| Pillar | What it is | Where it lives |
-|---|---|---|
-| **Ontology** | What exists. Curated knowledge — facts, code maps, as-built docs. | Shipped public context packs plus project-authored docs; discover with `rig context list`. |
-| **Epistemology** | Why an agent believes what it believes — reasoning, instincts, decisions. | Transcripts (auto-captured). Session logs. ADRs. |
-| **Topology** | How agents are connected — pods, edges, communication paths. | OpenRig itself. RigSpec YAML. |
+| Pillar           | What it is                                                                | Where it lives                                                                             |
+| ---------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| **Ontology**     | What exists. Curated knowledge — facts, code maps, as-built docs.         | Shipped public context packs plus project-authored docs; discover with `rig context list`. |
+| **Epistemology** | Why an agent believes what it believes — reasoning, instincts, decisions. | Transcripts (auto-captured). Session logs. ADRs.                                           |
+| **Topology**     | How agents are connected — pods, edges, communication paths.              | OpenRig itself. RigSpec YAML.                                                              |
 
 OpenRig manages topology and exposes public context through `rig context`.
 Project-authored sources supply project-specific knowledge; transcripts retain
@@ -98,22 +98,22 @@ read only the pieces a task needs.
 
 ## The core vocabulary (read these terms literally)
 
-| Term | What it means |
-|---|---|
-| **Rig** | A topology of agents working together as a single system. Defined in YAML (RigSpec). The top-level object. |
-| **Pod** | A bounded context group within a rig. Members of a pod share a context domain and continuity responsibility. Think Kubernetes pod for knowledge. |
-| **Member / Node** | A single agent (or terminal-node service) within a pod. |
-| **Edge** | A relationship between members or pods. Kinds: `delegates_to`, `spawned_by`, `can_observe`, `collaborates_with`, `escalates_to`. |
-| **Topology** | The shape of the rig — how agents are grouped into pods, how edges connect them, how the whole thing fits together. |
-| **AgentSpec** | A reusable agent blueprint. Defines skills, guidance, hooks, profiles, startup. File: `agent.yaml`. |
-| **RigSpec** | The topology YAML. Defines pods, members, edges, culture. File: `rig.yaml`. |
-| **RigBundle** | A portable archive of a RigSpec + vendored AgentSpecs. Move topologies across machines. |
-| **Agent Starter** | A named, reusable starting context bundle. RigSpec member can declare `starter_ref`. |
-| **Skill** | A markdown file with frontmatter that an agent loads at boot or on activation. Cross-runtime standard at `agentskills.io`. |
-| **Profile** | A named configuration within an AgentSpec. The rig spec's member field selects which profile to use. |
-| **Culture** | Rig-wide constitution — how the team communicates, what "done" means, escalation rules. File: `CULTURE.md`. |
-| **Snapshot** | Point-in-time capture of a rig — sessions, conversations, state. Restorable. |
-| **Session name** | `{pod}-{member}@{rig}`. The canonical address for tmux sessions and agent-to-agent messaging. |
+| Term              | What it means                                                                                                                                    |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Rig**           | A topology of agents working together as a single system. Defined in YAML (RigSpec). The top-level object.                                       |
+| **Pod**           | A bounded context group within a rig. Members of a pod share a context domain and continuity responsibility. Think Kubernetes pod for knowledge. |
+| **Member / Node** | A single agent (or terminal-node service) within a pod.                                                                                          |
+| **Edge**          | A relationship between members or pods. Kinds: `delegates_to`, `spawned_by`, `can_observe`, `collaborates_with`, `escalates_to`.                 |
+| **Topology**      | The shape of the rig — how agents are grouped into pods, how edges connect them, how the whole thing fits together.                              |
+| **AgentSpec**     | A reusable agent blueprint. Defines skills, guidance, hooks, profiles, startup. File: `agent.yaml`.                                              |
+| **RigSpec**       | The topology YAML. Defines pods, members, edges, culture. File: `rig.yaml`.                                                                      |
+| **RigBundle**     | A portable archive of a RigSpec + vendored AgentSpecs. Move topologies across machines.                                                          |
+| **Agent Starter** | A named, reusable starting context bundle. RigSpec member can declare `starter_ref`.                                                             |
+| **Skill**         | A markdown file with frontmatter that an agent loads at boot or on activation. Cross-runtime standard at `agentskills.io`.                       |
+| **Profile**       | A named configuration within an AgentSpec. The rig spec's member field selects which profile to use.                                             |
+| **Culture**       | Rig-wide constitution — how the team communicates, what "done" means, escalation rules. File: `CULTURE.md`.                                      |
+| **Snapshot**      | Point-in-time capture of a rig — sessions, conversations, state. Restorable.                                                                     |
+| **Session name**  | `{pod}-{member}@{rig}`. The canonical address for tmux sessions and agent-to-agent messaging.                                                    |
 
 The session-name format `{pod}-{member}@{rig}` is your address. When you
 run `rig whoami --json`, you get back your full topology context: rig name,
@@ -126,13 +126,13 @@ pod, member, peers, edges, transcript path.
 OpenRig has five rig classes. The class determines authoring discipline,
 supervision, and lifecycle policy.
 
-| Class | Purpose | Lifecycle |
-|---|---|---|
-| **kernel** | Host-level supervision, intake, authoring. One per host. | Always on; never auto-hibernated. |
-| **project** | Long-lived team bound to a codebase. | Stays hot when active; hibernates on explicit request. |
-| **ephemeral** | Short-lived mission (research, build, migration, spike). | Spawn → work → retire. |
-| **infra-build** | Subclass of ephemeral whose output becomes permanent infrastructure. | Retired only after output verified in place. |
-| **managed-app** | Services-backed rig with specialist agents (e.g., a vault specialist, a skill librarian). | Long-lived; accessed by other rigs. |
+| Class           | Purpose                                                                                   | Lifecycle                                              |
+| --------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| **kernel**      | Host-level supervision, intake, authoring. One per host.                                  | Always on; never auto-hibernated.                      |
+| **project**     | Long-lived team bound to a codebase.                                                      | Stays hot when active; hibernates on explicit request. |
+| **ephemeral**   | Short-lived mission (research, build, migration, spike).                                  | Spawn → work → retire.                                 |
+| **infra-build** | Subclass of ephemeral whose output becomes permanent infrastructure.                      | Retired only after output verified in place.           |
+| **managed-app** | Services-backed rig with specialist agents (e.g., a vault specialist, a skill librarian). | Long-lived; accessed by other rigs.                    |
 
 You're probably in a project rig or managed-app rig if you're doing
 substantive work. Knowing your class helps you understand the supervisory
@@ -172,12 +172,12 @@ cost when you reach for one.
 
 ### Where skills live (sources of truth)
 
-| Home | Purpose |
-|---|---|
-| `<rig-cwd>/.claude/skills/`, `<rig-cwd>/.agents/skills/` | Where the harness actually loads from. Populated by `rig up`. |
-| `~/.claude/skills/`, `~/.agents/skills/` | User-level harness skill directories. Inspect the current projection and harness configuration to determine which skills are installed and where they came from. |
+| Home                                                                                      | Purpose                                                                                                                                                                                            |
+| ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `<rig-cwd>/.claude/skills/`, `<rig-cwd>/.agents/skills/`                                  | Where the harness actually loads from. Populated by `rig up`.                                                                                                                                      |
+| `~/.claude/skills/`, `~/.agents/skills/`                                                  | User-level harness skill directories. Inspect the current projection and harness configuration to determine which skills are installed and where they came from.                                   |
 | `packages/daemon/{specs/agents/shared/skills,assets/plugins/*/skills}/` (source checkout) | Product skills that ship with OpenRig — the spec pool + the bundled plugin assets (openrig-user, openrig-architect, forming-an-openrig-mental-model, queue-handoff, claude-compaction-restore, …). |
-| the skills authoring workspace | Skill authoring source (not runtime-loaded). |
+| the skills authoring workspace                                                            | Skill authoring source (not runtime-loaded).                                                                                                                                                       |
 
 The product already discovers its installed shared skill pool and serves
 packaged context through `rig context list/get`. Discovery and retrieval do
@@ -257,17 +257,17 @@ You're now oriented enough to start doing useful work.
 
 For real depth, these are the load-bearing canonical docs:
 
-| Reference | What it covers |
-|---|---|
-| `docs/as-built/README.md` (source checkout) | As-built map of territory — daemon architecture, system overview, package boundaries; routes to architecture and UI modules via `codemap.md` |
-| `rig --help`, then `rig <command> --help` | The installed CLI surface, subcommands and flags |
-| `rig context get reference/rig-spec.md` | The RigSpec YAML format — pods, members, edges, all fields |
-| `docs/reference/agent-spec.md` (source checkout) | The AgentSpec YAML format — resources, profiles, imports |
-| `docs/reference/agent-startup-guide.md` (source checkout) | The 7-layer startup layering model; delivery hints |
-| [Core vocabulary above](#the-core-vocabulary-read-these-terms-literally) | Vocabulary used in this skill (read literally) |
-| `openrig-operating-model` skill | Placement and operating-model guidance — topology and work trees, context altitude |
-| `openrig-architect` skill | Rig and topology authoring |
-| `https://agentskills.io/specification` | The cross-runtime skill standard |
+| Reference                                                                | What it covers                                                                                                                               |
+| ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docs/as-built/README.md` (source checkout)                              | As-built map of territory — daemon architecture, system overview, package boundaries; routes to architecture and UI modules via `codemap.md` |
+| `rig --help`, then `rig <command> --help`                                | The installed CLI surface, subcommands and flags                                                                                             |
+| `rig context get reference/rig-spec.md`                                  | The RigSpec YAML format — pods, members, edges, all fields                                                                                   |
+| `docs/reference/agent-spec.md` (source checkout)                         | The AgentSpec YAML format — resources, profiles, imports                                                                                     |
+| `docs/reference/agent-startup-guide.md` (source checkout)                | The 7-layer startup layering model; delivery hints                                                                                           |
+| [Core vocabulary above](#the-core-vocabulary-read-these-terms-literally) | Vocabulary used in this skill (read literally)                                                                                               |
+| `openrig-operating-model` skill                                          | Placement and operating-model guidance — topology and work trees, context altitude                                                           |
+| `openrig-architect` skill                                                | Rig and topology authoring                                                                                                                   |
+| `https://agentskills.io/specification`                                   | The cross-runtime skill standard                                                                                                             |
 
 If you're going to be authoring rigs, use the `openrig-architect` skill before
 touching YAML.
@@ -291,15 +291,15 @@ that fit your actual work.
 
 ## Common misorientations to avoid
 
-| Misorientation | Reality |
-|---|---|
-| "OpenRig is a chat interface or assistant" | No. OpenRig is a control plane that *manages* your harness sessions. The chat happens inside the harness; OpenRig is around it. |
-| "Pods are workflow groups" | No. Pods are **context domains** — agents that share working context. If two agents communicate every turn, they should be in one pod; if they communicate rarely, they shouldn't be. |
-| "Edges represent reporting hierarchy" | No. Edges describe *coordination shape* — who delegates to whom, who observes whom. Avoid hierarchy interpretations; they distort behavior. |
-| "I should manage Codex's compaction the way I manage Claude's" | No. Codex auto-compacts cleanly; Claude doesn't. Different runtimes, different lifecycles. |
-| "MEMORY.md auto-loads, so I don't need to read it" | Maybe. Sometimes MEMORY.md auto-loads via system reminders; sometimes not. Don't assume. If your work touches the topics it covers, read it explicitly. |
-| "Skills inherit from a parent or compose like classes" | No. Skills are flat artifacts; composition happens via AgentSpec `profile.uses.skills` (structural) or soft cross-references in skill bodies (advisory). Not via OO-style inheritance. |
-| "The substrate `shared-docs/skills/` folder is the canonical runtime path" | No. The harness doesn't read there. It's an authoring workspace. Runtime loads from `.claude/skills/`, `.agents/skills/`, and product built-in. |
+| Misorientation                                                             | Reality                                                                                                                                                                                |
+| -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| "OpenRig is a chat interface or assistant"                                 | No. OpenRig is a control plane that _manages_ your harness sessions. The chat happens inside the harness; OpenRig is around it.                                                        |
+| "Pods are workflow groups"                                                 | No. Pods are **context domains** — agents that share working context. If two agents communicate every turn, they should be in one pod; if they communicate rarely, they shouldn't be.  |
+| "Edges represent reporting hierarchy"                                      | No. Edges describe _coordination shape_ — who delegates to whom, who observes whom. Avoid hierarchy interpretations; they distort behavior.                                            |
+| "I should manage Codex's compaction the way I manage Claude's"             | No. Codex auto-compacts cleanly; Claude doesn't. Different runtimes, different lifecycles.                                                                                             |
+| "MEMORY.md auto-loads, so I don't need to read it"                         | Maybe. Sometimes MEMORY.md auto-loads via system reminders; sometimes not. Don't assume. If your work touches the topics it covers, read it explicitly.                                |
+| "Skills inherit from a parent or compose like classes"                     | No. Skills are flat artifacts; composition happens via AgentSpec `profile.uses.skills` (structural) or soft cross-references in skill bodies (advisory). Not via OO-style inheritance. |
+| "The substrate `shared-docs/skills/` folder is the canonical runtime path" | No. The harness doesn't read there. It's an authoring workspace. Runtime loads from `.claude/skills/`, `.agents/skills/`, and product built-in.                                        |
 
 ---
 

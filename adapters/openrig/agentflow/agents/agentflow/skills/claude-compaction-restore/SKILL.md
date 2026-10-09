@@ -29,6 +29,7 @@ The previous version of this skill is kept at `reference/SKILL-v1.md` for compar
 ## What survives, and what you write
 
 **Already on disk; point to it, don't copy it:**
+
 - your session JSONL at `~/.claude/projects/<cwd-slug>/<session-uuid>.jsonl` (the post-compaction restore
   request names the exact path). It holds every message and tool call you made, in order. It does not hold
   your reasoning;
@@ -37,6 +38,7 @@ The previous version of this skill is kept at `reference/SKILL-v1.md` for compar
   `LEARNED.md`, evidence folders, branches and PRs.
 
 **Only in your head; write it down:**
+
 - why each important thing matters, and to whom;
 - how things relate: depends on, supersedes, answers, contradicts, was produced by, is owned by;
 - decisions and the reasons for them, options you rejected, judgment and taste you applied;
@@ -54,10 +56,10 @@ surface, the project, its own role, and where it stands in time. Some seats also
 Both classes read the same thing: the **ranked reading list** in your own map, in order. They differ only in
 how far down the list they go.
 
-| Class | Who | Reads |
-|---|---|---|
-| **Default** | drivers, builders, reviewers, QA, and any seat not listed below | Tier 1: the top of the list, to about **100k** of real context |
-| **High-context** | orchestrators, planners, advisors, leads: any seat that makes product, scope or routing decisions | Tier 1 and Tier 2, to about **200k** of real context |
+| Class            | Who                                                                                               | Reads                                                          |
+| ---------------- | ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| **Default**      | drivers, builders, reviewers, QA, and any seat not listed below                                   | Tier 1: the top of the list, to about **100k** of real context |
+| **High-context** | orchestrators, planners, advisors, leads: any seat that makes product, scope or routing decisions | Tier 1 and Tier 2, to about **200k** of real context           |
 
 The tiers are **real context added by the restore**, on top of what the compaction summary leaves (about 60k).
 These budgets assume a context window of about 1M tokens; on a smaller window, scale them to about 10% and
@@ -73,11 +75,13 @@ classes, transcripts and the session JSONL appear only as targeted line ranges, 
 
 If there is no ranked list (no preparation turn happened), use this default order. Default seats stop at about
 100k of real context:
+
 1. the post-compaction world profile;
 2. the mission or slice `SPEC.md` and `NOTES.md`;
 3. rows you hold.
 
 High-context seats then add, to about 200k:
+
 1. the full System World install;
 2. the full Project World, public and private;
 3. the mission's `PROGRESS.md` and recent returns;

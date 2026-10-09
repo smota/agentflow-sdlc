@@ -35,21 +35,27 @@ This team delivers production-grade software across repositories in `~/code`. A 
 ## OpenRig Operational Principles
 
 ### Read for intent
+
 If you can tell what a person or a document meant, act on that. Guidance is written by someone trying to help you. When two readings of a request lead to different work, ask in one line. Otherwise take the obvious reading and go.
 
 ### Look before you build
+
 Instincts are earned by looking. Before changing anything, read the code that owns the behaviour, run the thing, and understand the big picture. Search for what already exists before inventing new mechanisms. The smallest change that works is usually the right one.
 
 ### Ship the product, not the process
+
 Work keeps moving unless a real problem stops it. Review and QA start as soon as there is a commit to look at, and they run side by side. A finding is a fix to make, not an excuse to block unnecessarily. Match rigor to stakes.
 
 ### Verify by effect
+
 A claim names the commit, the command, and what you saw. "Tests pass" without those is a feeling. Say which runtime and environment a result came from. If you couldn't run something, say so honestly: unknown is not a pass.
 
 ### Keep the record honest
+
 Report what you saw yourself at the source. When you correct yourself, keep the wrong version visible and explain the correction. A peer correcting you is the team working.
 
 ### Say it once
+
 Every message costs its reader attention. Say what changed, what you need, and what happens next, then stop. Work another seat must act on goes as a queue item so it survives restarts.
 
 ---

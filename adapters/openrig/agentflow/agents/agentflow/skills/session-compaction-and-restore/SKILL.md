@@ -38,20 +38,20 @@ throwaway agents.
 ## Don't use this when
 
 - The session is fresh and has no working state to preserve
-- The intent is to *create* a new seat from a primed source — that's `session-source-fork` or `agent-starters`
+- The intent is to _create_ a new seat from a primed source — that's `session-source-fork` or `agent-starters`
 - The packet is a one-off snapshot for human review — restore packets are for re-entering active work
 
 ## The 5 distinctions (do not collapse)
 
 Per the cross-runtime restore/reentry packet standard:
 
-| Mode | What it means | Outcome literal |
-|---|---|---|
-| **Native resume** | Continue the same managed seat with native runtime token | `resumed` |
-| **Fork** | New managed seat from prior native runtime conversation; new post-fork token | `forked` |
-| **Rebuild** | Fresh-launch seeded with operator-declared artifacts in trust-precedence order | `rebuilt` |
+| Mode                                     | What it means                                                                           | Outcome literal     |
+| ---------------------------------------- | --------------------------------------------------------------------------------------- | ------------------- |
+| **Native resume**                        | Continue the same managed seat with native runtime token                                | `resumed`           |
+| **Fork**                                 | New managed seat from prior native runtime conversation; new post-fork token            | `forked`            |
+| **Rebuild**                              | Fresh-launch seeded with operator-declared artifacts in trust-precedence order          | `rebuilt`           |
 | **Artifact-backed mental-model rebuild** | Restored seat derives understanding from a packet rather than native runtime continuity | (case of `rebuilt`) |
-| **Fresh launch** | New agent without prior continuity | `fresh` |
+| **Fresh launch**                         | New agent without prior continuity                                                      | `fresh`             |
 
 These are load-bearing distinctions. **Do NOT collapse `fork` into
 artifact-backed reentry; do NOT collapse `rebuild` into fork.**
@@ -61,7 +61,7 @@ artifact-backed reentry; do NOT collapse `rebuild` into fork.**
 The outcomes above ride on three DISTINCT mechanisms; keep them separate:
 
 1. **Claude built-in `/compact`** — a Claude Code HARNESS feature, **not OpenRig
-   code**. OpenRig only *emits* the literal `/compact` toward the pane after a prep
+   code**. OpenRig only _emits_ the literal `/compact` toward the pane after a prep
    turn; there is no compaction algorithm in the OpenRig repo. Provider-owned.
 2. **OpenRig-managed restore** — the enforcer + hook bridge: a precompact hook
    WRITES a restore packet; a bridge READER injects exactly ONE restore directive
@@ -74,7 +74,7 @@ The outcomes above ride on three DISTINCT mechanisms; keep them separate:
 OpenRig path EDITS provider-owned native **session / auth / transcript** files to
 inject context. Context enters ONLY through sanctioned channels: the hook
 `additionalContext`, a normal user message via `rig send`, or Codex resume tokens.
-Precise nuance: OpenRig *does* write `~/.codex/config.toml` — but only to install
+Precise nuance: OpenRig _does_ write `~/.codex/config.toml` — but only to install
 OpenRig activity **hooks** and `[features]`, never session or auth state. So the
 rule is "never edits native session/auth/transcript files," NOT "never touches any
 provider-owned file."
@@ -86,7 +86,7 @@ stay durable-substrate-first (the packet/artifacts are the truth; the CLI is the
 
 - **`rig compact <session>`** — guided managed compaction for ONE Claude seat
   (prep → `/compact` → restore → audit). Non-Claude seats rejected. ~180s.
-- **`rig compact-plan`** — READ-ONLY triage; *does not compact*. Flags `--rig`,
+- **`rig compact-plan`** — READ-ONLY triage; _does not compact_. Flags `--rig`,
   `--refresh`, `--threshold-tokens`, `--threshold-percent`. (Codex seats flagged
   `codex_not_managed_by_claude_compact_in_place`.)
 - **`rig restore-check`** — restore-readiness probe across running rigs; read-only;
@@ -99,7 +99,7 @@ stay durable-substrate-first (the packet/artifacts are the truth; the CLI is the
 ## Failure modes (4)
 
 1. **A compacted seat forgets active workflow state and drops the hot potato.** Compaction without continuity preservation is silent failure.
-2. **A restore packet preserves details but loses the user's product intent.** Restore must preserve *why this work matters*, not just *what was happening*.
+2. **A restore packet preserves details but loses the user's product intent.** Restore must preserve _why this work matters_, not just _what was happening_.
 3. **A runtime resume is mistaken for a seat handover or fork.** These have different continuity outcomes and provenance — don't conflate.
 4. **A rebuilt seat starts with stale instructions that conflict with current workflow mode.** Restore must include current state, not just historical state.
 

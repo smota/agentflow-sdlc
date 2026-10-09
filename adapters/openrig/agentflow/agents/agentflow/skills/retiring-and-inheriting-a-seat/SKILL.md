@@ -42,7 +42,7 @@ Keep the transition and its authority explicit.
 ## Why planned handover beats riding compaction
 
 Compaction is the **crash-class backstop** (it stays that). A **planned** handover is
-deliberate: you author the packet with a clear head *before* degradation sets in, the
+deliberate: you author the packet with a clear head _before_ degradation sets in, the
 successor starts on a clean context, and the transition is auditable. Reach for this at a
 threshold you can see coming; fall back to compaction only when a transition wasn't planned.
 
@@ -63,8 +63,8 @@ threshold you can see coming; fall back to compaction only when a transition was
    a generation boundary while urgent one-off work carries cleanly.
 3. **Prime the fresh successor** — `rig walk` the packet into the seat (paced delivery lets the
    successor absorb it in order), or launch-with-packet. The successor reads it as
-   *inheritance*, not *identity*. **The packet's first-read line MUST point the successor at
-   `orienting-to-an-inherited-seat`** — its world model of what a handover *is*. Carry that
+   _inheritance_, not _identity_. **The packet's first-read line MUST point the successor at
+   `orienting-to-an-inherited-seat`** — its world model of what a handover _is_. Carry that
    pointer **in the durable packet artifact itself**; never inject it as a runtime prompt keyed
    to the seat name (that runtime mechanism is the **ghost-prompt** class the orientation skill
    teaches successors to refuse). Artifact-carried
@@ -121,8 +121,8 @@ flagged **honest-approximate** (the boot-captured session id is what makes this 
 ## Inherit the seat, not the predecessor's identity
 
 **You are inheriting a seat, not becoming your predecessor.** Frame it explicitly to the
-successor: *"agents sat here before you and learned X; you carry the seat's mission, not their
-identity."* Do not claim a predecessor's work as your own or use its stale identity
+successor: _"agents sat here before you and learned X; you carry the seat's mission, not their
+identity."_ Do not claim a predecessor's work as your own or use its stale identity
 as the current binding. Inherit the
 seat's **mission and hard-won lessons**; keep your own **fresh identity and session**.
 
@@ -152,22 +152,22 @@ reason this is a handover and not a compaction:
   needs a trigger: name the tradeoff, missing rationale or conflict that should prompt a question.
 
 **Wake-tenancy — the identity halves (a woken tenure can mistake itself for the live seat).** The
-hardest thing to apply *checked-not-believed* to is your own identity — a retired tenure resumed for a
+hardest thing to apply _checked-not-believed_ to is your own identity — a retired tenure resumed for a
 question can answer, and act, as if it still held the seat. Two rules close it:
 
-- **Waker: disclose the target's tenure status in the wake prompt.** Open with *"you are retired; gen-N
-  holds this seat now — I'm consulting you for one question."* An oriented tenure gives honest testimony;
+- **Waker: disclose the target's tenure status in the wake prompt.** Open with _"you are retired; gen-N
+  holds this seat now — I'm consulting you for one question."_ An oriented tenure gives honest testimony;
   an un-oriented one may reason as the live occupant.
 - **Woken: verify your OWN tenancy before your first act.** If you are being resumed / woken (a parked or
   retired session, or any session waking on a seat that already issued READY), your **first** check is
   `rig whoami` + a **successor check** — confirm whether you are still the live occupant or a successor
-  now holds the seat, *before* you do anything. Answer the question; do not resume the job.
+  now holds the seat, _before_ you do anything. Answer the question; do not resume the job.
 
 ## Failure modes
 
 1. **Riding compaction when a planned handover was available** — a degraded agent authors a
    degraded packet. Retire deliberately at the threshold you can see coming.
-2. **Over-inheriting** — the successor believes it *is* the predecessor (stale self-model,
+2. **Over-inheriting** — the successor believes it _is_ the predecessor (stale self-model,
    mis-claimed history). Frame inheritance explicitly; keep a fresh identity.
 3. **Session id captured at retirement, not boot** — a crash then leaves no row, or an
    unfindable tenure. Capture at boot.
@@ -208,7 +208,7 @@ has passed. Use the linked portable SOP for mechanics and record the actual run.
 - `orienting-to-an-inherited-seat` — the **successor-side** world model your packet points
   them at (loaded at boot); the load-bearing counterpart to this driver-side mechanic.
 - `session-compaction-and-restore` — the 16-field packet contract this practice reuses, and
-  the UNPLANNED-compaction backstop it replaces for *planned* transitions.
+  the UNPLANNED-compaction backstop it replaces for _planned_ transitions.
 - `seat-continuity-and-handover` — the seat-binding primitive mechanics + stable-seat-identity
   architecture; the lineage ledger is the concrete form of its abstract provenance record.
 - `openrig-user` → "Context packs and paced delivery" — `rig context compose` + `rig walk`, to

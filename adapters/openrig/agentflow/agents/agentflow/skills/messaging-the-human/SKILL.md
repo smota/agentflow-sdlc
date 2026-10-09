@@ -1,6 +1,6 @@
 ---
 name: messaging-the-human
-description: "Use when project policy calls for a human decision or update, a human delivery is pending or failed, or a reply must resume the right work."
+description: 'Use when project policy calls for a human decision or update, a human delivery is pending or failed, or a reply must resume the right work.'
 metadata:
   cli_surfaces_referenced:
     - gateway human list

@@ -59,21 +59,25 @@ These three are a division of labour, not a chain of gates. One agent may hold a
 ## Per-file rules — WHO / WHEN / HOW
 
 ### SPEC.md
+
 - **WHO:** the planning owner authors it; builders and reviewers read it as the scope and intent source.
 - **WHEN:** at creation and whenever scope changes.
 - **HOW:** a slice carries `intent:` in frontmatter and opens with `## Intent`, `## Mini-requirements`, and `## Proof contract`. A mission carries its intent and mission-level specification in the same authored node file. Keep depth proportional to the work.
 
 ### PROGRESS.md
+
 - **WHO:** the orchestrator owns the current state; every agent logs its own outcomes.
 - **WHEN:** on material delivery-state changes and at acceptance.
 - **HOW:** keep current delivery state in `## Current state`; append material outcomes with links to proof under `## Outcomes`. Retain historical entries and existing checkboxes without treating them as current acceptance authority. For a selected proof policy, use `rig proof show <slice>` for current readiness; keep frontmatter `stage`/`verified` honest.
 
 ### PROOF.md + proof/
+
 - **WHO:** the impl/QA pair that worked the slice.
 - **WHEN:** before you call a slice done.
 - **HOW:** say what you verified and how you verified it — **by effect**: you ran it and looked at the result. Put supporting media under `proof/`. State plainly what is proven and what is **not**; an honest "this half is untested" is worth more than a checkmark. If a drop verb is in play for this slice, prefer it over hand-placing files so the artifact carries its own provenance.
 
 ### NOTES.md
+
 - **WHO:** any agent updates `§1` (top-of-mind); each seat owns and appends to its own `§A–§X`.
 - **WHEN:** on material mission-context changes; a compacting agent **files its state here BEFORE compaction and reads it on restore.**
 - **HOW:** accruing tribal knowledge — `§1` ≤ 5–15 lines (gates, open decisions, surprises); per-seat continuation entries (latest = truth; other seats read-only). Pointer-first; don't duplicate.
@@ -96,9 +100,9 @@ Run `rig scope audit` at slice-close. Every convention check is **advisory / fai
 
 ## Reading terminal captures — KNOWN GOTCHA: ghost-text autocomplete is NOT real
 
-When you `rig capture` a pane, **greyed / ghost autocomplete suggestions are NOT real content** — they are autocomplete *previews*, not typed, staged, or committed input. **This has been faking agents out a lot**: reading a ghost suggestion in a peer's input box as "staged text they're about to send," then reasoning on a string that was never there.
+When you `rig capture` a pane, **greyed / ghost autocomplete suggestions are NOT real content** — they are autocomplete _previews_, not typed, staged, or committed input. **This has been faking agents out a lot**: reading a ghost suggestion in a peer's input box as "staged text they're about to send," then reasoning on a string that was never there.
 
-**Rule:** ignore ghost/autosuggest text entirely. Only *committed/rendered* pane output is real. When it matters, verify at source (git, the queue, the actual event) — never off a capture's ghost line.
+**Rule:** ignore ghost/autosuggest text entirely. Only _committed/rendered_ pane output is real. When it matters, verify at source (git, the queue, the actual event) — never off a capture's ghost line.
 
 ## Moment-of-truth checklist
 

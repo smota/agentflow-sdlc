@@ -24,6 +24,7 @@ knowledge. Resolve installed context through its current library addresses and
 the project's selected loadout; a private corpus is not a required public dependency.
 
 Companion implementation assets in this skill's folder:
+
 - `templates/` and `scripts/` — starters and working tools, described in §8.
 
 ## 1. The model in one breath
@@ -54,7 +55,7 @@ transition bridges for the flat layout only: never required, never walked,
 deleted as work nests properly.
 
 **The filename law:** one name per chain, identical at every level. The folder
-tells you *whose* it is; the filename tells you *what kind* it is. A seat named
+tells you _whose_ it is; the filename tells you _what kind_ it is. A seat named
 `pm-lead` in two different rigs has two different `LEARNED.md` files — the path
 is the identity. Never invent per-level names (no SEAT.md, no RIG.md): that
 breaks the trace, the self-description, and every tool at once.
@@ -65,17 +66,17 @@ This table is the model. If you internalize one thing, internalize this.
 
 ### Topology tree
 
-The chains carry what is true of a **position**. How a *kind* of thing works — the operating
+The chains carry what is true of a **position**. How a _kind_ of thing works — the operating
 model — ships in the mode-neutral `openrig-core` plugin; an operating-mode plugin
 (`openrig-lab`, `openrig-factory`, or `openrig-hq`) may refine it.
 
-| Level | `CULTURE.md` — values | `LEARNED.md` — what THIS ONE has learned | kept true by |
-|---|---|---|---|
-| fleet | default culture (ships with OpenRig) | fleet-level lived practice | **operator agent** |
-| instance | *(inherits)* | what is true of every rig on this daemon | **the instance's operator** |
-| rig | the rig's constitution | this rig's lived practice | **the rig's orchestrator** |
-| pod | *(inherits)* | this pod's lived practice — the **context domain**: anything useful to anyone in this pod | **the pod's lead** |
-| seat | *(inherits)* | this seat's lived knowledge — **the file that fixes handovers** | **the seat itself** |
+| Level    | `CULTURE.md` — values                | `LEARNED.md` — what THIS ONE has learned                                                  | kept true by                |
+| -------- | ------------------------------------ | ----------------------------------------------------------------------------------------- | --------------------------- |
+| fleet    | default culture (ships with OpenRig) | fleet-level lived practice                                                                | **operator agent**          |
+| instance | _(inherits)_                         | what is true of every rig on this daemon                                                  | **the instance's operator** |
+| rig      | the rig's constitution               | this rig's lived practice                                                                 | **the rig's orchestrator**  |
+| pod      | _(inherits)_                         | this pod's lived practice — the **context domain**: anything useful to anyone in this pod | **the pod's lead**          |
+| seat     | _(inherits)_                         | this seat's lived knowledge — **the file that fixes handovers**                           | **the seat itself**         |
 
 **Chain files sit on nodes, not on the shelves that hold them.** `rigs/`, `pods/`, `seats/`,
 `missions/` and `slices/` are shelves — the trace passes through them and expects nothing there.
@@ -85,13 +86,13 @@ model — ships in the mode-neutral `openrig-core` plugin; an operating-mode plu
 **ONE authored node file: `SPEC.md`.** Intent lives in its FRONTMATTER; the specification lives in
 its body. Alongside it sit three files with different jobs and different writers:
 
-| file | what it is | who writes it |
-|---|---|---|
-| `SPEC.md` | the node — `intent:` composes, body specifies | the node's owner |
-| `NOTES.md` | **LIVED** — what actually happened doing it, in the doer's own words | whoever is doing it |
-| `PROOF.md` | evidence the thing does what was intended | the prover |
-| `PROGRESS.md` | authored narrative and historical checklist marks; current proof readiness is derived from attributed judgments | the scope's owner and provers |
-| `proof/judgments/` | retained item judgment receipts written by `rig proof judge` | judges selected by the owning proof policy |
+| file               | what it is                                                                                                      | who writes it                              |
+| ------------------ | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| `SPEC.md`          | the node — `intent:` composes, body specifies                                                                   | the node's owner                           |
+| `NOTES.md`         | **LIVED** — what actually happened doing it, in the doer's own words                                            | whoever is doing it                        |
+| `PROOF.md`         | evidence the thing does what was intended                                                                       | the prover                                 |
+| `PROGRESS.md`      | authored narrative and historical checklist marks; current proof readiness is derived from attributed judgments | the scope's owner and provers              |
+| `proof/judgments/` | retained item judgment receipts written by `rig proof judge`                                                    | judges selected by the owning proof policy |
 
 **A scaffold may create `NOTES.md` and its starter instructions; its lived entries are never
 generated or projected.** It is the work tree's lived file, the way `LEARNED.md` is the topology
@@ -101,12 +102,12 @@ node itself. Keeping lived files out of the render path is what makes them safe 
 **Legacy name:** older workspaces may use `MISSION_NOTES.md`. Keep legacy
 content addressable; use `NOTES.md` for the chain because its name works at every altitude.
 
-| Level | `SPEC.md` — frontmatter `intent:` (why) + body (what must be built) | progress | kept true by |
-|---|---|---|---|
-| project | `intent:` only — stable, changes at real pivots | derived roll-up | the project's PM |
-| mission | `intent:` and proportional mission-level specification; organizes slices | derived child readiness; distinct outcome judgment | the mission's PM |
-| slice | `intent:` and the concrete slice specification | derived proof readiness | the slice's owner |
-| proof item | authored promise in the proof contract | attributed evidence-backed judgment on that revision | the selected judge |
+| Level      | `SPEC.md` — frontmatter `intent:` (why) + body (what must be built)      | progress                                             | kept true by       |
+| ---------- | ------------------------------------------------------------------------ | ---------------------------------------------------- | ------------------ |
+| project    | `intent:` only — stable, changes at real pivots                          | derived roll-up                                      | the project's PM   |
+| mission    | `intent:` and proportional mission-level specification; organizes slices | derived child readiness; distinct outcome judgment   | the mission's PM   |
+| slice      | `intent:` and the concrete slice specification                           | derived proof readiness                              | the slice's owner  |
+| proof item | authored promise in the proof contract                                   | attributed evidence-backed judgment on that revision | the selected judge |
 
 **Current acceptance:** Scope relationships and policy are authored in manifests; an item
 judgment is recorded once against its promise, evidence and policy revision. Slice, mission
@@ -148,8 +149,8 @@ shared existing views, not hand-maintained parent checkboxes or copied status pr
 `scripts/compose.py progress` remains a legacy checklist renderer; it does not certify
 attributed acceptance. Intent composes downward; proof readiness aggregates upward.
 
-**The axis behind the columns:** every context kind has a *template* half
-(what ships — SOP, the default culture) and a *learned* half (what living
+**The axis behind the columns:** every context kind has a _template_ half
+(what ships — SOP, the default culture) and a _learned_ half (what living
 in it taught — LEARNED, culture amendments). Only the pace of change differs:
 values change rarely and deliberately, like a constitution; practice changes
 constantly and cheaply, like working notes; intent changes at real pivots.
@@ -183,7 +184,7 @@ Sections, in order — see `templates/LEARNED.md`:
    never assume. Authority exists in writing or not at all.
 6. **KEY RELATIONSHIPS** — who it hands to, who reviews it, who it reports to.
 7. **TRIGGER POINTERS** — "when X happens, read Y." Attach pointers to the
-   *moments* that need them; lists of boot-time reading decay.
+   _moments_ that need them; lists of boot-time reading decay.
 8. **LESSONS** — dated, newest first. Periodically distill old entries into
    HOW I WORK or drop them.
 
@@ -212,14 +213,14 @@ Two rules give the trace its value:
   the chains **inform** decisions; they never enforce anything by themselves —
   a stale map must never be able to block true work.
 
-**When to trace — one principle:** *trace when enough has changed that your
-picture of where you stand may be stale* — after a large stretch of work, at a
+**When to trace — one principle:** _trace when enough has changed that your
+picture of where you stand may be stale_ — after a large stretch of work, at a
 boundary (boot, handover, new mission, confusion), or when someone asks you to
 reorient. Why not simply "every N hours": identical scheduled prompts fade
 from an agent's attention with repetition, and idle seats accumulate ritual
 traces that crowd out real context.
 Where a schedule fits your context anyway, use one — but prefer gating the
-*action* on evidence of change: `scripts/trace-due.sh` decides "has enough
+_action_ on evidence of change: `scripts/trace-due.sh` decides "has enough
 happened since my last trace?" deterministically and stays silent when the
 answer is no, so a scheduler can fire it as often as it likes.
 
@@ -232,18 +233,18 @@ seen from either end, and the relationship is worth holding.
 exist and both are chains in that sense:
 
 - **Altitude chain** — the same filename at every level of a tree, read by ascending
-  (`LEARNED.md`; `SPEC.md` with `intent:`). The sequence is *position*: leaf → root.
-- **Boot chain** — a seat's startup reading sequence. The sequence is *order of onboarding*.
+  (`LEARNED.md`; `SPEC.md` with `intent:`). The sequence is _position_: leaf → root.
+- **Boot chain** — a seat's startup reading sequence. The sequence is _order of onboarding_.
 
 **A chain can be traversed two ways, and that is the only real difference:**
 
-| | who drives | mechanism | when |
-|---|---|---|---|
-| **PULL** | the agent | `compose.py up` renders the chain; the agent reads it | it is awake and oriented enough to look — a trace, a refocus |
-| **PUSH** | an orchestrator | `rig walk --through <files> --pace <n>` sends one piece at a time into the pane | it *cannot* self-start — freshly cleared, re-primed, cold |
+|          | who drives      | mechanism                                                                       | when                                                         |
+| -------- | --------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| **PULL** | the agent       | `compose.py up` renders the chain; the agent reads it                           | it is awake and oriented enough to look — a trace, a refocus |
+| **PUSH** | an orchestrator | `rig walk --through <files> --pace <n>` sends one piece at a time into the pane | it _cannot_ self-start — freshly cleared, re-primed, cold    |
 
 **Pacing is the mechanism in both directions, and it is the load-bearing part.** Absorption
-*between* pieces is what makes a chain land; a concatenated dump of the same bytes is a failed
+_between_ pieces is what makes a chain land; a concatenated dump of the same bytes is a failed
 delivery regardless of content. That is why `rig walk` elapses `--pace` between pieces, and why a
 composed render is meant to be read as a sequence rather than skimmed as a wall.
 
@@ -261,7 +262,7 @@ establish understanding.
 1. **Your LEARNED.md is yours.** You write it, in your own words, as part of
    doing the job — when you learn something about how to do your work, the
    file carries it before you move on. When anyone else wants it changed
-   (a correction, new doctrine), they tell you and *you* write it — knowledge
+   (a correction, new doctrine), they tell you and _you_ write it — knowledge
    someone else typed into your file was never yours. The one exception:
    when an instance is empty or broken, whoever is responsible for it writes
    what's needed, marks those lines as written-for-the-instance, and the next
@@ -269,7 +270,7 @@ establish understanding.
 2. **Shipped things belong to their authors.** `openrig-core`'s operating-model
    skill and the shipped culture change through their owners, never by an instance
    editing in place. If it is wrong for everyone, propose the change to its owner;
-   if it is wrong for *you*, that's what LEARNED.md is for.
+   if it is wrong for _you_, that's what LEARNED.md is for.
 
 Everywhere: date what you write (from the clock), and correct by adding a
 dated correction rather than silently rewriting history.
@@ -290,7 +291,7 @@ operating picture in one document). Two rules:
   the way `tree` shows the shape of a directory — where you sit, and where the
   screams are, before you read a word of content.
 - **When an approval must freeze exact content** (for example a plan-lock on a
-  spec), it records the *hash of a render* — the frozen bytes live in the
+  spec), it records the _hash of a render_ — the frozen bytes live in the
   approval record while the chain files stay live for reading and revision.
 
 The **root render + diff** is how a high-altitude seat keeps a current mental
@@ -307,7 +308,7 @@ belongs in the skill layer.
 
 ### The one axis that decides file-vs-plugin: KIND or POSITION
 
-- **A chain holds knowledge about a POSITION** — *this* seat, *this* mission. **Unshareable by
+- **A chain holds knowledge about a POSITION** — _this_ seat, _this_ mission. **Unshareable by
   construction**, because the path is the identity.
 - **A plugin holds knowledge about a KIND** — a seat-type's job, a domain's craft, an operating
   model. Shareable, versionable, cross-harness.
@@ -333,8 +334,8 @@ further setup. **A script that only works for its author is not shippable, howev
 - **Volatility.** A value that changes faster than the file gets edited — a SHA, a count, a status,
   a roster — goes in as the **command that derives it**, never as the answer.
 
-**Then check which tree.** Traps, practice and how-we-work are position knowledge on the *topology*
-tree (`LEARNED.md`). What is being built is the *work* tree (`SPEC.md`). One rig owns both; they
+**Then check which tree.** Traps, practice and how-we-work are position knowledge on the _topology_
+tree (`LEARNED.md`). What is being built is the _work_ tree (`SPEC.md`). One rig owns both; they
 still do not mix.
 
 **Keep specification depth proportional.** A project carries stable intent; a
@@ -377,13 +378,13 @@ something immature and still be the right home**, because audience picked the fi
 altitude — a seat-level observation that is universally true graduates straight to a skill. What
 earns maturity is evidence: recurrence, independent corroboration, a measured cost, surviving
 change, surviving an attempt to falsify it. **Facts about mechanisms can skip the ladder**
-(*backticks substitute in double-quoted shell strings* is one command away); **inferences about
-practice must accrue** (*never broadcast to a large rig* took an incident).
+(_backticks substitute in double-quoted shell strings_ is one command away); **inferences about
+practice must accrue** (_never broadcast to a large rig_ took an incident).
 
 **LEARNED.md is not a staged item — it is the bed everything lies in.** Its gradient is
 positional: the dated append-log at the bottom is raw observation, the concise sections at the top
 are what survived. Attach distillation to a **trigger**: distil at deposit boundaries (pre-clear, pre-handover) where a write is
-already required and the author still remembers why each line exists; refocus merely *notices*
+already required and the author still remembers why each line exists; refocus merely _notices_
 when the log has outgrown the distilled part.
 
 ## 9. Standing the structure up

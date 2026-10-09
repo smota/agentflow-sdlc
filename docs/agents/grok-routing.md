@@ -37,6 +37,7 @@ If this command fails, treat `grok` as unavailable and try the next configured f
 ## Return contract
 
 When Grok finishes its phase:
+
 - Return the required artifact for the current role (`ROLE.md`).
 - Output honest execution observations; never forge exit codes or mock verification.
 - Hand off to the next role along declared transitions.

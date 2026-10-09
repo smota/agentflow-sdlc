@@ -13,7 +13,6 @@ Use current code and `rig ... --help` as ground truth if anything here ever conf
 
 Use the OpenRig builder guidance when changing OpenRig behavior, doctrine, or release posture.
 
-
 ## Coordination trust boundary
 
 Coordinate as openly as the trust boundary you actually control allows. Within a set of machines you
@@ -53,8 +52,9 @@ rig send dev-reviewer@example-project "The import report is ready; the durable h
 Use for any substantive work that must not fall through chat — slice handoffs,
 guard verdicts, QA results, full-tip reviews, multi-item batches. Survives agent
 restarts. Tracked in the daemon SQLite schema. Surfaces in Project / queue views
-+ in the destination seat's inbox. Tag with mission / slice / gate / checkpoint
-so future-you (and any peer) can find it.
+
+- in the destination seat's inbox. Tag with mission / slice / gate / checkpoint
+  so future-you (and any peer) can find it.
 
 Body discipline: substantive bodies go through **`--body-file <path>`** (or `-` for stdin) — the
 purpose-built, corruption-safe surface (it kills the backtick-shell-corruption class for multi-line
@@ -278,7 +278,7 @@ rig workflow project <instanceId>      # ADVANCE an instance — projects the ne
 rig workflow continue <instanceId>     # read-only inspector of an instance (does NOT advance it)
 ```
 
-*(Surface note — the current `rig workflow` command group registers **13** subcommands: `validate`, `instantiate`, `project`, `list`, `specs`, `show`, `trace`, `continue`, `run`, `watch`, `route`, `resume`, `status`. There is still no `create` verb — the spec YAML is authored on disk. `project` is the advancing verb (it projects the next-step packet); `continue` is a read-only inspector, NOT an advance — do not conflate them. The 13-verb set and the project-vs-continue semantics are verified against current product main `d37a08ad` (`packages/cli/src/commands/workflow.ts`, 13 registered `.command(...)` entries; the earlier "6-verb surface / continue-advances" claim here was stale). Verify individual subcommand flags with `rig workflow --help`.)*
+_(Surface note — the current `rig workflow` command group registers **13** subcommands: `validate`, `instantiate`, `project`, `list`, `specs`, `show`, `trace`, `continue`, `run`, `watch`, `route`, `resume`, `status`. There is still no `create` verb — the spec YAML is authored on disk. `project` is the advancing verb (it projects the next-step packet); `continue` is a read-only inspector, NOT an advance — do not conflate them. The 13-verb set and the project-vs-continue semantics are verified against current product main `d37a08ad` (`packages/cli/src/commands/workflow.ts`, 13 registered `.command(...)` entries; the earlier "6-verb surface / continue-advances" claim here was stale). Verify individual subcommand flags with `rig workflow --help`.)_
 
 ## Permission policy — pick one at setup (onboarding)
 
@@ -290,6 +290,7 @@ OpenRig sets only a **minimal usability floor** on your harness permissions and 
   - **Open** — allow-by-default; everything except explicitly-destructive, which ask.
 
   The built-in definitions ship as read-only policy spec files (Locked / Standard / Open); applying your pick is the job of the **`applying-a-permission-policy`** skill — it translates the chosen spec into your live harness config (Claude `settings.json` / Codex `config.toml`), interactively, showing the diff before it writes.
+
 - **YOLO MODE** — done with permissions, just want it to work: OpenRig boots every seat with the harness full-bypass launch flag. No config policy is applied (the bypass overrides it). This is a deterministic OpenRig setting, not a skill.
 - **No choice = the floor** — the minimal usability baseline (Claude `acceptEdits` / Codex workspace-only / Pi `--no-approve`), one consistent minimum, nothing more.
 
@@ -298,12 +299,12 @@ The floor and YOLO are **launch flags** OpenRig sets deterministically; the Lock
 ## v0.3.x Starter, Workspace, And Plugin Surfaces
 
 OpenRig v0.3.0 adds `rig agent-image`, `rig context-pack`, `rig workspace`, and
-`rig config init-workspace`. *(0.5.0: the `rig context-pack` alias is retired — the store + compose library is the single `rig context` noun; see "Context packs and paced delivery (0.5.0)".)* It also shifts fresh-user starter guidance toward
+`rig config init-workspace`. _(0.5.0: the `rig context-pack` alias is retired — the store + compose library is the single `rig context` noun; see "Context packs and paced delivery (0.5.0)".)_ It also shifts fresh-user starter guidance toward
 `product-team` for human-directed work and `conveyor` for workflow-oriented
 work. Treat `demo` as legacy/test content unless a task specifically asks for
-the old demo spec. *(Current teams: `starter` and `factory` are built in;
+the old demo spec. _(Current teams: `starter` and `factory` are built in;
 `workshop` is a bundle. The former `product-team`, `conveyor` and `demo` starters
-were removed. `first-project` is Starter's compatibility name.)*
+were removed. `first-project` is Starter's compatibility name.)_
 
 For new specs, use the [topology naming reference](https://github.com/mvschwarz/openrig/blob/95412717f319c6557c970d870cc22fa976565837/docs/reference/topology-naming.md):
 rig = purpose, pod = domain, member = role. Existing addresses and provider choices
@@ -332,6 +333,7 @@ nothing about a running daemon's configuration; inspect the selected instance
 before relying on a policy or its default.
 
 Compatibility checks:
+
 - `rig down` accepts a rig name or id. An ambiguous name matching more than one
   active rig is refused with matching ids; use the intended id.
 - For queue/view JSON or limit differences, compare the installed command's help,
@@ -441,6 +443,7 @@ teardown events and provides the crash-insurance floor that prior
 event-only/teardown-only snapshots could not provide on hard crashes.
 
 Config keys (SettingsStore):
+
 - `snapshots.periodic.enabled` — default `true`
 - `snapshots.periodic.interval_seconds` — default `300`
 - `snapshots.periodic.retention_keep` — default `10`
@@ -489,6 +492,7 @@ rig ps --active             # opt-in active-state filter (does NOT change the al
 ```
 
 **v0.4.0 breadth + projection changes**:
+
 - **Rig-level `rig ps` lists ALL active rigs** (one row each — the cheap "know the world" view). The **`--nodes` (per-seat) view defaults to your CURRENT rig only** (from `OPENRIG_SESSION_NAME`'s `@<rig>` suffix); `--rig <name>` picks another rig, `-A` widens `--nodes` to the whole host (expensive — prefer `--fields`/`--limit`).
 - **Per-node TL;DR projection (compact) is the default**; `--full` returns the raw byte-equivalent passthrough. Daemon-side `recoveryGuidance` relocated to a guidance-by-reference map (no longer duplicated per-node) — even `--full` benefits.
 - **All-states stays default** (different from `rig queue list` which defaults to active-only) — for `ps`, non-running states ARE often the actionable signal.
@@ -641,6 +645,7 @@ when passing token material.
 ## Core Loop
 
 Most work in OpenRig reduces to this loop:
+
 - recover identity: `rig whoami` (compact default; add `--full` only when you need the heavy payload)
 - inspect inventory: `rig ps --nodes` (compact default; add `--full` only when you need the firehose)
 - read context: `rig transcript ...`, `rig ask ...`, `rig chatroom history ...`
@@ -649,11 +654,13 @@ Most work in OpenRig reduces to this loop:
 ## Agent-Managed Apps
 
 An agent-managed app is a deployable OpenRig unit made of:
+
 - the software or service
 - one specialist agent dedicated to that software
 
 Treat the specialist as the domain delegate for that app.
 The current canonical example is:
+
 - rig: `secrets-manager`
 - pod: `vault`
 - member: `specialist`
@@ -689,12 +696,14 @@ rig whoami --json
 ```
 
 What it gives you today:
+
 - identity: rig, logical ID, pod/member, session name, runtime
 - peers and directional edges
 - transcript info
 - `contextUsage` when available
 
 Flags:
+
 ```bash
 rig whoami --session <name>
 rig whoami --node-id <id>
@@ -719,6 +728,7 @@ rig ps --nodes --json       # compact JSON node inventory (add --full for the fu
 ```
 
 **v0.4.0 flipped these to compact-by-default — see the `rig ps` compact-defaults section above; STOP using bare `rig ps --nodes --json` as a fleet-wide firehose (scope and detail are separate choices).** The compact `rig ps --nodes` node inventory (add `--full` only when you need the complete record, `-A` for cross-rig breadth) carries, per node:
+
 - session name
 - runtime
 - session/startup status
@@ -787,8 +797,9 @@ rig send <session> "message" --json
 ```
 
 **The send-guard (v0.4.0) — the default is SAFE.** A default `rig send` is guarded: it will NOT submit into an interactive prompt / permission block on the target pane. Flags:
+
 - `--verify` — delivery evidence.
-- `--force` — **a back-compat no-op on the send DECISION**: it never bypasses the interactive-prompt/permission guard and never changes whether a message is delivered (a mid-task/busy pane already sends-with-advisory by default). *(It does NOT "bypass activity-risk checks" — that earlier teaching is retired.)* It is **not fully inert**, though — it is still parsed solely to be **rejected in combination with `--wait-for-idle`**: `rig send … --force --wait-for-idle <n>` prints `--wait-for-idle cannot be combined with --force`, exits 1, and sends nothing. So do not read "no-op" as "`--force --wait-for-idle` is harmless"; that pairing errors. *(Verified against current product main `d37a08ad`: the guard-bypass no-op is declared at `send.ts` and confirmed by runtime capture — a plain `--force` send delivers through the ordinary path; the `--wait-for-idle` rejection is enforced at `send.ts`, `routes/transport.ts`, and `session-transport.ts`, and confirmed by runtime capture — exit 1, nothing sent.)*
+- `--force` — **a back-compat no-op on the send DECISION**: it never bypasses the interactive-prompt/permission guard and never changes whether a message is delivered (a mid-task/busy pane already sends-with-advisory by default). _(It does NOT "bypass activity-risk checks" — that earlier teaching is retired.)_ It is **not fully inert**, though — it is still parsed solely to be **rejected in combination with `--wait-for-idle`**: `rig send … --force --wait-for-idle <n>` prints `--wait-for-idle cannot be combined with --force`, exits 1, and sends nothing. So do not read "no-op" as "`--force --wait-for-idle` is harmless"; that pairing errors. _(Verified against current product main `d37a08ad`: the guard-bypass no-op is declared at `send.ts` and confirmed by runtime capture — a plain `--force` send delivers through the ordinary path; the `--wait-for-idle` rejection is enforced at `send.ts`, `routes/transport.ts`, and `session-transport.ts`, and confirmed by runtime capture — exit 1, nothing sent.)_
 - `--wait-for-idle <seconds>` — wait until the target is explicitly idle before sending. **Cannot be combined with `--force`** (that pairing is rejected: exit 1, nothing sent).
 - `--raw` — send exact text/keystrokes without the From/To messaging envelope (still guarded against interactive prompts).
 - `--dangerously-interact --reason "<why>"` — the ONLY override of the prompt/permission guard: deliberately drive an interactive prompt/permission block (implies `--raw`, requires `--reason`, audit-logged).
@@ -796,7 +807,7 @@ rig send <session> "message" --json
 - `--from <session>` — deprecated and ignored; it does not select the sender. Sender identity comes from the current seat and transport provenance; cross-host envelopes use the durable local origin, not the supplied flag or a relay identity.
 - `--context <ref>` **(0.5.0)** — attach a composed context pack/piece by ref (see "Context packs and paced delivery"). Small piece → `send --context`; a real pack → `rig walk`. The noun `rig context` composes the ref; the verb delivers it.
 
-> **Durable work goes to the QUEUE, not `send`.** `rig send` is an *ephemeral* message to a pane — it can be missed, and its delivery status is pane-render, not receipt. If you are **assigning work, or the message is important enough that losing it would be a real bummer**, use `rig queue` (below): it's durable, owned, tracked, and survives compaction and restart. Reach for `send` for a quick conversational nudge; reach for the **queue** for anything that must not get lost. Do not default to `send` for work — that's the most common mistake.
+> **Durable work goes to the QUEUE, not `send`.** `rig send` is an _ephemeral_ message to a pane — it can be missed, and its delivery status is pane-render, not receipt. If you are **assigning work, or the message is important enough that losing it would be a real bummer**, use `rig queue` (below): it's durable, owned, tracked, and survives compaction and restart. Reach for `send` for a quick conversational nudge; reach for the **queue** for anything that must not get lost. Do not default to `send` for work — that's the most common mistake.
 
 As of v0.3.3, content beginning with `--` or `-` is safe:
 `rig send <session> "content starting with -- or - is now safe"` delivers
@@ -808,6 +819,7 @@ or large bodies handed off as durable work, use
 queue-side surface, not `rig send`.
 
 `--verify` delivery outcomes (v0.3.3+):
+
 - `delivered` — text + Enter both succeeded and capture re-confirmed the body landed.
 - `rendered-unconfirmed` — text + Enter both succeeded but capture could not re-confirm the body (TUI redraw race or scroll). The message landed; the post-send re-check could not prove it. Treat as landed-but-unconfirmable, NOT failure.
 - `failed` — the send transport itself failed.
@@ -817,12 +829,14 @@ compatibility). A new `Delivery: <outcome>` line carries the named outcome
 above.
 
 Observed operator nuance for `--verify`:
+
 - `Sent to ...` + `Verified: yes` (`Delivery: delivered`) = strong positive delivery evidence.
 - `Sent to ...` + `Verified: no` + `Delivery: rendered-unconfirmed` = the message landed; capture could not re-prove it. Don't blind-retry — check reply / `rig capture` / transcript before sending again.
 - `Sent to ...` + `Verified: no` + `Delivery: failed` = send-transport failure.
 - no `Sent to ...` line or a hard error = send failure.
 
 When you get `Verified: no`, do not immediately retry blindly. First check one of:
+
 - a direct reply from the target
 - `rig capture <session>`
 - transcript evidence
@@ -871,6 +885,7 @@ rig chatroom watch <rig> [--tmux]
 ```
 
 **Key commands:**
+
 - `send` — post a message
 - `history` — retrieve with composable filters (sender, since, after, topic)
 - `wait` — block until new matching messages arrive (polls history, times out honestly)
@@ -896,10 +911,12 @@ That's the whole reflex. **Don't** decide where it goes or who it's for — the 
 `--hint-urgency routine|urgent|critical`, `--hint-tags` — never required). One command, then carry
 on; the value is the habit, not the polish. **Don't overdo it, either:** stream real signal, not
 narration — a good observation beats ten noisy ones. It's a passing thought you externalize, not a chore.
+
 - `topic` — set a topic marker
 - `watch` — SSE or tmux-based live stream
 
 **Roundtable protocol:**
+
 1. Inspect old room: `rig chatroom history my-rig --limit 5`
 2. Save if needed: `rig chatroom history my-rig --json > /tmp/old-room.json`
 3. Clear if needed: `rig chatroom clear my-rig`
@@ -916,6 +933,7 @@ rig ask <rig> "question" --json
 ```
 
 Current shipped behavior:
+
 - queries the daemon for evidence
 - returns rig summary
 - returns transcript excerpts
@@ -969,20 +987,20 @@ rig context compose --out packs/<ref> --from <fileA> <fileB> ...   # ordered pie
 rig walk <seat> --through <ref | file ...> --pace 10s
 ```
 
-Walk a seat *through* a pack: each piece is sent into the pane, spaced by `--pace`, so the agent processes between sends (the human paste → wait → paste rhythm). Its own top-level verb, push-direction — the walker leads and does not wait for replies; the spacing does the work. Reach for `walk` on onboarding, repriming, or a fleet update — anything absorbed in order rather than all at once.
+Walk a seat _through_ a pack: each piece is sent into the pane, spaced by `--pace`, so the agent processes between sends (the human paste → wait → paste rhythm). Its own top-level verb, push-direction — the walker leads and does not wait for replies; the spacing does the work. Reach for `walk` on onboarding, repriming, or a fleet update — anything absorbed in order rather than all at once.
 
 ### The delivery grammar — send a ref, walk a pack, or attach it to a qitem
 
-| When | Verb |
-|---|---|
-| One thing, now | `rig send <seat> --context <ref>` |
-| One thing, everyone | `rig broadcast --rig <rig> --context <ref>` |
-| A sequence, absorbed | `rig walk <seat> --through <ref> --pace 10s` |
-| Context riding a durable handoff | `rig queue create … --body-context <ref>` |
+| When                             | Verb                                         |
+| -------------------------------- | -------------------------------------------- |
+| One thing, now                   | `rig send <seat> --context <ref>`            |
+| One thing, everyone              | `rig broadcast --rig <rig> --context <ref>`  |
+| A sequence, absorbed             | `rig walk <seat> --through <ref> --pace 10s` |
+| Context riding a durable handoff | `rig queue create … --body-context <ref>`    |
 
 - **Rule of thumb:** small piece → `send --context`; real pack → `walk`. An oversized `send --context` warns "this is walk-sized" instead of blasting the pane.
 - **`--body-context` snapshot rule:** a qitem built from a ref stores the **resolved content** in its body **plus the ref for provenance** — the handoff carries what was actually sent, and a later library edit never silently rewrites a past handoff's history.
-- **The orchestrator habit — assign work *with* its context attached:**
+- **The orchestrator habit — assign work _with_ its context attached:**
   ```bash
   rig context compose --out packs/qitem-brief --from <brief-file> <proof-file>
   rig queue create --destination dev-driver@build --body-context packs/qitem-brief --summary "…"
@@ -1006,16 +1024,19 @@ rig up <source> --json
 ```
 
 `<source>` can be:
+
 - a rig spec path
 - a `.rigbundle` path
 - a bare name
 
 Bare names are special:
+
 - if they match a library spec, `rig up` launches from the spec library
 - if they do not match a library spec, `rig up` treats the name as an existing-rig restore/power-on target
 - if both exist, `rig up` fails loudly on ambiguity
 
 Resume-original-by-default (v0.3.4+):
+
 - For an existing rig, `rig up <name>` resumes each seat from its original session/snapshot by default (operation A). Seats that successfully resume report `resumed`.
 - `--fresh <seat...>` is the per-seat opt-in for deliberate fresh-prime (operation B). Named seats are reported as `fresh-primed`.
 - `--existing` forces existing-rig restore semantics on a bare name, bypassing library-spec resolution. Useful when a rig name collides with a library spec name.
@@ -1023,9 +1044,11 @@ Resume-original-by-default (v0.3.4+):
 - Seats with no resumable session land in `awaiting-decision` (zero-session honest state, NOT `failed`); see the five-term restore vocabulary in "Recovery and Resilience" below.
 
 `--plan` (v0.3.4+):
+
 - `rig up <source> --plan` produces a read-only restore plan preview. It surfaces per-seat resume/fresh-prime intent and any awaiting-decision seats without mutating state. Honest async timeout: a stuck plan reports the timeout rather than hanging silently.
 
 Current behavior notes:
+
 - `--target <root>` is only for `.rigbundle` / package installation. It does not change agent cwd.
 - `rig up --cwd` is shipped. `rig up --cwd <path>` sends a per-run cwd override for all members in that launch.
 - `local:` `agent_ref` values resolve relative to the rig spec directory, not your shell cwd.
@@ -1064,10 +1087,12 @@ discarding it. The rig is preserved for later restoration via `rig unarchive`,
 which clears `archivedAt` and returns the rig to the active set.
 
 Archive vs delete:
+
 - `rig down --delete` — permanent removal; not recoverable.
 - `rig archive` — recoverable; the rig is hidden from the default active view but its record + snapshots are preserved.
 
 Visibility in `rig ps`:
+
 - `rig ps` — active rigs only (default).
 - `rig ps --include-archived` — includes archived rigs, marked with `*`.
 
@@ -1084,6 +1109,7 @@ rig env down <rig>
 
 Use these for service-backed rigs and agent-managed apps.
 For `secrets-manager`, these are the fastest CLI surfaces for:
+
 - confirming whether Vault is healthy
 - reading Vault container logs
 - stopping the Vault env without tearing down the specialist session first
@@ -1111,6 +1137,7 @@ rig restore <snapshotId> --rig <rigId>
 `rig restore` requires `--rig <rigId>`.
 
 Claude Code autonomy note:
+
 - unattended `rig whoami` on boot may require the local permission allow list to include `Bash(rig:*)`
 
 ### Import/export and bundles
@@ -1166,6 +1193,7 @@ rig attach --self --rig <rigId> --pod <namespace> --member <name> --runtime <run
 Use `rig attach --self` when the current agent should attach itself directly instead of going through `discover` + `bind`.
 
 Current proven behavior:
+
 - inside `tmux`: attaches as a normal tmux-backed node, preserving inbound `rig send` / `rig capture`
 - outside `tmux`: attaches as `external_cli`
 - `--print-env` prints the `OPENRIG_NODE_ID` and `OPENRIG_SESSION_NAME` exports for the current shell
@@ -1179,6 +1207,7 @@ rig whoami --json
 ```
 
 Notes:
+
 - for tmux-backed self-attach, `rig whoami --json` is the right verification
 - for raw/external self-attach, `rig ps --nodes --json` is currently the more reliable verification surface
 - if the current shell is outside tmux, pass `--display-name <name>` when you want a stable human session label recorded
@@ -1216,11 +1245,13 @@ rig adopt <spec.yaml> --bindings-file <bindings.yaml>
 ```
 
 What this does:
+
 - removes OpenRig management without killing the sessions
 - re-discovers those same sessions as unmanaged
 - re-attaches them to the topology defined by the spec + bindings
 
 Important limits:
+
 - this is for `sessions still alive`
 - spec alone is not enough for adopted rigs; you also need bindings
 - this does not yet mean OpenRig can recreate dead external sessions from nothing
@@ -1234,11 +1265,13 @@ rig adopt <pod-fragment.yaml> --bindings-file <pod.bindings.yaml> --target-rig <
 ```
 
 Use this when:
+
 - the target rig already exists
 - the new sessions are live and visible in `rig discover --json`
 - you want additive topology growth, not a full rebuild
 
 What to prepare:
+
 - a pod fragment spec with only the new pod
 - a bindings file mapping the new logical IDs to the live session names
 
@@ -1252,6 +1285,7 @@ rig export <rigId> -o rig.yaml
 ```
 
 Success looks like:
+
 - the new sessions stop appearing in `rig discover`
 - the new logical IDs appear in `rig ps --nodes --rig <rigId>`
 - `rig export` includes the new pod
@@ -1259,16 +1293,19 @@ Success looks like:
 ### Mixed-origin rigs are allowed
 
 One rig can contain both:
+
 - adopted nodes bound from already-running sessions
 - OpenRig-launched nodes created later with `rig expand` / `rig launch`
 
 Current safety rule:
+
 - `rig release` is for claimed/adopted-only rigs
 - if a rig contains launched nodes, `rig release` fails with `contains_launched_nodes`
 
 ### Manager-assisted recovery
 
 The proven operator pattern is:
+
 - keep one OpenRig manager session outside the rig it manages
 - address the target by rig name, not cached rig ID
 - find the target rig with bare `rig ps` (lists all rigs), then resolve its owner from `rig ps --nodes --rig <target>` (a bare `--nodes` read is your current rig only, not the target's)
@@ -1295,6 +1332,7 @@ or `rig add` (one member) when a seat needs an explicit model, a permission poli
 different agent spec or role profile, per-seat runtime or cwd, or startup files.
 
 Node-granular managed partial restore (v0.3.4+):
+
 - `rig launch <rigId> <nodeRef>` relaunches a single seat by logical id or node id through orchestration.
 - `rig launch <rigId> --seats <a,b,c>` relaunches a comma-separated subset of seats.
 - `--hold-reason <text>` records a reason for holding non-target seats during the partial launch.
@@ -1312,6 +1350,7 @@ daemon resolves the named pod, validates the member, runs preflight, and
 launches the member in place.
 
 HTTP outcomes:
+
 - `201` — member added; per-node launch state included in the response.
 - `400` — `validation_failed` or `preflight_failed` (the fragment or its launch posture is rejected before any state change).
 - `409` — `member_conflict` (a member with that identity already exists in the pod).
@@ -1348,6 +1387,7 @@ rig mcp serve [--port <port>]
 ```
 
 Current shipped MCP tools:
+
 - `rig_up`
 - `rig_down`
 - `rig_ps`
@@ -1377,6 +1417,7 @@ rig ps --nodes --json
 ```
 
 Specific operator rules:
+
 - `Sent to ...` + `Verified: no` is ambiguous delivery, not automatic failure. Check reply, `rig capture`, transcript evidence, or queue/outbox state before retrying.
 - partial `rig whoami --json` can happen when identity is still inferable but the daemon-backed path is degraded.
 - the unified-exec-process warning is a host/tooling-layer signal, not automatic proof that the OpenRig topology is unhealthy.
@@ -1388,9 +1429,11 @@ ps -axo pid,ppid,command | rg 'tmux send-keys|rig queue create|tmux attach|codex
 ```
 
 Safe cleanup target:
+
 - orphaned one-shot wrappers like `tmux send-keys ...`
 
 Do not mass-kill:
+
 - `tmux attach ...`
 - `codex ...`
 - `claude ...`
@@ -1398,6 +1441,7 @@ Do not mass-kill:
 ## JSON and Error Posture
 
 Design assumptions that hold in the shipped CLI:
+
 - many operator commands support `--json`
 - error messages are intended to say what happened, why it matters, and what to do next
 - daemon-backed commands fail loudly when the daemon is stopped or unhealthy
@@ -1413,6 +1457,7 @@ Design assumptions that hold in the shipped CLI:
 ## Commands That Do Not Exist
 
 Do not assume these exist unless the shipped help starts listing them:
+
 - `rig claim`
 - `rig blame`
 - `rig replay`

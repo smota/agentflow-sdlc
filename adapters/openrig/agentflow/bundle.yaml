@@ -1,8 +1,8 @@
 compatibility:
-  min_cli_version: "0.6.6"
-  min_daemon_version: "0.6.6"
+  min_cli_version: '0.6.6'
+  min_daemon_version: '0.6.6'
 
 preconditions:
-  - name: "Install and run the rig as your normal user, not root: Claude Code refuses to bypass permissions as root or under sudo."
+  - name: 'Install and run the rig as your normal user, not root: Claude Code refuses to bypass permissions as root or under sudo.'
   - name: "Keep OpenRig's files out of your commits: from the root of your clone, add CLAUDE.local.md, AGENTS.md, /.openrig/, .claude/settings.local.json and gate-lane-verdict.json to .git/info/exclude. The lead adds any that are missing when it starts."
-  - name: "AgentFlow SDLC Governance: All changes must occur in isolated git worktrees (.worktrees/), require bilateral or council review (Four-Eyes Principle), and enforce proof contracts before code."
+  - name: 'AgentFlow SDLC Governance: All changes must occur in isolated git worktrees (.worktrees/), require bilateral or council review (Four-Eyes Principle), and enforce proof contracts before code.'

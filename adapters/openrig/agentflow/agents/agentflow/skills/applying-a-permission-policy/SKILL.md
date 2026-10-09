@@ -7,8 +7,8 @@ description: >-
 metadata:
   openrig:
     stage: established
-    docs_checked: "2026-09-29"
-    verification_status: "Verify the installed harness version and effective settings; a rule-parser result is not a native permission test."
+    docs_checked: '2026-09-29'
+    verification_status: 'Verify the installed harness version and effective settings; a rule-parser result is not a native permission test.'
 ---
 
 # Applying a permission policy
@@ -53,10 +53,10 @@ Outside the setup question above, use an existing explicit choice; otherwise
 explain these options and ask which the user wants. Do not reopen the menu after
 an answered setup question or ask again for routine steps already authorized.
 
-| Choice | What the agent configures |
-| --- | --- |
-| Keep prompts | Preserve current native settings and handle requests when they arise. |
-| Remember selected commands | Add native allow rules for the chosen family or narrower verbs, leaving other rules and sandbox settings intact. |
+| Choice                       | What the agent configures                                                                                                  |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Keep prompts                 | Preserve current native settings and handle requests when they arise.                                                      |
+| Remember selected commands   | Add native allow rules for the chosen family or narrower verbs, leaving other rules and sandbox settings intact.           |
 | Broader permissive operation | Explain filesystem/network exposure and configure only the explicitly selected native mode and compatible launch settings. |
 
 **Allowing the whole `rig` family covers all its verbs**, including lifecycle,

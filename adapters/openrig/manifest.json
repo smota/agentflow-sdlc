@@ -14,13 +14,7 @@
     "agentflow-migrator",
     "agentflow-auditor"
   ],
-  "roles": [
-    "architect",
-    "developer",
-    "developer-jr",
-    "tester",
-    "reviewer"
-  ],
+  "roles": ["architect", "developer", "developer-jr", "tester", "reviewer"],
   "commands": [
     "rig up agentflow --cwd <project>",
     "rig down agentflow --snapshot",
@@ -29,8 +23,5 @@
     "adapters/openrig/scripts/spawn-squad.sh <project> [path]",
     "rig up agentflow-<project> --cwd <path>"
   ],
-  "scripts": [
-    "adapters/openrig/scripts/install-rig.sh",
-    "adapters/openrig/scripts/spawn-squad.sh"
-  ]
+  "scripts": ["adapters/openrig/scripts/install-rig.sh", "adapters/openrig/scripts/spawn-squad.sh"]
 }

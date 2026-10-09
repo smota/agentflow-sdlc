@@ -6,13 +6,13 @@ This adapter integrates AgentFlow SDLC with [OpenRig](https://openrig.dev/), pro
 
 ## Architecture & Layout
 
-* **`agentflow/`**: Canonical OpenRig Rig Bundle.
-  * `rig.yaml`: Pods `orch`, `dev`, `rev` with Grok 4.7 lead/review and Claude/Codex builders/QA.
-  * `configurations.yaml`: 8 declared presets (`balanced-claude-lead`, `inverted-codex-lead`, `grok-heavy`, `claude-heavy`, `codex-heavy`, `all-grok`, `all-claude`, `all-codex`).
-  * `CULTURE.md`: AgentFlow SDLC laws (mandatory Git Worktrees, Four-Eyes Principle, proof contracts before code).
-  * `agents/agentflow/`: Agent manifests, 12 profiles, guidance, and vendored skills.
-* **`scripts/install-rig.sh`**: One-line installer and recovery script that syncs the base bundle to `~/.openrig/specs/agentflow`, sets up the Pi state bridge for Grok 4.7, ensures credentials, and enforces Git hygiene.
-* **`scripts/spawn-squad.sh`**: Dynamic squad factory for running parallel, concurrent AgentFlow squads across different repositories.
+- **`agentflow/`**: Canonical OpenRig Rig Bundle.
+  - `rig.yaml`: Pods `orch`, `dev`, `rev` with Grok 4.7 lead/review and Claude/Codex builders/QA.
+  - `configurations.yaml`: 8 declared presets (`balanced-claude-lead`, `inverted-codex-lead`, `grok-heavy`, `claude-heavy`, `codex-heavy`, `all-grok`, `all-claude`, `all-codex`).
+  - `CULTURE.md`: AgentFlow SDLC laws (mandatory Git Worktrees, Four-Eyes Principle, proof contracts before code).
+  - `agents/agentflow/`: Agent manifests, 12 profiles, guidance, and vendored skills.
+- **`scripts/install-rig.sh`**: One-line installer and recovery script that syncs the base bundle to `~/.openrig/specs/agentflow`, sets up the Pi state bridge for Grok 4.7, ensures credentials, and enforces Git hygiene.
+- **`scripts/spawn-squad.sh`**: Dynamic squad factory for running parallel, concurrent AgentFlow squads across different repositories.
 
 ---
 
@@ -37,6 +37,7 @@ rig specs add adapters/openrig/agentflow
 OpenRig supports two operating workflows:
 
 ### Mode 1: Context Switching (Single Squad via Snapshot & Resume)
+
 Best when focusing on one project at a time. Zero idle cost, instant resume.
 
 ```bash
@@ -51,6 +52,7 @@ rig up agentflow --existing --cwd /home/sam/code/project-b
 ```
 
 ### Mode 2: Multi-Squad Parallel Execution (Simultaneous Teams)
+
 Best when running completely concurrent squads on separate projects at the same time. Each squad receives an isolated namespace, distinct tmux sessions (`<seat>@agentflow-<project>`), and dedicated Pi bridges.
 
 ```bash
@@ -69,4 +71,3 @@ rig ps
 ./adapters/openrig/scripts/spawn-squad.sh --list
 ./adapters/openrig/scripts/spawn-squad.sh --remove holoself
 ```
-

@@ -59,36 +59,32 @@ Restore from the evidence for this session before relying on remembered task sta
 node ~/.claude/skills/claude-compaction-restore/scripts/restore-from-jsonl.mjs /path/to/session.jsonl --out /tmp/claude-compaction-restore
 ```
 
-   If no transcript was named, identify the current session's transcript first.
-   The script can discover a transcript from a working directory, but inspect that
-   selection before relying on it. If the session cannot be identified, report
-   the missing input instead of reconstructing from an unrelated conversation.
-   Read the resulting `restore-instructions.md` and `touched-files.md`.
-4. Inspect the actual packet and transcript sizes before choosing how much to read.
-   The generated instructions report estimated token cost. State a read budget
-   and stopping rule that leave room for the task. For a large transcript, begin
-   with the most recent task-relevant unique narrative; read earlier material when
-   a specific missing decision or dependency requires it. Report ranges actually
-   read rather than treating a chosen budget as completed coverage.
-5. Use the restore map and touched-file list to identify current task files.
-   The list is a triage aid, not an exhaustive inventory. Prioritize the active
-   queue/mission packet, decisions and memory named in the map, files with active
-   edits, root instructions, and relevant as-built docs or codemaps. Read required
-   task files in full within the stated budget; record any remaining gaps.
-6. Re-establish the task's purpose and operating context from the current project,
-   mission and seat files. A transcript summary alone does not establish current
-   scope or obligations. Use the shipped `refocusing` skill for the path-only
-   topology/work trace when operating inside OpenRig.
-7. Report the read-depth audit below. Once the required context is restored, use
-   the packet's requested acknowledgment, normally:
+If no transcript was named, identify the current session's transcript first.
+The script can discover a transcript from a working directory, but inspect that
+selection before relying on it. If the session cannot be identified, report
+the missing input instead of reconstructing from an unrelated conversation.
+Read the resulting `restore-instructions.md` and `touched-files.md`. 4. Inspect the actual packet and transcript sizes before choosing how much to read.
+The generated instructions report estimated token cost. State a read budget
+and stopping rule that leave room for the task. For a large transcript, begin
+with the most recent task-relevant unique narrative; read earlier material when
+a specific missing decision or dependency requires it. Report ranges actually
+read rather than treating a chosen budget as completed coverage. 5. Use the restore map and touched-file list to identify current task files.
+The list is a triage aid, not an exhaustive inventory. Prioritize the active
+queue/mission packet, decisions and memory named in the map, files with active
+edits, root instructions, and relevant as-built docs or codemaps. Read required
+task files in full within the stated budget; record any remaining gaps. 6. Re-establish the task's purpose and operating context from the current project,
+mission and seat files. A transcript summary alone does not establish current
+scope or obligations. Use the shipped `refocusing` skill for the path-only
+topology/work trace when operating inside OpenRig. 7. Report the read-depth audit below. Once the required context is restored, use
+the packet's requested acknowledgment, normally:
 
 ```text
 restored from packet at <path>; resumed at step <X>
 ```
 
-   Include the main files actually read in full. If essential context remains
-   missing, report partial restoration and the next recovery action instead of
-   claiming completion.
+Include the main files actually read in full. If essential context remains
+missing, report partial restoration and the next recovery action instead of
+claiming completion.
 
 The packaged PreCompact writer can prepare a packet and a per-seat pending marker;
 the restore bridge can deliver its pointer once for a matching session. Inspect
@@ -106,9 +102,9 @@ After the first restore pass, audit yourself before continuing.
    the actual restore request and active task.
 4. Read `PARTIAL`/`NOT_READ` items in full — but **to a declared budget with a stopping rule**, not
    unbounded. Prioritize by relevance to the active task; for a large transcript read the most recent
-   unique narrative first (see *If You Just Compacted*), not front-to-back.
-5. **Stop** when either every task-relevant item is `FULL`, or you reach the budget — *a restore that
-   cannot leave room for the work it was restored to do is not a successful restore.* "Read everything,
+   unique narrative first (see _If You Just Compacted_), not front-to-back.
+5. **Stop** when either every task-relevant item is `FULL`, or you reach the budget — _a restore that
+   cannot leave room for the work it was restored to do is not a successful restore._ "Read everything,
    never conserve" has no termination condition; that open-endedness is the bug, not the goal.
 6. Report the final read-depth table **honestly** (`FULL`/`PARTIAL`/`NOT_READ`, each with a reason)
    before task work. **An honest `PARTIAL` with its reason is a correct outcome, not a failure** — do
@@ -116,7 +112,7 @@ After the first restore pass, audit yourself before continuing.
 
 ## Guardrails
 
-- Compaction is survival, not housekeeping — never compact to free space, "lean" a seat, or capture/prepare an agent starter (the `rig agent-image` library). It is lossy (a compacted Claude is confident-but-hollow); compact only when a seat is genuinely near its context limit, with a before/after plan. A starter's value is being *functional*, not small — see the `agent-starters` skill.
+- Compaction is survival, not housekeeping — never compact to free space, "lean" a seat, or capture/prepare an agent starter (the `rig agent-image` library). It is lossy (a compacted Claude is confident-but-hollow); compact only when a seat is genuinely near its context limit, with a before/after plan. A starter's value is being _functional_, not small — see the `agent-starters` skill.
 - Do not silently launch fresh after compaction.
 - Do not continue from memory when restore evidence exists.
 - Do not defer required restore reading until a later user task. The restore is

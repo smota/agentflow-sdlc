@@ -1,4 +1,4 @@
-version: "0.2"
+version: '0.2'
 name: agentflow
 summary: >
   AgentFlow SDLC delivery squad for parallel, independent development across
@@ -32,11 +32,11 @@ pods:
     summary: Architect lead decomposes goals, sets workflow profiles (P0-P4), enforces proof contracts and convenes Council.
     members:
       - id: arch
-        agent_ref: "local:agents/agentflow"
+        agent_ref: 'local:agents/agentflow'
         profile: architect-pi
         runtime: pi
-        model: "grok-cli/grok-4.7"
-        cwd: "."
+        model: 'grok-cli/grok-4.7'
+        cwd: '.'
         startup:
           files:
             - path: startup/arch-lead.md
@@ -49,25 +49,25 @@ pods:
     summary: Capability ladder builders (Jr/Standard/Sr) implement in isolated worktrees; QA validates proof contracts.
     members:
       - id: build-jr
-        agent_ref: "local:agents/agentflow"
+        agent_ref: 'local:agents/agentflow'
         profile: builder-jr
         runtime: claude-code
-        cwd: "."
+        cwd: '.'
       - id: build
-        agent_ref: "local:agents/agentflow"
+        agent_ref: 'local:agents/agentflow'
         profile: builder
         runtime: claude-code
-        cwd: "."
+        cwd: '.'
       - id: build-sr
-        agent_ref: "local:agents/agentflow"
+        agent_ref: 'local:agents/agentflow'
         profile: builder-sr
         runtime: claude-code
-        cwd: "."
+        cwd: '.'
       - id: qa
-        agent_ref: "local:agents/agentflow"
+        agent_ref: 'local:agents/agentflow'
         profile: qa
         runtime: codex
-        cwd: "."
+        cwd: '.'
     edges:
       - kind: delegates_to
         from: build
@@ -84,11 +84,11 @@ pods:
     summary: Four-Eyes independent reviewer issues digest-bound verdicts and participates in Council deliberation.
     members:
       - id: review
-        agent_ref: "local:agents/agentflow"
+        agent_ref: 'local:agents/agentflow'
         profile: reviewer-pi
         runtime: pi
-        model: "grok-cli/grok-4.7"
-        cwd: "."
+        model: 'grok-cli/grok-4.7'
+        cwd: '.'
         startup:
           files:
             - path: startup/review-lead.md

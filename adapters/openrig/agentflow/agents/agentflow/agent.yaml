@@ -1,5 +1,5 @@
 name: agentflow-seat
-version: "1.0"
+version: '1.0'
 description: >
   Squad member on the agentflow rig delivering AgentFlow SDLC governance, proof contracts,
   and worktree isolation. The profile selects the role: architect, builder-jr, builder,
@@ -45,7 +45,29 @@ profiles:
     preferences:
       runtime: claude-code
     uses:
-      skills: &arch-skills [agent-operated-software, agent-operated-workflows, agentflow-orchestrator, agentflow-designer, agentflow-scanner, applying-a-permission-policy, claude-compaction-restore, delegating-work, forming-an-openrig-mental-model, loading-addressable-markdown, messaging-the-human, mission-slice-sop, openrig-operating-model, openrig-user, orienting-to-an-inherited-seat, queue-handoff, refocusing, retiring-and-inheriting-a-seat, seat-continuity-and-handover, session-compaction-and-restore]
+      skills:
+        &arch-skills [
+          agent-operated-software,
+          agent-operated-workflows,
+          agentflow-orchestrator,
+          agentflow-designer,
+          agentflow-scanner,
+          applying-a-permission-policy,
+          claude-compaction-restore,
+          delegating-work,
+          forming-an-openrig-mental-model,
+          loading-addressable-markdown,
+          messaging-the-human,
+          mission-slice-sop,
+          openrig-operating-model,
+          openrig-user,
+          orienting-to-an-inherited-seat,
+          queue-handoff,
+          refocusing,
+          retiring-and-inheriting-a-seat,
+          seat-continuity-and-handover,
+          session-compaction-and-restore,
+        ]
       runtime_resources: [claude-activity-hooks]
     startup:
       files:
@@ -59,7 +81,30 @@ profiles:
     preferences:
       runtime: pi
     uses:
-      skills: &arch-pi-skills [agent-operated-software, agent-operated-workflows, agentflow-orchestrator, agentflow-designer, agentflow-scanner, applying-a-permission-policy, delegating-work, forming-an-openrig-mental-model, loading-addressable-markdown, messaging-the-human, mission-slice-sop, openrig-operating-model, openrig-skills, openrig-user, orienting-to-an-inherited-seat, queue-handoff, refocusing, retiring-and-inheriting-a-seat, seat-continuity-and-handover, session-compaction-and-restore, software-for-agents]
+      skills:
+        &arch-pi-skills [
+          agent-operated-software,
+          agent-operated-workflows,
+          agentflow-orchestrator,
+          agentflow-designer,
+          agentflow-scanner,
+          applying-a-permission-policy,
+          delegating-work,
+          forming-an-openrig-mental-model,
+          loading-addressable-markdown,
+          messaging-the-human,
+          mission-slice-sop,
+          openrig-operating-model,
+          openrig-skills,
+          openrig-user,
+          orienting-to-an-inherited-seat,
+          queue-handoff,
+          refocusing,
+          retiring-and-inheriting-a-seat,
+          seat-continuity-and-handover,
+          session-compaction-and-restore,
+          software-for-agents,
+        ]
     startup:
       files:
         - path: guidance/architect.md
@@ -72,7 +117,28 @@ profiles:
     preferences:
       runtime: claude-code
     uses:
-      skills: &builder-skills [agent-operated-software, agent-operated-workflows, agentflow-collaborator, agentflow-scanner, applying-a-permission-policy, claude-compaction-restore, delegating-work, forming-an-openrig-mental-model, loading-addressable-markdown, messaging-the-human, mission-slice-sop, openrig-operating-model, openrig-user, orienting-to-an-inherited-seat, queue-handoff, refocusing, retiring-and-inheriting-a-seat, seat-continuity-and-handover, session-compaction-and-restore]
+      skills:
+        &builder-skills [
+          agent-operated-software,
+          agent-operated-workflows,
+          agentflow-collaborator,
+          agentflow-scanner,
+          applying-a-permission-policy,
+          claude-compaction-restore,
+          delegating-work,
+          forming-an-openrig-mental-model,
+          loading-addressable-markdown,
+          messaging-the-human,
+          mission-slice-sop,
+          openrig-operating-model,
+          openrig-user,
+          orienting-to-an-inherited-seat,
+          queue-handoff,
+          refocusing,
+          retiring-and-inheriting-a-seat,
+          seat-continuity-and-handover,
+          session-compaction-and-restore,
+        ]
       runtime_resources: [claude-activity-hooks]
     startup:
       files:
@@ -86,7 +152,29 @@ profiles:
     preferences:
       runtime: pi
     uses:
-      skills: &builder-pi-skills [agent-operated-software, agent-operated-workflows, agentflow-collaborator, agentflow-scanner, applying-a-permission-policy, delegating-work, forming-an-openrig-mental-model, loading-addressable-markdown, messaging-the-human, mission-slice-sop, openrig-operating-model, openrig-skills, openrig-user, orienting-to-an-inherited-seat, queue-handoff, refocusing, retiring-and-inheriting-a-seat, seat-continuity-and-handover, session-compaction-and-restore, software-for-agents]
+      skills:
+        &builder-pi-skills [
+          agent-operated-software,
+          agent-operated-workflows,
+          agentflow-collaborator,
+          agentflow-scanner,
+          applying-a-permission-policy,
+          delegating-work,
+          forming-an-openrig-mental-model,
+          loading-addressable-markdown,
+          messaging-the-human,
+          mission-slice-sop,
+          openrig-operating-model,
+          openrig-skills,
+          openrig-user,
+          orienting-to-an-inherited-seat,
+          queue-handoff,
+          refocusing,
+          retiring-and-inheriting-a-seat,
+          seat-continuity-and-handover,
+          session-compaction-and-restore,
+          software-for-agents,
+        ]
     startup:
       files:
         - path: guidance/builder-jr.md
@@ -180,7 +268,28 @@ profiles:
     preferences:
       runtime: codex
     uses:
-      skills: &reviewer-skills [agent-operated-software, agent-operated-workflows, agentflow-auditor, agentflow-scanner, applying-a-permission-policy, claude-compaction-restore, delegating-work, forming-an-openrig-mental-model, loading-addressable-markdown, messaging-the-human, mission-slice-sop, openrig-operating-model, openrig-user, orienting-to-an-inherited-seat, queue-handoff, refocusing, retiring-and-inheriting-a-seat, seat-continuity-and-handover, session-compaction-and-restore]
+      skills:
+        &reviewer-skills [
+          agent-operated-software,
+          agent-operated-workflows,
+          agentflow-auditor,
+          agentflow-scanner,
+          applying-a-permission-policy,
+          claude-compaction-restore,
+          delegating-work,
+          forming-an-openrig-mental-model,
+          loading-addressable-markdown,
+          messaging-the-human,
+          mission-slice-sop,
+          openrig-operating-model,
+          openrig-user,
+          orienting-to-an-inherited-seat,
+          queue-handoff,
+          refocusing,
+          retiring-and-inheriting-a-seat,
+          seat-continuity-and-handover,
+          session-compaction-and-restore,
+        ]
       runtime_resources: [claude-activity-hooks]
     startup:
       files:
@@ -194,7 +303,29 @@ profiles:
     preferences:
       runtime: pi
     uses:
-      skills: &reviewer-pi-skills [agent-operated-software, agent-operated-workflows, agentflow-auditor, agentflow-scanner, applying-a-permission-policy, delegating-work, forming-an-openrig-mental-model, loading-addressable-markdown, messaging-the-human, mission-slice-sop, openrig-operating-model, openrig-skills, openrig-user, orienting-to-an-inherited-seat, queue-handoff, refocusing, retiring-and-inheriting-a-seat, seat-continuity-and-handover, session-compaction-and-restore, software-for-agents]
+      skills:
+        &reviewer-pi-skills [
+          agent-operated-software,
+          agent-operated-workflows,
+          agentflow-auditor,
+          agentflow-scanner,
+          applying-a-permission-policy,
+          delegating-work,
+          forming-an-openrig-mental-model,
+          loading-addressable-markdown,
+          messaging-the-human,
+          mission-slice-sop,
+          openrig-operating-model,
+          openrig-skills,
+          openrig-user,
+          orienting-to-an-inherited-seat,
+          queue-handoff,
+          refocusing,
+          retiring-and-inheriting-a-seat,
+          seat-continuity-and-handover,
+          session-compaction-and-restore,
+          software-for-agents,
+        ]
     startup:
       files:
         - path: guidance/reviewer.md

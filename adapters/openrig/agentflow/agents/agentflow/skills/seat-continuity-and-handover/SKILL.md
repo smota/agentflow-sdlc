@@ -15,8 +15,8 @@ metadata:
 
 # Seat Continuity and Handover
 
-A pair of primitive families that separate *who is sitting in a seat* from
-*what the seat itself is*:
+A pair of primitive families that separate _who is sitting in a seat_ from
+_what the seat itself is_:
 
 1. **Occupant-creation primitives** — `resume`, `fork`, `rebuild`, `fresh` — produce a candidate new occupant. Answer: "where did the new occupant come from?"
 2. **Seat-binding operations** — handover binds a candidate occupant into the topology. Answer: "what happened to the stable seat identity?" Inspect the current CLI for executable operations; design vocabulary alone does not establish a command.
@@ -102,7 +102,7 @@ A seat stays `Stable` even if multiple candidate-occupants were produced and dis
 
 - **Do NOT collapse `rebuild` and `seat handover` into one primitive.** The design specifically separates them so the system can describe what actually happened.
 - **Do NOT introduce successor-suffix seat names** (`lead2`/`lead3`). Stable seat identity is the architectural goal. The live address stays stable. A retired tenure is distinguished by its ledger
-generation and exact history token; preserving it does not require a renamed live pane.
+  generation and exact history token; preserving it does not require a renamed live pane.
 
 - **Do NOT report `seatBindingOutcome: handed_over`** if the provenance record didn't write durably.
 - **Do NOT auto-rollback a half-completed handover** by re-attaching the old occupant unless detach completed cleanly first.
