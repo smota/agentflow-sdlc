@@ -109,6 +109,17 @@ _Exact file paths, template names, or data structures expected. The Architect ph
 - [ ] Pass/Fail condition 1
 ```
 
+## Issue Hierarchy
+
+A child issue names its parent with the existing part-of link: the `parent` that
+`agentflow-sdlc phase append --parent` stores on a work record, or the `**Epic:** #<id>` line on an
+older child issue. That link is the product tree, and AgentFlow rebuilds the tree from it (see
+[source adapters](sources/index.md)).
+
+GitHub sub-issues and issue links may mirror the part-of link so a person can navigate in GitHub.
+They are only a mirror. If the two disagree, the part-of link wins. An assisted run and a one-agent
+run write the same part-of link.
+
 ## Issue Titles
 
 All issue titles must start with one of these exact Conventional Commit prefixes:
@@ -182,6 +193,15 @@ Use this canonical label vocabulary for new issues and issue updates.
 - `exploratory` - exploratory/manual test-session scope marker used with `qa` issues
 
 Apply secondary labels only when they describe the primary work or a meaningful review queue. Do not add `documentation` merely because an implementation issue includes docs updates in its acceptance criteria; use it when the issue is documentation-first or when documentation review is the main work surface.
+
+### Progress Label
+
+- `status:in-progress` - implementation has started on this issue
+
+The project names this label in `labels.progress` of `sdlc.config.json`; use the configured name
+if it differs. Apply it when implementation actually starts, not when the backlog is edited. An
+assisted run and a one-agent run with no rig apply the same label. Do not invent a one-off progress
+label. The label is a marker for people; the phase transitions remain the record.
 
 ### Test Debt Labels
 

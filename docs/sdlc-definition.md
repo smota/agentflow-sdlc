@@ -155,6 +155,61 @@ Allowed returns:
 
 Each role pass records issue, branch, role, profile, owner/executor/provenance, inputs read, decisions, uncertainty, validation, next-role contract, status, and signature.
 
+## Product and delivery seam
+
+Product work ends at phase 1. Delivery starts at phase 2. The phase says which side a piece of
+work is on, so a reader needs no rig, seat, or team name to tell them apart.
+
+- **Product.** The product manager (phase 0) proposes the problem and the outcome. The analyst
+  (phase 1) owns the acceptance criteria. Those criteria are the spec delivery receives. Product
+  work does not edit product code, commit, open a production pull request, or publish.
+- **Delivery.** Phases 2 and 3 choose the technical path, and phases 4 onward build and prove it.
+  Phase 3 may contain an executable plan. That plan is delivery's own work, not a product handoff.
+  Delivery does not rewrite the outcome to fit the code.
+
+The phase 1 handoff names the outcome, the public journey, the constraints, the anti-goals, the
+references to read, and the unknowns. Verification steps are allowed. File-by-file edit
+instructions are not a product handoff. `phase append` does not check this prose; its machine check
+is the transition envelope. Whether the fields are present, and whether the body prescribes files,
+is a reviewer judgment.
+
+When the built candidate and the spec disagree:
+
+- If the candidate violates frozen acceptance, delivery reworks it through the allowed returns, and
+  the tester checks the remedy.
+- If the outcome, a constraint, or an anti-goal was wrong or has changed, that is an intent defect,
+  not delivery's to fix. Delivery stops, and the person accepts revised intent before delivery
+  continues. The phase graph has no edge from delivery back to phase 1, so this stop is not recorded
+  as a phase 1 pass.
+- If the spec is silent, delivery decides and records the decision in its role pass.
+
+Four acts stay separate. None stands in for another.
+
+| Act              | Who                           | What it decides                                             |
+| ---------------- | ----------------------------- | ----------------------------------------------------------- |
+| Tester evidence  | Tester, phase 5               | The candidate meets the acceptance criteria                 |
+| Reviewer verdict | Reviewer, phase 6             | The change is right against the spec                        |
+| Door judgment    | The requester, a person       | The public journey on the named candidate meets the outcome |
+| Merge or publish | The person, as posture allows | The candidate leaves the delivery branch                    |
+
+The door journey is written into the phase 1 acceptance criteria before the build. A phase 5 run
+of that journey is tester evidence only. It does not show the goal was the right goal, and it does
+not authorize publish. Phase 6 does not perform the door test and does not read a door note as
+approval. The door judgment is not a numbered phase and adds no gate class and no record type. It
+is made through the existing `adequacy-of-intent` gate, and it names the goal revision, the spec revision, the
+candidate SHA, the journey, and what was observed. A bare "looks good" is not a door judgment.
+
+One actor may hold more than one role. The same actor must not be the developer, the reviewer, and
+the door-test witness.
+
+Publish follows the posture in `lib/core/posture.mjs`. Not every posture requires a person to
+release. A project or team may add that rule; the core does not teach that it is universal.
+
+A harness permission policy neither grants nor proves the propose-only boundary of product work.
+Seat ladders and team topologies belong to a harness adapter. An adapter may map its own seat
+names onto workflow profile and collaboration class, but it cannot change phases, gates, or
+acceptance (see [ADR 004](adr/004-separate-sdlc-policy-from-harness-execution.md)).
+
 ## Role ownership registry
 
 | Role                   | Owns                                           | Reads                          | Writes                                 | Handoff                                     |
@@ -177,6 +232,7 @@ Label groups:
 - Type/domain: `epic`, `feature`, `bug`, `dx`, `tooling`, `documentation`, `qa`, `exploratory`.
 - Routing: `for-implementation:<agent>`.
 - Lifecycle: `drafted-by:<agent>`, `implemented-by:<agent>`, `for-review:<agent>`, `reviewed-by:<agent>`.
+- Progress: `status:in-progress` by default, named in `labels.progress` of `sdlc.config.json`.
 - Integration/release: `integrated:<branch>`, `awaiting-release`.
 - Test debt: `needs-test`.
 
@@ -186,6 +242,9 @@ Rules:
 - Agent provenance labels are factual audit metadata.
 - Deprecated `agent:*` labels are forbidden for new work.
 - Labels do not replace role-pass evidence.
+- The progress label is applied when implementation starts, not when the backlog is edited. An
+  assisted run and a one-agent run apply the same configured label. It is a label, not a second
+  state machine: the phase transitions remain the record.
 
 ## Gateways
 

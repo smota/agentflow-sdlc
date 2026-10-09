@@ -506,6 +506,50 @@ also valid when a project wants a fully chronological issue timeline.
 PR readiness must cite the required handover comment/thread URL, or document an explicit exception
 when no role transition occurred.
 
+### Handover decision
+
+The handover decision is the phase comment. A queue item or chat message only wakes the next role;
+it is not the record. `agentflow-sdlc phase append` writes it and validates the transition. That
+command needs no rig and no queue, so it is also the unassisted path: one agent with no rig runs the
+same command.
+
+A comment counts as a transition only when it is the full comment that command emits. The first
+line is the marker `<!-- agentflow-transition:<key> -->` with a non-empty key, and the key makes
+the append idempotent. Then come these lines, in order:
+
+- `phase`: 0 to 8
+- `role`: the role that owns that phase
+- `status`: `pass` or `skipped`
+- `seat`: who performed the phase
+- `reason`: required for `skipped`; may be empty for `pass`
+- `body`: the role-pass content, on the lines after `body:`
+
+A complete comment:
+
+```text
+<!-- agentflow-transition:337-p1 -->
+phase: 1
+role: analyst
+status: pass
+seat: orch.arch
+reason:
+body:
+Acceptance criteria for the goal, written for the architect.
+```
+
+A comment without the marker on its first line is not a transition, even when it has every other
+line or quotes the marker in its prose.
+
+A defect return is a `skipped` status whose reason names an allowed return with the existing
+phrase, for example `Return to phase 4.` A skip without that phrase is a real skip of that phase.
+
+Lessons from earlier runs, kept as rules rather than new machinery:
+
+- A blank `reason:` stays empty. It never absorbs the next line.
+- Council prose is advice. It is not a phase, and it does not advance the state.
+- The PR manifest `Handover comments:` field starts with a bare URL (or `exception:<reason>`), not
+  prose around a link.
+
 ## 8. Review model
 
 - **Bounded**: self-review allowed

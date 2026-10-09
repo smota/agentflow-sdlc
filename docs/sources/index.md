@@ -29,4 +29,6 @@ Any adapter, GitHub or otherwise, must satisfy:
 Accepted cost: because `partOf` is reconstructed by AgentFlow rather than read from the source
 system's native hierarchy, the source system's own UI will not show the true tree. A source with only
 single-level grouping (for example, GitHub issues with no native sub-issues) can still carry an
-arbitrarily deep AgentFlow tree; that tree is simply invisible outside AgentFlow.
+arbitrarily deep AgentFlow tree; that tree is simply invisible outside AgentFlow. Where the source
+does have a native hierarchy, such as GitHub sub-issues, it may mirror `partOf` for navigation. The
+mirror is never read back as the authority.

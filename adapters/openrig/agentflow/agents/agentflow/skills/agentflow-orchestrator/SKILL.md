@@ -44,6 +44,9 @@ The orchestrator maintains the acceptance ledger; it never relabels another exec
 - Do not turn helper findings into approval without the owning review gate.
 - Do not bypass issue, branch, validation, human-review, or publication authorization rules.
 - Do not commit `.agent-runs/` scratch evidence.
+- The phase contract lives in AgentFlow (`docs/agent-workflow.md`, `docs/sdlc-definition.md`). A rig
+  or other harness may bind seats to roles, but it must not redefine phases, gates, acceptance, or
+  the product and delivery seam.
 
 ## Handoffs
 
