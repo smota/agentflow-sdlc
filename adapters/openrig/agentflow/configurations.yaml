@@ -1,5 +1,5 @@
 schema: openrig.bundle-configurations/v1
-recommended: balanced-claude-lead
+recommended: balanced-grok-lead
 
 seats:
   orch.arch:
@@ -34,7 +34,7 @@ seats:
       codex: reviewer
 
 presets:
-  balanced-claude-lead:
+  balanced-grok-lead:
     orch.arch: pi
     dev.build-jr: claude-code
     dev.build: claude-code

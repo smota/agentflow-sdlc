@@ -21,7 +21,7 @@ AgentFlow SDLC provides first-class support for [OpenRig](https://openrig.dev/),
 
 OpenRig bundle configuration schema: `openrig.bundle-configurations/v1`:
 
-- `balanced-claude-lead` _(Recommended)_: Grok 4.7 Lead/Review + Claude Builders + Codex QA
+- `balanced-grok-lead` _(Recommended)_: Grok 4.7 Lead/Review + Claude Builders + Codex QA
 - `inverted-codex-lead`: Codex Lead/Builders + Claude QA + Grok 4.7 Review
 - `grok-heavy`: Grok 4.7 Lead/Review/Builders + Codex QA
 - `claude-heavy`: Claude Lead/Review/Builders + Codex QA

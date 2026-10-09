@@ -21,7 +21,7 @@ An autonomous, full-lifecycle engineering squad for parallel, independent softwa
 
 The rig declares 8 runtime configuration presets to accommodate provider availability and preference:
 
-1. **`balanced-claude-lead`** _(Recommended)_:
+1. **`balanced-grok-lead`** _(Recommended)_:
    - `orch.arch`: `pi` (`grok-4.7`)
    - `dev.build-jr`: `claude-code`
    - `dev.build`: `claude-code`
@@ -71,7 +71,7 @@ The rig declares 8 runtime configuration presets to accommodate provider availab
 Launch the squad attached to any project directory with `--cwd`:
 
 ```bash
-# Recommended preset (balanced-claude-lead)
+# Recommended preset (balanced-grok-lead)
 rig up agentflow --cwd /home/sam/code/holoself
 
 # Inverted Codex lead preset
