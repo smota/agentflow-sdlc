@@ -20,7 +20,7 @@ qualified capability list and `full` intent support evidenced as `probed` or
 authorize a required capability. Requested model selection requires a qualified
 model and an actual invocation binding, such as the Codex CLI `--model` argument.
 When the provider cannot enforce a model, preflight fails. Permission and deadline
-checks precede dispatch. The profile is optional and does not import Meshloop.
+checks precede dispatch. The profile is optional.
 
 Example neutral request:
 
@@ -95,7 +95,7 @@ rechecks identity and artifact bytes before reporting `confirmed` or `failed` to
 the run service. Missing receipts, uncertain deadlines and unresolved terminations
 stay unverified. `resolveConfiguredEngineeringProvider` in the provider registry
 selects only an explicitly configured provider; absent configuration leaves the
-direct flow independent of Meshloop.
+direct flow unchanged.
 
 For a durable source journal, `createSourceEngineeringReceiptResolver({store})`
 reads the event chain anew. The host records exactly one `checkpoint` with payload

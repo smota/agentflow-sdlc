@@ -12,7 +12,7 @@
 
 ---
 
-## Layer: Domain (no OTel, GitHub, CLI, or Meshloop imports)
+## Layer: Domain (no OTel, GitHub, or CLI imports)
 
 | Surface                                                                | File                                       | ADR                  | Notes                                                                                                                             |
 | ---------------------------------------------------------------------- | ------------------------------------------ | -------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
@@ -57,11 +57,10 @@
 
 ## Layer: Providers
 
-| Surface                      | File                                    | ADR                  | Notes                                   |
-| ---------------------------- | --------------------------------------- | -------------------- | --------------------------------------- |
-| Local CLI provider           | `lib/providers/local-cli.mjs`           | ADR005               | Exists                                  |
-| Provider registry            | `lib/providers/registry.mjs`            | ADR005               | Exists                                  |
-| Meshloop provider (proposed) | `lib/providers/meshloop.mjs` (proposed) | ADR012 (proposed D3) | **Not yet implemented.** S7 deliverable |
+| Surface            | File                          | ADR    | Notes  |
+| ------------------ | ----------------------------- | ------ | ------ |
+| Local CLI provider | `lib/providers/local-cli.mjs` | ADR005 | Exists |
+| Provider registry  | `lib/providers/registry.mjs`  | ADR005 | Exists |
 
 ---
 
@@ -110,4 +109,4 @@ No duplicate authority found. Each contract surface has exactly one owning modul
 | Proposed ADR D3                                                                             | `docs/adr/012-*.md`                                  | Done (Proposed) |
 | This ownership map                                                                          | `docs/process-autonomy/s0-contract-ownership-map.md` | Done            |
 
-Historical runs unchanged. No commits, push, GitHub mutations, global installs, or Meshloop edits.
+Historical runs unchanged. No commits, push, GitHub mutations, global installs, or external-product edits.

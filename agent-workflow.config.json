@@ -172,7 +172,6 @@
         "docs/maintainers/process-autonomy-reconciliation.md",
         "docs/process-autonomy/adoption-matrix.md",
         "docs/process-autonomy/harness-dispatch.md",
-        "docs/process-autonomy/meshloop-review.md",
         "docs/run-operations.md",
         "lib/__tests__/codex-engineering.test.mjs",
         "lib/__tests__/context-service.test.mjs",

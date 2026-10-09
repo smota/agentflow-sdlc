@@ -3,7 +3,7 @@
 This bounded qualification follows the maintainer's minimal scope amendment in
 [#304](https://github.com/smota/agentflow-sdlc/issues/304), starting from development
 `ba65ad00066f98ef666a81ffa427b3e915443fee` on 2026-09-30. It qualifies named entrypoints
-and environments, not all agent runtimes or an autonomous coding model. No Meshloop
+and environments, not all agent runtimes or an autonomous coding model. No external engineering-provider
 source, installed skill links, global installation, release or authority policy changed.
 
 ## Candidate and evidence levels
@@ -31,7 +31,7 @@ portability check.
 | Existing/partial      | Existing custom configuration and an authored sentinel survived. A real directory junction to a runtime-owned skill remained at the same target with identical skill bytes; only missing project assets were supplied. Repeated preview requested no managed mutation.                                     | Shared links remain runtime-owned; resolve conflicts explicitly.                                        | Real Windows filesystem/junction, synthetic shared library in sandbox; not a Skills Manager deployment claim.                                               |
 | Old/unknown           | Recognized v1 lock required `migrateLegacy`; unknown v999 lock required `recoverUnknown` plus selective preserve. Public apply preserved authored guidance; public receipt-backed rollback restored original lock and authored bytes.                                                                      | Use the returned receipt path/token; never delete an unknown installation to reset it.                  | Synthetic legacy/unknown state exercised through real public CLI. An initially malformed legacy fixture was corrected before the recorded pass.             |
 | Governed continuation | See the continuation result below.                                                                                                                                                                                                                                                                         | Preserve candidate branch, packet and writer evidence; unknown liveness or mismatched bytes must block. | Same-host fresh-process/root qualification, not universal cross-host takeover.                                                                              |
-| Optional integration  | See the public optional result below. Direct starter execution used no Meshloop.                                                                                                                                                                                                                           | Reconcile admitted operations before removing optional configuration.                                   | Pinned deterministic worker; no LLM capability claim. Prior lifecycle and telemetry evidence reused only as specified below.                                |
+| Optional integration  | See the public optional result below. Direct starter execution used no optional provider.                                                                                                                                                                                                                  | Reconcile admitted operations before removing optional configuration.                                   | Pinned deterministic worker; no LLM capability claim. Prior lifecycle and telemetry evidence reused only as specified below.                                |
 
 The parent performed 20 public CLI invocations across fresh/partial/migration/rollback
 and update scenarios in 3,522 ms, excluding package installation. This is a local
@@ -56,8 +56,8 @@ Fresh-root instructions now require a consistent checkout-filter/line-ending pol
 before creating the original candidate. This avoids relying on the earlier experiment's
 manual per-file LF/CRLF materialization. A clean Git tree is not proof of equal bytes.
 Receipt rollback and interrupted-apply recovery use distinct tokens, now named directly
-in assisted onboarding. Meshloop guidance includes explicit optional configuration and
-the wire graph-ID recipe without requiring an internal module import.
+in assisted onboarding. The optional engineering adapter qualified here and its guidance were
+removed later ([ADR 013](../adr/index.md)).
 
 The first package attempts are diagnostic runs, not zero-intervention adoption passes.
 The clean-context reviewer also accidentally invoked npm init in the parent directory;
@@ -69,8 +69,9 @@ implementation change resulted. This operational intervention remains disclosed.
 - [Public delivery qualification](live-delivery-qualification.md): actual GitHub actions,
   replay, revocation, source ACK/response interruption, contention and isolated ENOSPC.
   Those exact boundaries remain in force; no new full fault campaign is claimed.
-- [Minimal Meshloop integration](meshloop-minimal-integration.md): pinned binary/Git byte
-  verification, technical-acceptance wait, cancellation, timeout and fresh-process observation.
+- The optional engineering adapter's integration guide (removed with the adapter,
+  [ADR 013](../adr/index.md)): pinned binary/Git byte verification, technical-acceptance wait,
+  cancellation, timeout and fresh-process observation.
 - [Process observability](observability.md): disabled/offline/export-failure decision parity,
   privacy and bounded-loss tests. Telemetry remains advisory and no efficiency threshold is
   reintroduced. Actual collection on this adoption is reported separately from those tests.
@@ -83,6 +84,9 @@ Proposed ADR statuses and high-assurance gates are unchanged.
 
 ## Public optional result
 
+This records the optional engineering adapter shipped in 1.2 and 1.3. That adapter was
+removed later ([ADR 013](../adr/index.md)), so this evidence does not apply to current releases.
+
 The public AgentFlow run `optional304-1790792362981` used the dedicated GitHub
 coordination branch `qualification304-optional-1790792362981`. Its candidate commit
 was `2da2ff556417f3e3b4dacd4019164b173480db27`, with candidate digest
@@ -90,25 +94,25 @@ was `2da2ff556417f3e3b4dacd4019164b173480db27`, with candidate digest
 
 Public start/freeze/verify established two exact-candidate deterministic checks.
 A cooperative one-attempt edit grant admitted operation `optional304-edit` through
-`run act`. The initial result was unknown while Meshloop awaited technical acceptance.
+`run act`. The initial result was unknown while the optional provider awaited technical acceptance.
 The parent inspected the single-file diff and explicitly accepted the technical task
 as `codex-delegated-qualification`, under the maintainer's experiment authorization,
-then used Meshloop resume. This was not automated by AgentFlow or labeled human review.
+then used the provider's resume. This was not automated by AgentFlow or labeled human review.
 
 A separate AgentFlow process ran `run reconcile --observe-provider` for that same
 operation. It confirmed the result at source event
 `0840474c73480b173d4399c857eeb2d637657d61f9c3d316ee265423a7e6896b`;
 the reconciliation bound payload digest
 `9cbdf6a561da7f7c76191a8fa55ea96b1f4d367d89e5d202208341747b286ab8`.
-No second dispatch occurred. Meshloop graph
+No second dispatch occurred. Provider graph
 `af-12964cc2527036b104bb705f6f93e8fcf037d7b6` produced the 18-byte
 `integrated result` file plus newline in its own worktree. The caller kept `seed`
 plus newline. Grant revocation completed before disconnecting the optional provider.
 
-This is the public configured admission/receipt path with actual GitHub and Meshloop
+This is the public configured admission/receipt path with actual GitHub and optional-provider
 processes, not the earlier adapter-only fixture. Wrong-binary-digest refusal remains
-covered by the rerun Meshloop regression suite; timeout/cancel uses the pinned #302
-live evidence. The same Meshloop 0.2.0 source/binary from that record was used unchanged.
+covered by the rerun adapter regression suite; timeout/cancel uses the pinned #302
+live evidence. The same provider 0.2.0 source/binary from that record was used unchanged.
 
 A setup harness initially selected the wrong source-plan field and retained a pending
 local start journal; no remote source ref or business effect was created for that
