@@ -960,7 +960,7 @@ const COMMAND_USAGE = {
   handoff:
     'Usage: agentflow-sdlc handoff --run <id> --writer <owner> --generation <n> --execute [--target <dir>] [--json]\n',
   phase:
-    'Usage: agentflow-sdlc phase <append|read> --medium <filesystem|github> --phase <0-8> --status <pass|skipped> --seat <id> --key <id> [--root <dir> | --repo <owner/repo> [--issue <n>]] [--title <text>] [--body <text>] [--reason <text>]\n',
+    'Usage: agentflow-sdlc phase <append|read> --medium <filesystem|github> --phase <0-8> --status <pass|skipped> --seat <id> --key <id> [--root <dir> | --repo <owner/repo> [--issue <n>]] [--title <text>] [--body <text>] [--reason <text>] [--kind <goal|capability|spec> [--parent <dir|issue>] [--change-class <class>] [--gate-file <path> --attestation-file <path>]]\n',
   resume:
     'Usage: agentflow-sdlc resume --run <id> --packet <file> --writer <replacement> --writer-pid <pid> [--plan <file> --confirm <digest> --generation <old-n> --execute] [--target <dir>] [--json]\n',
 }

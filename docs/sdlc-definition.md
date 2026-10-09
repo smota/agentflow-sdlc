@@ -25,7 +25,9 @@ Harness-specific directories such as `.pi`, `.claude`, `.agy`, and `.codex` are 
 | ---------------------- | ---------------------------------------------------------------------- | ------------------------------------------- |
 | Workspace              | Configured repository/project boundary                                 | config, Cockpit query state                 |
 | Goal Group             | Parent objective/epic                                                  | issue body, relationships                   |
-| Goal                   | Delivery objective with acceptance                                     | issue body, labels, comments                |
+| Goal                   | Outcome a person accepts before breakdown (see Work altitudes)         | issue body, labels, comments                |
+| Capability             | Specification agents write under an accepted goal                      | issue body, comments                        |
+| Spec                   | Implementation unit where phases 0-8 run                               | issue body, role passes, PR                 |
 | Delivery               | Implementation and PR activity                                         | PR, commits, checks                         |
 | Role Flow              | Ordered role contributions and returns                                 | role-pass, workflow-status, handover        |
 | Readiness              | Path-aware applicable quality state                                    | issue/PR evidence, checks                   |
@@ -40,6 +42,69 @@ GitHub is the first and default `SourceAdapter`. AgentFlow core remains source-n
 language leads with AgentFlow concepts.
 
 Cockpit is an official optional projection of this model. It may visualize goals, readiness, role flow, release state, replay, approvals, and follow-ups, but it must not own unique SDLC state or be required by adoption, validators, skills, plugins, or settings merge.
+
+## Work altitudes
+
+Work is held at three altitudes. Each one is a different record, with a `kind` of `goal`,
+`capability`, or `spec`. One record is never all three.
+
+| Kind       | Holds                                    | Parent                        | Person                                    |
+| ---------- | ---------------------------------------- | ----------------------------- | ----------------------------------------- |
+| Goal       | the outcome or job to be done            | none                          | accepts it before any capability opens    |
+| Capability | the specification of how the goal is met | a goal that a person accepted | reviews it only when it is high-assurance |
+| Spec       | one implementation unit                  | a capability                  | none at this altitude                     |
+
+Phases 0-8 are the lifecycle inside a spec. They are not extra records, and they are not seats.
+A follow-up is a capability or a spec under an existing goal. It is not a second goal for the same
+intent.
+
+`lib/core/work-altitude.mjs` checks these rules when a record opens:
+
+- A capability is refused unless a person admitted its parent goal's current revision at the
+  capability's change class.
+- A spec is refused unless its parent capability carries that admission, and the admission still
+  matches the change class stored on the capability now.
+- A spec under a high-assurance capability is also refused unless a person agreed to that
+  capability's current revision. A person can only review a capability that exists, so the review
+  gates the specs under it. Other change classes need no review.
+- The kinds cannot stand in for each other.
+- A record with no `kind` is legacy. It stays legal, and it is never read as a goal.
+
+Consent is never a field on a record. It is a sealed `adequacy-of-intent` gate plus a person's
+attestation, checked by `satisfyGate` in `lib/core/gate.mjs`. Only decision `agree` from a
+`human-gate` reviewer on the registered human platform counts. `blocked` and `changes-requested`
+are refusals. A gate bound to another subject, of another gate class, or altered after sealing is
+refused.
+
+The subject is what the person agreed to. For a capability, it is the digest of the goal revision and
+the change class together (`admissionDigest`), because the class decides whether its specs need a
+review. The capability keeps that gate and attestation as its admission. When a spec opens, the
+admission is checked again against the change class stored at that moment. Downgrading the class,
+on disk or in an issue body, no longer matches, and the spec is refused. For a high-assurance
+review, the subject is the capability's current revision. Editing a record after the person agreed
+changes what it digests to, so the consent no longer applies.
+
+`agentflow-sdlc phase append` applies these rules when it creates a record with `--kind`. It reads
+`--parent` through the same medium, and takes consent as `--gate-file` and `--attestation-file`.
+A medium stores the kind, the parent, the change class, and a capability's admission. The admission
+is evidence that is checked again every time, never a stored yes.
+
+The high-assurance capability review uses the existing `adequacy-of-intent` gate class over the
+capability. These altitudes add no new gate class and no new person gate. The person gates are the gate classes in `lib/core/gate.mjs`,
+resolved by `lib/core/posture.mjs`:
+
+- **Intent freeze** (`adequacy-of-intent`): a person accepts the goal. This is required at every
+  posture.
+- **Agent escalation** (`agent-escalation`): an agent stops and asks. This is required at every
+  posture.
+- **Release or merge** (`release-of-candidate`): required when the posture or the change class asks
+  for it. Merge and other external actions stay with the person.
+
+A role acknowledgement, a seat choice, and a phase transition inside a spec are not person gates.
+
+The altitudes are harness-neutral. One agent with no rig applies the same rules as a squad. A
+harness may run them; it does not define them (see
+[ADR 004](adr/004-separate-sdlc-policy-from-harness-execution.md)).
 
 ## Paths
 

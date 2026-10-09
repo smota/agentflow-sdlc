@@ -19,6 +19,8 @@ function usage() {
     '  github: --repo <owner/repo> [--issue <n>]',
     '  append: --phase <0-8> --status <pass|skipped> --seat <id> --key <idempotency>',
     '          [--title <text>] [--body <text> | --body-file <path>] [--reason <text>]',
+    '          [--kind <goal|capability|spec> [--parent <dir|issue>] [--change-class <class>]',
+    '           [--gate-file <path> --attestation-file <path>]]',
     'A queue message is not a handoff. append writes the transition, then prints the queue body.',
   ].join('\n')
 }
@@ -35,6 +37,32 @@ function mediumFrom(args) {
     })
   }
   throw new Error('Set --medium filesystem or --medium github')
+}
+
+// Consent is a sealed gate plus a person's attestation, each read from its own JSON file.
+function readConsent(args) {
+  const gateFile = flag(args, '--gate-file')
+  const attestationFile = flag(args, '--attestation-file')
+  if (!gateFile && !attestationFile) return null
+  if (!gateFile || !attestationFile) {
+    throw new Error('Pass --gate-file and --attestation-file together')
+  }
+  return {
+    gate: JSON.parse(readFileSync(resolve(gateFile), 'utf8')),
+    attestation: JSON.parse(readFileSync(resolve(attestationFile), 'utf8')),
+  }
+}
+
+// The parent is read through the same medium kind: a goal directory, or an issue in the same repo.
+async function readParent(args) {
+  const ref = flag(args, '--parent')
+  if (!ref) return null
+  const kind = flag(args, '--medium')
+  const parentArgs =
+    kind === 'github'
+      ? ['--medium', kind, '--repo', flag(args, '--repo'), '--issue', ref]
+      : ['--medium', kind, '--root', ref]
+  return mediumFrom(parentArgs).readGoal()
 }
 
 function queueBody(result) {
@@ -72,7 +100,14 @@ async function main(argv) {
     try {
       await medium.readGoal()
     } catch {
-      await medium.createGoal({ title: flag(args, '--title'), body })
+      await medium.createGoal({
+        title: flag(args, '--title'),
+        body,
+        kind: flag(args, '--kind'),
+        parent: await readParent(args),
+        changeClass: flag(args, '--change-class'),
+        consent: readConsent(args),
+      })
     }
   }
   const result = await medium.appendTransition({
