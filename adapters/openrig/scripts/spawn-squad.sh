@@ -9,14 +9,15 @@ show_help() {
   cat << 'EOF'
 Usage:
   spawn-squad.sh <project-name> [project-cwd]     Provision a dedicated parallel squad for a project
+                                                  (project-cwd defaults to the current directory)
   spawn-squad.sh --list                           List all configured AgentFlow squads
   spawn-squad.sh --remove <project-name>          Remove a squad spec and its Pi bridge state
 
 Examples:
-  ./spawn-squad.sh holoself ~/code/holoself
-  ./spawn-squad.sh nextstep
+  ./spawn-squad.sh my-project /path/to/my-project
+  ./spawn-squad.sh my-project
   ./spawn-squad.sh --list
-  ./spawn-squad.sh --remove holoself
+  ./spawn-squad.sh --remove my-project
 EOF
 }
 
@@ -132,12 +133,7 @@ if [ -n "${2:-}" ]; then
   fi
   PROJECT_CWD="$(cd "$2" && pwd)"
 else
-  # Default heuristics
-  if [ -d "$HOME/code/$PROJECT_RAW" ]; then
-    PROJECT_CWD="$(cd "$HOME/code/$PROJECT_RAW" && pwd)"
-  else
-    PROJECT_CWD="$PWD"
-  fi
+  PROJECT_CWD="$PWD"
 fi
 
 # Ensure base spec is installed

@@ -2,9 +2,17 @@
 set -euo pipefail
 
 # install-rig.sh — Installs or recovers the AgentFlow SDLC rig in OpenRig
+# Usage: install-rig.sh [/path/to/project]
+#   With a repository path, also applies the Git hygiene excludes to that repository.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 OPENRIG_SOURCE_DIR="$(cd "$SCRIPT_DIR/../agentflow" && pwd)"
 TARGET_SPEC_DIR="$HOME/.openrig/specs/agentflow"
+TARGET_REPO="${1:-}"
+
+if [ -n "$TARGET_REPO" ] && [ ! -d "$TARGET_REPO/.git" ]; then
+  echo "ERROR: '$TARGET_REPO' is not a Git repository." >&2
+  exit 1
+fi
 
 echo "==> 1. Syncing AgentFlow rig spec to OpenRig user library..."
 mkdir -p "$TARGET_SPEC_DIR"
@@ -48,7 +56,7 @@ if [ -f "$HOME/.pi/agent/auth.json" ]; then
   '
 fi
 
-echo "==> 4. Ensuring Git hygiene in target repos under ~/code..."
+echo "==> 4. Ensuring Git hygiene in the target repository..."
 EXCLUDES=(
   "CLAUDE.local.md"
   "AGENTS.md"
@@ -60,17 +68,18 @@ EXCLUDES=(
   "gate-lane-verdict.json"
 )
 
-if [ -d "$HOME/code" ]; then
-  for gitdir in $(find "$HOME/code" -maxdepth 3 -name ".git" -type d 2>/dev/null); do
-    excludefile="$gitdir/info/exclude"
-    mkdir -p "$(dirname "$excludefile")"
-    touch "$excludefile"
-    for line in "${EXCLUDES[@]}"; do
-      if ! grep -qxF "$line" "$excludefile"; then
-        echo "$line" >> "$excludefile"
-      fi
-    done
+if [ -z "$TARGET_REPO" ]; then
+  echo "   (No target repository given; skipping. Pass a repository path to apply the excludes.)"
+else
+  excludefile="$TARGET_REPO/.git/info/exclude"
+  mkdir -p "$(dirname "$excludefile")"
+  touch "$excludefile"
+  for line in "${EXCLUDES[@]}"; do
+    if ! grep -qxF "$line" "$excludefile"; then
+      echo "$line" >> "$excludefile"
+    fi
   done
+  echo "   Git hygiene exclusions configured in $excludefile"
 fi
 
 echo "==> 5. Syncing OpenRig spec library..."

@@ -60,16 +60,16 @@ To run simultaneous squads on different projects at the same time:
 
 ```bash
 # Provision a dedicated squad for a project (creates spec + Pi bridges)
-./adapters/openrig/scripts/spawn-squad.sh holoself ~/code/holoself
-./adapters/openrig/scripts/spawn-squad.sh nextstep ~/code/nextstep
+./adapters/openrig/scripts/spawn-squad.sh my-project /path/to/my-project
+./adapters/openrig/scripts/spawn-squad.sh other-project /path/to/other-project
 
 # Launch squads in parallel
-rig up agentflow-holoself --cwd ~/code/holoself
-rig up agentflow-nextstep --cwd ~/code/nextstep
+rig up agentflow-my-project --cwd /path/to/my-project
+rig up agentflow-other-project --cwd /path/to/other-project
 
 # Monitor all squads
 rig ps
 
 # Teardown when done
-./adapters/openrig/scripts/spawn-squad.sh --remove holoself
+./adapters/openrig/scripts/spawn-squad.sh --remove my-project
 ```
