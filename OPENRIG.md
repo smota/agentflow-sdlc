@@ -36,21 +36,41 @@ OpenRig bundle configuration schema: `openrig.bundle-configurations/v1`:
 
 All rig assets are maintained in [`adapters/openrig/agentflow/`](adapters/openrig/agentflow/).
 
-To install or recover the rig into your OpenRig user library:
+To install or recover the canonical rig into your OpenRig user library:
 
 ```bash
 ./adapters/openrig/scripts/install-rig.sh
 ```
 
-To run the squad attached to any repository:
-
-```bash
-rig up agentflow --cwd /path/to/project
-```
+### Context Switching Mode (Single Squad)
 
 To pause and resume between projects without losing state:
 
 ```bash
+# Freeze current project
 rig down agentflow --snapshot
-rig up agentflow --existing
+
+# Resume on target repository
+rig up agentflow --existing --cwd /path/to/project
 ```
+
+### Parallel Multi-Squad Mode (Concurrent Teams)
+
+To run simultaneous squads on different projects at the same time:
+
+```bash
+# Provision a dedicated squad for a project (creates spec + Pi bridges)
+./adapters/openrig/scripts/spawn-squad.sh holoself ~/code/holoself
+./adapters/openrig/scripts/spawn-squad.sh nextstep ~/code/nextstep
+
+# Launch squads in parallel
+rig up agentflow-holoself --cwd ~/code/holoself
+rig up agentflow-nextstep --cwd ~/code/nextstep
+
+# Monitor all squads
+rig ps
+
+# Teardown when done
+./adapters/openrig/scripts/spawn-squad.sh --remove holoself
+```
+
