@@ -60,25 +60,34 @@ intent.
 
 `lib/core/work-altitude.mjs` checks these rules when a record opens:
 
-- A capability is refused unless a person agreed to its parent goal's current revision.
-- A spec without a parent capability is refused.
-- A spec under a high-assurance capability is refused unless a person agreed to that capability's
-  current revision. A person can only review a capability that exists, so the review gates the
-  specs under it. Other change classes need no review.
+- A capability is refused unless a person admitted its parent goal's current revision at the
+  capability's change class.
+- A spec is refused unless its parent capability carries that admission, and the admission still
+  matches the change class stored on the capability now.
+- A spec under a high-assurance capability is also refused unless a person agreed to that
+  capability's current revision. A person can only review a capability that exists, so the review
+  gates the specs under it. Other change classes need no review.
 - The kinds cannot stand in for each other.
 - A record with no `kind` is legacy. It stays legal, and it is never read as a goal.
 
-Consent is never a field on a record. It is a sealed `adequacy-of-intent` gate whose subject digest
-is the parent's current revision, plus a person's attestation, checked by `satisfyGate` in
-`lib/core/gate.mjs`. Only decision `agree` from a `human-gate` reviewer on the registered human
-platform counts. `blocked` and `changes-requested` are refusals. A gate bound to another revision,
-another gate class, or altered after sealing is refused. Editing the parent after the person agreed
-changes its revision, so the consent no longer applies.
+Consent is never a field on a record. It is a sealed `adequacy-of-intent` gate plus a person's
+attestation, checked by `satisfyGate` in `lib/core/gate.mjs`. Only decision `agree` from a
+`human-gate` reviewer on the registered human platform counts. `blocked` and `changes-requested`
+are refusals. A gate bound to another subject, of another gate class, or altered after sealing is
+refused.
+
+The subject is what the person agreed to. For a capability, it is the digest of the goal revision and
+the change class together (`admissionDigest`), because the class decides whether its specs need a
+review. The capability keeps that gate and attestation as its admission. When a spec opens, the
+admission is checked again against the change class stored at that moment. Downgrading the class,
+on disk or in an issue body, no longer matches, and the spec is refused. For a high-assurance
+review, the subject is the capability's current revision. Editing a record after the person agreed
+changes what it digests to, so the consent no longer applies.
 
 `agentflow-sdlc phase append` applies these rules when it creates a record with `--kind`. It reads
 `--parent` through the same medium, and takes consent as `--gate-file` and `--attestation-file`.
-A medium stores the kind, the parent, and the change class. It never reads consent back from its
-own storage.
+A medium stores the kind, the parent, the change class, and a capability's admission. The admission
+is evidence that is checked again every time, never a stored yes.
 
 The high-assurance capability review uses the existing `adequacy-of-intent` gate class over the
 capability. These altitudes add no new gate class and no new person gate. The person gates are the gate classes in `lib/core/gate.mjs`,
