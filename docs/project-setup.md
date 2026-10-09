@@ -198,30 +198,20 @@ node scripts/validate-bounded.mjs --json
 
 Before PR readiness, also run the repository's normal validation commands and include the results in the PR manifest.
 
-## Continuous configuration and synchronization
+## Changing settings later
 
-Use `config doctor` and `config inspect` to monitor project configuration. The `config sync`
-commands below are optional maintainer operations spanning harness assets; run them only when
-explicitly requested and after reviewing the preview. The connected runtime owns installation
-locations, managed skill links and deployment to any additional agents.
+To change posture, branches, a check, or CI commands in an adopted project, use
+[Refine your setup](assisted-configuration.md): preview, confirm, apply, and undo, changing only
+this project. Use `config doctor` and `config inspect` to read the current state:
 
 ```bash
-# Check overall configuration health across authority, domain, workflow, posture, and adapters
-agentflow-sdlc config doctor --target /path/to/project
 agentflow-sdlc config doctor --target /path/to/project --json
-
-# Synchronize all harness assets (skills, roles, plugins, settings) after configuration edits
-agentflow-sdlc config sync --dry-run --target /path/to/project
-agentflow-sdlc config sync --apply --target /path/to/project
-
-# Inspect composite configuration
 agentflow-sdlc config inspect --target /path/to/project
-
-# Print assisted continuous configuration playbook prompt for agent sessions
-agentflow-sdlc config prompt --target /path/to/project
 ```
 
-See [`assisted-configuration.md`](assisted-configuration.md) for the assisted agent workflow loop.
+`config sync` changes other agents' harnesses. It is not part of refinement; run it only when you
+ask for exactly that, as described under
+[sync other agents' harnesses](assisted-configuration.md#sync-other-agents-harnesses-only-on-request).
 
 ## Compliance notes
 

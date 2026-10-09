@@ -71,9 +71,9 @@ Prefer to hand the whole thing to an assistant instead of running commands yours
 in [`assisted-onboarding.md`](assisted-onboarding.md): a human and an assistant walk through the same
 inspect-first, approval-gated setup together, conversationally.
 
-For an existing installation, use `adopt plan` with its current profile, as shown in
-[Get started](get-started.md#existing-installations). Both first adoption and updates are read-only
-first and approval-gated before `adopt apply` writes.
+An existing installation is brought forward by the same journey, from the same
+[preview](get-started.md#preview). Both first adoption and updates are read-only first and write
+only after you confirm the exact preview.
 
 ## What you see vs. what AgentFlow may coordinate
 

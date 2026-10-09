@@ -939,13 +939,13 @@ const ROOT_USAGE =
   'Usage: agentflow-sdlc <init|run|doctor-env|config|adopt|providers|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding|onboarding-prompt|release-plan|handoff|resume|phase> [path] [--target <dir>] [--json]\n'
 
 const COMMAND_USAGE = {
-  init: 'Usage: agentflow-sdlc init [--profile <id>] [--posture <posture>] [--no-harness] [--sync] [--target <dir>] [--force] [--json]\n',
+  init: 'Usage: agentflow-sdlc init [--profile <id>] [--posture <posture>] [--no-harness] [--sync] [--target <dir>] [--force] [--json]\nLow-level primitive: applies the adoption plan without a separate confirmation. To adopt a project, use `agentflow-sdlc onboarding`.\n',
   config:
-    'Usage: agentflow-sdlc config <doctor|check|sync|inspect|prompt> [--target <dir>] [--harness <name>] [--dry-run|--apply] [--json]\n',
+    "Usage: agentflow-sdlc config <doctor|check|sync|inspect|prompt> [--target <dir>] [--harness <name>] [--dry-run|--apply] [--json]\nLow-level primitive. To change an adopted project, use `agentflow-sdlc onboarding refine`. `config sync` changes other agents' harnesses and runs only when you ask for it.\n",
   run: 'Usage: agentflow-sdlc run <source-plan|start|status|context|next|freeze|verify|intent-plan|advance|checkpoint|pause|handoff|resume|grant-plan|grant-issue|grant-status|grant-revoke|act|reconcile|journal-reconcile|migrate|resolve-escalation|publish> <id> [--target <dir>] [--execute] [--plan <file> --confirm <digest>] [--json]\n',
   'doctor-env': 'Usage: agentflow-sdlc doctor-env [--inspect] [--target <dir>] [--json]\n',
   adopt:
-    'Usage: agentflow-sdlc adopt <profiles|plan|apply|rollback|recover> [--profile <id>] [--target <dir>] [--json]\n',
+    'Usage: agentflow-sdlc adopt <profiles|plan|apply|rollback|recover> [--profile <id>] [--target <dir>] [--json]\nLow-level primitive: the AgentFlow file transaction only. To adopt a project, use `agentflow-sdlc onboarding`.\n',
   providers:
     'Usage: agentflow-sdlc providers <list|inspect <id>|bind [--provider <id>] [--mode <mode>] [--profile <profile>]> --json\n',
   collaboration:
@@ -956,7 +956,7 @@ const COMMAND_USAGE = {
   harness: 'Usage: agentflow-sdlc harness <inspect|scaffold> [--target <dir>] [--force] [--json]\n',
   github: 'Usage: agentflow-sdlc github <setup> [--target <dir>] [--dry-run|--apply] [--json]\n',
   onboarding:
-    'Usage: agentflow-sdlc onboarding <inspect|plan|apply|verify|recover|runtime-request> [--target <dir>] [--profile <id>] [--runtime-request <file>] [--runtime-evidence <file>] [--choices <file>] [--plan <file>] [--confirm <digest>] [--json]\n',
+    'Usage: agentflow-sdlc onboarding <inspect|plan|apply|verify|undo|recover|refine|runtime-request> [--target <dir>] [--profile <id>] [--runtime-request <file>] [--runtime-evidence <file>] [--choices <file>] [--changes <file>] [--plan <file>] [--receipt <file>] [--confirm <digest>] [--json]\nAdopt or bring an installation forward: onboarding plan, then apply. Change an adopted project later: onboarding refine, then apply.\n',
   handoff:
     'Usage: agentflow-sdlc handoff --run <id> --writer <owner> --generation <n> --execute [--target <dir>] [--json]\n',
   phase:

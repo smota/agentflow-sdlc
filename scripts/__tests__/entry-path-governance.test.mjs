@@ -88,10 +88,14 @@ function tokenize(command) {
   return tokens
 }
 
-function runDocumentedCommand(line, { cwd, target, prefix }) {
+// The person confirms the digest the preview printed. `<digest>` in a documented command stands for
+// that value, so the test copies it from the most recent preview, exactly as a reader would.
+function runDocumentedCommand(line, { cwd, target, prefix, previews = [] }) {
   for (const part of line.split(/\s&&\s/)) {
     const [bin, ...tokens] = tokenize(part)
-    let args = tokens.map((token) => token.replaceAll(placeholder, target))
+    let args = tokens.map((token) =>
+      token.replaceAll(placeholder, target).replaceAll('<digest>', previews.at(-1) ?? '<digest>'),
+    )
     const executable = bin === 'agentflow-sdlc' ? process.execPath : bin
     if (bin === 'agentflow-sdlc')
       args = [npmCli, 'exec', '--offline', '--prefix', prefix, '--', bin, ...args]
@@ -107,6 +111,8 @@ function runDocumentedCommand(line, { cwd, target, prefix }) {
         `entry-path command failed (exit ${result.status}): ${part}\n--- stdout ---\n${result.stdout}\n--- stderr ---\n${result.stderr}`,
       )
     }
+    if (args.includes('onboarding') && args.includes('plan'))
+      previews.push(JSON.parse(result.stdout).digest)
   }
 }
 
@@ -140,7 +146,9 @@ describe('the entry document reaches real governance end to end (W6c, test 1)', 
     const commands = extractMarkedCommandBlock(entryText, ENTRY_PATH_MARKER)
     expect(commands, 'the entry document must mark a runnable command block').not.toBeNull()
 
-    for (const line of commands) runDocumentedCommand(line, { cwd: target, target, prefix })
+    const previews = []
+    for (const line of commands)
+      runDocumentedCommand(line, { cwd: target, target, prefix, previews })
 
     // A run exists, durably, on disk.
     expect(existsSync(join(target, '.agent-runs/runs/demo/events.json'))).toBe(true)

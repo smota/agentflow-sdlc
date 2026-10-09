@@ -73,8 +73,8 @@ plan token for apply. This is a one-time cleanup tool, not runtime legacy compat
 `minimal`, `standard`, `github`, and `cockpit` expose logical boundaries before physical npm
 package splitting. `standard` is the default reusable product surface.
 Retired install/update commands and v1 lockfiles are unsupported, as explicitly requested by the
-product owner for this single-adopter platform. The supported path is `adopt plan -> apply -> verify`,
-with a v2 lock written last and an external rollback receipt. There is no implicit legacy migration.
+product owner for this single-adopter platform. The supported path is `onboarding plan -> apply -> verify`
+over the adoption transaction, with a v2 lock written last and a rollback receipt. There is no implicit legacy migration.
 
 These are breaking changes on the unpublished issue #188 work branch. The existing package version
 is not a publication approval: a separately approved release/version decision must precede any tag,
