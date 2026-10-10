@@ -25,6 +25,12 @@ A gate binds to the item's current subject:
 - A goal gate (`goalRevision`) binds to the goal a person reads: its title, its body without the
   product's gate block, and its kind, parent, and change class. The same digest is used on GitHub
   and on the filesystem. A phase pass, a label, or an issue update does not change it.
+- An admission gate (`admission`) admits capabilities under a goal at one change class. It is an
+  `adequacy-of-intent` gate. Its subject is the goal subject above and the class together
+  (`admissionDigest`), so it moves only when the goal does. Saving the answer, a gate sync, a phase
+  pass, a comment, or a label does not make it miss. Each class is its own gate, and agreeing to the
+  goal gate is not an admission. Only an admission gate the person agreed opens a capability
+  (`docs/sdlc-definition.md`).
 - A candidate gate (`candidateDigest`) binds to the item's current candidate, recorded with
   `gates candidate`. With no candidate recorded, no candidate gate opens.
 
@@ -42,6 +48,8 @@ an agent action. It never satisfies a gate.
 
 ```bash
 agentflow-sdlc gates open --medium filesystem --root <goal-dir> --class adequacy-of-intent --role analyst
+agentflow-sdlc gates open --medium github --repo <owner/repo> --issue <n> --change-class standard --role person
+agentflow-sdlc gates consent --medium github --repo <owner/repo> --issue <n> --gate <digest> --dir <dir>
 agentflow-sdlc gates waiting --medium github --repo <owner/repo> [--role <role>] [--person <name>] [--json]
 agentflow-sdlc gates candidate --medium filesystem --root <goal-dir> --subject <candidate digest>
 agentflow-sdlc gates answer --medium github --repo <owner/repo> --issue <n> --gate <digest> --decision agree --person <name>
@@ -53,6 +61,11 @@ command takes no platform from the caller, writes the answer as the registered h
 `human-gate` independence, and exits non-zero without writing anything when it runs under an agent
 runtime (it checks `AI_AGENT`, `CLAUDECODE`, `CLAUDE_CODE_ENTRYPOINT`, the Codex sandbox and thread
 variables, and an OpenRig seat's session and node ids).
+
+`gates open --change-class <class>` opens an admission on a goal record. `gates consent` reads an
+agreed gate and its answer and writes them as `gate.json` and `attestation.json` for
+`phase append --gate-file --attestation-file`. It decides nothing: the capability open checks both
+again.
 
 The platform field is the existing local trust model. The record is not proof of identity, and no
 part of it is an electronic signature. A later system that proves identity must produce an answer
