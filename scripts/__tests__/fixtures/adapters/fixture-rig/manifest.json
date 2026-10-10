@@ -1,0 +1,7 @@
+{
+  "id": "agentflow-sdlc.fixture-rig",
+  "name": "Fixture execution adapter (tests only)",
+  "version": "0.0.0",
+  "harness": "fixture-rig",
+  "lifecycle": { "module": "lifecycle.mjs" }
+}

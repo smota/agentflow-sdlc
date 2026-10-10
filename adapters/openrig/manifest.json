@@ -16,12 +16,19 @@
   ],
   "roles": ["architect", "developer", "developer-jr", "tester", "reviewer"],
   "commands": [
+    "agentflow-sdlc adapters install openrig [--preset <name>] [repo]",
+    "agentflow-sdlc adapters update openrig",
+    "agentflow-sdlc adapters squads provision openrig [--kind delivery|product] [--sibling <rig>] <project> [path]",
+    "agentflow-sdlc adapters squads update openrig <project>",
+    "agentflow-sdlc adapters squads list openrig [--json]",
+    "agentflow-sdlc adapters squads remove openrig <project>",
     "rig up agentflow --cwd <project>",
     "rig down agentflow --snapshot",
     "rig up agentflow --existing",
     "rig ps --nodes --rig agentflow",
-    "adapters/openrig/scripts/spawn-squad.sh <project> [path]",
     "rig up agentflow-<project> --cwd <path>"
   ],
-  "scripts": ["adapters/openrig/scripts/install-rig.sh", "adapters/openrig/scripts/spawn-squad.sh"]
+  "lifecycle": {
+    "module": "lifecycle.mjs"
+  }
 }

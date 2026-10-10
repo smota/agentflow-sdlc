@@ -36,11 +36,20 @@ OpenRig bundle configuration schema: `openrig.bundle-configurations/v1`:
 
 All rig assets are maintained in [`adapters/openrig/agentflow/`](adapters/openrig/agentflow/).
 
-To install or recover the canonical rig into your OpenRig user library:
+To install or recover the delivery and product bases into your OpenRig user library:
 
 ```bash
-./adapters/openrig/scripts/install-rig.sh
+agentflow-sdlc adapters install openrig [--preset <name>] [/path/to/project]
 ```
+
+Run it again to recover. With a project path, it also adds the AgentFlow Git excludes to that
+repository. To refresh the bases after upgrading AgentFlow:
+
+```bash
+agentflow-sdlc adapters update openrig
+```
+
+This refreshes the AgentFlow bases only. It does not install or upgrade OpenRig.
 
 ### Context Switching Mode (Single Squad)
 
@@ -60,20 +69,24 @@ To run simultaneous squads on different projects at the same time:
 
 ```bash
 # Provision a dedicated squad for a project (creates spec + Pi bridges)
-./adapters/openrig/scripts/spawn-squad.sh my-project /path/to/my-project
-./adapters/openrig/scripts/spawn-squad.sh other-project /path/to/other-project
+agentflow-sdlc adapters squads provision openrig my-project /path/to/my-project
+agentflow-sdlc adapters squads provision openrig other-project /path/to/other-project
 
 # Launch squads in parallel
 rig up agentflow-my-project --cwd /path/to/my-project
 rig up agentflow-other-project --cwd /path/to/other-project
 
 # Product copy for that project. Not a renamed delivery squad.
-./adapters/openrig/scripts/spawn-squad.sh --kind product --sibling agentflow-my-project pm /path/to/my-project
+agentflow-sdlc adapters squads provision openrig --kind product --sibling agentflow-my-project pm /path/to/my-project
 rig up agentflow-pm --cwd /path/to/my-project
 
 # Monitor all squads
 rig ps
+agentflow-sdlc adapters squads list openrig
 
-# Teardown when done
-./adapters/openrig/scripts/spawn-squad.sh --remove my-project
+# Refresh a squad after `adapters update openrig` (keeps seat runtime state)
+agentflow-sdlc adapters squads update openrig my-project
+
+# Teardown when done (stops the rig first if it is running)
+agentflow-sdlc adapters squads remove openrig my-project
 ```
