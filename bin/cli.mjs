@@ -52,6 +52,7 @@ import { inspectEffectiveConfig } from '../lib/config/inspect.mjs'
 import { formatContinuousConfigPrompt } from '../lib/config/prompt.mjs'
 import { setupGitHubGovernance } from '../lib/github-setup.mjs'
 import { handleOnboarding } from '../lib/onboarding/cli.mjs'
+import { ADAPTERS_USAGE, runAdapterLifecycle } from '../lib/adapters/lifecycle.mjs'
 import { formatOnboardingPrompt } from '../lib/onboarding/prompt.mjs'
 import os from 'node:os'
 
@@ -936,7 +937,8 @@ function handleResume(rest, targetDir) {
 }
 
 const ROOT_USAGE =
-  'Usage: agentflow-sdlc <init|run|doctor-env|config|adopt|providers|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding|onboarding-prompt|release-plan|handoff|resume|phase> [path] [--target <dir>] [--json]\n'
+  'Usage: agentflow-sdlc <init|run|doctor-env|config|adopt|providers|adapters|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding|onboarding-prompt|release-plan|handoff|resume|phase> [path] [--target <dir>] [--json]\n' +
+  'Execution adapters: agentflow-sdlc adapters <install|update|squads provision|squads update|squads list|squads remove> <id> (see agentflow-sdlc adapters --help)\n'
 
 const COMMAND_USAGE = {
   init: 'Usage: agentflow-sdlc init [--profile <id>] [--posture <posture>] [--no-harness] [--sync] [--target <dir>] [--force] [--json]\nLow-level primitive: applies the adoption plan without a separate confirmation. To adopt a project, use `agentflow-sdlc onboarding`.\n',
@@ -948,6 +950,7 @@ const COMMAND_USAGE = {
     'Usage: agentflow-sdlc adopt <profiles|plan|apply|rollback|recover> [--profile <id>] [--target <dir>] [--json]\nLow-level primitive: the AgentFlow file transaction only. To adopt a project, use `agentflow-sdlc onboarding`.\n',
   providers:
     'Usage: agentflow-sdlc providers <list|inspect <id>|bind [--provider <id>] [--mode <mode>] [--profile <profile>]> --json\n',
+  adapters: ADAPTERS_USAGE,
   collaboration:
     'Usage: agentflow-sdlc collaboration <classify|plan|verify|advance|validate> [options] [--target <dir>] [--json]\n',
   roles:
@@ -1017,6 +1020,14 @@ function main() {
 
   if (command === 'providers') {
     return runScript('scripts/provider-status.mjs', rest, targetDir)
+  }
+
+  if (command === 'adapters') {
+    if (rest.length === 0) {
+      process.stderr.write(ADAPTERS_USAGE)
+      return 2
+    }
+    return runAdapterLifecycle({ args: rest, packageRoot })
   }
 
   if (command === 'collaboration') {
@@ -1158,5 +1169,7 @@ function main() {
   return 2
 }
 
-// Let pending stdout/stderr writes drain before Node exits.
-process.exitCode = main()
+// Let pending stdout/stderr writes drain before Node exits. Adapter lifecycle is async.
+const exitCode = main()
+if (exitCode instanceof Promise) exitCode.then((code) => (process.exitCode = code))
+else process.exitCode = exitCode

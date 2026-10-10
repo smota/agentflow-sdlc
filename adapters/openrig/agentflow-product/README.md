@@ -1,6 +1,6 @@
 # AgentFlow product squad
 
-Generic product base for one project. `install-rig.sh` copies it to the OpenRig spec library. `spawn-squad.sh --kind product` makes the per-project copy.
+Generic product base for one project. `agentflow-sdlc adapters install openrig` copies it to the OpenRig spec library. `agentflow-sdlc adapters squads provision openrig --kind product` makes the per-project copy.
 
 Seats:
 
