@@ -194,14 +194,32 @@ Use this canonical label vocabulary for new issues and issue updates.
 
 Apply secondary labels only when they describe the primary work or a meaningful review queue. Do not add `documentation` merely because an implementation issue includes docs updates in its acceptance criteria; use it when the issue is documentation-first or when documentation review is the main work surface.
 
-### Progress Label
+### Process State
 
-- `status:in-progress` - implementation has started on this issue
+Every work item shows exactly one process state. The product computes it from the phase record and
+one integration fact; nobody sets it by hand.
 
-The project names this label in `labels.progress` of `sdlc.config.json`; use the configured name
-if it differs. Apply it when implementation actually starts, not when the backlog is edited. An
-assisted run and a one-agent run with no rig apply the same label. Do not invent a one-off progress
-label. The label is a marker for people; the phase transitions remain the record.
+| State     | When                                                                         |
+| --------- | ---------------------------------------------------------------------------- |
+| Backlog   | No transition, phase 0, or a return to phase 0 or 1. Acceptance is open.     |
+| Readiness | The latest transition is a phase 1 pass. Acceptance is frozen.               |
+| WIP       | Any later transition, including a return to phase 3 or 4 and a phase 8 pass. |
+| Delivered | The result is on the integration line or trunk. A version tag is not needed. |
+
+The integration fact wins over the phase record. On GitHub it is an `integrated:<branch>` label or a
+merged pull request into the integration line or trunk that closes the issue. On the filesystem
+medium it is `integration.json` beside `goal.json`, written by `agentflow-sdlc phase integrate`. A
+closed flag is not the fact: an item closed without it has no state and is left off the board as a
+count.
+
+On GitHub the issue carries one label for its state: `state:backlog`, `state:readiness`,
+`state:wip`, or `state:delivered`. `phase append` replaces it when the projection changes. Do not
+set it by hand. `agentflow-sdlc board` shows the four groups for a GitHub repository or a
+filesystem root.
+
+The four states are fixed. An extension pack or adopter profile cannot add or rename one.
+`status:in-progress`, `status:backlog`, `status:v1-ready`, and `status:superseded` are retired; the
+product neither writes nor reads them as a state.
 
 ### Test Debt Labels
 
