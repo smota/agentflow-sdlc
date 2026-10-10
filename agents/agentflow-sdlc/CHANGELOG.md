@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Person gates now appear on the work record. `agentflow-sdlc gates open`, `answer`, `on-behalf`,
+  and `waiting` record and list gates on GitHub (a product-owned issue-body block) and on the
+  filesystem medium (`gates.json`). Each gate shows waiting, agreed, refused, or stale, with who must
+  answer (the role on the human platform). On-behalf actions name the person as principal and the
+  agent as actor and never satisfy a gate. `gates answer` takes no platform from the caller and
+  refuses to run under an agent runtime. The record is not proof of identity. `satisfyGate` is
+  unchanged.
 - Every work item now shows one process state: Backlog, Readiness, WIP, or Delivered. The state is
   projected from the phase record and one integration fact, the same way on GitHub and on the
   filesystem medium. `agentflow-sdlc board` shows the four groups; `board backfill` previews the

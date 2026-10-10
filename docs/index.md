@@ -57,6 +57,7 @@ flowchart LR
 | [Agent workflow](agent-workflow.md)                      | Phase state machine, role-pass contract, branches, handoffs, review, and PR readiness |
 | [Issue standards](issue-standards.md)                    | Issue structure, labels, lifecycle metadata, and body updates                         |
 | [SDLC definition](sdlc-definition.md)                    | Portable product vocabulary and state model                                           |
+| [Person gates](person-gates.md)                          | Waiting decisions, a person's answers, and on-behalf actions on the work record       |
 | [Lifecycle roles](roles/index.md)                        | Versioned role taxonomy, ownership, authority, and handoffs                           |
 | [Role methods](roles/methods.md)                         | Configurable analysis, engineering, quality, and documentation approaches             |
 | [Project setup](project-setup.md)                        | Guided project decisions                                                              |
@@ -138,7 +139,7 @@ The [ADR index](adr/) records accepted, proposed, and superseded decisions. ADRs
 The installed CLI exposes these top-level command groups:
 
 ```text
-agentflow-sdlc <init|run|doctor-env|config|adopt|providers|adapters|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding|onboarding-prompt|release-plan|handoff|resume|phase|board>
+agentflow-sdlc <init|run|doctor-env|config|adopt|providers|adapters|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding|onboarding-prompt|release-plan|handoff|resume|phase|board|gates>
 ```
 
 After the npm installation in [Get started](get-started.md), use the installed command from any directory:
