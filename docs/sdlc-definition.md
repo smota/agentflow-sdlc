@@ -54,6 +54,8 @@ Work is held at three altitudes. Each one is a different record, with a `kind` o
 | Capability | the specification of how the goal is met | a goal that a person accepted | reviews it only when it is high-assurance |
 | Spec       | one implementation unit                  | a capability                  | none at this altitude                     |
 
+How a GitHub issue shows that kind and its parent is defined in [Issue Hierarchy](issue-standards.md#issue-hierarchy).
+
 Phases 0-8 are the lifecycle inside a spec. They are not extra records, and they are not seats.
 A follow-up is a capability or a spec under an existing goal. It is not a second goal for the same
 intent.
