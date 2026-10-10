@@ -24,6 +24,7 @@ New decisions get the next available number.
 | [ADR 011](011-versioned-persistence-and-portable-continuation.md)                | Versioned persistence and portable continuation                                           | Proposed                                                                                     | 2026-09-25 |
 | [ADR 012](012-execution-provider-and-observability-boundaries.md)                | Execution-provider and observability boundaries                                           | Proposed                                                                                     | 2026-09-25 |
 | [ADR 013](013-remove-optional-meshloop-adapter.md)                               | Remove the optional Meshloop adapter                                                      | Accepted by explicit maintainer direction on 2026-10-09; supersedes ADR 012 decision 12 only | 2026-10-09 |
+| [ADR 014](014-remove-optional-ai-foundry-desk-provider.md)                       | Remove the optional AI Foundry Desk provider                                              | Accepted by explicit maintainer direction on 2026-10-10; amends ADR 004 decision only        | 2026-10-10 |
 
 ---
 

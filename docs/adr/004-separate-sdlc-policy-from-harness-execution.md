@@ -2,6 +2,8 @@
 
 **Status:** Accepted
 **Date:** 2026-09-01
+**Amended by:** [ADR 014](014-remove-optional-ai-foundry-desk-provider.md), which removed the
+optional AI Foundry Desk provider.
 
 ## Context
 
@@ -27,9 +29,9 @@ AgentFlow owns the portable SDLC domain and emits collaboration intent. It does 
 general multi-agent runtime, workstation manager, provider catalog, credential broker, process
 supervisor, or project-instruction installer.
 
-Harness integrations are optional providers behind versioned, capability-based ports. AI Foundry
-Desk may supply project-adapter, workspace, execution, and receipt capabilities only where its pinned
-contract proves them. AgentFlow must not copy AFD orchestration or infer support from a harness name.
+Harness integrations are optional providers behind versioned, capability-based ports. A provider
+may supply only the capabilities its contract proves. AgentFlow must not copy AFD orchestration or
+infer support from a harness name.
 
 `sdlc.config.json` is authoritative for domain vocabulary and policy. `agent-workflow.config.json`
 contains consuming-project execution choices such as branches, CI commands, routing preferences,
