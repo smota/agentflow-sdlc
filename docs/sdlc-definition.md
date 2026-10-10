@@ -130,6 +130,22 @@ Rules:
 - Skips require reason.
 - Escalate to `high-assurance` when security, auth, data migration, production deployment, customer data, or explicit policy demands it.
 
+### Orthogonal dimensions: profiles, postures, and adapter topology rungs
+
+AgentFlow strictly separates delivery governance from harness topology:
+
+1. **Workflow Profiles** (`bounded`, `standard`, `high-assurance`, `exploratory`):
+   Govern phase requirements, role-pass constraints, and verification rigor. Profiles are canonical AgentFlow vocabulary.
+2. **Postures** (`advisory`, `assisted`, `delegated`, `autonomous`):
+   Govern agent autonomy, human-gate intervention points, and attestation requirements (`lib/core/posture.mjs`).
+3. **Adapter Topology Rungs** (e.g., OpenRig P0-P4):
+   Govern execution squad seat assignment and multi-agent collaboration classes (`linear`, `bilateral`, `council`, `human-gated`).
+
+These three dimensions are orthogonal:
+- An adapter topology rung chooses builder seats and collaboration topology; it never alters canonical phases, deletes roles, or bypasses gate classes.
+- A task at any rung may run under any workflow profile based on risk.
+- High-assurance governance remains enforced regardless of the executing harness or squad rung.
+
 ## Role flow
 
 The product catalog maps the workflow slugs to qualified identities such as

@@ -40,6 +40,14 @@
      previous phase is missing and was not a recorded skip.
    - P0-P4 chooses the builder and whether Council or a human gate applies.
      It does not delete a phase. A skip needs `--status skipped --reason`.
+   - Defect return transitions: A phase return is recorded with
+     `--status skipped --reason "<defect summary> (return to phase <target>)"`.
+     Legal return targets: Phase 2, 3, or 4 can return to Phase 1 (`pm.analyst`)
+     for spec, scope, or assumption defects. Phase 4 can return to Phase 3
+     (`orch.arch`). Phases 6, 7, and 8 return to Phase 4 (builder). Maximum
+     2 return cycles per pair before mandatory human escalation.
+     When returning to Phase 1, `orch.arch` queues a reverse handoff to `pm.analyst`
+     using the session in `sibling.md`.
    - Builders work only in `.worktrees/<branch-name>`, and only after phase 3
      is on the medium. `dev.qa` runs after phase 4. `rev.review` runs after
      phase 5. They do not accept in parallel.

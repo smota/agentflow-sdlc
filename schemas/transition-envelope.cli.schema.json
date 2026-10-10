@@ -59,6 +59,8 @@
               "review",
               "release",
               "incident",
+              "job",
+              "capability-map",
               "other"
             ]
           },
@@ -93,6 +95,8 @@
               "review",
               "release",
               "incident",
+              "job",
+              "capability-map",
               "other"
             ]
           },
@@ -126,6 +130,8 @@
               "review",
               "release",
               "incident",
+              "job",
+              "capability-map",
               "other"
             ]
           },

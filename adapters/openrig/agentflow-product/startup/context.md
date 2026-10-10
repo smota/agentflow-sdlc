@@ -10,4 +10,12 @@
 
 5. Before analysis freezes, the product manager records proceed, refine, or pause. That is guidance, not a new phase.
 
-6. Submit the startup proof from the orientation challenge.
+6. Return transitions and reverse seam triggers:
+   - A phase that cannot proceed records a defect return:
+     `agentflow-sdlc phase append --phase <current> --status skipped --reason "<defect summary> (return to phase <target>)" --seat <seat>`
+   - Phase 1 (`pm.analyst`) can return to Phase 0 (`pm.manager`) if core customer job or strategic boundaries are ambiguous.
+   - Delivery (`orch.arch`) can return to Phase 1 (`pm.analyst`) if architecture intake or planning identifies unresolvable ambiguity, invalid assumptions, or scope creep.
+   - When a reverse seam handoff arrives from delivery, `pm.analyst` updates analysis and artifacts, then reappends Phase 1 (`--status pass`) to resume delivery.
+   - Maximum return cycles between any phase pair is 2. Exceeding 2 cycles requires immediate human escalation.
+
+7. Submit the startup proof from the orientation challenge.
