@@ -14,6 +14,7 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  realpathSync,
   renameSync,
   rmdirSync,
   statSync,
@@ -637,9 +638,17 @@ export async function main(
   }
 }
 
-const invoked = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+const invoked =
+  process.argv[1] &&
+  (() => {
+    try {
+      return realpathSync(resolve(process.argv[1])) === realpathSync(fileURLToPath(import.meta.url))
+    } catch {
+      return resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+    }
+  })()
 if (invoked) {
   main(process.argv.slice(2)).then((code) => {
-    process.exitCode = code
+    process.exitCode = code ?? 0
   })
 }

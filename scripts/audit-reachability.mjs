@@ -102,6 +102,21 @@ const OFF_PATH_EXEMPTIONS = new Map([
   //     via scanCiWorkflowEntries).
   // Removing the exemption without wiring a caller would have surfaced all three as findings; see
   // the W8g spec report for the enforcement point each one now has.
+  // #381 ships the confirmation-phrase catalog before anything reads a person's line: seat filing
+  // (#383) and the cockpit answer box (#384) are the callers, and each removes its exemption here.
+  // Until then no line can answer a gate, so the gap is an unwired feature, not a bypassed control.
+  [
+    'lib/core/confirmation-phrase.mjs#parseConfirmationPhrase',
+    'pure recognizer for the person confirmation phrase (#381); no product path reads a line yet, ' +
+      'gates answer and satisfyGate remain the only way an answer is recorded — exercised by ' +
+      'lib/__tests__/confirmation-phrase.test.mjs',
+  ],
+  [
+    'lib/core/confirmation-phrase.mjs#matchConfirmationPhrase',
+    'resolves a confirmation phrase to one waiting gate (#381); wired by seat filing (#383) and the ' +
+      'cockpit answer box (#384), records nothing itself — exercised by ' +
+      'lib/__tests__/confirmation-phrase.test.mjs',
+  ],
   [
     'lib/core/delivery-policy.mjs#normalizeUsage',
     'usage-measurement normalizer for the budget contract; the enforcement it would feed, ' +
