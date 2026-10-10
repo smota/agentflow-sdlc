@@ -536,7 +536,7 @@ describe('adapters squads openrig (AC8-AC11)', () => {
 // A fake `rig` on PATH, run with HOME as the temporary home, which is the only case where the
 // adapter contacts OpenRig. A node script with a shebang is not spawnable without a shell on Windows.
 describe.skipIf(WINDOWS)('adapters with a running OpenRig (fake rig)', () => {
-  function fakeRig(running = [], { downExit = 0 } = {}) {
+  function fakeRig(running = [], { downExit = 0, ps = 'json', mode = 0o755 } = {}) {
     const dir = tempDir('agentflow-fakerig-')
     const log = join(dir, 'calls.log')
     const script = join(dir, 'rig')
@@ -547,10 +547,12 @@ const fs = require('fs')
 const args = process.argv.slice(2)
 fs.appendFileSync(${JSON.stringify(log)}, args.join(' ') + '\\n')
 if (args[0] === 'daemon') console.log('Daemon running on port 1')
-if (args[0] === 'ps') console.log(JSON.stringify(${JSON.stringify(running)}.map((rigName) => ({ rigName, status: 'running' }))))
+if (args[0] === 'ps' && ${JSON.stringify(ps)} === 'json') console.log(JSON.stringify(${JSON.stringify(running)}.map((rigName) => ({ rigName, status: 'running' }))))
+if (args[0] === 'ps' && ${JSON.stringify(ps)} === 'garbage') console.log('daemon unreachable')
+if (args[0] === 'ps' && ${JSON.stringify(ps)} === 'fail') { console.error('PS FAILED'); process.exit(3) }
 if (args[0] === 'down' && ${downExit} !== 0) { console.error('STOP REFUSED'); process.exit(${downExit}) }
 `,
-      { mode: 0o755 },
+      { mode },
     )
     symlinkSync(join(BIN, 'node'), join(dir, 'node'))
     symlinkSync(join(BIN, 'git'), join(dir, 'git'))
@@ -622,6 +624,48 @@ if (args[0] === 'down' && ${downExit} !== 0) { console.error('STOP REFUSED'); pr
     expect(result.stderr).toContain('Nothing was removed')
     expect(tree(home)).toEqual(before)
     expect(piSeats(home).filter((seat) => seat.endsWith('@agentflow-demo'))).toHaveLength(6)
+  })
+
+  it.each([
+    ['rig ps exits non-zero', { ps: 'fail' }, 'rig ps exited 3: PS FAILED'],
+    [
+      'rig ps prints unreadable output',
+      { ps: 'garbage' },
+      'rig ps --json output could not be read',
+    ],
+    ['rig cannot be executed', { mode: 0o644 }, 'EACCES'],
+  ])('keeps the spec and seat state and fails when %s', (_label, options, message) => {
+    const home = tempDir('agentflow-home-')
+    const project = tempDir('agentflow-project-')
+    // Provision with a working rig, then swap in the broken one.
+    live(['adapters', 'squads', 'provision', 'openrig', 'demo', project], home, fakeRig())
+    const rig = fakeRig(['agentflow-demo'], options)
+    const before = tree(home)
+    const result = spawnSync(
+      process.execPath,
+      [CLI, 'adapters', 'squads', 'remove', 'openrig', 'demo'],
+      {
+        encoding: 'utf8',
+        env: { PATH: rig.path, HOME: home },
+      },
+    )
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('Could not read rig status')
+    expect(result.stderr).toContain(message)
+    expect(result.stderr).toContain('Nothing was removed')
+    expect(tree(home)).toEqual(before)
+    expect(rig.calls().filter((call) => call.startsWith('down'))).toEqual([])
+  })
+
+  it('still lists squads as stopped when rig status cannot be read', () => {
+    const home = tempDir('agentflow-home-')
+    const project = tempDir('agentflow-project-')
+    live(['adapters', 'squads', 'provision', 'openrig', 'demo', project], home, fakeRig())
+    const rows = JSON.parse(
+      live(['adapters', 'squads', 'list', 'openrig', '--json'], home, fakeRig([], { ps: 'fail' }))
+        .stdout,
+    )
+    expect(rows.map((row) => row.status)).toEqual(['stopped', 'stopped', 'stopped'])
   })
 })
 

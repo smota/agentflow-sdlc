@@ -19,7 +19,7 @@ import {
   writeFileSync,
 } from 'node:fs'
 import { homedir } from 'node:os'
-import { dirname, join, resolve } from 'node:path'
+import { delimiter, dirname, join, resolve } from 'node:path'
 
 const ADAPTER_ID = 'openrig'
 const BASES = { delivery: 'agentflow', product: 'agentflow-product' }
@@ -243,32 +243,52 @@ function contactsOpenRig(ctx) {
   return resolve(ctx.home) === resolve(homedir())
 }
 
-// `rig` is optional. A missing binary (or one Node cannot spawn without a shell) reads as absent.
+// On Windows an npm-installed `rig` is a rig.cmd shim, which Node cannot spawn without a shell.
+function rigShimOnPath(env) {
+  if (process.platform !== 'win32') return false
+  const pathValue = env.PATH ?? env.Path ?? ''
+  return pathValue
+    .split(delimiter)
+    .filter(Boolean)
+    .some((dir) => ['rig.cmd', 'rig.bat'].some((name) => isFile(join(dir, name))))
+}
+
+// `rig` is optional. Returns null when OpenRig is not contacted or `rig` is not installed. Any
+// other spawn failure (including a Windows shim that cannot run without a shell) is returned as
+// a result with `error`, so callers that must fail closed can tell it from absence.
 function rig(args, ctx) {
   if (!contactsOpenRig(ctx)) return null
   const result = spawnSync('rig', args, { encoding: 'utf8', env: ctx.env, shell: false })
-  return result.error ? null : result
+  if (result.error?.code === 'ENOENT' && !rigShimOnPath(ctx.env)) return null
+  return result
 }
 
 function daemonRunning(ctx) {
   const result = rig(['daemon', 'status'], ctx)
-  if (!result || result.status !== 0) return false
+  if (!result || result.error || result.status !== 0) return false
   return /\brunning\b/i.test(result.stdout) && !/not running/i.test(result.stdout)
 }
 
+// Rig statuses by name. `error` is set when `rig` is reachable but its status could not be read;
+// it stays null when OpenRig is not contacted or not installed, since then no rig can be running.
 function rigStatuses(ctx) {
-  const result = rig(['ps', '--json'], ctx)
   const statuses = new Map()
-  if (!result || result.status !== 0) return statuses
+  const result = rig(['ps', '--json'], ctx)
+  if (!result) return { statuses, error: null }
+  if (result.error) return { statuses, error: result.error.message }
+  if (result.status !== 0) {
+    const detail = (result.stderr || result.stdout || '').trim()
+    return { statuses, error: `rig ps exited ${result.status}${detail ? `: ${detail}` : ''}` }
+  }
   try {
     const parsed = JSON.parse(result.stdout)
-    for (const row of Array.isArray(parsed) ? parsed : (parsed.entries ?? [])) {
-      if (row?.rigName) statuses.set(row.rigName, row.status)
-    }
+    const rows = Array.isArray(parsed) ? parsed : parsed?.entries
+    if (!Array.isArray(rows)) throw new Error('no rig rows')
+    for (const row of rows) if (row?.rigName) statuses.set(row.rigName, row.status)
   } catch {
-    // Unreadable output: report every squad as stopped rather than guess.
+    return { statuses, error: 'rig ps --json output could not be read' }
   }
-  return statuses
+  return { statuses, error: null }
 }
 
 function syncSpecLibrary(ctx) {
@@ -608,7 +628,8 @@ export function squadUpdate(ctx) {
 export function listSquads(ctx) {
   const { specs } = locations(ctx.home)
   if (!isDirectory(specs)) return []
-  const statuses = rigStatuses(ctx)
+  // Listing is read-only: an unreadable status shows as stopped, as when rig is absent.
+  const { statuses } = rigStatuses(ctx)
   return readdirSync(specs)
     .filter((name) => name.startsWith('agentflow') && isFile(join(specs, name, 'rig.yaml')))
     .sort()
@@ -642,17 +663,18 @@ export function squadRemove(ctx) {
     )
   }
   out(`==> Removing squad '${rigName}'...`)
-  const status = rigStatuses(ctx).get(rigName)
+  // Fail closed: deleting state under a rig whose status is unknown can lose its work.
+  const { statuses, error } = rigStatuses(ctx)
+  if (error) fail(`Could not read rig status (${error}). Nothing was removed.`)
+  const status = statuses.get(rigName)
   if (status && status !== 'stopped') {
     out(`    Stopping running rig '${rigName}'...`)
     const stopped = rig(['down', rigName], ctx)
     // A rig that did not stop keeps its spec and seat state; removing them under it loses work.
-    if (!stopped || stopped.status !== 0) {
-      const detail = (stopped?.stderr || stopped?.stdout || '').trim()
-      fail(
-        `rig down ${rigName} failed${stopped ? ` (exit ${stopped.status})` : ''}${detail ? `: ${detail}` : ''}. ` +
-          'Nothing was removed.',
-      )
+    if (!stopped || stopped.error || stopped.status !== 0) {
+      const detail = (stopped?.error?.message || stopped?.stderr || stopped?.stdout || '').trim()
+      const code = stopped && !stopped.error ? ` (exit ${stopped.status})` : ''
+      fail(`rig down ${rigName} failed${code}${detail ? `: ${detail}` : ''}. Nothing was removed.`)
     }
   }
   const targetDir = join(specs, rigName)
