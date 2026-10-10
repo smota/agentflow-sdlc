@@ -14,6 +14,7 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  realpathSync,
   renameSync,
   rmdirSync,
   statSync,
@@ -637,12 +638,17 @@ export async function main(
   }
 }
 
-const invoked = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+const invoked =
+  process.argv[1] &&
+  (() => {
+    try {
+      return realpathSync(resolve(process.argv[1])) === realpathSync(fileURLToPath(import.meta.url))
+    } catch {
+      return resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+    }
+  })()
 if (invoked) {
   main(process.argv.slice(2)).then((code) => {
-    const exit = () => process.exit(code ?? 0)
-    // spawnSync on macOS and Windows can observe an empty stdout if the process ends
-    // before the pipe drains. Wait for both streams, then exit.
-    process.stdout.write('', () => process.stderr.write('', exit))
+    process.exitCode = code ?? 0
   })
 }
