@@ -1,8 +1,9 @@
 #!/usr/bin/env node
-import { existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { join, relative, resolve } from 'node:path'
 import { createGatePendingHook } from '../lib/adapters/gate-pending-hook.mjs'
 import { detectAgentRuntime } from '../lib/agent-caller.mjs'
+import { matchConfirmationPhrase } from '../lib/core/confirmation-phrase.mjs'
 import { GATE_CLASSES, createGate } from '../lib/core/gate.mjs'
 import {
   HUMAN_PLATFORM,
@@ -41,7 +42,7 @@ function flags(args, name) {
 
 function usage() {
   return [
-    'Usage: agentflow-sdlc gates <open|answer|consent|candidate|on-behalf|sync|waiting> --medium <filesystem|github> [options] [--json]',
+    'Usage: agentflow-sdlc gates <open|answer|file|consent|candidate|on-behalf|sync|waiting> --medium <filesystem|github> [options] [--json]',
     '  filesystem: --root <dir>   (waiting: every goal directory under it)',
     '  github: --repo <owner/repo> --issue <n>   (waiting: every issue in the repo)',
     '  open: --class <adequacy-of-intent|release-of-candidate|agent-escalation> --role <role>',
@@ -50,6 +51,9 @@ function usage() {
     '  answer: --gate <digest> --decision <agree|changes-requested|blocked> --person <name> [--finding <text>]...',
     '          A person runs this in their own terminal. An agent must not run it, and it refuses',
     '          to run under an agent runtime. The record is not proof of identity.',
+    '  file: --line <line> --message-file <path> --seat <id>   a seat files the person’s confirmation',
+    '        line, `agree|changes|block <gate> as <name>`, exactly as it appears on one line of the',
+    '        person’s message. Anything else files nothing. The seat never writes the line.',
     '  consent: --gate <digest> --dir <dir>   writes an agreed gate and its answer as gate.json and',
     '           attestation.json, for phase append --gate-file and --attestation-file. Reads only.',
     '  on-behalf: --principal <person> --actor-platform <slug> --actor-executor <target> --grant <ref>',
@@ -155,6 +159,52 @@ export async function answerGate(args, { client, now, env } = {}) {
     answerEntry(gate.gateDigest, attestation, { recordedAt }),
   )
   return { goal, attestation }
+}
+
+// The lines of a person's message, each without its line ending.
+function messageLines(message) {
+  return message.split('\n').map((line) => (line.endsWith('\r') ? line.slice(0, -1) : line))
+}
+
+// A seat files the person's confirmation line (#383). The line must be one whole line of the
+// person's message, byte for byte, and must answer exactly one waiting gate. The person is the one
+// the line names; the seat is recorded apart as the filer. The seat never writes or edits the line,
+// and the record is not proof of identity. gates answer still refuses to run under an agent.
+export async function fileConfirmation(args, { client, now, env } = {}) {
+  const line = flag(args, '--line')
+  const seat = flag(args, '--seat')
+  const messageFile = flag(args, '--message-file')
+  if (line === null) throw new Error('Set --line <the person’s line>')
+  if (!seat || !seat.trim()) throw new Error('Set --seat <the filing seat>')
+  if (!messageFile) throw new Error('Set --message-file <the person’s message>')
+  const message = readFileSync(resolve(messageFile), 'utf8')
+  if (!messageLines(message).includes(line)) {
+    throw new Error(
+      'The line is not one line of the person’s message, unchanged. Nothing was filed.',
+    )
+  }
+  const medium = mediumFrom(args, { client })
+  const { gates } = (await medium.readGoal()).gates
+  const matched = matchConfirmationPhrase(line, gates)
+  if (!matched.ok) throw new Error(`${matched.code}: ${matched.reason}. Nothing was filed.`)
+  if (describeRuntimePlatform(matched.name)) {
+    throw new Error(`${matched.name} is a runtime platform, not a person. Nothing was filed.`)
+  }
+  const gate = gates.find((candidate) => candidate.gateDigest === matched.gateDigest)
+  const recordedAt = now()
+  const attestation = createReviewAttestation({
+    subject: `${gate.gateClass} ${gate.subjectKind}`,
+    reviewedDigest: gate.subjectDigest,
+    reviewer: { platform: HUMAN_PLATFORM, executor: matched.name, independence: 'human-gate' },
+    decision: matched.decision,
+    timestamp: recordedAt,
+  })
+  const runtime = detectAgentRuntime(env)?.runtime ?? null
+  const filing = { line, filedBy: { seat: seat.trim(), ...(runtime ? { runtime } : {}) } }
+  const goal = await medium.appendGateEntry(
+    answerEntry(gate.gateDigest, attestation, { recordedAt, filing }),
+  )
+  return { goal, attestation, filing }
 }
 
 // Writes a person's agreed answer as the two files phase append takes. It decides nothing:
@@ -313,6 +363,7 @@ export async function main(
   const handlers = {
     open: openGate,
     answer: answerGate,
+    file: fileConfirmation,
     consent: exportConsent,
     candidate: recordCandidate,
     sync: syncGates,
