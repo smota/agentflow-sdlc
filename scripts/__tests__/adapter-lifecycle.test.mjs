@@ -536,7 +536,12 @@ describe('adapters squads openrig (AC8-AC11)', () => {
 // A fake `rig` on PATH, run with HOME as the temporary home, which is the only case where the
 // adapter contacts OpenRig. A node script with a shebang is not spawnable without a shell on Windows.
 describe.skipIf(WINDOWS)('adapters with a running OpenRig (fake rig)', () => {
-  function fakeRig(running = [], { downExit = 0, ps = 'json', mode = 0o755 } = {}) {
+  // `ps` is 'json' (the running rigs, status running), 'garbage', 'fail', or { raw } printed as is.
+  // A successful `down` marks the rig stopped unless downStops is false; raw output then becomes afterDown.
+  function fakeRig(
+    running = [],
+    { downExit = 0, ps = 'json', mode = 0o755, downStops = true, afterDown = '[]' } = {},
+  ) {
     const dir = tempDir('agentflow-fakerig-')
     const log = join(dir, 'calls.log')
     const script = join(dir, 'rig')
@@ -545,12 +550,17 @@ describe.skipIf(WINDOWS)('adapters with a running OpenRig (fake rig)', () => {
       `#!/usr/bin/env node
 const fs = require('fs')
 const args = process.argv.slice(2)
+const ps = ${JSON.stringify(ps)}
+const stoppedFile = ${JSON.stringify(join(dir, 'stopped.json'))}
+const stopped = fs.existsSync(stoppedFile) ? JSON.parse(fs.readFileSync(stoppedFile, 'utf8')) : []
 fs.appendFileSync(${JSON.stringify(log)}, args.join(' ') + '\\n')
 if (args[0] === 'daemon') console.log('Daemon running on port 1')
-if (args[0] === 'ps' && ${JSON.stringify(ps)} === 'json') console.log(JSON.stringify(${JSON.stringify(running)}.map((rigName) => ({ rigName, status: 'running' }))))
-if (args[0] === 'ps' && ${JSON.stringify(ps)} === 'garbage') console.log('daemon unreachable')
-if (args[0] === 'ps' && ${JSON.stringify(ps)} === 'fail') { console.error('PS FAILED'); process.exit(3) }
+if (args[0] === 'ps' && ps === 'json') console.log(JSON.stringify(${JSON.stringify(running)}.map((rigName) => ({ rigName, status: stopped.includes(rigName) ? 'stopped' : 'running' }))))
+if (args[0] === 'ps' && ps === 'garbage') console.log('daemon unreachable')
+if (args[0] === 'ps' && ps === 'fail') { console.error('PS FAILED'); process.exit(3) }
+if (args[0] === 'ps' && typeof ps === 'object') console.log(stopped.length ? ${JSON.stringify(afterDown)} : ps.raw)
 if (args[0] === 'down' && ${downExit} !== 0) { console.error('STOP REFUSED'); process.exit(${downExit}) }
+if (args[0] === 'down' && ${downStops}) fs.writeFileSync(stoppedFile, JSON.stringify([...stopped, args[1]]))
 `,
       { mode },
     )
@@ -628,12 +638,40 @@ if (args[0] === 'down' && ${downExit} !== 0) { console.error('STOP REFUSED'); pr
 
   it.each([
     ['rig ps exits non-zero', { ps: 'fail' }, 'rig ps exited 3: PS FAILED'],
-    [
-      'rig ps prints unreadable output',
-      { ps: 'garbage' },
-      'rig ps --json output could not be read',
-    ],
+    ['rig ps prints unreadable output', { ps: 'garbage' }, 'rig ps --json output is not JSON'],
     ['rig cannot be executed', { mode: 0o644 }, 'EACCES'],
+    [
+      'a row has no status',
+      { ps: { raw: '[{"rigName":"agentflow-demo"}]' } },
+      'row is missing rigName or status',
+    ],
+    [
+      'a row has an empty status',
+      { ps: { raw: '[{"rigName":"agentflow-demo","status":""}]' } },
+      'row is missing rigName or status',
+    ],
+    [
+      'a row has no rig name',
+      { ps: { raw: '[{"name":"agentflow-demo","status":"running"}]' } },
+      'row is missing rigName or status',
+    ],
+    ['a row is not an object', { ps: { raw: '[null]' } }, 'row is missing rigName or status'],
+    [
+      'another rig row is malformed',
+      { ps: { raw: '[{"rigName":"agentflow-other","status":"stopped"},"agentflow-demo"]' } },
+      'row is missing rigName or status',
+    ],
+    ['the output has no rows', { ps: { raw: '{"rigs":[]}' } }, 'output has no rig rows'],
+    [
+      'the envelope is truncated',
+      { ps: { raw: '{"entries":[],"truncated":true}' } },
+      'may be truncated',
+    ],
+    [
+      'the envelope does not say it is complete',
+      { ps: { raw: '{"entries":[]}' } },
+      'may be truncated',
+    ],
   ])('keeps the spec and seat state and fails when %s', (_label, options, message) => {
     const home = tempDir('agentflow-home-')
     const project = tempDir('agentflow-project-')
@@ -655,6 +693,69 @@ if (args[0] === 'down' && ${downExit} !== 0) { console.error('STOP REFUSED'); pr
     expect(result.stderr).toContain('Nothing was removed')
     expect(tree(home)).toEqual(before)
     expect(rig.calls().filter((call) => call.startsWith('down'))).toEqual([])
+  })
+
+  it.each([
+    [
+      'listed as stopped in a complete envelope',
+      '{"entries":[{"rigName":"agentflow-demo","status":"stopped"}],"truncated":false}',
+      [],
+    ],
+    ['absent from a complete list', '[{"rigName":"agentflow-other","status":"running"}]', []],
+    [
+      'listed with a status other than stopped',
+      '[{"rigName":"agentflow-demo","status":"partial"}]',
+      ['down agentflow-demo'],
+    ],
+  ])('removes a squad %s, stopping it only when needed', (_label, raw, downs) => {
+    const home = tempDir('agentflow-home-')
+    const project = tempDir('agentflow-project-')
+    live(['adapters', 'squads', 'provision', 'openrig', 'demo', project], home, fakeRig())
+    const rig = fakeRig([], { ps: { raw } })
+    live(['adapters', 'squads', 'remove', 'openrig', 'demo'], home, rig)
+    expect(rig.calls().filter((call) => call.startsWith('down'))).toEqual(downs)
+    expect(existsSync(specs(home, 'agentflow-demo'))).toBe(false)
+  })
+
+  it('keeps everything when rig down exits 0 but the rig is still running', () => {
+    const home = tempDir('agentflow-home-')
+    const project = tempDir('agentflow-project-')
+    live(['adapters', 'squads', 'provision', 'openrig', 'demo', project], home, fakeRig())
+    const rig = fakeRig(['agentflow-demo'], { downStops: false })
+    const before = tree(home)
+    const result = spawnSync(
+      process.execPath,
+      [CLI, 'adapters', 'squads', 'remove', 'openrig', 'demo'],
+      {
+        encoding: 'utf8',
+        env: { PATH: rig.path, HOME: home },
+      },
+    )
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('rig down agentflow-demo exited 0 but the rig is still running')
+    expect(tree(home)).toEqual(before)
+  })
+
+  it('keeps everything when the status after rig down cannot be read', () => {
+    const home = tempDir('agentflow-home-')
+    const project = tempDir('agentflow-project-')
+    live(['adapters', 'squads', 'provision', 'openrig', 'demo', project], home, fakeRig())
+    const rig = fakeRig([], {
+      ps: { raw: '[{"rigName":"agentflow-demo","status":"running"}]' },
+      afterDown: 'oops',
+    })
+    const before = tree(home)
+    const result = spawnSync(
+      process.execPath,
+      [CLI, 'adapters', 'squads', 'remove', 'openrig', 'demo'],
+      {
+        encoding: 'utf8',
+        env: { PATH: rig.path, HOME: home },
+      },
+    )
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('Could not confirm that agentflow-demo stopped')
+    expect(tree(home)).toEqual(before)
   })
 
   it('still lists squads as stopped when rig status cannot be read', () => {

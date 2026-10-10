@@ -280,13 +280,33 @@ function rigStatuses(ctx) {
     const detail = (result.stderr || result.stdout || '').trim()
     return { statuses, error: `rig ps exited ${result.status}${detail ? `: ${detail}` : ''}` }
   }
+  let parsed
   try {
-    const parsed = JSON.parse(result.stdout)
-    const rows = Array.isArray(parsed) ? parsed : parsed?.entries
-    if (!Array.isArray(rows)) throw new Error('no rig rows')
-    for (const row of rows) if (row?.rigName) statuses.set(row.rigName, row.status)
+    parsed = JSON.parse(result.stdout)
   } catch {
-    return { statuses, error: 'rig ps --json output could not be read' }
+    return { statuses, error: 'rig ps --json output is not JSON' }
+  }
+  // A bare array lists every rig; an envelope must say it is not truncated, or a rig may be missing.
+  const rows = Array.isArray(parsed) ? parsed : parsed?.entries
+  if (!Array.isArray(rows)) return { statuses, error: 'rig ps --json output has no rig rows' }
+  if (!Array.isArray(parsed) && parsed.truncated !== false) {
+    return { statuses, error: 'rig ps --json output may be truncated' }
+  }
+  // Every row needs a rig name and a status; one unreadable row makes the whole answer unknown.
+  for (const row of rows) {
+    const valid =
+      row !== null &&
+      typeof row === 'object' &&
+      typeof row.rigName === 'string' &&
+      row.rigName !== '' &&
+      typeof row.status === 'string' &&
+      row.status !== ''
+    if (!valid)
+      return {
+        statuses,
+        error: `rig ps --json row is missing rigName or status: ${JSON.stringify(row)}`,
+      }
+    statuses.set(row.rigName, row.status)
   }
   return { statuses, error: null }
 }
@@ -675,6 +695,15 @@ export function squadRemove(ctx) {
       const detail = (stopped?.error?.message || stopped?.stderr || stopped?.stdout || '').trim()
       const code = stopped && !stopped.error ? ` (exit ${stopped.status})` : ''
       fail(`rig down ${rigName} failed${code}${detail ? `: ${detail}` : ''}. Nothing was removed.`)
+    }
+    // Trust the stop only when a fresh status read shows the rig absent or exactly stopped.
+    const after = rigStatuses(ctx)
+    if (after.error) {
+      fail(`Could not confirm that ${rigName} stopped (${after.error}). Nothing was removed.`)
+    }
+    const afterStatus = after.statuses.get(rigName)
+    if (afterStatus !== undefined && afterStatus !== 'stopped') {
+      fail(`rig down ${rigName} exited 0 but the rig is still ${afterStatus}. Nothing was removed.`)
     }
   }
   const targetDir = join(specs, rigName)
