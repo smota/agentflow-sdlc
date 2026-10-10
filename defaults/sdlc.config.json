@@ -78,7 +78,7 @@
     "type": ["epic", "feature", "bug", "dx", "tooling", "documentation", "qa", "exploratory"],
     "routingPrefixes": ["for-implementation:"],
     "lifecyclePrefixes": ["drafted-by:", "implemented-by:", "for-review:", "reviewed-by:"],
-    "progress": ["status:in-progress"],
+    "progress": ["state:backlog", "state:readiness", "state:wip", "state:delivered"],
     "forbiddenPrefixes": ["agent:"],
     "release": ["awaiting-release"],
     "integrationPrefixes": ["integrated:"]

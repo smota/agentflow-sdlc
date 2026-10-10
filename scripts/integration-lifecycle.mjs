@@ -1,6 +1,11 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import {
+  PROCESS_STATE_LABELS,
+  RETIRED_STATUS_LABELS,
+  processStateSpec,
+} from '../lib/core/process-state.mjs'
 import { validateSourceAdapter } from '../lib/core/source-adapter.mjs'
 import { createGitHubCliSourceAdapter } from '../lib/sources/github-cli.mjs'
 import { createFileSourceReceiptStore } from '../lib/sources/receipt-store.mjs'
@@ -16,6 +21,8 @@ export const DEFAULT_CONFIG = {
 // The complete set of recognized implementation and closure keywords.
 // Only members of this list (case-insensitive) are permitted in referenceKeywords.
 // New recognized variants must be added here explicitly; unknown strings are rejected.
+const DELIVERED_LABEL = processStateSpec('delivered').label
+
 export const SAFE_KEYWORDS = ['Implements', 'Closes', 'Fixes', 'Resolves']
 
 // Keywords that indicate a related reference only and must never drive issue closure.
@@ -221,7 +228,12 @@ export function planIntegrationLifecycle(pr, config) {
       mergeCommit: pr.mergeCommit,
       trunkBranch: config.trunkBranch,
     }),
-    labels: config.addLabels,
+    // The integration fact makes the issue Delivered, so its one state label follows.
+    labels: [...new Set([...config.addLabels, DELIVERED_LABEL])],
+    removeLabels: [
+      ...PROCESS_STATE_LABELS.filter((label) => label !== DELIVERED_LABEL),
+      ...RETIRED_STATUS_LABELS,
+    ],
     close: config.closeIntegratedIssues,
   }
 }
@@ -238,6 +250,9 @@ export async function applyIntegrationPlan(plan, source) {
     const number = issue.slice(1)
     await apply('add-comment', { number, body: plan.comment })
     await apply('add-labels', { number, labels: plan.labels })
+    if (plan.removeLabels?.length) {
+      await apply('remove-labels', { number, labels: plan.removeLabels })
+    }
     if (plan.close) await apply('close-artifact', { number })
   }
 }

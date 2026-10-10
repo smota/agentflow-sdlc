@@ -142,6 +142,7 @@ AgentFlow strictly separates delivery governance from harness topology:
    Govern execution squad seat assignment and multi-agent collaboration classes (`linear`, `bilateral`, `council`, `human-gated`).
 
 These three dimensions are orthogonal:
+
 - An adapter topology rung chooses builder seats and collaboration topology; it never alters canonical phases, deletes roles, or bypasses gate classes.
 - A task at any rung may run under any workflow profile based on risk.
 - High-assurance governance remains enforced regardless of the executing harness or squad rung.
@@ -256,7 +257,9 @@ Label groups:
 - Type/domain: `epic`, `feature`, `bug`, `dx`, `tooling`, `documentation`, `qa`, `exploratory`.
 - Routing: `for-implementation:<agent>`.
 - Lifecycle: `drafted-by:<agent>`, `implemented-by:<agent>`, `for-review:<agent>`, `reviewed-by:<agent>`.
-- Progress: `status:in-progress` by default, named in `labels.progress` of `sdlc.config.json`.
+- Process state: exactly one of `state:backlog`, `state:readiness`, `state:wip`, `state:delivered`,
+  projected from the phase record and the integration fact. The four are fixed; see
+  [Issue standards](issue-standards.md#process-state).
 - Integration/release: `integrated:<branch>`, `awaiting-release`.
 - Test debt: `needs-test`.
 
@@ -266,9 +269,9 @@ Rules:
 - Agent provenance labels are factual audit metadata.
 - Deprecated `agent:*` labels are forbidden for new work.
 - Labels do not replace role-pass evidence.
-- The progress label is applied when implementation starts, not when the backlog is edited. An
-  assisted run and a one-agent run apply the same configured label. It is a label, not a second
-  state machine: the phase transitions remain the record.
+- The process-state label is projected, never set by hand. An assisted run and a one-agent run
+  get the same label from the same record. It is not a second state machine: the phase transitions
+  remain the record.
 
 ## Gateways
 

@@ -14,13 +14,15 @@ function flag(args, name) {
 
 function usage() {
   return [
-    'Usage: agentflow-sdlc phase <append|read> --medium <filesystem|github> [options]',
+    'Usage: agentflow-sdlc phase <append|read|integrate> --medium <filesystem|github> [options]',
     '  filesystem: --root <dir>',
     '  github: --repo <owner/repo> [--issue <n>]',
     '  append: --phase <0-8> --status <pass|skipped> --seat <id> --key <idempotency>',
     '          [--title <text>] [--body <text> | --body-file <path>] [--reason <text>]',
     '          [--kind <goal|capability|spec> [--parent <dir|issue>] [--change-class <class>]',
     '           [--gate-file <path> --attestation-file <path>]]',
+    '  integrate: filesystem only. --line <integration line or trunk> [--ref <commit>]',
+    '             records that the result is integrated. It is not a transition.',
     'A queue message is not a handoff. append writes the transition, then prints the queue body.',
   ].join('\n')
 }
@@ -91,6 +93,19 @@ async function main(argv) {
     process.stdout.write(
       `${JSON.stringify({ goal, currentPhase: currentPhase(goal.transitions), allowedNext: allowedNext(goal.transitions) }, null, 2)}\n`,
     )
+    return 0
+  }
+  if (action === 'integrate') {
+    if (typeof medium.recordIntegration !== 'function') {
+      throw new Error(
+        'On GitHub the integration lifecycle records integration from the merged pull request',
+      )
+    }
+    const goal = await medium.recordIntegration({
+      line: flag(args, '--line'),
+      ref: flag(args, '--ref'),
+    })
+    process.stdout.write(`${JSON.stringify({ goal }, null, 2)}\n`)
     return 0
   }
   if (action !== 'append') throw new Error(usage())

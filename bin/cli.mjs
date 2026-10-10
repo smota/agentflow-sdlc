@@ -937,7 +937,7 @@ function handleResume(rest, targetDir) {
 }
 
 const ROOT_USAGE =
-  'Usage: agentflow-sdlc <init|run|doctor-env|config|adopt|providers|adapters|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding|onboarding-prompt|release-plan|handoff|resume|phase> [path] [--target <dir>] [--json]\n' +
+  'Usage: agentflow-sdlc <init|run|doctor-env|config|adopt|providers|adapters|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding|onboarding-prompt|release-plan|handoff|resume|phase|board> [path] [--target <dir>] [--json]\n' +
   'Execution adapters: agentflow-sdlc adapters <install|update|squads provision|squads update|squads list|squads remove> <id> (see agentflow-sdlc adapters --help)\n'
 
 const COMMAND_USAGE = {
@@ -963,7 +963,9 @@ const COMMAND_USAGE = {
   handoff:
     'Usage: agentflow-sdlc handoff --run <id> --writer <owner> --generation <n> --execute [--target <dir>] [--json]\n',
   phase:
-    'Usage: agentflow-sdlc phase <append|read> --medium <filesystem|github> --phase <0-8> --status <pass|skipped> --seat <id> --key <id> [--root <dir> | --repo <owner/repo> [--issue <n>]] [--title <text>] [--body <text>] [--reason <text>] [--kind <goal|capability|spec> [--parent <dir|issue>] [--change-class <class>] [--gate-file <path> --attestation-file <path>]]\n',
+    'Usage: agentflow-sdlc phase <append|read|integrate> --medium <filesystem|github> --phase <0-8> --status <pass|skipped> --seat <id> --key <id> [--root <dir> | --repo <owner/repo> [--issue <n>]] [--title <text>] [--body <text>] [--reason <text>] [--kind <goal|capability|spec> [--parent <dir|issue>] [--change-class <class>] [--gate-file <path> --attestation-file <path>]]\n',
+  board:
+    'Usage: agentflow-sdlc board [backfill] --medium <filesystem|github> [--root <dir> | --repo <owner/repo>] [--json] [--apply]\nShows every work item in one of Backlog, Readiness, WIP, or Delivered. backfill previews GitHub label corrections; --apply writes them.\n',
   resume:
     'Usage: agentflow-sdlc resume --run <id> --packet <file> --writer <replacement> --writer-pid <pid> [--plan <file> --confirm <digest> --generation <old-n> --execute] [--target <dir>] [--json]\n',
 }
@@ -1145,6 +1147,10 @@ function main() {
 
   if (command === 'phase') {
     return runScript('scripts/phase-handoff.mjs', rest, targetDir)
+  }
+
+  if (command === 'board') {
+    return runScript('scripts/process-board.mjs', rest, targetDir)
   }
 
   if (command === 'handoff') {
