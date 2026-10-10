@@ -4,8 +4,10 @@ set -euo pipefail
 # spawn-squad.sh — Creates, lists, or removes parallel AgentFlow squads in OpenRig for multi-project workflows
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 KIND="delivery"
+KIND_EXPLICIT=""
 SIBLING=""
 PRESET=""
+IS_UPDATE=false
 
 show_help() {
   cat << 'EOF'
@@ -13,6 +15,9 @@ Usage:
   spawn-squad.sh [--kind delivery|product] [--sibling <rig>] [--preset <name>] <project-name> [project-cwd]
                                          Provision a per-project copy of one generic base
                                          (project-cwd defaults to the current directory)
+  spawn-squad.sh --update [--kind delivery|product] [--sibling <rig>] [--preset <name>] <project-name> [project-cwd]
+                                         Update an existing squad spec, rig.yaml, and sibling.md
+                                         without modifying runtime Pi bridge state
   spawn-squad.sh --list                  List all configured AgentFlow squads
   spawn-squad.sh --remove <project-name> Remove a squad spec and its Pi bridge state
 
@@ -23,6 +28,8 @@ Usage:
 Examples:
   ./spawn-squad.sh --kind delivery --sibling agentflow-pm dev /path/to/project
   ./spawn-squad.sh --kind product --sibling agentflow-dev pm /path/to/project
+  ./spawn-squad.sh --update dev
+  ./spawn-squad.sh --update pm
   ./spawn-squad.sh --list
   ./spawn-squad.sh --remove my-project
 EOF
@@ -108,10 +115,16 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --kind)
       KIND="${2:?ERROR: --kind requires delivery or product.}"
+      KIND_EXPLICIT="true"
       shift 2
       ;;
     --kind=*)
       KIND="${1#--kind=}"
+      KIND_EXPLICIT="true"
+      shift
+      ;;
+    --update)
+      IS_UPDATE=true
       shift
       ;;
     --sibling)
@@ -185,6 +198,28 @@ fi
 PROJECT_RAW="$1"
 RIG_NAME="$(normalize_rig_name "$PROJECT_RAW")"
 TARGET_SPEC_DIR="$HOME/.openrig/specs/$RIG_NAME"
+
+if [ "$IS_UPDATE" = "true" ]; then
+  if [ ! -d "$TARGET_SPEC_DIR" ]; then
+    echo "ERROR: Squad spec directory '$TARGET_SPEC_DIR' does not exist to update. Provision first." >&2
+    exit 1
+  fi
+  # Auto-detect KIND if not explicitly overridden
+  if [ -z "$KIND_EXPLICIT" ]; then
+    if [ -f "$TARGET_SPEC_DIR/sibling.md" ] && grep -q "This copy is the product squad" "$TARGET_SPEC_DIR/sibling.md"; then
+      KIND="product"
+    elif grep -q "agentflow-product" "$TARGET_SPEC_DIR/rig.yaml" 2>/dev/null || grep -q "pm-analyst" "$TARGET_SPEC_DIR/rig.yaml" 2>/dev/null || grep -q "id: pm" "$TARGET_SPEC_DIR/rig.yaml" 2>/dev/null || [[ "$RIG_NAME" =~ -pm$ ]]; then
+      KIND="product"
+    else
+      KIND="delivery"
+    fi
+  fi
+  # Auto-detect SIBLING if not explicitly provided
+  if [ -z "$SIBLING" ] && [ -f "$TARGET_SPEC_DIR/sibling.md" ]; then
+    SIBLING="$(sed -n -e 's/.*The delivery squad for this project is `\([^`]*\)`.*/\1/p' -e 's/.*The product squad for this project is `\([^`]*\)`.*/\1/p' "$TARGET_SPEC_DIR/sibling.md" | head -n 1)"
+  fi
+fi
+
 if [ "$KIND" = "product" ]; then
   BASE_SPEC_DIR="$HOME/.openrig/specs/agentflow-product"
 else
@@ -248,7 +283,11 @@ if [ "$KIND" = "product" ]; then
   ' "$BASE_SPEC_DIR/configurations.yaml" "$PRESET"
 fi
 
-echo "==> 1. Provisioning spec for squad '$RIG_NAME'..."
+if [ "$IS_UPDATE" = "true" ]; then
+  echo "==> 1. Updating spec for squad '$RIG_NAME'..."
+else
+  echo "==> 1. Provisioning spec for squad '$RIG_NAME'..."
+fi
 mkdir -p "$TARGET_SPEC_DIR"
 
 # Symlink shared assets from base spec
@@ -341,6 +380,9 @@ fi
     echo "- rev-review@$SIBLING"
     echo
     echo "A message to delivery is a question or the phase 1 handoff. It is not an implementation order."
+    echo
+    echo "Reverse seam defect handling:"
+    echo "If delivery returns a defect to phase 1 (\`--status skipped --reason \"... return to phase 1\"\`), \`pm-analyst\` resolves the defect, updates analysis and artifacts, and reappends phase 1 (\`--status pass\`)."
   else
     echo "This copy is the delivery squad \`$RIG_NAME\`."
     echo "The product squad for this project is \`$SIBLING\`."
@@ -350,6 +392,12 @@ fi
     echo
     echo "Phases 0 and 1 belong to that product squad. This squad starts at phase 2."
     echo "A question to the analyst is allowed. Changing the outcome, a constraint, or an anti-goal waits for the person."
+    echo
+    echo "Reverse seam defect return:"
+    echo "If phase 2, 3, or 4 identifies an unresolvable intake ambiguity, invalid assumption, or scope defect, record a defect transition:"
+    echo "\`agentflow-sdlc phase append --phase <current> --status skipped --reason \"Defect: <summary> (return to phase 1)\" --seat <seat>\`"
+    echo "Then wake the product squad analyst:"
+    echo "\`rig queue handoff --to pm-analyst@$SIBLING --goal <goal-uri> --from-phase <current> --reason \"Defect return to phase 1\"\`"
   fi
 } > "$TARGET_SPEC_DIR/sibling.md"
 
@@ -436,9 +484,14 @@ if command -v rig >/dev/null 2>&1; then
   fi
 fi
 
+ACTION_WORD="provisioned"
+if [ "$IS_UPDATE" = "true" ]; then
+  ACTION_WORD="updated"
+fi
+
 echo ""
 echo "================================================================================"
-echo "  Squad '$RIG_NAME' successfully provisioned!"
+echo "  Squad '$RIG_NAME' successfully $ACTION_WORD!"
 echo "  Target working directory: $PROJECT_CWD"
 echo "================================================================================"
 echo ""
