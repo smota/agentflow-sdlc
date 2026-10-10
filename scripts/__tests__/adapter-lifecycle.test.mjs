@@ -61,8 +61,10 @@ const BIN = mkdtempSync(join(tmpdir(), 'agentflow-adapter-bin-'))
 const GIT = findOnPath('git', process.env.PATH || process.env.Path || '')
 let PATH
 if (WINDOWS) {
-  // Git for Windows keeps git.exe in cmd/ without bash; node's directory has no shell either.
-  PATH = [dirname(process.execPath), dirname(GIT)].join(delimiter)
+  // Isolate node and git. Git's own directory also contains bash.exe, which this test must not see.
+  symlinkSync(process.execPath, join(BIN, 'node.exe'))
+  symlinkSync(GIT, join(BIN, 'git.exe'))
+  PATH = BIN
 } else {
   symlinkSync(process.execPath, join(BIN, 'node'))
   symlinkSync(GIT, join(BIN, 'git'))
@@ -326,18 +328,44 @@ describe('adapters update openrig (AC7)', () => {
 
     writeFileSync(join(copy.dir, 'agentflow', 'CULTURE.md'), '# Changed culture\n')
     writeFileSync(join(copy.dir, 'agentflow-product', 'NEW.md'), 'new\n')
+    const extra = specs(
+      home,
+      'agentflow/agents/agentflow/skills/openrig-operating-model/templates/SPEC.md',
+    )
+    mkdirSync(dirname(extra), { recursive: true })
+    writeFileSync(extra, 'local spec\n')
     rmSync(join(copy.dir, 'agentflow', 'startup', 'review-lead.md'))
 
     const result = ok(cli(['adapters', 'update', 'openrig-copy'], { home, env: copy.env }))
     expect(result.stdout).toContain('OpenRig itself was not changed')
-    expect(tree(specs(home, 'agentflow'))).toEqual(tree(join(copy.dir, 'agentflow')))
-    expect(tree(specs(home, 'agentflow-product'))).toEqual(
-      tree(join(copy.dir, 'agentflow-product')),
+    expect(result.stdout).toContain('Left installed files that this product does not ship:')
+    expect(result.stdout).toContain('agentflow/startup/review-lead.md')
+    expect(result.stdout).toContain(
+      'agentflow/agents/agentflow/skills/openrig-operating-model/templates/SPEC.md',
     )
+    expect(readFileSync(extra, 'utf8')).toBe('local spec\n')
+    expect(readFileSync(specs(home, 'agentflow/CULTURE.md'), 'utf8')).toBe('# Changed culture\n')
+    expect(readFileSync(specs(home, 'agentflow-product/NEW.md'), 'utf8')).toBe('new\n')
     expect(existsSync(specs(home, 'agentflow-demo/rig.yaml'))).toBe(true)
     expect(readFileSync(specs(home, 'agentflow-demo/CULTURE.md'), 'utf8')).toBe(
       '# Changed culture\n',
     )
+  })
+
+  it('deletes extras only when the person asks for an exact mirror', () => {
+    const home = tempDir('agentflow-home-')
+    const copy = adapterCopy()
+    ok(cli(['adapters', 'install', 'openrig-copy'], { home, env: copy.env }))
+    const extra = specs(home, 'agentflow/LOCAL.md')
+    writeFileSync(extra, 'keep\n')
+    rmSync(join(copy.dir, 'agentflow', 'startup', 'review-lead.md'))
+    const result = ok(
+      cli(['adapters', 'update', 'openrig-copy', '--exact'], { home, env: copy.env }),
+    )
+    expect(result.stdout).not.toContain('Left installed files')
+    expect(existsSync(extra)).toBe(false)
+    expect(existsSync(specs(home, 'agentflow/startup/review-lead.md'))).toBe(false)
+    expect(tree(specs(home, 'agentflow'))).toEqual(tree(join(copy.dir, 'agentflow')))
   })
 
   it('tells the person to install first when nothing is installed', () => {

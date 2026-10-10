@@ -19,7 +19,7 @@ import {
   writeFileSync,
 } from 'node:fs'
 import { homedir } from 'node:os'
-import { delimiter, dirname, join, resolve } from 'node:path'
+import { delimiter, dirname, join, relative, resolve } from 'node:path'
 
 const ADAPTER_ID = 'openrig'
 const BASES = { delivery: 'agentflow', product: 'agentflow-product' }
@@ -340,6 +340,30 @@ function mirror(source, target) {
   cpSync(source, target, { recursive: true })
 }
 
+function filesUnder(dir, base = dir) {
+  if (!existsSync(dir)) return []
+  const found = []
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const path = join(dir, entry.name)
+    if (entry.isDirectory()) found.push(...filesUnder(path, base))
+    else if (entry.isFile()) found.push(relative(base, path).split('\\').join('/'))
+  }
+  return found
+}
+
+// Copy the product tree onto the installed tree. Extras stay unless exact is set.
+function refreshTree(source, target, { exact }) {
+  mkdirSync(target, { recursive: true })
+  cpSync(source, target, { recursive: true })
+  const shipped = new Set(filesUnder(source))
+  const extras = filesUnder(target).filter((file) => !shipped.has(file))
+  if (exact) {
+    for (const file of extras) rmSync(join(target, file))
+    return []
+  }
+  return extras
+}
+
 function writeBases(home, plan, out) {
   const { specs } = locations(home)
   out('==> 1. Syncing AgentFlow delivery and product bases to the OpenRig user library...')
@@ -404,9 +428,17 @@ export function update(ctx) {
         `Install first: agentflow-sdlc adapters install ${ADAPTER_ID}`,
     )
   }
+  const exact = Boolean(ctx.options?.exact)
   out('==> 1. Refreshing AgentFlow delivery and product bases from this product...')
-  for (const [kind, name] of Object.entries(BASES))
-    mirror(join(adapterDir, BASES[kind]), join(specs, name))
+  const extras = []
+  for (const [kind, name] of Object.entries(BASES)) {
+    const kept = refreshTree(join(adapterDir, BASES[kind]), join(specs, name), { exact })
+    extras.push(...kept.map((file) => `${name}/${file}`))
+  }
+  if (extras.length > 0) {
+    out('   Left installed files that this product does not ship:')
+    for (const file of extras.sort()) out(`   - ${file}`)
+  }
   out(
     '   Per-project squads were left in place. Refresh one with: agentflow-sdlc adapters squads update openrig <project>',
   )

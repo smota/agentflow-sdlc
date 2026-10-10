@@ -40,7 +40,10 @@ export function validateProductDocument(content) {
         continue
       }
       if (line.includes(':---') || line.includes('---')) continue
-      const parts = line.split('|').map((s) => s.trim()).filter(Boolean)
+      const parts = line
+        .split('|')
+        .map((s) => s.trim())
+        .filter(Boolean)
       if (parts.length >= 2) {
         const id = parts[0].replace(/`/g, '')
         if (id && id !== 'module-id') {
@@ -63,14 +66,17 @@ export function validateProductDocument(content) {
 
 function run() {
   const root = process.cwd()
-  const candidatePaths = [
-    resolve(root, '.agentflow/PRODUCT.md'),
-    resolve(root, 'PRODUCT.md'),
-  ]
+  const candidatePaths = [resolve(root, '.agentflow/PRODUCT.md'), resolve(root, 'PRODUCT.md')]
 
   const foundPath = candidatePaths.find((p) => existsSync(p))
   if (!foundPath) {
-    console.log(JSON.stringify({ ok: true, skipped: true, reason: 'No PRODUCT.md file found to validate.' }, null, 2))
+    console.log(
+      JSON.stringify(
+        { ok: true, skipped: true, reason: 'No PRODUCT.md file found to validate.' },
+        null,
+        2,
+      ),
+    )
     process.exit(0)
   }
 
@@ -82,7 +88,9 @@ function run() {
     process.exit(1)
   }
 
-  console.log(JSON.stringify({ ok: true, file: foundPath, capabilities: result.capabilities }, null, 2))
+  console.log(
+    JSON.stringify({ ok: true, file: foundPath, capabilities: result.capabilities }, null, 2),
+  )
   process.exit(0)
 }
 

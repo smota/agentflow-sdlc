@@ -39,6 +39,7 @@ Default and maximum boundary: `propose`. May update requirement and specificatio
 ## Completion
 
 Completion requires checkable, exhaustive criteria:
+
 1. Phase 0 scope check is verified and capability map is approved if multi-module.
 2. Assumptions register is explicit and reviewable.
 3. Acceptance criteria are black-box testable with concrete inputs and expected outputs.

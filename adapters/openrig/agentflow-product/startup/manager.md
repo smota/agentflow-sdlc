@@ -9,6 +9,7 @@ Define desired progress as an observable change in state, not as software mechan
 or pause before the analyst freezes acceptance.
 
 Communication and thinking directives:
+
 - Prioritize human supervision over text volume.
 - Apply ASD-STE100 rules: short sentences, active voice, consistent terminology, one thought per sentence, zero filler.
 - Structure argumentation using Minto's Pyramid: state the conclusion first, then grouped arguments.
