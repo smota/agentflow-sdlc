@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Removed the `pi-cli` provider. Pi stays a runtime platform and a harness adapter; OpenRig is the
+  execution layer that runs Pi seats. A configuration that names `pi-cli`, or
+  `providers inspect pi-cli`, fails and names that replacement. This is compatibility-impacting for
+  projects that configured it. `docs/glossary.md` gives one meaning for source adapter, execution
+  layer, coordinator, runtime platform, and harness adapter.
 - Person gates now appear on the work record. `agentflow-sdlc gates open`, `answer`, `on-behalf`,
   and `waiting` record and list gates on GitHub (a product-owned issue-body block) and on the
   filesystem medium (`gates.json`). Each gate shows waiting, agreed, refused, or stale, with who must

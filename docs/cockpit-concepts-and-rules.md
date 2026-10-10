@@ -8,7 +8,8 @@ AgentFlow Cockpit is the Goal Command Center for AgentFlow-managed delivery. It 
 
 Cockpit is not a source-system dashboard. It consumes a `SourceAdapter`; GitHub is the implemented
 default storage and sync substrate. Product language leads with AgentFlow concepts, and source links
-remain secondary.
+remain secondary. Source adapter, execution layer, coordinator, runtime platform, and harness
+adapter have the meanings in the [glossary](glossary.md).
 
 ## Primary navigation axes
 

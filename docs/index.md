@@ -63,6 +63,7 @@ flowchart LR
 | [Project setup](project-setup.md)                        | Guided project decisions                                                              |
 | [Project configuration](project-config.md)               | Complete `agent-workflow.config.json` contract                                        |
 | [Modular architecture](modular-architecture.md)          | Core, provider, source, adoption, Cockpit, and configuration ownership                |
+| [Glossary](glossary.md)                                  | One meaning for source adapter, execution layer, coordinator, platform, and adapter   |
 | [Contribution workflow](guides/contribution-workflow.md) | Repository contribution sequence                                                      |
 
 ## Evidence, lifecycle, and quality
