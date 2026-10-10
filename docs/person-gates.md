@@ -53,6 +53,7 @@ agentflow-sdlc gates consent --medium github --repo <owner/repo> --issue <n> --g
 agentflow-sdlc gates waiting --medium github --repo <owner/repo> [--role <role>] [--person <name>] [--json]
 agentflow-sdlc gates candidate --medium filesystem --root <goal-dir> --subject <candidate digest>
 agentflow-sdlc gates answer --medium github --repo <owner/repo> --issue <n> --gate <digest> --decision agree --person <name>
+agentflow-sdlc gates file --medium github --repo <owner/repo> --issue <n> --line '<line>' --message-file <path> --seat <id>
 agentflow-sdlc gates on-behalf --medium filesystem --root <goal-dir> --principal <person> --actor-platform claude --actor-executor claude-cli --grant <ref> --action merge --subject-kind candidateDigest --subject <digest>
 ```
 
@@ -61,6 +62,12 @@ command takes no platform from the caller, writes the answer as the registered h
 `human-gate` independence, and exits non-zero without writing anything when it runs under an agent
 runtime (it checks `AI_AGENT`, `CLAUDECODE`, `CLAUDE_CODE_ENTRYPOINT`, the Codex sandbox and thread
 variables, and an OpenRig seat's session and node ids).
+
+`gates file` is how a seat files a confirmation line the person already sent. The line must be
+`agree <gate> as <name>`, `changes <gate> as <name>`, or `block <gate> as <name>`, and that exact
+line must be one line of `--message-file`. The record keeps the line unchanged and names the person
+and the filing seat separately. A loose word, an edited line, a note, a phase pass, a pull-request
+approval, or an on-behalf action files nothing. The seat does not write the line.
 
 `gates open --change-class <class>` opens an admission on a goal record. `gates consent` reads an
 agreed gate and its answer and writes them as `gate.json` and `attestation.json` for
