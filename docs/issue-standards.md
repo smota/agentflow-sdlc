@@ -111,18 +111,22 @@ _Exact file paths, template names, or data structures expected. The Architect ph
 
 ## Issue Hierarchy
 
-A child issue names its parent with the existing part-of link: the `parent` that
-`agentflow-sdlc phase append --parent` stores on a work record, or the `**Epic:** #<id>` line on an
-older child issue. That link is the product tree, and AgentFlow rebuilds the tree from it (see
-[source adapters](sources/index.md)).
+This is the one description of how a work record shows its kind and its parent.
 
-GitHub sub-issues and issue links may mirror the part-of link so a person can navigate in GitHub.
-They are only a mirror. If the two disagree, the part-of link wins. An assisted run and a one-agent
-run write the same part-of link.
+A work record has a kind of `goal`, `capability`, or `spec` in the body marker
+`<!-- agentflow-work:{...} -->`. The title starts with `goal:`, `capability:`, or `spec:`, and the
+issue wears `kind:goal`, `kind:capability`, or `kind:spec`. Those three names are the same kind.
+A record with no kind is a legacy bug. It keeps a conventional title, it wears no `kind:` label,
+and it is not a goal.
+
+`Part of #<parent>` is the only parent. A capability or a spec has one. A goal has none.
+`**Epic:** #<parent>` may repeat that same number and must not name a different one. A GitHub
+sub-issue is only a navigation mirror. The open path writes the title prefix, the kind label, the
+marker, and `Part of` together. The issue validator rejects a disagreement.
 
 ## Issue Titles
 
-All issue titles must start with one of these exact Conventional Commit prefixes:
+A legacy record, which has no work kind, must start with one of these exact Conventional Commit prefixes. A goal, capability, or spec uses the kind prefix in [Issue Hierarchy](#issue-hierarchy) instead.
 
 - `feat:` - user-facing product capability or feature work
 - `fix:` - defect, regression, or security bug fix
