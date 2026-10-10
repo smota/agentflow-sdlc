@@ -40,7 +40,7 @@ function flags(args, name) {
 
 function usage() {
   return [
-    'Usage: agentflow-sdlc gates <open|answer|candidate|on-behalf|waiting> --medium <filesystem|github> [options] [--json]',
+    'Usage: agentflow-sdlc gates <open|answer|candidate|on-behalf|sync|waiting> --medium <filesystem|github> [options] [--json]',
     '  filesystem: --root <dir>   (waiting: every goal directory under it)',
     '  github: --repo <owner/repo> --issue <n>   (waiting: every issue in the repo)',
     '  open: --class <adequacy-of-intent|release-of-candidate|agent-escalation> --role <role>',
@@ -51,6 +51,7 @@ function usage() {
     '  on-behalf: --principal <person> --actor-platform <slug> --actor-executor <target> --grant <ref>',
     '             --action <text> --subject-kind <kind> --subject <digest>',
     "  candidate: --subject <digest>   records the item's current candidate",
+    '  sync: rewrites the GitHub issue-body block when the goal or candidate changed since it was rendered',
     '  waiting: [--role <role>] [--person <name>]',
   ].join('\n')
 }
@@ -135,6 +136,15 @@ export async function answerGate(args, { client, now, env } = {}) {
     answerEntry(gate.gateDigest, attestation, { recordedAt }),
   )
   return { goal, attestation }
+}
+
+// The filesystem record is read directly, so it has nothing to refresh. On GitHub the issue-body
+// block is rewritten from the record when it no longer matches.
+export async function syncGates(args, { client } = {}) {
+  const medium = mediumFrom(args, { client })
+  if (typeof medium.syncGateBlock !== 'function') return { updated: false }
+  const { updated } = await medium.syncGateBlock()
+  return { updated }
 }
 
 export async function recordCandidate(args, { client, now } = {}) {
@@ -255,6 +265,7 @@ export async function main(
     open: openGate,
     answer: answerGate,
     candidate: recordCandidate,
+    sync: syncGates,
     'on-behalf': recordOnBehalf,
   }
   if (!handlers[action]) throw new Error(usage())

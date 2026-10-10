@@ -69,6 +69,9 @@ wait list.
   `<!-- /agentflow-gates -->`. The block shows a table of gates and any on-behalf actions, and
   carries the record the product reads back. The product rewrites it; do not edit it by hand.
   Ordinary issue comments are never read as answers.
+  If a person edits the issue body, reading the item already shows the new state, but the block on
+  the page is only rewritten by a product write. `agentflow-sdlc gates sync` rewrites it when the
+  goal or candidate changed since it was rendered. Reads never write to the issue.
 
 `agentflow-sdlc phase read` returns the projected gates for the item on either medium.
 
