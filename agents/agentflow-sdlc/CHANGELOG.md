@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Person gates now appear on the work record. `agentflow-sdlc gates open`, `answer`, `on-behalf`,
+  and `waiting` record and list gates on GitHub (a product-owned issue-body block) and on the
+  filesystem medium (`gates.json`). Each gate shows waiting, agreed, refused, or stale, with who must
+  answer (the role on the human platform). On-behalf actions name the person as principal and the
+  agent as actor and never satisfy a gate. `gates answer` takes no platform from the caller and
+  refuses to run under an agent runtime. The record is not proof of identity. `satisfyGate` is
+  unchanged.
 - Added `agentflow-sdlc adapters` to install, update, and operate an execution adapter on macOS,
   Linux, and Windows. An adapter opts in with a `lifecycle` entry in its own manifest; OpenRig is
   the first. `providers` stays discovery only. The OpenRig shell scripts `install-rig.sh` and
