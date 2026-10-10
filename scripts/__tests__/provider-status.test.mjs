@@ -18,10 +18,14 @@ describe('provider status CLI', () => {
       expect.arrayContaining([expect.objectContaining({ id: 'workflow-orchestration' })]),
     )
     expect(providers.find((item) => item.id === 'xai-api')).toBeTruthy()
-    expect(providers.find((item) => item.id === 'ai-foundry-desk').facets).toEqual([
-      'inventory',
-      'project-adapters',
-      'evidence',
+    expect(providers.map((item) => item.id)).toEqual([
+      'claude-cli',
+      'codex-cli',
+      'agy-cli',
+      'pi-cli',
+      'grok-cli',
+      'xai-api',
+      'manual',
     ])
   })
 })

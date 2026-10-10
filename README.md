@@ -74,7 +74,7 @@ flowchart TB
 | Deterministic validation                  | Issue, config, role-pass, PR, release, skill, agent, evidence, lifecycle, and eval checks  | [CLI reference](docs/index.md#cli-and-validation-reference) |
 | Intelligent collaboration                 | Provider-neutral intent plus bounded advisory, discovery, spike, and human-gated modes     | [Collaboration](docs/intelligent-collaboration.md)          |
 | Role acceptance and councils              | Digest-bound handovers, deterministic checks, accountable acceptance, and bounded rework   | [Role collaboration](docs/role-collaboration.md)            |
-| Providers and runtime identity            | Capability-based manual, CLI, Grok, and optional AFD facets with truthful attribution      | [Provider matrix](docs/providers/provider-matrix.md)        |
+| Providers and runtime identity            | Capability-based manual, CLI, Grok, and API facets with truthful attribution               | [Provider matrix](docs/providers/provider-matrix.md)        |
 | Source adapters                           | Source-neutral core with GitHub as the first read/mutation adapter                         | [Source adapters](docs/sources/index.md)                    |
 | Skills, plugins, settings, and extensions | Portable skills plus project-selected overlays and harness adapters                        | [Extension packs](docs/extension-packs.md)                  |
 | Lifecycle roles and methods               | Productized accountability contracts with configurable analysis and engineering approaches | [Lifecycle roles](docs/roles/index.md)                      |

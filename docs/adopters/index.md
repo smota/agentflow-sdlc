@@ -15,7 +15,7 @@ Adoption, and bringing an existing installation forward, is one journey:
 6. Add a source adapter or provider only when the project needs it.
 7. Run a first issue through the documented workflow.
 
-The core works with manual execution. A missing Claude, Codex, Agy, Pi, Grok, or AI Foundry Desk
+The core works with manual execution. A missing Claude, Codex, Agy, Pi, or Grok
 binary does not block adoption unless project policy explicitly requires that provider capability.
 
 For a legacy or unrecognized installation, the same journey asks for an explicit

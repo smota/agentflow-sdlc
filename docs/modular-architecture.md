@@ -9,7 +9,7 @@ flowchart LR
   Core["AgentFlow core\nroles · lifecycle · evidence · gates"]
   Intent["CollaborationIntent"]
   Binding["ProviderBinding"]
-  Provider["Provider\nmanual · CLI · AFD facets"]
+  Provider["Provider\nmanual · CLI · API facets"]
   Receipt["ExecutionReceipt"]
   Source["SourceAdapter\nGitHub first"]
   Cockpit["Cockpit\noptional projection"]
@@ -26,15 +26,15 @@ state.
 
 ## Responsibility matrix
 
-| Responsibility                                                                | Owner                                                     | Not owned here                                   |
-| ----------------------------------------------------------------------------- | --------------------------------------------------------- | ------------------------------------------------ |
-| Roles, paths, transitions, evidence meaning, action boundaries, readiness     | AgentFlow core                                            | Provider launch mechanics                        |
-| Collaboration mode, required roles, single-writer policy, fallback permission | `CollaborationIntent`                                     | Executable, model, transport, or worktree choice |
-| Availability, execution target, transport, delegation, provider facets        | Provider layer                                            | SDLC lifecycle policy                            |
-| Project-instruction audit, staging, apply, verification, rollback             | Optional project-harness provider such as AI Foundry Desk | AgentFlow roles or readiness                     |
-| Issues, comments, pull requests, and lifecycle mutations                      | `SourceAdapter`; GitHub is first                          | Core vocabulary                                  |
-| Goal and readiness visualization                                              | Optional Cockpit projection                               | Authoritative workflow state                     |
-| Preview, apply, lockfile, rollback, composition profile                       | AgentFlow adoption layer                                  | Workstation or global tool management            |
+| Responsibility                                                                | Owner                                                           | Not owned here                                   |
+| ----------------------------------------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------ |
+| Roles, paths, transitions, evidence meaning, action boundaries, readiness     | AgentFlow core                                                  | Provider launch mechanics                        |
+| Collaboration mode, required roles, single-writer policy, fallback permission | `CollaborationIntent`                                           | Executable, model, transport, or worktree choice |
+| Availability, execution target, transport, delegation, provider facets        | Provider layer                                                  | SDLC lifecycle policy                            |
+| Project-instruction audit, staging, apply, verification, rollback             | Optional project-harness provider, when a project registers one | AgentFlow roles or readiness                     |
+| Issues, comments, pull requests, and lifecycle mutations                      | `SourceAdapter`; GitHub is first                                | Core vocabulary                                  |
+| Goal and readiness visualization                                              | Optional Cockpit projection                                     | Authoritative workflow state                     |
+| Preview, apply, lockfile, rollback, composition profile                       | AgentFlow adoption layer                                        | Workstation or global tool management            |
 
 ## Contract boundaries
 
