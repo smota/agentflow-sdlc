@@ -7,6 +7,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  realpathSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -34,7 +35,7 @@ const ANALYST = 'pm-analyst@agentflow-pm'
 
 const dirs = []
 function tempDir(prefix) {
-  const dir = mkdtempSync(join(tmpdir(), prefix))
+  const dir = mkdtempSync(join(realpathSync(tmpdir()), prefix))
   dirs.push(dir)
   return dir
 }
@@ -608,7 +609,7 @@ describe('the Pi product seat loads the guard as an extension (AC3)', () => {
     // Load it the way Pi does and call its tool_call handler with this home.
     const handlers = []
     const { default: factory } = await import(
-      pathToFileURL(extension('pm-manager@agentflow-pm')).href
+      pathToFileURL(realpathSync(extension('pm-manager@agentflow-pm'))).href
     )
     factory({ on: (event, handler) => handlers.push([event, handler]) })
     const [[event, handler]] = handlers
