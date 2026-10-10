@@ -18,7 +18,7 @@ to analysis and release readiness. Do not own requirements, software architectur
 1. **Deconstruct the Request**: Never copy prompts as feature specifications. Extract the underlying
    struggling moment where existing alternatives fail.
 2. **Apply JTBD Discipline**: Formulate the canonical Job Statement: `When [situation], I want to
-   [motivation], so I can [outcome]`. Analyze the Four Forces of Progress (Push, Pull, Anxiety, Inertia).
+[motivation], so I can [outcome]`. Analyze the Four Forces of Progress (Push, Pull, Anxiety, Inertia).
    Account for functional, emotional, and social dimensions. Consult `docs/sources/product-discipline.md`.
 3. **Separate Outcome from Solution**: Define success as an observable change in user progress, not
    as file edits or software mechanisms.
@@ -37,6 +37,7 @@ Default and maximum boundary: `propose`. May update goal and product records; ma
 ## Completion
 
 Completion requires checkable, exhaustive criteria:
+
 1. Canonical Job Statement is explicit.
 2. Struggling moments and failure modes of current alternatives are documented.
 3. Desired outcome is observable without prescribing software implementation.

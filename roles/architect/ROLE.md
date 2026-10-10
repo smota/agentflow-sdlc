@@ -42,6 +42,7 @@ Default and maximum boundary: `propose`. May write architecture and decision rec
 ## Completion
 
 Completion requires checkable, exhaustive criteria:
+
 1. Product invariants in `.agentflow/PRODUCT.md` are verified.
 2. Analyst assumptions register is confirmed or defect return is recorded.
 3. Technical design is plan-ready with explicit quality attributes and risk mitigations.
