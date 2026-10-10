@@ -9,6 +9,15 @@
   agent as actor and never satisfy a gate. `gates answer` takes no platform from the caller and
   refuses to run under an agent runtime. The record is not proof of identity. `satisfyGate` is
   unchanged.
+- Every work item now shows one process state: Backlog, Readiness, WIP, or Delivered. The state is
+  projected from the phase record and one integration fact, the same way on GitHub and on the
+  filesystem medium. `agentflow-sdlc board` shows the four groups; `board backfill` previews the
+  GitHub label corrections and applies them only with `--apply`. GitHub issues carry exactly one
+  `state:*` label, kept current by `phase append` and the integration lifecycle. The filesystem
+  medium records integration in `integration.json` with `agentflow-sdlc phase integrate`. Packs and
+  profiles cannot add or rename a state. `status:in-progress`, `status:backlog`, `status:v1-ready`,
+  and `status:superseded` are retired: an adopter config whose `labels.progress` still names
+  `status:in-progress` gets a migration finding.
 - Added `agentflow-sdlc adapters` to install, update, and operate an execution adapter on macOS,
   Linux, and Windows. An adapter opts in with a `lifecycle` entry in its own manifest; OpenRig is
   the first. `providers` stays discovery only. The OpenRig shell scripts `install-rig.sh` and

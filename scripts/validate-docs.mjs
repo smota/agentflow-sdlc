@@ -28,6 +28,7 @@ const KNOWN_CLI_COMMANDS = new Set([
   'handoff',
   'resume',
   'phase',
+  'board',
   'gates',
 ])
 

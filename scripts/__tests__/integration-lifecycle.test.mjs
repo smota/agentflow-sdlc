@@ -75,7 +75,16 @@ describe('integration lifecycle', () => {
     expect(plan.skipped).toBe(false)
     expect(plan.issues).toEqual(['#24', '#26'])
     expect(plan.close).toBe(true)
-    expect(plan.labels).toEqual(['integrated:development', 'awaiting-release'])
+    expect(plan.labels).toEqual(['integrated:development', 'awaiting-release', 'state:delivered'])
+    expect(plan.removeLabels).toEqual([
+      'state:backlog',
+      'state:readiness',
+      'state:wip',
+      'status:in-progress',
+      'status:backlog',
+      'status:v1-ready',
+      'status:superseded',
+    ])
     expect(plan.comment).toContain('Integrated into `development`')
   })
 
@@ -148,6 +157,18 @@ describe('integration lifecycle', () => {
       ['add-labels', { number: '24', labels: ['integrated:development'] }],
       ['close-artifact', { number: '24' }],
     ])
+    calls.length = 0
+    await applyIntegrationPlan(
+      {
+        labels: [],
+        issues: ['#25'],
+        comment: 'integrated',
+        close: false,
+        removeLabels: ['state:wip'],
+      },
+      source,
+    )
+    expect(calls).toContainEqual(['remove-labels', { number: '25', labels: ['state:wip'] }])
   })
 })
 
