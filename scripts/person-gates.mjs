@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { existsSync, readdirSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs'
 import { join, relative, resolve } from 'node:path'
 import { createGatePendingHook } from '../lib/adapters/gate-pending-hook.mjs'
 import { detectAgentRuntime } from '../lib/agent-caller.mjs'
@@ -14,6 +14,7 @@ import {
 } from '../lib/core/person-gates.mjs'
 import { createReviewAttestation } from '../lib/core/review-attestation.mjs'
 import { describeRuntimePlatform } from '../lib/runtime-platforms.mjs'
+import { admissionDigest } from '../lib/core/work-altitude.mjs'
 import { createFilesystemMedium } from '../lib/sources/filesystem-medium.mjs'
 import { parseGateLog } from '../lib/sources/gate-block.mjs'
 import { createGitHubClient } from '../lib/sources/github-client.mjs'
@@ -40,14 +41,17 @@ function flags(args, name) {
 
 function usage() {
   return [
-    'Usage: agentflow-sdlc gates <open|answer|candidate|on-behalf|sync|waiting> --medium <filesystem|github> [options] [--json]',
+    'Usage: agentflow-sdlc gates <open|answer|consent|candidate|on-behalf|sync|waiting> --medium <filesystem|github> [options] [--json]',
     '  filesystem: --root <dir>   (waiting: every goal directory under it)',
     '  github: --repo <owner/repo> --issue <n>   (waiting: every issue in the repo)',
     '  open: --class <adequacy-of-intent|release-of-candidate|agent-escalation> --role <role>',
-    '        [--subject-kind <goalRevision|candidateDigest>] [--subject <digest>] [--person <name>]',
+    '        [--subject-kind <goalRevision|admission|candidateDigest>] [--subject <digest>] [--person <name>]',
+    '        [--change-class <class>]   on a goal: admits capabilities of that class (subject kind admission)',
     '  answer: --gate <digest> --decision <agree|changes-requested|blocked> --person <name> [--finding <text>]...',
     '          A person runs this in their own terminal. An agent must not run it, and it refuses',
     '          to run under an agent runtime. The record is not proof of identity.',
+    '  consent: --gate <digest> --dir <dir>   writes an agreed gate and its answer as gate.json and',
+    '           attestation.json, for phase append --gate-file and --attestation-file. Reads only.',
     '  on-behalf: --principal <person> --actor-platform <slug> --actor-executor <target> --grant <ref>',
     '             --action <text> --subject-kind <kind> --subject <digest>',
     "  candidate: --subject <digest>   records the item's current candidate",
@@ -82,10 +86,25 @@ function findGate(view, ref) {
 export async function openGate(args, { client, now, env } = {}) {
   const medium = mediumFrom(args, { client })
   const goal = await medium.readGoal()
-  const gateClass = flag(args, '--class')
-  const subjectKind = flag(args, '--subject-kind') ?? DEFAULT_SUBJECT_KIND[gateClass]
-  // The default subject is the item's current one: its goal content, or its recorded candidate.
-  const current = subjectKind === 'goalRevision' ? goal.goalSubject : goal.gates.candidate
+  const changeClass = flag(args, '--change-class')
+  const gateClass = flag(args, '--class') ?? (changeClass ? GATE_CLASSES.adequacyOfIntent : null)
+  const subjectKind =
+    flag(args, '--subject-kind') ?? (changeClass ? 'admission' : DEFAULT_SUBJECT_KIND[gateClass])
+  if (changeClass && subjectKind !== 'admission') {
+    throw new Error('--change-class opens an admission; it takes no other subject kind')
+  }
+  if (subjectKind === 'admission') {
+    if (!changeClass) throw new Error('Set --change-class <class> for an admission')
+    if (goal.kind !== 'goal') throw new Error('An admission is opened on a goal record')
+  }
+  // The default subject is the item's current one: its goal content, the goal content and a class
+  // together, or its recorded candidate.
+  const current =
+    subjectKind === 'goalRevision'
+      ? goal.goalSubject
+      : subjectKind === 'admission'
+        ? admissionDigest({ goalRevision: goal.goalSubject, changeClass })
+        : goal.gates.candidate
   if (!current && !flag(args, '--subject')) {
     throw new Error('This item has no candidate; record one with gates candidate first')
   }
@@ -97,7 +116,7 @@ export async function openGate(args, { client, now, env } = {}) {
     requiredRole: flag(args, '--role'),
   })
   const result = await medium.appendGateEntry(
-    gateEntry(gate, { person: flag(args, '--person'), openedAt: now() }),
+    gateEntry(gate, { person: flag(args, '--person'), openedAt: now(), changeClass }),
   )
   // The existing optional hook. With no hook configured nothing is sent and nothing fails.
   const hook = createGatePendingHook({
@@ -136,6 +155,35 @@ export async function answerGate(args, { client, now, env } = {}) {
     answerEntry(gate.gateDigest, attestation, { recordedAt }),
   )
   return { goal, attestation }
+}
+
+// Writes a person's agreed answer as the two files phase append takes. It decides nothing:
+// validateOpen checks the gate and the answer again when a record opens.
+export async function exportConsent(args, { client } = {}) {
+  const medium = mediumFrom(args, { client })
+  const dir = flag(args, '--dir')
+  if (!dir) throw new Error('Set --dir <dir>')
+  const shown = findGate((await medium.readGoal()).gates, flag(args, '--gate'))
+  if (shown.status !== 'agreed') {
+    throw new Error(`gate ${shown.gateDigest.slice(0, 12)} is ${shown.status}, not agreed`)
+  }
+  const log = await medium.readGateLog()
+  const { gate } = log.find(
+    (entry) => entry?.kind === 'gate' && entry.gate.digest === shown.gateDigest,
+  )
+  const { attestation } = log.findLast(
+    (entry) =>
+      entry?.kind === 'answer' &&
+      entry.gateDigest === gate.digest &&
+      entry.attestation?.decision === 'agree' &&
+      entry.attestation.reviewedDigest === gate.subjectDigest,
+  )
+  const target = resolve(dir)
+  mkdirSync(target, { recursive: true })
+  const files = { gate: join(target, 'gate.json'), attestation: join(target, 'attestation.json') }
+  writeFileSync(files.gate, `${JSON.stringify(gate, null, 2)}\n`)
+  writeFileSync(files.attestation, `${JSON.stringify(attestation, null, 2)}\n`)
+  return { files }
 }
 
 // The filesystem record is read directly, so it has nothing to refresh. On GitHub the issue-body
@@ -230,6 +278,7 @@ export async function listWaiting(args, { client } = {}) {
       who: gate.who,
       subjectKind: gate.subjectKind,
       subjectDigest: gate.subjectDigest,
+      ...(gate.changeClass ? { changeClass: gate.changeClass } : {}),
       openedAt: gate.openedAt,
     })),
   )
@@ -240,7 +289,7 @@ function renderWaiting(rows) {
   return rows
     .map((row) => {
       const person = row.who.person ? `${row.who.person}, ` : ''
-      return `${row.item}  ${row.gateClass}  waiting for ${person}${row.who.role} (${row.who.platform})  ${row.subjectKind} ${row.subjectDigest.slice(0, 12)}  gate ${row.gateDigest.slice(0, 12)}`
+      return `${row.item}  ${row.gateClass}  waiting for ${person}${row.who.role} (${row.who.platform})  ${row.subjectKind}${row.changeClass ? ` ${row.changeClass}` : ''} ${row.subjectDigest.slice(0, 12)}  gate ${row.gateDigest.slice(0, 12)}`
     })
     .join('\n')
 }
@@ -264,6 +313,7 @@ export async function main(
   const handlers = {
     open: openGate,
     answer: answerGate,
+    consent: exportConsent,
     candidate: recordCandidate,
     sync: syncGates,
     'on-behalf': recordOnBehalf,
