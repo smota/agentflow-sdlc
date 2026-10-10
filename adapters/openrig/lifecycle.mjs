@@ -645,7 +645,15 @@ export function squadRemove(ctx) {
   const status = rigStatuses(ctx).get(rigName)
   if (status && status !== 'stopped') {
     out(`    Stopping running rig '${rigName}'...`)
-    rig(['down', rigName], ctx)
+    const stopped = rig(['down', rigName], ctx)
+    // A rig that did not stop keeps its spec and seat state; removing them under it loses work.
+    if (!stopped || stopped.status !== 0) {
+      const detail = (stopped?.stderr || stopped?.stdout || '').trim()
+      fail(
+        `rig down ${rigName} failed${stopped ? ` (exit ${stopped.status})` : ''}${detail ? `: ${detail}` : ''}. ` +
+          'Nothing was removed.',
+      )
+    }
   }
   const targetDir = join(specs, rigName)
   if (lexists(targetDir)) {

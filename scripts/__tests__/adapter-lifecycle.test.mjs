@@ -536,7 +536,7 @@ describe('adapters squads openrig (AC8-AC11)', () => {
 // A fake `rig` on PATH, run with HOME as the temporary home, which is the only case where the
 // adapter contacts OpenRig. A node script with a shebang is not spawnable without a shell on Windows.
 describe.skipIf(WINDOWS)('adapters with a running OpenRig (fake rig)', () => {
-  function fakeRig(running = []) {
+  function fakeRig(running = [], { downExit = 0 } = {}) {
     const dir = tempDir('agentflow-fakerig-')
     const log = join(dir, 'calls.log')
     const script = join(dir, 'rig')
@@ -548,6 +548,7 @@ const args = process.argv.slice(2)
 fs.appendFileSync(${JSON.stringify(log)}, args.join(' ') + '\\n')
 if (args[0] === 'daemon') console.log('Daemon running on port 1')
 if (args[0] === 'ps') console.log(JSON.stringify(${JSON.stringify(running)}.map((rigName) => ({ rigName, status: 'running' }))))
+if (args[0] === 'down' && ${downExit} !== 0) { console.error('STOP REFUSED'); process.exit(${downExit}) }
 `,
       { mode: 0o755 },
     )
@@ -600,6 +601,27 @@ if (args[0] === 'ps') console.log(JSON.stringify(${JSON.stringify(running)}.map(
     expect(calls).toContain('down agentflow-demo')
     expect(calls.filter((call) => call.startsWith('down'))).toEqual(['down agentflow-demo'])
     expect(existsSync(specs(home, 'agentflow-demo'))).toBe(false)
+  })
+
+  it('keeps the spec and seat state and fails when rig down refuses to stop', () => {
+    const home = tempDir('agentflow-home-')
+    const project = tempDir('agentflow-project-')
+    const rig = fakeRig(['agentflow-demo'], { downExit: 7 })
+    live(['adapters', 'squads', 'provision', 'openrig', 'demo', project], home, rig)
+    const before = tree(home)
+    const result = spawnSync(
+      process.execPath,
+      [CLI, 'adapters', 'squads', 'remove', 'openrig', 'demo'],
+      {
+        encoding: 'utf8',
+        env: { PATH: rig.path, HOME: home },
+      },
+    )
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('rig down agentflow-demo failed (exit 7): STOP REFUSED')
+    expect(result.stderr).toContain('Nothing was removed')
+    expect(tree(home)).toEqual(before)
+    expect(piSeats(home).filter((seat) => seat.endsWith('@agentflow-demo'))).toHaveLength(6)
   })
 })
 
