@@ -435,6 +435,21 @@ describe('product seat send guard (AC1-AC4, AC13)', () => {
     'rig $VERB orch-arch@agentflow-dev hi',
     'rig queue $(echo create) --destination orch-arch@agentflow-dev',
     'tmux "send-keys" -t orch-arch@agentflow-dev go Enter',
+    'rig > /dev/null send orch-arch@agentflow-dev hi',
+    'rig 2>&1 send orch-arch@agentflow-dev hi',
+    'rig </dev/null queue create --destination orch-arch@agentflow-dev --body x',
+    "rig $'\\x73end' orch-arch@agentflow-dev hi",
+    "rig $'\\163end' orch-arch@agentflow-dev hi",
+    "rig $'\\u0073end' orch-arch@agentflow-dev hi",
+    "rig queue $'\\x63reate' --destination orch-arch@agentflow-dev --body x",
+    "rig $'queue' $'create' --destination orch-arch@agentflow-dev --body x",
+    'env rig send orch-arch@agentflow-dev hi',
+    'R=rig; $R send orch-arch@agentflow-dev hi',
+    'rig >/dev/null $VERB orch-arch@agentflow-dev hi',
+    'rig s?nd orch-arch@agentflow-dev hi',
+    'rig {send,} orch-arch@agentflow-dev hi',
+    "bash -c 'rig send orch-arch@agentflow-dev hi'",
+    `node -e "require('child_process').execFileSync('rig', ['send', 'orch-arch@agentflow-dev', 'hi'])"`,
   ])('blocks a product seat: %s', (command) => {
     for (const session of [MANAGER, ANALYST]) {
       const decision = guardDecision({ session, command })
@@ -451,6 +466,8 @@ describe('product seat send guard (AC1-AC4, AC13)', () => {
     'agentflow-sdlc handoff deliver --to orch-arch@agentflow-dev --body-file /tmp/h.txt',
     'agentflow-sdlc phase append --phase 1 --status pass',
     'git status',
+    'rig whoami --json > /tmp/whoami.json',
+    'rig queue list --destination "$OPENRIG_SESSION_NAME" --json 2>&1',
   ])('allows a product seat: %s', (command) => {
     expect(guardDecision({ session: MANAGER, command }).block).toBe(false)
   })
