@@ -61,8 +61,10 @@ const BIN = mkdtempSync(join(tmpdir(), 'agentflow-adapter-bin-'))
 const GIT = findOnPath('git', process.env.PATH || process.env.Path || '')
 let PATH
 if (WINDOWS) {
-  // Git for Windows keeps git.exe in cmd/ without bash; node's directory has no shell either.
-  PATH = [dirname(process.execPath), dirname(GIT)].join(delimiter)
+  // Isolate node and git. Git's own directory also contains bash.exe, which this test must not see.
+  symlinkSync(process.execPath, join(BIN, 'node.exe'))
+  symlinkSync(GIT, join(BIN, 'git.exe'))
+  PATH = BIN
 } else {
   symlinkSync(process.execPath, join(BIN, 'node'))
   symlinkSync(GIT, join(BIN, 'git'))

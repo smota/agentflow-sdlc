@@ -346,7 +346,7 @@ function filesUnder(dir, base = dir) {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const path = join(dir, entry.name)
     if (entry.isDirectory()) found.push(...filesUnder(path, base))
-    else if (entry.isFile()) found.push(relative(base, path))
+    else if (entry.isFile()) found.push(relative(base, path).split('\\').join('/'))
   }
   return found
 }
