@@ -90,3 +90,25 @@ agentflow-sdlc adapters squads update openrig my-project
 # Teardown when done (stops the rig first if it is running)
 agentflow-sdlc adapters squads remove openrig my-project
 ```
+
+## Product-to-delivery handoffs
+
+A product seat (`pm.manager`, `pm.analyst`) sends work to delivery only with
+`agentflow-sdlc handoff deliver` (installed with the product base as
+`node ~/.openrig/specs/agentflow-product/handoff.mjs deliver`). While the delivery squad has
+unfinished work, queued work, a working seat, a busy record, or a state that cannot be read, the
+handoff is held and no delivery seat is woken. Idle seats do not make the squad free.
+
+```bash
+agentflow-sdlc handoff list                        # held handoffs: goal, transition, target, sender, signal, since
+agentflow-sdlc handoff flush                       # deliver the oldest hold if its squad is free
+agentflow-sdlc handoff release <hold-id>           # the person only, at a terminal: deliver now
+agentflow-sdlc handoff busy agentflow-my-project --set --note "finishing a release"
+agentflow-sdlc handoff busy agentflow-my-project --clear   # the person only
+```
+
+Product seats cannot use `rig send`, `rig queue create`, `rig queue handoff`, or `tmux send-keys`:
+a guard in each seat's runtime blocks them (a Claude Code and Codex PreToolUse hook, and a Pi
+extension). There is no option that sends anyway. Running seats pick the guard up when they start,
+so restart a product squad after `agentflow-sdlc adapters update openrig` and
+`agentflow-sdlc adapters squads update openrig <project>`.

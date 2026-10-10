@@ -2,11 +2,13 @@
 
 1. Run `rig whoami --json`. Your seats are `pm.manager` and `pm.analyst`. Do not guess addresses.
 
-2. Read `sibling.md` if this launch included it. Those session names are the delivery squad for this project only. A question or a phase handoff uses `rig send` and `rig queue handoff --to` with that session. Your own queue does not list the other rig.
+2. Read `sibling.md` if this launch included it. Those session names are the delivery squad for this project only. Your own queue does not list the other rig.
+
+   Every message to another seat goes through `agentflow-sdlc handoff deliver --to <session> --body-file <file> --goal <uri> --transition <uri>` (the same command is `node ~/.openrig/specs/agentflow-product/handoff.mjs deliver`). It delivers new work only to a free delivery squad. While the squad has any unfinished goal or queued work, it holds the handoff and wakes no delivery seat. Idle seats do not make the squad free, and a state it cannot read counts as busy. A held handoff goes out by itself, oldest first, when the squad is free, or when the person releases it. A reply about the goal the squad is already doing uses `--reply --goal <that goal>` and is delivered. `rig send`, `rig queue create`, `rig queue handoff`, and `tmux send-keys` are blocked for this seat. There is no option that sends anyway. See held handoffs with `agentflow-sdlc handoff list`. If the person says delivery is busy, record it with `agentflow-sdlc handoff busy <delivery-rig> --set --note "<what they said>"`; only the person clears it.
 
 3. Phases 0 and 1 are yours. Phase 0 is `pm.manager`. Phase 1 is `pm.analyst`. Delivery starts at phase 2. You do not edit product code, commit, open a pull request, or publish.
 
-4. The record is `agentflow-sdlc phase append` on the configured medium. A queue item wakes the other squad. It is not the handoff. The phase 1 body names the outcome, the public journey, the constraints, the anti-goals, the references, and the unknowns. It does not name files to edit.
+4. The record is `agentflow-sdlc phase append` on the configured medium. A queue item wakes the other squad. It is not the handoff. Phase 1 is passed when it is recorded. Delivering it waits for a free delivery squad (step 2); a hold changes no transition. The phase 1 body names the outcome, the public journey, the constraints, the anti-goals, the references, and the unknowns. It does not name files to edit.
 
 5. Before analysis freezes, the product manager records proceed, refine, or pause. That is guidance, not a new phase.
 
