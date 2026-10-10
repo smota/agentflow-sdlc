@@ -1,0 +1,28 @@
+name: Person gates sync
+
+# A person who edits an issue's goal must see the stale answer and the new waiting gate on the
+# issue page. This rewrites the product-owned gate block from the record. When the block already
+# matches, sync writes nothing, and an edit made with this workflow's token starts no new run.
+on:
+  issues:
+    types: [edited]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  sync-gate-block:
+    if: contains(github.event.issue.body, '<!-- agentflow-gates -->')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Rewrite the gate block from the record
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: >-
+          node scripts/person-gates.mjs sync --medium github
+          --repo "${{ github.repository }}" --issue "${{ github.event.issue.number }}"

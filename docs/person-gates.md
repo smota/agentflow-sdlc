@@ -71,7 +71,9 @@ wait list.
   Ordinary issue comments are never read as answers.
   If a person edits the issue body, reading the item already shows the new state, but the block on
   the page is only rewritten by a product write. `agentflow-sdlc gates sync` rewrites it when the
-  goal or candidate changed since it was rendered. Reads never write to the issue.
+  goal or candidate changed since it was rendered. Reads never write to the issue. The
+  `.github/workflows/person-gates-sync.yml` workflow runs it on every issue edit, so the page
+  catches up within the workflow run. When the block already matches, sync writes nothing.
 
 `agentflow-sdlc phase read` returns the projected gates for the item on either medium.
 
