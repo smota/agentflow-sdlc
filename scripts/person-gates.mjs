@@ -9,6 +9,7 @@ import {
   HUMAN_PLATFORM,
   answerEntry,
   candidateEntry,
+  isFilingSeat,
   gateEntry,
   onBehalfEntry,
   gateView,
@@ -175,7 +176,10 @@ export async function fileConfirmation(args, { client, now, env } = {}) {
   const seat = flag(args, '--seat')
   const messageFile = flag(args, '--message-file')
   if (line === null) throw new Error('Set --line <the person’s line>')
-  if (!seat || !seat.trim()) throw new Error('Set --seat <the filing seat>')
+  if (!seat) throw new Error('Set --seat <the filing seat>')
+  if (!isFilingSeat(seat)) {
+    throw new Error('--seat is one word with no whitespace and no <. Nothing was filed.')
+  }
   if (!messageFile) throw new Error('Set --message-file <the person’s message>')
   const message = readFileSync(resolve(messageFile), 'utf8')
   if (!messageLines(message).includes(line)) {
@@ -200,7 +204,7 @@ export async function fileConfirmation(args, { client, now, env } = {}) {
     timestamp: recordedAt,
   })
   const runtime = detectAgentRuntime(env)?.runtime ?? null
-  const filing = { line, filedBy: { seat: seat.trim(), ...(runtime ? { runtime } : {}) } }
+  const filing = { line, filedBy: { seat, ...(runtime ? { runtime } : {}) } }
   const goal = await medium.appendGateEntry(
     answerEntry(gate.gateDigest, attestation, { recordedAt, filing }),
   )
