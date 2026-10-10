@@ -1,4 +1,4 @@
-import { spawnSync } from 'node:child_process'
+import { execFileSync, spawnSync } from 'node:child_process'
 import { mkdtempSync, realpathSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -43,7 +43,12 @@ describe('CLI output drain', () => {
     expect(result.error).toBeUndefined()
     expect(result.status).toBe(0)
     expect(result.stderr).toBe('')
-    expect(Buffer.byteLength(result.stdout)).toBeGreaterThan(8192)
+    expect(result.stdout).toBe(
+      execFileSync(process.execPath, [entry, ...args], {
+        encoding: 'utf8',
+        maxBuffer: 4 * 1024 * 1024,
+      }),
+    )
     expect(() => JSON.parse(result.stdout)).not.toThrow()
   })
 

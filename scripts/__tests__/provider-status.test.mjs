@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
@@ -22,10 +22,17 @@ describe('provider status CLI', () => {
       'claude-cli',
       'codex-cli',
       'agy-cli',
-      'pi-cli',
       'grok-cli',
       'xai-api',
       'manual',
     ])
+  })
+
+  it('fails to inspect the removed pi-cli provider and names the replacement', () => {
+    const result = spawnSync(process.execPath, [cli, 'providers', 'inspect', 'pi-cli', '--json'], {
+      encoding: 'utf8',
+    })
+    expect(result.status).not.toBe(0)
+    expect(result.stderr).toMatch(/pi-cli was removed.*OpenRig execution layer/)
   })
 })
