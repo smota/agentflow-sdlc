@@ -67,6 +67,19 @@ async function readParent(args) {
   return mediumFrom(parentArgs).readGoal()
 }
 
+// Phase 1 is the product-to-delivery seam (issue 363). Recording it does not deliver it: the
+// handoff goes out only to a free delivery squad and is held while that squad is busy.
+function deliveryRule(result) {
+  if (result.transition.phase !== 1 || result.transition.status !== 'pass') return {}
+  return {
+    delivery: [
+      'Phase 1 is recorded. Deliver it only to a free delivery squad; hold it otherwise.',
+      `Send: agentflow-sdlc handoff deliver --to <delivery seat> --goal ${result.goal.uri} --transition ${result.transition.uri} --body-file <file with queueBody>`,
+      'It holds the handoff while the squad has unfinished work and delivers it once when the squad is free or the person releases it. Do not use rig send or rig queue for it.',
+    ].join('\n'),
+  }
+}
+
 function queueBody(result) {
   const next = allowedNext(result.goal.transitions)
   const nextSeats = [...new Set(next.flatMap((phase) => seatsFor(phase)))]
@@ -133,7 +146,9 @@ async function main(argv) {
     body,
     idempotencyKey: flag(args, '--key'),
   })
-  process.stdout.write(`${JSON.stringify({ ...result, queueBody: queueBody(result) }, null, 2)}\n`)
+  process.stdout.write(
+    `${JSON.stringify({ ...result, queueBody: queueBody(result), ...deliveryRule(result) }, null, 2)}\n`,
+  )
   return 0
 }
 

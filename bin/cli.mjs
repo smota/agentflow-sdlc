@@ -924,7 +924,15 @@ function positionalArgs(args) {
   return result
 }
 
+const HOLD_COMMANDS = new Set(['deliver', 'list', 'flush', 'release', 'busy'])
+
+async function handleHoldHandoff(rest) {
+  const { main } = await import('../adapters/openrig/agentflow-product/handoff.mjs')
+  return main(rest)
+}
+
 function handleHandoff(rest, targetDir) {
+  if (HOLD_COMMANDS.has(rest[0])) return handleHoldHandoff(rest)
   const runId = getFlag(rest, '--run', null)
   if (!runId) throw new Error('--run <id> is required for source-backed handoff')
   return runScript('scripts/run-delivery.mjs', ['handoff', runId, ...rest], targetDir)
@@ -961,7 +969,7 @@ const COMMAND_USAGE = {
   onboarding:
     'Usage: agentflow-sdlc onboarding <inspect|plan|apply|verify|undo|recover|refine|runtime-request> [--target <dir>] [--profile <id>] [--runtime-request <file>] [--runtime-evidence <file>] [--choices <file>] [--changes <file>] [--plan <file>] [--receipt <file>] [--confirm <digest>] [--json]\nAdopt or bring an installation forward: onboarding plan, then apply. Change an adopted project later: onboarding refine, then apply.\n',
   handoff:
-    'Usage: agentflow-sdlc handoff --run <id> --writer <owner> --generation <n> --execute [--target <dir>] [--json]\n',
+    'Usage: agentflow-sdlc handoff deliver --to <session> (--body-file <file> | --body <text>) [--goal <uri>] [--transition <uri>] [--reply] [--json]\n       agentflow-sdlc handoff list [--rig <rig>] [--all] [--json]\n       agentflow-sdlc handoff flush [--rig <rig>]\n       agentflow-sdlc handoff release <hold-id>   (the person only)\n       agentflow-sdlc handoff busy <rig> --set [--note <text>] | --clear   (--clear: the person only)\n       agentflow-sdlc handoff --run <id> --writer <owner> --generation <n> --execute [--target <dir>] [--json]\nDeliver holds new work while the delivery squad is busy. No option sends anyway; only the person releases.\n',
   phase:
     'Usage: agentflow-sdlc phase <append|read|integrate> --medium <filesystem|github> --phase <0-8> --status <pass|skipped> --seat <id> --key <id> [--root <dir> | --repo <owner/repo> [--issue <n>]] [--title <text>] [--body <text>] [--reason <text>] [--kind <goal|capability|spec> [--parent <dir|issue>] [--change-class <class>] [--gate-file <path> --attestation-file <path>]]\n',
   board:

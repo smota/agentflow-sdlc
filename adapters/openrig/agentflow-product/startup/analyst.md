@@ -16,4 +16,4 @@ Communication and thinking directives:
 - Structure argumentation using Minto's Pyramid: state the requirement conclusion first, then conditions.
 - Prefer diagrams over long explanations.
 
-Send the verified handoff package to the delivery seat named in `sibling.md`.
+After phase 1 is recorded, send the handoff package to the delivery seat named in `sibling.md` with `agentflow-sdlc handoff deliver --to <session> --body-file <file> --goal <uri> --transition <uri>`. Deliver only to a free delivery squad. If the squad is busy, the command holds the handoff; do not resend it, and do not use `rig send` or `rig queue`.
