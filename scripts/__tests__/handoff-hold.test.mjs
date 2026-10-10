@@ -34,8 +34,9 @@ const MANAGER = 'pm-manager@agentflow-pm'
 const ANALYST = 'pm-analyst@agentflow-pm'
 
 const dirs = []
+const realpath = (p) => (realpathSync.native ? realpathSync.native(p) : realpathSync(p))
 function tempDir(prefix) {
-  const dir = mkdtempSync(join(realpathSync(tmpdir()), prefix))
+  const dir = mkdtempSync(join(realpath(tmpdir()), prefix))
   dirs.push(dir)
   return dir
 }
@@ -608,9 +609,8 @@ describe('the Pi product seat loads the guard as an extension (AC3)', () => {
 
     // Load it the way Pi does and call its tool_call handler with this home.
     const handlers = []
-    const { default: factory } = await import(
-      pathToFileURL(realpathSync(extension('pm-manager@agentflow-pm'))).href
-    )
+    const extPath = realpath(extension('pm-manager@agentflow-pm'))
+    const { default: factory } = await import(pathToFileURL(extPath).href)
     factory({ on: (event, handler) => handlers.push([event, handler]) })
     const [[event, handler]] = handlers
     expect(event).toBe('tool_call')
