@@ -1,9 +1,18 @@
 // Issue 363: product seats cannot wake a busy delivery squad. These tests use a fake `rig`, a fake
 // board, and temporary homes only. No live daemon, seat, or GitHub call is made.
 import { spawnSync } from 'node:child_process'
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join, resolve } from 'node:path'
+import { delimiter, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
 import * as hold from '../../adapters/openrig/agentflow-product/handoff.mjs'
@@ -33,6 +42,9 @@ afterEach(() => {
   for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true })
 })
 
+// The installed `agentflow-sdlc` shim on PATH.
+const SHIM = '/fake/bin/agentflow-sdlc'
+
 function idleNodes(rig = RIG) {
   return SEATS.map((seat) => ({
     canonicalSessionName: `${seat}@${rig}`,
@@ -58,7 +70,7 @@ function fakeDeps({
   const ok = (value) => ({ status: 0, stdout: JSON.stringify(value), stderr: '' })
   const run = (command, args) => {
     calls.push([command, ...args])
-    if (command === process.execPath) {
+    if (command === SHIM) {
       if (fail.board) return { status: 1, stdout: '', stderr: 'board failed' }
       return ok({ groups: [{ state: 'WIP', items: wip.map((uri) => ({ uri })) }] })
     }
@@ -85,7 +97,7 @@ function fakeDeps({
     home,
     now: () => new Date((clock += 1000)),
     run,
-    cliPath: '/fake/bin/cli.mjs',
+    cliPath: SHIM,
     stdinIsTTY: tty,
     stdoutIsTTY: tty,
     ask: async () => answer,
@@ -170,6 +182,22 @@ describe('both product seats are held while the squad is busy (AC1, AC2, AC5)', 
     nodes[0].agentActivity.state = 'working'
     const { deps, sends } = fakeDeps({ nodes })
     expect(send(deps)).toMatchObject({ status: 'held', signals: [{ id: 'B4' }] })
+    expect(sends()).toEqual([])
+  })
+
+  it.each([
+    ['reports running', { state: 'running' }, 'B4'],
+    ['reports unknown', { state: 'unknown' }, 'unknown'],
+    ['has no activity state', {}, 'unknown'],
+    ['has no activity field', undefined, 'unknown'],
+  ])('holds when a seat %s, because it does not prove it is idle', (_, activity, id) => {
+    const nodes = idleNodes()
+    if (activity === undefined) delete nodes[2].agentActivity
+    else nodes[2].agentActivity = activity
+    const { deps, sends } = fakeDeps({ nodes })
+    const result = send(deps)
+    expect(result).toMatchObject({ status: 'held', signals: [{ id }] })
+    expect(result.signals[0].detail).toContain(nodes[2].canonicalSessionName)
     expect(sends()).toEqual([])
   })
 
@@ -262,7 +290,7 @@ describe('held handoffs are listed, flushed once, and released by the person (AC
 
     // The other goal is delivered: the squad has no unfinished goal.
     deps.run = ((run) => (command, args) =>
-      command === process.execPath
+      command === SHIM
         ? {
             status: 0,
             stdout: JSON.stringify({ groups: [{ state: 'WIP', items: [] }] }),
@@ -377,8 +405,8 @@ describe('a hold does not touch the record (AC10)', () => {
     const { deps, calls } = fakeDeps({ wip: [OTHER] })
     send(deps)
     hold.listHolds(deps)
-    const productCalls = calls.filter(([command]) => command === process.execPath)
-    expect(productCalls.every(([, , verb]) => verb === 'board')).toBe(true)
+    const productCalls = calls.filter(([command]) => command === SHIM)
+    expect(productCalls.every(([, verb]) => verb === 'board')).toBe(true)
   })
 })
 
@@ -395,11 +423,24 @@ describe('product seat send guard (AC1-AC4, AC13)', () => {
     'rig queue inbox-drop orch-arch@agentflow-dev',
     'tmux send-keys -t orch-arch@agentflow-dev "go" Enter',
     'agentflow-sdlc handoff release hold-1',
+    'rig "send" orch-arch@agentflow-dev hi',
+    "rig 'send' orch-arch@agentflow-dev hi",
+    '"rig" send orch-arch@agentflow-dev hi',
+    'r\\ig s\\end orch-arch@agentflow-dev hi',
+    "rig $'send' orch-arch@agentflow-dev hi",
+    'rig \\\nsend orch-arch@agentflow-dev hi',
+    'rig queue "create" --destination orch-arch@agentflow-dev --body x',
+    "rig 'queue' 'create' --destination orch-arch@agentflow-dev --body x",
+    'rig "queue" handoff q1 --to orch-arch@agentflow-dev',
+    'rig $VERB orch-arch@agentflow-dev hi',
+    'rig queue $(echo create) --destination orch-arch@agentflow-dev',
+    'tmux "send-keys" -t orch-arch@agentflow-dev go Enter',
   ])('blocks a product seat: %s', (command) => {
     for (const session of [MANAGER, ANALYST]) {
       const decision = guardDecision({ session, command })
       expect(decision.block).toBe(true)
-      expect(decision.reason).toContain('handoff.mjs deliver')
+      expect(decision.reason).toContain('agentflow-sdlc handoff deliver')
+      expect(decision.reason).not.toContain('handoff.mjs')
     }
   })
 
@@ -610,6 +651,59 @@ describe('the Pi product seat loads the guard as an extension (AC3)', () => {
     )
     expect(readFileSync(join(seatDir, 'session.json'), 'utf8')).toBe('{"turn":3}')
   })
+})
+
+describe('board runs through the installed agentflow-sdlc shim on PATH', () => {
+  // A PATH with an `agentflow-sdlc` link to a Node script that has no execute bit, as a linked
+  // checkout installs it. The script answers `board` with one WIP goal.
+  function installedShim() {
+    const root = tempDir('agentflow-shim-')
+    const bin = join(root, 'bin')
+    mkdirSync(bin)
+    const target = join(root, 'cli.mjs')
+    writeFileSync(
+      target,
+      `if (process.argv[2] === 'board') console.log(JSON.stringify({ groups: [{ state: 'WIP', items: [{ uri: ${JSON.stringify(OTHER)} }] }] }))\nelse process.exit(4)\n`,
+    )
+    chmodSync(target, 0o644)
+    const shim = join(bin, 'agentflow-sdlc')
+    symlinkSync(target, shim)
+    return { bin, shim }
+  }
+
+  it('locates the shim path itself, not the file it links to', () => {
+    const { bin, shim } = installedShim()
+    expect(hold.defaultDeps({ env: { PATH: bin } }).cliPath).toBe(shim)
+  })
+
+  it('has no CLI when agentflow-sdlc is not on PATH', () => {
+    const deps = hold.defaultDeps({ env: { PATH: tempDir('agentflow-empty-path-') } })
+    expect(deps.cliPath).toBeNull()
+  })
+
+  it.runIf(process.platform !== 'win32')(
+    'runs node on the shim path when the shim cannot be executed',
+    () => {
+      const { bin, shim } = installedShim()
+      const deps = hold.defaultDeps({ env: { PATH: `${bin}${delimiter}${process.env.PATH}` } })
+      const realRun = deps.run
+      const calls = []
+      deps.run = (command, args, options) => {
+        calls.push([command, ...args])
+        if (command === 'rig') {
+          const value = args[0] === 'ps' ? idleNodes() : []
+          return { status: 0, stdout: JSON.stringify(value), stderr: '' }
+        }
+        return realRun(command, args, options)
+      }
+      const { signals } = hold.readSignals(deps, RIG, { medium: 'github', repo: 'acme/app' })
+      expect(signals).toEqual([{ id: 'B3', detail: `${OTHER} is WIP` }])
+      const product = calls.filter(([command]) => command !== 'rig')
+      expect(product[0].slice(0, 2)).toEqual([shim, 'board'])
+      expect(product[1].slice(0, 3)).toEqual([process.execPath, shim, 'board'])
+      expect(product.flat().some((part) => String(part).endsWith('cli.mjs'))).toBe(false)
+    },
+  )
 })
 
 describe('the installed product copy runs on its own (activation)', () => {

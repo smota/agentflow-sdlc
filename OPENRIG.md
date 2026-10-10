@@ -94,10 +94,9 @@ agentflow-sdlc adapters squads remove openrig my-project
 ## Product-to-delivery handoffs
 
 A product seat (`pm.manager`, `pm.analyst`) sends work to delivery only with
-`agentflow-sdlc handoff deliver` (installed with the product base as
-`node ~/.openrig/specs/agentflow-product/handoff.mjs deliver`). While the delivery squad has
-unfinished work, queued work, a working seat, a busy record, or a state that cannot be read, the
-handoff is held and no delivery seat is woken. Idle seats do not make the squad free.
+`agentflow-sdlc handoff deliver`. While the delivery squad has unfinished work, queued work, a
+seat that does not report idle, a busy record, or a state that cannot be read, the handoff is held
+and no delivery seat is woken. Idle seats do not make the squad free.
 
 ```bash
 agentflow-sdlc handoff list                        # held handoffs: goal, transition, target, sender, signal, since

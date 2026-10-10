@@ -1,7 +1,7 @@
 // Product-to-delivery handoff with a busy hold (issue 363).
 //
 // A product seat sends work to a delivery seat only through this module, as
-// `agentflow-sdlc handoff deliver` or `node ~/.openrig/specs/agentflow-product/handoff.mjs deliver`.
+// `agentflow-sdlc handoff deliver`.
 // The delivery squad is the unit: while it has unfinished work, new work is held in a product-squad
 // record and no delivery seat is woken. A held handoff goes out once, oldest first, when the squad
 // is free, or when the person releases it. An unreadable signal counts as busy.
@@ -14,7 +14,6 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
-  realpathSync,
   renameSync,
   rmdirSync,
   statSync,
@@ -54,7 +53,6 @@ export const USAGE = `Usage:
   agentflow-sdlc handoff release <hold-id>            (the person only, at a terminal)
   agentflow-sdlc handoff busy <rig> --set [--note <text>] | --clear   (--clear: the person only)
 
-The same commands run as: node ~/.openrig/specs/agentflow-product/handoff.mjs <command> ...
 deliver sends to a free delivery squad and holds the handoff while the squad is busy.
 A reply (--reply --goal <uri>) about a goal the squad is already doing is delivered.
 There is no option that sends anyway: only the person's release does.
@@ -88,25 +86,10 @@ function findOnPath(name, env) {
   return null
 }
 
-// The product CLI that serves `board`: this checkout's when run from it, else agentflow-sdlc on PATH.
+// The product CLI that serves `board` is the installed `agentflow-sdlc` command on PATH. The shim
+// itself is run, never the file it links to.
 function locateCli(env) {
-  const here = dirname(fileURLToPath(import.meta.url))
-  const checkout = resolve(here, '..', '..', '..')
-  try {
-    if (readJson(join(checkout, 'package.json')).name === 'agentflow-sdlc') {
-      return join(checkout, 'bin', 'cli.mjs')
-    }
-  } catch {
-    // Not run from a product checkout: this is the spec-library copy.
-  }
-  const onPath = findOnPath('agentflow-sdlc', env)
-  if (!onPath) return null
-  try {
-    const target = realpathSync(onPath)
-    return target.endsWith('.mjs') || target.endsWith('.js') ? target : null
-  } catch {
-    return null
-  }
+  return findOnPath('agentflow-sdlc', env)
 }
 
 export function defaultDeps({ env = process.env } = {}) {
@@ -237,7 +220,12 @@ function wipGoals(deps, medium) {
     medium.medium === 'github'
       ? ['board', '--medium', 'github', '--repo', medium.repo, '--json']
       : ['board', '--medium', 'filesystem', '--root', medium.root, '--json']
-  const result = deps.run(process.execPath, [deps.cliPath, ...args])
+  let result = deps.run(deps.cliPath, args)
+  // A shim the process cannot exec (for example a link to a file without the execute bit) still
+  // runs as a Node script: run node on the shim path itself.
+  if (['EACCES', 'ENOEXEC'].includes(result.error?.code)) {
+    result = deps.run(process.execPath, [deps.cliPath, ...args])
+  }
   if (result.error || result.status !== 0) {
     const detail = (result.error?.message || result.stderr || '').trim()
     return { error: `agentflow-sdlc board failed${detail ? `: ${detail}` : ''}` }
@@ -254,8 +242,9 @@ function wipGoals(deps, medium) {
 
 /**
  * Read the squad's busy signals. B1 in-progress (or blocked) queue item, B2 pending queue item,
- * B3 goal started by delivery and not Delivered, B4 a seat reports working, B5 the person's busy
- * record. `unknown` is any signal that could not be read; it counts as busy.
+ * B3 goal started by delivery and not Delivered, B4 a seat reports working or running, B5 the
+ * person's busy record. `unknown` is any signal that could not be read, including a seat that does
+ * not report idle; it counts as busy.
  */
 export function readSignals(deps, rig, medium) {
   const signals = []
@@ -273,9 +262,18 @@ export function readSignals(deps, rig, medium) {
     const seats = nodes.rows.filter((row) => rigOf(row?.canonicalSessionName) === rig)
     if (seats.length === 0)
       signals.push({ id: 'unknown', detail: `delivery squad ${rig} has no seats in rig ps` })
+    // Only a seat that reports idle adds nothing. A seat that does not prove it is idle is busy:
+    // working or running is B4, a missing or other state is unknown.
     for (const seat of seats) {
-      if (seat.agentActivity?.state === 'working') {
-        signals.push({ id: 'B4', detail: `${seat.canonicalSessionName} is working` })
+      const state = seat.agentActivity?.state
+      if (state === 'idle') continue
+      if (state === 'working' || state === 'running') {
+        signals.push({ id: 'B4', detail: `${seat.canonicalSessionName} is ${state}` })
+      } else {
+        signals.push({
+          id: 'unknown',
+          detail: `${seat.canonicalSessionName} does not report idle (${state ?? 'no activity state'})`,
+        })
       }
     }
   }

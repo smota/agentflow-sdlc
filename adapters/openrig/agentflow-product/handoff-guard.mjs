@@ -8,6 +8,7 @@
 const PRODUCT_SEAT = /^pm-[^@\s]+@\S+$/
 
 // Commands that put text into another seat's terminal or queue. Flags may come before the verb.
+// They are matched against the shell words with quoting and escapes removed (see shellWords).
 const DIRECT_SENDS = [
   { pattern: /\brig\s+(?:-\S+\s+)*send\b/, name: 'rig send' },
   {
@@ -21,7 +22,22 @@ const DIRECT_SENDS = [
   },
   { pattern: /\bagentflow-sdlc\s+handoff\s+release\b/, name: 'agentflow-sdlc handoff release' },
   { pattern: /\bcli\.mjs\s+handoff\s+release\b/, name: 'agentflow-sdlc handoff release' },
+  // A verb the guard cannot read before the shell runs it ($VERB, $(...), `...`) is held too.
+  {
+    pattern: /\b(?:rig|tmux)\s+(?:-\S+\s+)*(?:queue\s+(?:-\S+\s+)*)?[$`]/,
+    name: 'a rig or tmux command with a computed verb',
+  },
 ]
+
+// The text the shell would see as words: line continuations, ANSI-C `$'`, quotes, and backslash
+// escapes are removed, so `rig "send"`, `rig queue 'create'`, and `r\ig send` read as written.
+export function shellWords(command) {
+  return String(command ?? '')
+    .replace(/\\\r?\n/g, '')
+    .replace(/\$(?=['"])/g, '')
+    .replace(/\\(.)/g, '$1')
+    .replace(/['"]/g, '')
+}
 
 export function isProductSeat(session) {
   return typeof session === 'string' && PRODUCT_SEAT.test(session)
@@ -30,15 +46,14 @@ export function isProductSeat(session) {
 /** Decide one shell command. Only product seats are checked; every other session passes. */
 export function guardDecision({ session, command }) {
   if (!isProductSeat(session)) return { block: false }
-  const text = String(command ?? '')
+  const text = shellWords(command)
   const hit = DIRECT_SENDS.find((item) => item.pattern.test(text))
   if (!hit) return { block: false }
   return {
     block: true,
     reason:
       `Blocked for product seat ${session}: ${hit.name} is not a send path for this seat. ` +
-      'Send with `node ~/.openrig/specs/agentflow-product/handoff.mjs deliver --to <session> --body-file <file> [--goal <uri>] [--transition <uri>] [--reply]` ' +
-      '(the same command as `agentflow-sdlc handoff deliver`). ' +
+      'Send with `agentflow-sdlc handoff deliver --to <session> --body-file <file> [--goal <uri>] [--transition <uri>] [--reply]`. ' +
       'It delivers now when the delivery squad is free and holds the handoff while it is busy. ' +
       'Only the person can release a held handoff. Put message text in --body-file, not in the command line.',
   }
