@@ -7,10 +7,10 @@ import { GATE_CLASSES, createGate } from '../lib/core/gate.mjs'
 import {
   HUMAN_PLATFORM,
   answerEntry,
+  candidateEntry,
   gateEntry,
   onBehalfEntry,
   gateView,
-  waitingGates,
 } from '../lib/core/person-gates.mjs'
 import { createReviewAttestation } from '../lib/core/review-attestation.mjs'
 import { describeRuntimePlatform } from '../lib/runtime-platforms.mjs'
@@ -18,7 +18,7 @@ import { createFilesystemMedium } from '../lib/sources/filesystem-medium.mjs'
 import { parseGateLog } from '../lib/sources/gate-block.mjs'
 import { createGitHubClient } from '../lib/sources/github-client.mjs'
 import { resolveGitHubToken } from '../lib/sources/github-credential.mjs'
-import { createGitHubMedium } from '../lib/sources/github-medium.mjs'
+import { createGitHubMedium, githubGoalSubject } from '../lib/sources/github-medium.mjs'
 
 const DEFAULT_SUBJECT_KIND = {
   [GATE_CLASSES.adequacyOfIntent]: 'goalRevision',
@@ -40,7 +40,7 @@ function flags(args, name) {
 
 function usage() {
   return [
-    'Usage: agentflow-sdlc gates <open|answer|on-behalf|waiting> --medium <filesystem|github> [options] [--json]',
+    'Usage: agentflow-sdlc gates <open|answer|candidate|on-behalf|waiting> --medium <filesystem|github> [options] [--json]',
     '  filesystem: --root <dir>   (waiting: every goal directory under it)',
     '  github: --repo <owner/repo> --issue <n>   (waiting: every issue in the repo)',
     '  open: --class <adequacy-of-intent|release-of-candidate|agent-escalation> --role <role>',
@@ -50,6 +50,7 @@ function usage() {
     '          to run under an agent runtime. The record is not proof of identity.',
     '  on-behalf: --principal <person> --actor-platform <slug> --actor-executor <target> --grant <ref>',
     '             --action <text> --subject-kind <kind> --subject <digest>',
+    "  candidate: --subject <digest>   records the item's current candidate",
     '  waiting: [--role <role>] [--person <name>]',
   ].join('\n')
 }
@@ -69,11 +70,12 @@ function mediumFrom(args, { client } = {}) {
   throw new Error('Set --medium filesystem or --medium github')
 }
 
-function findGate(log, ref) {
+// A gate the item shows, including a waiting gate for a subject that changed since it was opened.
+function findGate(view, ref) {
   if (!ref) throw new Error('Set --gate <digest>')
-  const matches = log.filter((entry) => entry.kind === 'gate' && entry.gate.digest.startsWith(ref))
+  const matches = view.gates.filter((gate) => gate.gateDigest.startsWith(ref))
   if (matches.length !== 1) throw new Error(`--gate ${ref} must name exactly one gate on this item`)
-  return matches[0].gate
+  return matches[0]
 }
 
 export async function openGate(args, { client, now, env } = {}) {
@@ -81,8 +83,12 @@ export async function openGate(args, { client, now, env } = {}) {
   const goal = await medium.readGoal()
   const gateClass = flag(args, '--class')
   const subjectKind = flag(args, '--subject-kind') ?? DEFAULT_SUBJECT_KIND[gateClass]
-  const subjectDigest =
-    flag(args, '--subject') ?? (subjectKind === 'goalRevision' ? goal.revision : null)
+  // The default subject is the item's current one: its goal content, or its recorded candidate.
+  const current = subjectKind === 'goalRevision' ? goal.goalSubject : goal.gates.candidate
+  if (!current && !flag(args, '--subject')) {
+    throw new Error('This item has no candidate; record one with gates candidate first')
+  }
+  const subjectDigest = flag(args, '--subject') ?? current
   const gate = createGate({
     gateClass,
     subjectKind,
@@ -115,7 +121,7 @@ export async function answerGate(args, { client, now, env } = {}) {
     throw new Error(`${person} is a runtime platform, not a person`)
   }
   const medium = mediumFrom(args, { client })
-  const gate = findGate(await medium.readGateLog(), flag(args, '--gate'))
+  const gate = findGate((await medium.readGoal()).gates, flag(args, '--gate'))
   const recordedAt = now()
   const attestation = createReviewAttestation({
     subject: `${gate.gateClass} ${gate.subjectKind}`,
@@ -125,8 +131,16 @@ export async function answerGate(args, { client, now, env } = {}) {
     timestamp: recordedAt,
     findings: flags(args, '--finding'),
   })
-  const goal = await medium.appendGateEntry(answerEntry(gate.digest, attestation, { recordedAt }))
+  const goal = await medium.appendGateEntry(
+    answerEntry(gate.gateDigest, attestation, { recordedAt }),
+  )
   return { goal, attestation }
+}
+
+export async function recordCandidate(args, { client, now } = {}) {
+  const medium = mediumFrom(args, { client })
+  const entry = candidateEntry({ candidateDigest: flag(args, '--subject'), recordedAt: now() })
+  return { goal: await medium.appendGateEntry(entry) }
 }
 
 export async function recordOnBehalf(args, { client, now } = {}) {
@@ -173,7 +187,8 @@ export async function listWaiting(args, { client } = {}) {
     const root = resolve(flag(args, '--root') ?? '.')
     for (const dir of goalDirs(root)) {
       const medium = createFilesystemMedium({ root: dir })
-      items.push({ item: relative(root, dir) || '.', uri: dir, log: await medium.readGateLog() })
+      const goal = await medium.readGoal()
+      items.push({ item: relative(root, dir) || '.', uri: dir, view: goal.gates })
     }
   } else if (flag(args, '--medium') === 'github') {
     const repo = flag(args, '--repo')
@@ -182,13 +197,22 @@ export async function listWaiting(args, { client } = {}) {
       github.issues(repo, { state: 'all', per_page: 100, page }),
     )
     for (const issue of issues.filter((candidate) => !candidate.pull_request)) {
-      items.push({ item: `#${issue.number}`, uri: issue.html_url, log: parseGateLog(issue.body) })
+      const subjects = { goalRevision: githubGoalSubject(issue) }
+      items.push({
+        item: `#${issue.number}`,
+        uri: issue.html_url,
+        view: gateView(parseGateLog(issue.body), { subjects }),
+      })
     }
   } else {
     throw new Error('Set --medium filesystem or --medium github')
   }
-  return items.flatMap(({ item, uri, log }) =>
-    waitingGates(log, filter).map((gate) => ({
+  const matches = (gate) =>
+    gate.status === 'waiting' &&
+    (!filter.role || gate.who.role === filter.role) &&
+    (!filter.person || gate.who.person === filter.person)
+  return items.flatMap(({ item, uri, view }) =>
+    view.gates.filter(matches).map((gate) => ({
       item,
       uri,
       gateDigest: gate.gateDigest,
@@ -227,10 +251,15 @@ export async function main(
     stdout.write(`${json ? JSON.stringify(rows, null, 2) : renderWaiting(rows)}\n`)
     return 0
   }
-  const handlers = { open: openGate, answer: answerGate, 'on-behalf': recordOnBehalf }
+  const handlers = {
+    open: openGate,
+    answer: answerGate,
+    candidate: recordCandidate,
+    'on-behalf': recordOnBehalf,
+  }
   if (!handlers[action]) throw new Error(usage())
   const result = await handlers[action](args, context)
-  const view = gateView(await mediumFrom(args, { client }).readGateLog())
+  const view = (await mediumFrom(args, { client }).readGoal()).gates
   stdout.write(`${JSON.stringify({ ...result, gates: view }, null, 2)}\n`)
   return 0
 }

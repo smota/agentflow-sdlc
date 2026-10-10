@@ -13,12 +13,23 @@ Three facts stay separate on every work item:
 
 ## Statuses
 
-| Status  | Meaning                                                                           |
-| ------- | --------------------------------------------------------------------------------- |
-| waiting | The decision is owed. The entry names who must answer and the subject.            |
-| agreed  | The person answered `agree` on this subject. Only this status satisfies a gate.   |
-| refused | The person answered `changes-requested` or `blocked`. The gate is not satisfied.  |
-| stale   | A newer gate of the same class has another subject. Earlier answers do not carry. |
+| Status  | Meaning                                                                          |
+| ------- | -------------------------------------------------------------------------------- |
+| waiting | The decision is owed. The entry names who must answer and the subject.           |
+| agreed  | The person answered `agree` on this subject. Only this status satisfies a gate.  |
+| refused | The person answered `changes-requested` or `blocked`. The gate is not satisfied. |
+| stale   | The item's subject changed. Earlier answers do not carry to the new subject.     |
+
+A gate binds to the item's current subject:
+
+- A goal gate (`goalRevision`) binds to the goal a person reads: its title, its body without the
+  product's gate block, and its kind, parent, and change class. The same digest is used on GitHub
+  and on the filesystem. A phase pass, a label, or an issue update does not change it.
+- A candidate gate (`candidateDigest`) binds to the item's current candidate, recorded with
+  `gates candidate`. With no candidate recorded, no candidate gate opens.
+
+When the subject changes, earlier answers show `stale`, and a `waiting` gate for the new subject
+appears on the item. Answering it records that gate.
 
 Who must answer is the gate's required role on the registered human platform, plus a named person
 when the project names one. An agent is never the who, even an agent that holds the role.
@@ -32,6 +43,7 @@ an agent action. It never satisfies a gate.
 ```bash
 agentflow-sdlc gates open --medium filesystem --root <goal-dir> --class adequacy-of-intent --role analyst
 agentflow-sdlc gates waiting --medium github --repo <owner/repo> [--role <role>] [--person <name>] [--json]
+agentflow-sdlc gates candidate --medium filesystem --root <goal-dir> --subject <candidate digest>
 agentflow-sdlc gates answer --medium github --repo <owner/repo> --issue <n> --gate <digest> --decision agree --person <name>
 agentflow-sdlc gates on-behalf --medium filesystem --root <goal-dir> --principal <person> --actor-platform claude --actor-executor claude-cli --grant <ref> --action merge --subject-kind candidateDigest --subject <digest>
 ```

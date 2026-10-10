@@ -965,7 +965,7 @@ const COMMAND_USAGE = {
   phase:
     'Usage: agentflow-sdlc phase <append|read> --medium <filesystem|github> --phase <0-8> --status <pass|skipped> --seat <id> --key <id> [--root <dir> | --repo <owner/repo> [--issue <n>]] [--title <text>] [--body <text>] [--reason <text>] [--kind <goal|capability|spec> [--parent <dir|issue>] [--change-class <class>] [--gate-file <path> --attestation-file <path>]]\n',
   gates:
-    'Usage: agentflow-sdlc gates <open|answer|on-behalf|waiting> --medium <filesystem|github> [--root <dir> | --repo <owner/repo> --issue <n>] [--json]\nPerson gates on the work record. A person runs gates answer in their own terminal; it refuses to run under an agent runtime.\n',
+    'Usage: agentflow-sdlc gates <open|answer|candidate|on-behalf|waiting> --medium <filesystem|github> [--root <dir> | --repo <owner/repo> --issue <n>] [--json]\nPerson gates on the work record. A person runs gates answer in their own terminal; it refuses to run under an agent runtime.\n',
   resume:
     'Usage: agentflow-sdlc resume --run <id> --packet <file> --writer <replacement> --writer-pid <pid> [--plan <file> --confirm <digest> --generation <old-n> --execute] [--target <dir>] [--json]\n',
 }
