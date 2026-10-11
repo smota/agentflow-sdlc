@@ -145,6 +145,10 @@ Current routes:
 - `/issues/<number>/replay` — HTML Goal Story replay.
 - `/issues/<number>/replay.md` — markdown export.
 
+## Phase seam
+
+A goal shows one side and at most one wait. Phases 0 and 1 are **PM**. Phase 2 or later is **DEV**. A return to phase 0 or 1 shows **PM** and the wait **delivery return**, with the reason. Otherwise a waiting or refused intent gate is the wait **intent stop**. If the latest pass is still phase 0 or 1, the wait is **phase 1 handoff**. The view names no squad and no seat. It does not need an execution layer. A product-manager pause is not a recorded fact yet, so this view does not invent one.
+
 ## Confirmation line
 
 A waiting person gate is answered from the issue page with one line, not a button. The box accepts only `agree <subject> as <name>`, `changes <subject> as <name>`, or `block <subject> as <name>`. Send files that line. It does not promote a phase and it does not dispatch a seat. The Evaluate & Transition modal is a separate phase surface.
