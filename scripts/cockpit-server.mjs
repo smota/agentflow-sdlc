@@ -13,6 +13,8 @@ import {
 } from '../lib/cockpit-actions.mjs'
 import { authorizeCockpitUser, createAuditEvent } from '../lib/cockpit-auth.mjs'
 import { issueGates } from '../lib/cockpit-gate-answer.mjs'
+import { phaseSeam } from '../lib/cockpit-seam.mjs'
+import { parseTransition } from '../lib/sources/github-medium.mjs'
 import { loadCockpitConfig, validateCockpitConfig } from '../lib/cockpit-config.mjs'
 import { createGitHubClient, loadRepositoryPermission } from '../lib/cockpit-github.mjs'
 import { buildCockpitIssueView, buildGoalBoard } from '../lib/cockpit-read-model.mjs'
@@ -241,6 +243,7 @@ async function issuePage(req, res, repo, number, session) {
     comments,
   })
   const view = buildCockpitIssueView({ issue, comments, repo, satisfiedGates })
+  const personGates = issueGates(issue)
   const sessionId = readCookie(req, 'cockpit_session') || 'local-token'
   const csrfToken = createCsrfToken({
     sessionId,
@@ -253,7 +256,15 @@ async function issuePage(req, res, repo, number, session) {
       repositories: config.repositories,
       user: session?.user?.login || 'token',
       csrfToken,
-      body: renderIssueView(view, { repo, personGates: issueGates(issue), csrfToken }),
+      body: renderIssueView(view, {
+        repo,
+        personGates,
+        csrfToken,
+        seam: phaseSeam({
+          transitions: comments.map(parseTransition).filter(Boolean),
+          gates: personGates,
+        }),
+      }),
     }),
   )
 }
