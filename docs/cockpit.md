@@ -145,6 +145,10 @@ Current routes:
 - `/issues/<number>/replay` — HTML Goal Story replay.
 - `/issues/<number>/replay.md` — markdown export.
 
+## Confirmation line
+
+A waiting person gate is answered from the issue page with one line, not a button. The box accepts only `agree <subject> as <name>`, `changes <subject> as <name>`, or `block <subject> as <name>`. Send files that line. It does not promote a phase and it does not dispatch a seat. The Evaluate & Transition modal is a separate phase surface.
+
 ## Guarded actions
 
 Write-capable actions are structured and auditable:
