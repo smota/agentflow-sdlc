@@ -153,7 +153,11 @@ A goal shows one side and at most one wait. Phases 0 and 1 are **PM**. Phase 2 o
 
 A waiting person gate is answered from the issue page with one line, not a button. The box accepts only `agree <subject> as <name>`, `changes <subject> as <name>`, or `block <subject> as <name>`. Send files that line. It does not promote a phase and it does not dispatch a seat. The Evaluate & Transition modal is a separate phase surface.
 
-Each waiting gate shows who must answer and its subject, above its decision card. Who must answer is the person the gate names, or else the person. The subject is the goal as written now, title and body, or the change class an admission opens. Answered gates are listed below as agreed, refused, or stale. A stale answer was given before the subject changed, and it does not count. A note, a phase pass, a comment, and an on-behalf record leave the gate waiting. Only the line moves it. The answer is written to the gate record and sent nowhere else.
+Each waiting gate shows who must answer and its subject, above its decision card. Who must answer is the person the gate names, or else the person. The subject is the goal as written now, title and body, or the change class an admission opens. Answered gates are listed below as agreed, refused, or stale. A stale answer was given before the subject changed, and it does not count. A note, a phase pass, a comment, and an on-behalf record leave the gate waiting. Only the line moves it. The answer is written to the gate record. It is sent nowhere else unless the project names a DEV coordinator, as below.
+
+## Coordinator events
+
+Only a project whose record names OpenRig and a DEV coordinator talks to a coordinator, and only to that DEV coordinator. The cockpit sends it two things with `rig send`, each as one line `agentflow-cockpit <json>`. Start next phase sends `{ type: start-or-resume, project, goal }` after the cockpit's own write. A filed gate answer sends `{ type: gate-answer, project, goal, answer, gate, subject }`. The action result shows the reply under `coordinator` as **coordinator status**. That is not the phase and not the gate status. A coordinator reply moves no gate. If the send fails, the status is **coordinator unreachable** and the gate answer is still recorded, because it was filed first. A project with no execution layer sends nothing.
 
 ## Guarded actions
 

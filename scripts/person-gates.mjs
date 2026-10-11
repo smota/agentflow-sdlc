@@ -172,7 +172,14 @@ function messageLines(message) {
 // person's message, byte for byte, and must answer exactly one waiting gate. The person is the one
 // the line names; the seat is recorded apart as the filer. The seat never writes or edits the line,
 // and the record is not proof of identity. gates answer still refuses to run under an agent.
-export async function fileConfirmation(args, { client, now, env, message: sent } = {}) {
+// `gates file`. Its result names no gate digest, next phase, or next seat (#385).
+export async function fileConfirmation(args, context = {}) {
+  const { gateDigest: _gate, ...filed } = await fileLine(args, context)
+  return filed
+}
+
+// Files the person's line and also returns the digest of the gate it answered.
+async function fileLine(args, { client, now, env, message: sent } = {}) {
   const line = flag(args, '--line')
   const seat = flag(args, '--seat')
   const messageFile = flag(args, '--message-file')
@@ -212,7 +219,7 @@ export async function fileConfirmation(args, { client, now, env, message: sent }
   const goal = await medium.appendGateEntry(
     answerEntry(gate.gateDigest, attestation, { recordedAt, filing }),
   )
-  return { goal, attestation, filing }
+  return { goal, gateDigest: gate.gateDigest, attestation, filing }
 }
 
 // The cockpit answer box (#384). The box holds the person's one line; anything else files nothing.
@@ -222,7 +229,7 @@ export async function fileCockpitAnswer({ repo, issue, text, client, now, env } 
   if (!accepted.ok) throw new Error(`${accepted.code}: ${accepted.reason}. Nothing was filed.`)
   const args = ['--medium', 'github', '--repo', repo, '--issue', String(issue)]
   args.push('--line', accepted.line, '--seat', COCKPIT_SEAT)
-  return fileConfirmation(args, { client, now, env, message: accepted.line })
+  return fileLine(args, { client, now, env, message: accepted.line })
 }
 
 // Writes a person's agreed answer as the two files phase append takes. It decides nothing:
