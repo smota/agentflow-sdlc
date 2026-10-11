@@ -11,11 +11,17 @@ import {
   evaluateGuardedAction,
   writeCockpitAction,
 } from '../lib/cockpit-actions.mjs'
-import { authorizeCockpitUser, createAuditEvent } from '../lib/cockpit-auth.mjs'
+import { authorizeCockpitUser, createAuditEvent, createAuthPolicy } from '../lib/cockpit-auth.mjs'
 import { issueGates } from '../lib/cockpit-gate-answer.mjs'
 import { phaseSeam } from '../lib/cockpit-seam.mjs'
 import { parseTransition } from '../lib/sources/github-medium.mjs'
 import { loadCockpitConfig, validateCockpitConfig } from '../lib/cockpit-config.mjs'
+import {
+  createProjectStore,
+  previewProject,
+  projectInputFromForm,
+  workspaceRepositories,
+} from '../lib/cockpit-projects.mjs'
 import { createGitHubClient, loadRepositoryPermission } from '../lib/cockpit-github.mjs'
 import { buildCockpitIssueView, buildGoalBoard } from '../lib/cockpit-read-model.mjs'
 import { createGitHubRunStore } from '../lib/sources/github-run-store.mjs'
@@ -40,6 +46,8 @@ import {
   renderGoalBoard,
   renderGoalStory,
   renderIssueView,
+  renderProjectPreview,
+  renderProjects,
 } from '../lib/cockpit-ui.mjs'
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -58,6 +66,7 @@ if (!validation.ok) {
 for (const warning of validation.warnings) console.warn(`Cockpit warning: ${warning}`)
 mkdirSync(config.dataDir, { recursive: true })
 
+const projects = createProjectStore({ dir: config.dataDir })
 const sessions = new Map()
 const oauthStates = new Map()
 const github = createGitHubClient({ token: config.github.token })
@@ -79,6 +88,11 @@ createServer(async (req, res) => {
 
     const session = sessions.get(readCookie(req, 'cockpit_session'))
     if (config.remote && !session) return redirect(res, '/login')
+    if (url.pathname === '/projects' && req.method === 'GET') return projectsPage(req, res, session)
+    if (url.pathname === '/projects/preview' && req.method === 'POST')
+      return projectPreviewPage(req, res, session)
+    if (url.pathname === '/projects/confirm' && req.method === 'POST')
+      return projectConfirm(req, res, session)
 
     const repo = selectedRepository(url)
     if (!repo)
@@ -86,7 +100,7 @@ createServer(async (req, res) => {
         res,
         renderCockpitPage({
           title: 'Unknown workspace',
-          repositories: config.repositories,
+          repositories: workspaces(),
           body: '<section class="panel"><h1>Unknown workspace</h1><p>Select a configured repository.</p></section>',
         }),
         404,
@@ -113,7 +127,7 @@ createServer(async (req, res) => {
             res,
             renderCockpitPage({
               repo,
-              repositories: config.repositories,
+              repositories: workspaces(),
               title: 'Delivery run',
               body: renderRunView(view),
             }),
@@ -157,19 +171,127 @@ createServer(async (req, res) => {
   console.log(`AgentFlow Cockpit listening on http://127.0.0.1:${config.port}`)
 })
 
-// #411: a project's execution layer comes from that project's own metadata. The cockpit stores no
-// project metadata yet, so no project names one and execution control stays off for every project.
-function projectMetadata(_repo) {
-  return null
+// #411, #417: a project's execution layer comes from that project's stored metadata. A project
+// with no record, or a record that names none, has no execution control.
+function projectMetadata(repo) {
+  return projects.get(repo)
 }
 
 function executionLayerFor(repo) {
   return executionLayerOf(projectMetadata(repo))
 }
 
+// Configured repositories and the projects a person added in the cockpit.
+function workspaces() {
+  return workspaceRepositories({ configured: config.repositories, projects: projects.list() })
+}
+
 function selectedRepository(url) {
-  const requested = url.searchParams.get('repo') || config.repositories[0]
-  return config.repositories.includes(requested) ? requested : null
+  const available = workspaces()
+  const requested = url.searchParams.get('repo') || available[0]
+  return available.includes(requested) ? requested : null
+}
+
+function csrfFor(req) {
+  return createCsrfToken({
+    sessionId: readCookie(req, 'cockpit_session') || 'local-token',
+    secret: config.sessionSecret || 'local-development-session-secret-32',
+  })
+}
+
+function csrfValid(req, payload) {
+  return verifyCsrfToken({
+    token: req.headers['x-cockpit-csrf'] || payload.csrf,
+    sessionId: readCookie(req, 'cockpit_session') || 'local-token',
+    secret: config.sessionSecret || 'local-development-session-secret-32',
+  })
+}
+
+function projectsHtml(res, req, session, body, status = 200) {
+  return html(
+    res,
+    renderCockpitPage({
+      title: 'Projects',
+      repositories: workspaces(),
+      user: session?.user?.login || 'token',
+      body,
+    }),
+    status,
+  )
+}
+
+// Adding a project registers it, so the person needs write permission on that repository.
+async function authorizeProject({ session, repo }) {
+  if (!config.remote && config.github.token) return { ok: true, reasons: [] }
+  const repoPermission = await loadRepositoryPermission({ client: github, repo })
+  return authorizeCockpitUser({
+    user: session?.user,
+    repo,
+    repoPermission,
+    policy: createAuthPolicy({ ...config.authPolicy, repositories: [] }),
+    requiredPermission: 'write',
+  })
+}
+
+function projectsPage(req, res, session) {
+  return projectsHtml(
+    res,
+    req,
+    session,
+    renderProjects({
+      projects: projects.list(),
+      csrfToken: csrfFor(req),
+      writable: config.writeActions,
+    }),
+  )
+}
+
+// The preview reads the repository and writes nothing.
+async function projectPreviewPage(req, res, session) {
+  if (!config.writeActions) return json(res, { ok: false, errors: ['write-actions-disabled'] }, 403)
+  const payload = await readPayload(req)
+  if (!csrfValid(req, payload)) return json(res, { ok: false, errors: ['csrf-invalid'] }, 403)
+  let preview
+  try {
+    const input = projectInputFromForm(payload)
+    const authz = await authorizeProject({ session, repo: String(input.repository ?? '').trim() })
+    if (!authz.ok) return json(res, { ok: false, errors: authz.reasons }, 403)
+    preview = await previewProject({ input, client: github })
+  } catch (error) {
+    return json(res, { ok: false, errors: [error.message] }, 400)
+  }
+  return projectsHtml(res, req, session, renderProjectPreview(preview, { csrfToken: csrfFor(req) }))
+}
+
+// Only the person's confirmation of the previewed record writes it.
+async function projectConfirm(req, res, session) {
+  if (!config.writeActions) return json(res, { ok: false, errors: ['write-actions-disabled'] }, 403)
+  const payload = await readPayload(req)
+  if (!csrfValid(req, payload)) return json(res, { ok: false, errors: ['csrf-invalid'] }, 403)
+  let stored
+  try {
+    const record = JSON.parse(payload.record || 'null')
+    const authz = await authorizeProject({ session, repo: String(record?.repository ?? '') })
+    if (!authz.ok) return json(res, { ok: false, errors: authz.reasons }, 403)
+    stored = projects.confirm({ record, digest: payload.digest })
+  } catch (error) {
+    return json(res, { ok: false, errors: [error.message] }, 400)
+  }
+  audit(
+    createAuditEvent({
+      actor: session?.user?.login || 'token',
+      action: 'add-project',
+      target: stored.repository,
+      allowed: true,
+      previewSummary: `${stored.sourceAdapter} · ${stored.executionLayer ?? 'none'}`,
+    }),
+  )
+  return redirect(
+    res,
+    stored.sourceAdapter === 'github'
+      ? `/?repo=${encodeURIComponent(stored.repository)}`
+      : '/projects',
+  )
 }
 
 async function home(
@@ -200,7 +322,7 @@ async function home(
     res,
     renderCockpitPage({
       repo,
-      repositories: config.repositories,
+      repositories: workspaces(),
       view,
       user,
       csrfToken,
@@ -213,6 +335,7 @@ async function home(
         user,
         csrfToken,
         executionLayer,
+        project: projectMetadata(repo),
       }),
     }),
   )
@@ -253,7 +376,7 @@ async function issuePage(req, res, repo, number, session) {
     res,
     renderCockpitPage({
       repo,
-      repositories: config.repositories,
+      repositories: workspaces(),
       user: session?.user?.login || 'token',
       csrfToken,
       body: renderIssueView(view, {
@@ -454,7 +577,7 @@ async function replayPage(res, repo, number, session, markdown = false) {
     res,
     renderCockpitPage({
       repo,
-      repositories: config.repositories,
+      repositories: workspaces(),
       user: session?.user?.login || 'token',
       body: renderGoalStory(story, { repo }),
     }),
@@ -468,7 +591,7 @@ async function authorizeRequest({ session, repo }) {
     user: session?.user,
     repo,
     repoPermission,
-    policy: config.authPolicy,
+    policy: createAuthPolicy({ ...config.authPolicy, repositories: workspaces() }),
     requiredPermission: 'read',
   })
 }

@@ -245,7 +245,22 @@ Cockpit shows no sign-off link and no phase transition form, and a direct reques
 promote is refused before anything is written. Notes do not need an execution layer: a
 clarification, a follow-up, a section update, and handover text that only records context still
 write. The write switch (`COCKPIT_WRITE_ACTIONS`) allows notes and never turns execution control
-on. The Cockpit stores no project metadata yet, so no project has execution control today.
+on. The project's metadata record, below, is the only thing that does.
+
+### Projects
+
+A person adds a project from the Projects page (`/projects`), with no checkout. The Cockpit keeps
+one metadata record per project in its data directory (`COCKPIT_DATA_DIR`, as `projects.json`).
+The record names the source adapter, the repository, and the execution layer, OpenRig or none.
+With OpenRig it may name the PM coordinator and the DEV coordinator. It stores no squad, no seat
+directory, and no other seat; a record that holds one is refused.
+
+Adding a project is preview first. The preview reads the repository through its source adapter and
+writes nothing. Only Confirm on that preview writes the record, and Cancel writes nothing. Adding a
+project needs write actions on and, in remote mode, write permission on the repository. After
+confirmation the project is a workspace: its goals show, and the board says whether an execution
+layer is configured. GitHub is the only source adapter that works; a project that names another
+shows as unsupported, and only that project.
 
 ## Fail-safe and source rules
 
