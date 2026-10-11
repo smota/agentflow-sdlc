@@ -5,9 +5,11 @@ import { appendFileSync, mkdirSync, readFileSync } from 'node:fs'
 import { dirname, extname, join, normalize, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
+  executionLayerOf,
   formatDurableActionBody,
   parseCockpitIntent,
   evaluateGuardedAction,
+  writeCockpitAction,
 } from '../lib/cockpit-actions.mjs'
 import { authorizeCockpitUser, createAuditEvent } from '../lib/cockpit-auth.mjs'
 import { issueGates } from '../lib/cockpit-gate-answer.mjs'
@@ -153,6 +155,16 @@ createServer(async (req, res) => {
   console.log(`AgentFlow Cockpit listening on http://127.0.0.1:${config.port}`)
 })
 
+// #411: a project's execution layer comes from that project's own metadata. The cockpit stores no
+// project metadata yet, so no project names one and execution control stays off for every project.
+function projectMetadata(_repo) {
+  return null
+}
+
+function executionLayerFor(repo) {
+  return executionLayerOf(projectMetadata(repo))
+}
+
 function selectedRepository(url) {
   const requested = url.searchParams.get('repo') || config.repositories[0]
   return config.repositories.includes(requested) ? requested : null
@@ -176,8 +188,9 @@ async function home(
     secret: config.sessionSecret || 'local-development-session-secret-32',
   })
 
+  const executionLayer = executionLayerFor(repo)
   let modalGoal = null
-  if (modal === 'gate-transition' && modalIssue) {
+  if (executionLayer && modal === 'gate-transition' && modalIssue) {
     modalGoal = (board.goals || []).find((g) => g.number === Number(modalIssue))
   }
 
@@ -197,6 +210,7 @@ async function home(
         modalGoal,
         user,
         csrfToken,
+        executionLayer,
       }),
     }),
   )
@@ -297,6 +311,7 @@ async function actionEndpoint(req, res, repo, session) {
     userRole: session?.role || 'operator',
     highAssurance: Boolean(payload.highAssurance),
     confirmation: req.headers['x-cockpit-confirm'] === 'true',
+    executionLayer: executionLayerFor(repo),
   })
   if (!guard.ok) {
     audit(
@@ -375,18 +390,16 @@ async function actionEndpoint(req, res, repo, session) {
       intent.issue,
       formatDurableActionBody(intent),
     )
-  } else if (intent.type === 'draft-follow-up') {
-    result = await writeClient.createIssue(repo, {
-      title: payload.title || `Follow-up from #${intent.issue}`,
-      body: formatDurableActionBody(intent),
-      labels: ['drafted-by:pi'],
-    })
   } else {
-    result = await writeClient.createIssueComment(
+    const written = await writeCockpitAction({
+      intent,
+      client: writeClient,
       repo,
-      intent.issue,
-      formatDurableActionBody(intent),
-    )
+      title: payload.title,
+      executionLayer: executionLayerFor(repo),
+    })
+    if (!written.ok) return json(res, written, 403)
+    result = written.result
   }
   audit(
     createAuditEvent({

@@ -237,6 +237,16 @@ Rules:
 - Guardrails prevent destructive or remote execution actions.
 - Product copy should not frame these as generic “guarded actions”; use “Guided workflow actions.”
 
+### Execution control
+
+Starting work, promoting a phase, and dispatching a seat are execution control. They exist only
+when the project's own metadata names OpenRig as its execution layer. With no execution layer, the
+Cockpit shows no sign-off link and no phase transition form, and a direct request to start or
+promote is refused before anything is written. Notes do not need an execution layer: a
+clarification, a follow-up, a section update, and handover text that only records context still
+write. The write switch (`COCKPIT_WRITE_ACTIONS`) allows notes and never turns execution control
+on. The Cockpit stores no project metadata yet, so no project has execution control today.
+
 ## Fail-safe and source rules
 
 Rules:
