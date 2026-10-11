@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 
 import { join, relative, resolve } from 'node:path'
 import { createGatePendingHook } from '../lib/adapters/gate-pending-hook.mjs'
 import { detectAgentRuntime } from '../lib/agent-caller.mjs'
+import { COCKPIT_SEAT, acceptCockpitLine } from '../lib/cockpit-gate-answer.mjs'
 import { matchConfirmationPhrase } from '../lib/core/confirmation-phrase.mjs'
 import { GATE_CLASSES, createGate } from '../lib/core/gate.mjs'
 import {
@@ -171,7 +172,7 @@ function messageLines(message) {
 // person's message, byte for byte, and must answer exactly one waiting gate. The person is the one
 // the line names; the seat is recorded apart as the filer. The seat never writes or edits the line,
 // and the record is not proof of identity. gates answer still refuses to run under an agent.
-export async function fileConfirmation(args, { client, now, env } = {}) {
+export async function fileConfirmation(args, { client, now, env, message: sent } = {}) {
   const line = flag(args, '--line')
   const seat = flag(args, '--seat')
   const messageFile = flag(args, '--message-file')
@@ -180,8 +181,11 @@ export async function fileConfirmation(args, { client, now, env } = {}) {
   if (!isFilingSeat(seat)) {
     throw new Error('--seat is one word with no whitespace and no <. Nothing was filed.')
   }
-  if (!messageFile) throw new Error('Set --message-file <the person’s message>')
-  const message = readFileSync(resolve(messageFile), 'utf8')
+  // The cockpit hands over what the person typed in its box; a seat names the message file.
+  if (!messageFile && typeof sent !== 'string') {
+    throw new Error('Set --message-file <the person’s message>')
+  }
+  const message = typeof sent === 'string' ? sent : readFileSync(resolve(messageFile), 'utf8')
   if (!messageLines(message).includes(line)) {
     throw new Error(
       'The line is not one line of the person’s message, unchanged. Nothing was filed.',
@@ -209,6 +213,16 @@ export async function fileConfirmation(args, { client, now, env } = {}) {
     answerEntry(gate.gateDigest, attestation, { recordedAt, filing }),
   )
   return { goal, attestation, filing }
+}
+
+// The cockpit answer box (#384). The box holds the person's one line; anything else files nothing.
+// The line is filed exactly as a seat files it, with the cockpit named as the filer.
+export async function fileCockpitAnswer({ repo, issue, text, client, now, env } = {}) {
+  const accepted = acceptCockpitLine(text)
+  if (!accepted.ok) throw new Error(`${accepted.code}: ${accepted.reason}. Nothing was filed.`)
+  const args = ['--medium', 'github', '--repo', repo, '--issue', String(issue)]
+  args.push('--line', accepted.line, '--seat', COCKPIT_SEAT)
+  return fileConfirmation(args, { client, now, env, message: accepted.line })
 }
 
 // Writes a person's agreed answer as the two files phase append takes. It decides nothing:
