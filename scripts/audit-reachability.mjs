@@ -102,6 +102,13 @@ const OFF_PATH_EXEMPTIONS = new Map([
   //     via scanCiWorkflowEntries).
   // Removing the exemption without wiring a caller would have surfaced all three as findings; see
   // the W8g spec report for the enforcement point each one now has.
+  // #394 ships the decision card before a seat shows it: seat-opens-gate (#395) is the caller and
+  // removes this exemption. The card only presents a waiting gate and records nothing.
+  [
+    'lib/core/decision-card.mjs#decisionCard',
+    'presentation of a waiting person gate (#394); no product path shows a card yet, and the card ' +
+      'records nothing — exercised by lib/__tests__/decision-card.test.mjs',
+  ],
   [
     'lib/core/delivery-policy.mjs#normalizeUsage',
     'usage-measurement normalizer for the budget contract; the enforcement it would feed, ' +
