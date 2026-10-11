@@ -153,6 +153,8 @@ A goal shows one side and at most one wait. Phases 0 and 1 are **PM**. Phase 2 o
 
 A waiting person gate is answered from the issue page with one line, not a button. The box accepts only `agree <subject> as <name>`, `changes <subject> as <name>`, or `block <subject> as <name>`. Send files that line. It does not promote a phase and it does not dispatch a seat. The Evaluate & Transition modal is a separate phase surface.
 
+Each waiting gate shows who must answer and its subject, above its decision card. Who must answer is the person the gate names, or else the person. The subject is the goal as written now, title and body, or the change class an admission opens. Answered gates are listed below as agreed, refused, or stale. A stale answer was given before the subject changed, and it does not count. A note, a phase pass, a comment, and an on-behalf record leave the gate waiting. Only the line moves it. The answer is written to the gate record and sent nowhere else.
+
 ## Guarded actions
 
 Write-capable actions are structured and auditable:
