@@ -262,6 +262,13 @@ confirmation the project is a workspace: its goals show, and the board says whet
 layer is configured. GitHub is the only source adapter that works; a project that names another
 shows as unsupported, and only that project.
 
+One Cockpit process holds many projects, and each is bound to its own record. Its source adapter
+and execution layer come from that record alone, so projects never share one execution posture: two
+GitHub projects can be open together, one naming OpenRig and one naming none, and only the OpenRig
+project can start or promote work. The other still takes notes. A configured repository with no
+record is a GitHub project with no execution layer. A repository whose record names an unsupported
+adapter is not read through GitHub, even when it is configured, and has no execution control.
+
 ## Fail-safe and source rules
 
 Rules:
