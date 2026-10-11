@@ -19,6 +19,7 @@ import { loadCockpitConfig, validateCockpitConfig } from '../lib/cockpit-config.
 import {
   createProjectStore,
   previewProject,
+  projectBinding,
   projectInputFromForm,
   workspaceRepositories,
 } from '../lib/cockpit-projects.mjs'
@@ -48,6 +49,7 @@ import {
   renderIssueView,
   renderProjectPreview,
   renderProjects,
+  renderUnsupportedProject,
 } from '../lib/cockpit-ui.mjs'
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -94,6 +96,18 @@ createServer(async (req, res) => {
     if (url.pathname === '/projects/confirm' && req.method === 'POST')
       return projectConfirm(req, res, session)
 
+    const requested = url.searchParams.get('repo')
+    const requestedBinding = requested ? bindingFor(requested) : null
+    if (requestedBinding && !requestedBinding.supported)
+      return html(
+        res,
+        renderCockpitPage({
+          title: 'Unsupported project',
+          repositories: workspaces(),
+          body: renderUnsupportedProject(requestedBinding),
+        }),
+        409,
+      )
     const repo = selectedRepository(url)
     if (!repo)
       return html(
@@ -171,14 +185,19 @@ createServer(async (req, res) => {
   console.log(`AgentFlow Cockpit listening on http://127.0.0.1:${config.port}`)
 })
 
-// #411, #417: a project's execution layer comes from that project's stored metadata. A project
-// with no record, or a record that names none, has no execution control.
+// #411, #417, #419: each project is bound to its own record. Its execution layer comes from that
+// record alone, so a project with no record, a record that names none, or an unsupported adapter
+// has no execution control, whatever the other projects name.
+function bindingFor(repo) {
+  return projectBinding(repo, { store: projects, configured: config.repositories })
+}
+
 function projectMetadata(repo) {
-  return projects.get(repo)
+  return bindingFor(repo)?.record ?? null
 }
 
 function executionLayerFor(repo) {
-  return executionLayerOf(projectMetadata(repo))
+  return executionLayerOf({ executionLayer: bindingFor(repo)?.executionLayer ?? null })
 }
 
 // Configured repositories and the projects a person added in the cockpit.
