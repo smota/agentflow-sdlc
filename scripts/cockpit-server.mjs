@@ -10,6 +10,7 @@ import {
   evaluateGuardedAction,
 } from '../lib/cockpit-actions.mjs'
 import { authorizeCockpitUser, createAuditEvent } from '../lib/cockpit-auth.mjs'
+import { issueGates } from '../lib/cockpit-gate-answer.mjs'
 import { loadCockpitConfig, validateCockpitConfig } from '../lib/cockpit-config.mjs'
 import { createGitHubClient, loadRepositoryPermission } from '../lib/cockpit-github.mjs'
 import { buildCockpitIssueView, buildGoalBoard } from '../lib/cockpit-read-model.mjs'
@@ -29,6 +30,7 @@ import {
   verifyCsrfToken,
 } from '../lib/cockpit-security.mjs'
 import { renderGoalStoryMarkdown } from '../lib/cockpit-replay.mjs'
+import { fileCockpitAnswer } from './person-gates.mjs'
 import {
   renderCockpitPage,
   renderGoalBoard,
@@ -226,17 +228,18 @@ async function issuePage(req, res, repo, number, session) {
   })
   const view = buildCockpitIssueView({ issue, comments, repo, satisfiedGates })
   const sessionId = readCookie(req, 'cockpit_session') || 'local-token'
+  const csrfToken = createCsrfToken({
+    sessionId,
+    secret: config.sessionSecret || 'local-development-session-secret-32',
+  })
   return html(
     res,
     renderCockpitPage({
       repo,
       repositories: config.repositories,
       user: session?.user?.login || 'token',
-      csrfToken: createCsrfToken({
-        sessionId,
-        secret: config.sessionSecret || 'local-development-session-secret-32',
-      }),
-      body: renderIssueView(view, { repo }),
+      csrfToken,
+      body: renderIssueView(view, { repo, personGates: issueGates(issue), csrfToken }),
     }),
   )
 }
@@ -309,6 +312,39 @@ async function actionEndpoint(req, res, repo, session) {
   }
 
   const writeClient = session?.token ? createGitHubClient({ token: session.token }) : github
+  // #384: the person's line is filed through gates file and nothing else happens. No comment is
+  // posted, no phase moves, and no seat is sent anything.
+  if (intent.type === 'gate-answer') {
+    let filed
+    try {
+      filed = await fileCockpitAnswer({
+        repo,
+        issue: intent.issue,
+        text: intent.line,
+        client: writeClient,
+        env: process.env,
+        now: () => new Date().toISOString(),
+      })
+    } catch (error) {
+      return json(res, { ok: false, errors: [error.message] }, 400)
+    }
+    audit(
+      createAuditEvent({
+        actor: session?.user?.login || 'token',
+        action: intent.type,
+        target: `${repo}#${intent.issue}`,
+        allowed: true,
+        resultUrl: filed.goal.uri,
+        previewSummary: filed.filing.line,
+      }),
+    )
+    return json(res, {
+      ok: true,
+      url: filed.goal.uri,
+      decision: filed.attestation.decision,
+      person: filed.attestation.reviewer.executor,
+    })
+  }
   let result
   let anchored = null
   if (intent.type === 'close-unit') {
