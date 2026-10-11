@@ -42,6 +42,7 @@ import {
 } from '../lib/cockpit-security.mjs'
 import { renderGoalStoryMarkdown } from '../lib/cockpit-replay.mjs'
 import { fileCockpitAnswer } from './person-gates.mjs'
+import { answerThenTell, startThenTell } from '../lib/cockpit-coordinator.mjs'
 import {
   renderCockpitPage,
   renderGoalBoard,
@@ -480,19 +481,28 @@ async function actionEndpoint(req, res, repo, session) {
   }
 
   const writeClient = session?.token ? createGitHubClient({ token: session.token }) : github
-  // #384: the person's line is filed through gates file and nothing else happens. No comment is
-  // posted, no phase moves, and no seat is sent anything.
+  // #384: the person's line is filed through gates file. No comment is posted, no phase moves, and
+  // no seat is sent anything, except the project's own DEV coordinator below.
   if (intent.type === 'gate-answer') {
+    // #421: a project whose record names OpenRig and a DEV coordinator also tells that coordinator.
+    // The answer is filed first, so an unreachable coordinator drops nothing.
     let filed
+    let coordinator
     try {
-      filed = await fileCockpitAnswer({
-        repo,
-        issue: intent.issue,
-        text: intent.line,
-        client: writeClient,
-        env: process.env,
-        now: () => new Date().toISOString(),
-      })
+      ;({ filed, coordinator } = await answerThenTell({
+        binding: bindingFor(repo),
+        project: repo,
+        goal: intent.issue,
+        file: () =>
+          fileCockpitAnswer({
+            repo,
+            issue: intent.issue,
+            text: intent.line,
+            client: writeClient,
+            env: process.env,
+            now: () => new Date().toISOString(),
+          }),
+      }))
     } catch (error) {
       return json(res, { ok: false, errors: [error.message] }, 400)
     }
@@ -511,10 +521,12 @@ async function actionEndpoint(req, res, repo, session) {
       url: filed.goal.uri,
       decision: filed.attestation.decision,
       person: filed.attestation.reviewer.executor,
+      ...(coordinator ? { coordinator } : {}),
     })
   }
   let result
   let anchored = null
+  let coordinator = null
   if (intent.type === 'close-unit') {
     // The human's decision is not just a comment: it is appended to the ordered, content-addressed
     // log the product already keeps in refs/heads/agentflow-state, through the exact same store
@@ -544,15 +556,27 @@ async function actionEndpoint(req, res, repo, session) {
       formatDurableActionBody(intent),
     )
   } else {
-    const written = await writeCockpitAction({
-      intent,
-      client: writeClient,
-      repo,
-      title: payload.title,
-      executionLayer: executionLayerFor(repo),
-    })
-    if (!written.ok) return json(res, written, 403)
-    result = written.result
+    const write = () =>
+      writeCockpitAction({
+        intent,
+        client: writeClient,
+        repo,
+        title: payload.title,
+        executionLayer: executionLayerFor(repo),
+      })
+    // #421: start or resume also tells the project's DEV coordinator, when its record names one.
+    const told =
+      intent.type === 'start-next-phase'
+        ? await startThenTell({
+            binding: bindingFor(repo),
+            project: repo,
+            goal: intent.issue,
+            write,
+          })
+        : { written: await write(), coordinator: null }
+    if (!told.written.ok) return json(res, told.written, 403)
+    result = told.written.result
+    coordinator = told.coordinator
   }
   audit(
     createAuditEvent({
@@ -568,6 +592,7 @@ async function actionEndpoint(req, res, repo, session) {
     ok: true,
     url: result.html_url,
     ...(anchored ? { anchoredEventId: anchored.event.id } : {}),
+    ...(coordinator ? { coordinator } : {}),
   })
 }
 

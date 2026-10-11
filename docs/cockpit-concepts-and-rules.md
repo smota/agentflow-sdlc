@@ -269,6 +269,17 @@ project can start or promote work. The other still takes notes. A configured rep
 record is a GitHub project with no execution layer. A repository whose record names an unsupported
 adapter is not read through GitHub, even when it is configured, and has no execution control.
 
+### Coordinator events
+
+Only a project whose record names OpenRig sends to its DEV coordinator. The Cockpit sends a start or
+resume, naming the project and the goal, and the person's gate answer, naming the answer, the gate,
+and the subject. It addresses no other seat. Delivery says whether that message reached the
+coordinator. A send that exits 0 is delivery, not a reply. Coordinator status is only what the
+coordinator itself replied, and it is empty when none came back. It is not the phase and it is not
+the gate status. A coordinator message cannot move a gate. If the coordinator cannot be reached, the
+Cockpit shows coordinator unreachable and the gate answer still stands. A project with no execution
+layer sends nothing.
+
 ## Fail-safe and source rules
 
 Rules:
