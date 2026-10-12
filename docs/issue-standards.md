@@ -124,6 +124,15 @@ and it is not a goal.
 sub-issue is only a navigation mirror. The open path writes the title prefix, the kind label, the
 marker, and `Part of` together. The issue validator rejects a disagreement.
 
+A part has one current record. A breakdown note that is not yet admitted has the `capability:`
+title, the `kind:capability` label, one `Part of`, and no work marker. That shape is valid. An
+admitted capability may carry one `Replaces #<note>` line. That line is the only replacement
+authority. It sets no parent, it does not move what a person agreed, and the note is not edited. A
+goal's current parts are its admitted records plus the notes nothing replaces. Given the other
+records (`validate-sdlc-issue --records <file>`), the issue validator refuses two capabilities that
+replace one note, a capability that names more than one note, a note under another parent, and a
+replacement of a goal, a spec, an admitted capability, or itself.
+
 ## Issue Titles
 
 A legacy record, which has no work kind, must start with one of these exact Conventional Commit prefixes. A goal, capability, or spec uses the kind prefix in [Issue Hierarchy](#issue-hierarchy) instead.
