@@ -521,6 +521,9 @@ the append idempotent. Then come these lines, in order:
 - `role`: the role that owns that phase
 - `status`: `pass` or `skipped`
 - `seat`: who performed the phase
+- `seatVerified`: `true` when the caller's OpenRig session holds that seat, `false` when the caller
+  had no seat identity
+- `seatRig`: the rig of a verified caller; empty when unverified
 - `reason`: required for `skipped`; may be empty for `pass`
 - `body`: the role-pass content, on the lines after `body:`
 
@@ -532,10 +535,20 @@ phase: 1
 role: analyst
 status: pass
 seat: pm.analyst
+seatVerified: true
+seatRig: agentflow-pm
 reason:
 body:
 Acceptance criteria for the goal, written for the architect.
 ```
+
+A transition may name a seat only when that seat wrote it. When `OPENRIG_SESSION_NAME` is one
+`<logical>@<rig>` session, the logical name maps to a seat by turning its first hyphen into a dot
+(`orch-arch` is `orch.arch`), and `--seat` must be that seat. Another seat is refused and nothing is
+written; a repeated key is refused the same way unless the same seat and rig wrote it. With no seat
+identity, as for a person, CI, or a single agent with no rig, the append is accepted and marked
+`seatVerified: false`. This is the local trust model, not a signature. A transition written before
+this check has no `seatVerified` line, and none is added.
 
 A comment without the marker on its first line is not a transition, even when it has every other
 line or quotes the marker in its prose.

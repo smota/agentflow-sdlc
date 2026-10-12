@@ -794,6 +794,9 @@ describe('phase 1 append output states the hold (AC10, AC11)', () => {
     const { main } = await import('../phase-handoff.mjs')
     const logs = []
     const write = process.stdout.write.bind(process.stdout)
+    const session = process.env.OPENRIG_SESSION_NAME
+    // Each seat appends as itself; the seat that runs the suite is not the caller.
+    process.env.OPENRIG_SESSION_NAME = `${seat.replace('.', '-')}@agentflow-pm`
     process.stdout.write = (chunk) => {
       logs.push(String(chunk))
       return true
@@ -821,6 +824,8 @@ describe('phase 1 append output states the hold (AC10, AC11)', () => {
       return JSON.parse(logs.at(-1))
     } finally {
       process.stdout.write = write
+      if (session === undefined) delete process.env.OPENRIG_SESSION_NAME
+      else process.env.OPENRIG_SESSION_NAME = session
     }
   }
 
