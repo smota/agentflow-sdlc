@@ -12,7 +12,8 @@
     "agentflow-scanner",
     "agentflow-designer",
     "agentflow-migrator",
-    "agentflow-auditor"
+    "agentflow-auditor",
+    "agentflow-steerer"
   ],
   "roles": [
     "requester",

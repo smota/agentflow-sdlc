@@ -134,6 +134,8 @@
         "skills/agentflow-migrator/references/preflight.md",
         "skills/agentflow-orchestrator/SKILL.md",
         "skills/agentflow-scanner/SKILL.md",
+        "skills/agentflow-steerer/SKILL.md",
+        "docs/sources/product-discipline.md",
         "lib/application/onboarding-service.mjs",
         "lib/onboarding/project-reader.mjs",
         "lib/onboarding/project-writer.mjs",

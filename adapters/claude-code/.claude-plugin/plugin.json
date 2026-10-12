@@ -13,6 +13,7 @@
     "./skills/agentflow-scanner",
     "./skills/agentflow-designer",
     "./skills/agentflow-migrator",
-    "./skills/agentflow-auditor"
+    "./skills/agentflow-auditor",
+    "./skills/agentflow-steerer"
   ]
 }

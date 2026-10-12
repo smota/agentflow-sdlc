@@ -15,19 +15,20 @@ Documenting skills makes agent-assisted work easier to audit:
 
 ## Framework-owned skills
 
-AgentFlow ships six skills with one public naming rule: `agentflow-<skill>`.
+AgentFlow ships seven skills with one public naming rule: `agentflow-<skill>`.
 Use that exact name for discovery, invocation and handoffs. Source folders, `SKILL.md`
 frontmatter, catalog identities and generated adapters use the same name.
 Short names and colon-separated names are not supported invocation aliases.
 
-| Skill                    | Owns                                                                    | Does not own                                      | Local source                                                          |
-| ------------------------ | ----------------------------------------------------------------------- | ------------------------------------------------- | --------------------------------------------------------------------- |
-| `agentflow-orchestrator` | Phase state, transition and acceptance evidence, PR-readiness synthesis | Policy, migration, scans, collaboration, verdicts | [`skills/agentflow-orchestrator/`](../skills/agentflow-orchestrator/) |
-| `agentflow-collaborator` | Complexity routing, mode, council policy, helper bounds, synthesis      | Phase state, implementation, acceptance verdict   | [`skills/agentflow-collaborator/`](../skills/agentflow-collaborator/) |
-| `agentflow-scanner`      | Read-only discovery scope, findings, evidence maps                      | Remediation, audit verdicts, coordination         | [`skills/agentflow-scanner/`](../skills/agentflow-scanner/)           |
-| `agentflow-designer`     | Canonical policy, schemas, role boundaries                              | Consumer migration, orchestration, self-audit     | [`skills/agentflow-designer/`](../skills/agentflow-designer/)         |
-| `agentflow-migrator`     | Adoption inventory, mutation plans, transactions                        | Canonical policy, independent certification       | [`skills/agentflow-migrator/`](../skills/agentflow-migrator/)         |
-| `agentflow-auditor`      | Validation, compliance verdict, remediation advice                      | Mutation, implementation, phase coordination      | [`skills/agentflow-auditor/`](../skills/agentflow-auditor/)           |
+| Skill                    | Owns                                                                          | Does not own                                           | Local source                                                          |
+| ------------------------ | ----------------------------------------------------------------------------- | ------------------------------------------------------ | --------------------------------------------------------------------- |
+| `agentflow-orchestrator` | Phase state, transition and acceptance evidence, PR-readiness synthesis       | Policy, migration, scans, collaboration, verdicts      | [`skills/agentflow-orchestrator/`](../skills/agentflow-orchestrator/) |
+| `agentflow-collaborator` | Complexity routing, mode, council policy, helper bounds, synthesis            | Phase state, implementation, acceptance verdict        | [`skills/agentflow-collaborator/`](../skills/agentflow-collaborator/) |
+| `agentflow-scanner`      | Read-only discovery scope, findings, evidence maps                            | Remediation, audit verdicts, coordination              | [`skills/agentflow-scanner/`](../skills/agentflow-scanner/)           |
+| `agentflow-designer`     | Canonical policy, schemas, role boundaries                                    | Consumer migration, orchestration, self-audit          | [`skills/agentflow-designer/`](../skills/agentflow-designer/)         |
+| `agentflow-migrator`     | Adoption inventory, mutation plans, transactions                              | Canonical policy, independent certification            | [`skills/agentflow-migrator/`](../skills/agentflow-migrator/)         |
+| `agentflow-auditor`      | Validation, compliance verdict, remediation advice                            | Mutation, implementation, phase coordination           | [`skills/agentflow-auditor/`](../skills/agentflow-auditor/)           |
+| `agentflow-steerer`      | Advisory job framing, capability grooming, dependency and trade-off reasoning | Execution, phase state, acceptance or release approval | [`skills/agentflow-steerer/`](../skills/agentflow-steerer/)           |
 
 `manifests/skill-catalog.json` is the machine authority for identity, ownership, peer recognition,
 and typed handoffs. Run `agentflow-sdlc skills catalog --json` to inspect it and
@@ -36,7 +37,7 @@ and typed handoffs. Run `agentflow-sdlc skills catalog --json` to inspect it and
 ### Names, installation and discovery
 
 The supported names are `agentflow-auditor`, `agentflow-collaborator`, `agentflow-designer`,
-`agentflow-migrator`, `agentflow-orchestrator` and `agentflow-scanner`.
+`agentflow-migrator`, `agentflow-orchestrator`, `agentflow-scanner` and `agentflow-steerer`.
 Each source lives in `skills/<full-skill-name>/SKILL.md`; its `name` field matches its folder.
 
 Inspect the catalog, preview synchronization, then apply it to the intended project:
@@ -51,7 +52,7 @@ agentflow-sdlc skills status --harness codex --target /path/to/project --json
 
 Codex and Agy flat adapters use `.agents/skills/agentflow-<role>/SKILL.md`;
 Claude Code uses `.claude/skills/`, and Pi uses `.pi/skills/`. Generated frontmatter
-must match the same full skill name for all six, including source and plugin payloads.
+must match the same full skill name for all seven, including source and plugin payloads.
 
 If a Skills Manager still shows a short name, refresh or re-import the current skill source
 through that manager so both its files and indexed metadata use the full name. Confirm the
@@ -71,6 +72,21 @@ loaded or displayed all skills. Report the host and source path when escalating 
 
 Only catalog identities are supported. Use the full skill names in routing and handoffs and the
 matching canonical source directories for local inspection.
+
+### Optional product steering
+
+`agentflow-steerer` is an optional cognitive-only playbook for JTBD/Four Forces, vertical
+capabilities, prerequisite DAGs, black-box acceptance proposals, and bounded trade-off rationale.
+Standard adoption ships its self-contained rules and supporting methodology at
+`docs/sources/product-discipline.md`, relative to the adopting project root. Availability does
+not enable dispatch, change defaults or role routing, or install skills into a running host.
+
+The product manager retains outcome and release accountability; the analyst retains scope and
+acceptance; the orchestrator retains phase state and acceptance evidence. The person decides
+changes to accepted outcomes, constraints, and anti-goals. Steering yields proposals, not approvals.
+It cannot write application code, modify source, run linters/fix scripts, bypass delivery holds or
+person gates, merge, publish, or skip QA/review. Heartbeats, autonomy envelopes, persistent state,
+execution verbs, runtime adapters, and reverse-seam mechanics remain deferred (#430–#432).
 
 ## Metaskills companion source
 

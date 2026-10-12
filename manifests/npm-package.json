@@ -104,6 +104,8 @@
     "skills/agentflow-migrator/references/preflight.md",
     "skills/agentflow-auditor/SKILL.md",
     "skills/agentflow-auditor/references/workflow-compliance.md",
+    "skills/agentflow-steerer/SKILL.md",
+    "docs/sources/product-discipline.md",
     "manifests/product-payload.json",
     "manifests/harness-settings.json",
     "manifests/composition-profiles.json",
