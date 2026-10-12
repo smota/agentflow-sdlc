@@ -18,6 +18,18 @@ presets:
     pm.manager: pi
     pm.analyst: claude-code
 
+  codex-gemini-grok:
+    pm.manager: pi
+    pm.analyst: pi
+
+  grok-gemini:
+    pm.manager: pi
+    pm.analyst: pi
+
+  balanced-grok-lead:
+    pm.manager: pi
+    pm.analyst: claude-code
+
   inverted-codex-lead:
     pm.manager: codex
     pm.analyst: claude-code

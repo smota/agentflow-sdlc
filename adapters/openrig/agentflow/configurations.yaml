@@ -4,34 +4,34 @@ recommended: balanced-grok-lead
 seats:
   orch.arch:
     runtimes:
+      codex: architect
       pi: architect-pi
       claude-code: architect
-      codex: architect
   dev.build-jr:
     runtimes:
+      pi: builder-jr-pi
       claude-code: builder-jr
       codex: builder-jr
-      pi: builder-jr-pi
   dev.build:
     runtimes:
+      pi: builder-pi
       claude-code: builder
       codex: builder
-      pi: builder-pi
   dev.build-sr:
     runtimes:
+      pi: builder-sr-pi
       claude-code: builder-sr
       codex: builder-sr
-      pi: builder-sr-pi
   dev.qa:
     runtimes:
+      pi: qa-pi
       codex: qa
       claude-code: qa
-      pi: qa-pi
   rev.review:
     runtimes:
+      codex: reviewer
       pi: reviewer-pi
       claude-code: reviewer
-      codex: reviewer
 
 presets:
   balanced-grok-lead:
@@ -41,6 +41,22 @@ presets:
     dev.build-sr: claude-code
     dev.qa: codex
     rev.review: pi
+
+  codex-gemini-grok:
+    orch.arch: codex
+    dev.build-jr: pi
+    dev.build: pi
+    dev.build-sr: pi
+    dev.qa: pi
+    rev.review: codex
+
+  grok-gemini:
+    orch.arch: codex
+    dev.build-jr: pi
+    dev.build: pi
+    dev.build-sr: pi
+    dev.qa: pi
+    rev.review: codex
 
   inverted-codex-lead:
     orch.arch: codex

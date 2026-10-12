@@ -1,8 +1,8 @@
 version: '0.2'
 name: agentflow-product
 summary: >
-  AgentFlow product squad. The product manager frames the job and the outcome.
-  The analyst owns testable acceptance. Neither seat implements.
+  AgentFlow product squad. The product manager frames the job and the outcome via Grok 4.7 (Medium).
+  The analyst owns testable acceptance via Gemini 3.1 Pro (High) on Pi. Neither seat implements.
 
 culture_file: CULTURE.md
 
@@ -28,7 +28,8 @@ pods:
         agent_ref: 'local:agents/agentflow'
         profile: product-manager
         runtime: pi
-        model: 'grok-cli/grok-4.7'
+        model: grok-cli/grok-4.7
+        effort: medium
         cwd: '.'
         startup:
           files:
@@ -38,7 +39,9 @@ pods:
       - id: analyst
         agent_ref: 'local:agents/agentflow'
         profile: analyst
-        runtime: claude-code
+        runtime: pi
+        model: antigravity/gemini-3.1-pro
+        effort: high
         cwd: '.'
         startup:
           files:

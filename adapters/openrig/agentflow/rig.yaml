@@ -3,7 +3,8 @@ name: agentflow
 summary: >
   AgentFlow SDLC delivery squad for parallel, independent development across
   projects with rigorous proof contracts, worktree isolation, dynamic complexity
-  matching, Council deliberation, and Grok 4.7 lead architecture and review.
+  matching, Council deliberation, Codex GPT-6.1 Sol lead architecture and review,
+  Gemini implementation builders via Pi (Flash Medium, Pro High), and Grok 4.7 Junior builder (Low) and QA (Medium) via Pi.
 
 culture_file: CULTURE.md
 
@@ -20,9 +21,6 @@ startup:
       value: authenticated
       idempotent: true
 
-managed_blocks:
-  claude-code: CLAUDE.local.md
-
 permission_policy: builtin:yolo
 non_interruptive: true
 
@@ -33,9 +31,10 @@ pods:
     members:
       - id: arch
         agent_ref: 'local:agents/agentflow'
-        profile: architect-pi
-        runtime: pi
-        model: 'grok-cli/grok-4.7'
+        profile: architect
+        runtime: codex
+        model: gpt-6.1-sol
+        effort: high
         cwd: '.'
         startup:
           files:
@@ -50,23 +49,31 @@ pods:
     members:
       - id: build-jr
         agent_ref: 'local:agents/agentflow'
-        profile: builder-jr
-        runtime: claude-code
+        profile: builder-jr-pi
+        runtime: pi
+        model: grok-cli/grok-4.7
+        effort: low
         cwd: '.'
       - id: build
         agent_ref: 'local:agents/agentflow'
-        profile: builder
-        runtime: claude-code
+        profile: builder-pi
+        runtime: pi
+        model: antigravity/gemini-3.8-flash
+        effort: medium
         cwd: '.'
       - id: build-sr
         agent_ref: 'local:agents/agentflow'
-        profile: builder-sr
-        runtime: claude-code
+        profile: builder-sr-pi
+        runtime: pi
+        model: antigravity/gemini-3.1-pro
+        effort: high
         cwd: '.'
       - id: qa
         agent_ref: 'local:agents/agentflow'
-        profile: qa
-        runtime: codex
+        profile: qa-pi
+        runtime: pi
+        model: grok-cli/grok-4.7
+        effort: medium
         cwd: '.'
     edges:
       - kind: delegates_to
@@ -85,9 +92,10 @@ pods:
     members:
       - id: review
         agent_ref: 'local:agents/agentflow'
-        profile: reviewer-pi
-        runtime: pi
-        model: 'grok-cli/grok-4.7'
+        profile: reviewer
+        runtime: codex
+        model: gpt-6.1-sol
+        effort: high
         cwd: '.'
         startup:
           files:

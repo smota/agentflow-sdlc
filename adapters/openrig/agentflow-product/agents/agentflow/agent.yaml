@@ -21,7 +21,7 @@ profiles:
   analyst:
     summary: Writes testable acceptance and scope. Propose only.
     preferences:
-      runtime: claude-code
+      runtime: pi
     startup:
       files:
         - path: guidance/analyst.md

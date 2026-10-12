@@ -43,7 +43,7 @@ profiles:
   architect:
     summary: Architect Lead governing delivery, complexity ladders, proof contracts, and Council.
     preferences:
-      runtime: claude-code
+      runtime: codex
     uses:
       skills:
         &arch-skills [
