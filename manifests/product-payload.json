@@ -367,6 +367,16 @@
       "ownership": "managed"
     },
     {
+      "source": "skills/agentflow-steerer/SKILL.md",
+      "target": "skills/agentflow-steerer/SKILL.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "docs/sources/product-discipline.md",
+      "target": "docs/sources/product-discipline.md",
+      "ownership": "managed"
+    },
+    {
       "source": "docs/cockpit.md",
       "target": "docs/cockpit.md",
       "ownership": "managed"

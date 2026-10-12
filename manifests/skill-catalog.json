@@ -17,7 +17,7 @@
         "workflow.acceptance-ledger",
         "workflow.pr-readiness"
       ],
-      "recognizes": ["collaborator", "scanner", "designer", "migrator", "auditor"],
+      "recognizes": ["collaborator", "scanner", "designer", "migrator", "auditor", "steerer"],
       "collaboratesWith": ["collaborator", "scanner", "designer", "migrator", "auditor"]
     },
     {
@@ -31,7 +31,7 @@
         "collaboration.council-policy",
         "collaboration.parent-synthesis"
       ],
-      "recognizes": ["orchestrator", "scanner", "designer", "migrator", "auditor"],
+      "recognizes": ["orchestrator", "scanner", "designer", "migrator", "auditor", "steerer"],
       "collaboratesWith": ["orchestrator", "scanner", "auditor"]
     },
     {
@@ -39,7 +39,7 @@
       "qualifiedName": "agentflow-scanner",
       "source": "skills/agentflow-scanner",
       "owns": ["discovery.scope", "discovery.findings", "discovery.evidence-map"],
-      "recognizes": ["orchestrator", "collaborator", "designer", "migrator", "auditor"],
+      "recognizes": ["orchestrator", "collaborator", "designer", "migrator", "auditor", "steerer"],
       "collaboratesWith": ["orchestrator", "collaborator", "designer", "migrator", "auditor"]
     },
     {
@@ -51,7 +51,7 @@
         "definition.schema-contract",
         "definition.role-boundaries"
       ],
-      "recognizes": ["orchestrator", "collaborator", "scanner", "migrator", "auditor"],
+      "recognizes": ["orchestrator", "collaborator", "scanner", "migrator", "auditor", "steerer"],
       "collaboratesWith": ["orchestrator", "scanner", "migrator", "auditor"]
     },
     {
@@ -59,7 +59,7 @@
       "qualifiedName": "agentflow-migrator",
       "source": "skills/agentflow-migrator",
       "owns": ["adoption.inventory", "adoption.mutation-plan", "adoption.transaction"],
-      "recognizes": ["orchestrator", "collaborator", "scanner", "designer", "auditor"],
+      "recognizes": ["orchestrator", "collaborator", "scanner", "designer", "auditor", "steerer"],
       "collaboratesWith": ["orchestrator", "scanner", "designer", "auditor"]
     },
     {
@@ -72,8 +72,28 @@
         "assurance.verdict",
         "assurance.remediation-advice"
       ],
-      "recognizes": ["orchestrator", "collaborator", "scanner", "designer", "migrator"],
+      "recognizes": ["orchestrator", "collaborator", "scanner", "designer", "migrator", "steerer"],
       "collaboratesWith": ["orchestrator", "collaborator", "scanner", "designer", "migrator"]
+    },
+    {
+      "role": "steerer",
+      "qualifiedName": "agentflow-steerer",
+      "source": "skills/agentflow-steerer",
+      "owns": [
+        "steering.job-framing",
+        "steering.capability-grooming",
+        "steering.dependency-reasoning",
+        "steering.tradeoff-rationale"
+      ],
+      "recognizes": ["orchestrator", "collaborator", "scanner", "designer", "migrator", "auditor"],
+      "collaboratesWith": [
+        "orchestrator",
+        "collaborator",
+        "scanner",
+        "designer",
+        "migrator",
+        "auditor"
+      ]
     }
   ],
   "handoffs": [
