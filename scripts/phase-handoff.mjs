@@ -145,6 +145,8 @@ async function main(argv) {
     reason: flag(args, '--reason'),
     body,
     idempotencyKey: flag(args, '--key'),
+    // The caller's own seat. A known seat cannot append as another seat.
+    callerSession: process.env.OPENRIG_SESSION_NAME ?? null,
   })
   process.stdout.write(
     `${JSON.stringify({ ...result, queueBody: queueBody(result), ...deliveryRule(result) }, null, 2)}\n`,
