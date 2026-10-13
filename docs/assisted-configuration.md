@@ -12,6 +12,15 @@ first.
 
 ## Look at the current settings
 
+Run the unified health and drift inspector for a single read-only diagnostic across configs, adapters, lockfile integrity, and runtime tools:
+
+```bash
+agentflow-sdlc doctor --target /path/to/project
+agentflow-sdlc doctor --target /path/to/project --json
+```
+
+The inspector separates missing, invalid, and matched dimensions, flags drift against the confirmed baseline, preserves authored AGENTS and instructions, and honestly reports unverified runtime reachability as unknown.
+
 These are read-only:
 
 ```bash

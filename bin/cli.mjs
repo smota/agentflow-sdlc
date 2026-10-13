@@ -54,6 +54,7 @@ import { setupGitHubGovernance } from '../lib/github-setup.mjs'
 import { handleOnboarding } from '../lib/onboarding/cli.mjs'
 import { ADAPTERS_USAGE, runAdapterLifecycle } from '../lib/adapters/lifecycle.mjs'
 import { formatOnboardingPrompt } from '../lib/onboarding/prompt.mjs'
+import { inspectDoctor, formatDoctorPlain } from '../lib/services/doctor-service.mjs'
 import os from 'node:os'
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -945,7 +946,7 @@ function handleResume(rest, targetDir) {
 }
 
 const ROOT_USAGE =
-  'Usage: agentflow-sdlc <init|run|doctor-env|config|adopt|providers|adapters|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding|onboarding-prompt|release-plan|handoff|resume|phase|board|gates> [path] [--target <dir>] [--json]\n' +
+  'Usage: agentflow-sdlc <init|run|doctor|doctor-env|config|adopt|providers|adapters|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding|onboarding-prompt|release-plan|handoff|resume|phase|board|gates> [path] [--target <dir>] [--json]\n' +
   'Execution adapters: agentflow-sdlc adapters <install|update|squads provision|squads update|squads list|squads remove> <id> (see agentflow-sdlc adapters --help)\n'
 
 const COMMAND_USAGE = {
@@ -984,6 +985,21 @@ function requestedHelp(args) {
   return args.includes('--help') || args.includes('-h')
 }
 
+function handleDoctor(rest, targetDir) {
+  const json = rest.includes('--json')
+  const harness = getFlag(rest, '--harness', 'all')
+  const report = inspectDoctor({
+    packageRoot,
+    targetDir,
+    harnesses: [harness],
+  })
+  if (json) {
+    process.stdout.write(JSON.stringify(report, null, 2) + '\n')
+  } else {
+    process.stdout.write(formatDoctorPlain(report))
+  }
+  return report.summary.exitCode
+}
 function main() {
   const [command, ...rest] = process.argv.slice(2)
 
@@ -1006,6 +1022,10 @@ function main() {
       process.stderr.write(`${error.message}\n`)
       return 1
     }
+  }
+
+  if (command === 'doctor') {
+    return handleDoctor(rest, targetDir)
   }
 
   if (command === 'config') {

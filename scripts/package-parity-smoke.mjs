@@ -155,6 +155,13 @@ try {
   const { resolveCompositionProfile } = await import(
     pathToFileURL(join(packageRoot, 'lib', 'adoption', 'profiles.mjs'))
   )
+  const { inspectDoctor } = await import(
+    pathToFileURL(join(packageRoot, 'lib/services/doctor-service.mjs'))
+  )
+  const doctorResult = inspectDoctor({ packageRoot, targetDir: scratch })
+  if (typeof doctorResult?.ok !== 'boolean')
+    throw new Error('Package consumer doctor service invocation failed')
+
   const profileEntrypoints = {
     minimal: 'lib/core/execution-receipt.mjs',
     standard: 'lib/providers/registry.mjs',
