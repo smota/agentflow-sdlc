@@ -49,11 +49,20 @@ import {
 import { runConfigDoctor } from '../lib/config/doctor.mjs'
 import { runConfigSync } from '../lib/config/sync.mjs'
 import { inspectEffectiveConfig } from '../lib/config/inspect.mjs'
+import { inspectConfigState, applyProjections } from '../lib/config/projection.mjs'
+import {
+  resolveConfigAuthority,
+  planAuthorityConsolidation,
+  applyAuthorityConsolidation,
+} from '../lib/config/authority.mjs'
 import { formatContinuousConfigPrompt } from '../lib/config/prompt.mjs'
 import { setupGitHubGovernance } from '../lib/github-setup.mjs'
 import { handleOnboarding } from '../lib/onboarding/cli.mjs'
 import { ADAPTERS_USAGE, runAdapterLifecycle } from '../lib/adapters/lifecycle.mjs'
 import { formatOnboardingPrompt } from '../lib/onboarding/prompt.mjs'
+import { inspectDoctor, formatDoctorPlain } from '../lib/services/doctor-service.mjs'
+import { safeReadFileUtf8, createReadScope } from '../lib/services/doctor-readers.mjs'
+import { startMcpStdioServer } from '../lib/mcp/server.mjs'
 import os from 'node:os'
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -230,6 +239,9 @@ function handleConfig(rest, targetDir) {
   if (subcommand === 'sync') {
     const write = rest.includes('--apply') && !rest.includes('--dry-run')
     const result = runConfigSync({ packageRoot, targetDir, harness, write })
+    if (write && result.deprecation?.warning && !json) {
+      process.stderr.write(`[DEPRECATION] ${result.deprecation.warning}\n`)
+    }
     if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
     else printConfigSyncReport(result)
     return result.ok ? 0 : 1
@@ -246,8 +258,107 @@ function handleConfig(rest, targetDir) {
     return 0
   }
 
+  if (subcommand === 'project') {
+    const apply = rest.includes('--apply')
+    const confirm = getFlag(rest, '--confirm', null)
+    const state = inspectConfigState(targetDir)
+    if (apply) {
+      const planDigest = state.desired.planDigest
+      if (!confirm || confirm !== planDigest) {
+        process.stderr.write(
+          `Confirmation token required. Re-run with: --apply --confirm ${planDigest}\n`,
+        )
+        return 1
+      }
+      const applied = applyProjections(targetDir, { confirm, plan: state })
+      if (json) process.stdout.write(`${JSON.stringify(applied, null, 2)}\n`)
+      else process.stdout.write(`Projections applied cleanly. Plan digest: ${applied.planDigest}\n`)
+      return 0
+    }
+    if (json) process.stdout.write(`${JSON.stringify(state, null, 2)}\n`)
+    else {
+      process.stdout.write(`[config project] ${targetDir}\n`)
+      process.stdout.write(
+        `  Config: ${state.desired.isUnified ? 'unified' : 'legacy'} (${state.desired.configPath})\n`,
+      )
+      process.stdout.write(
+        `  Status: ${state.clean ? 'CLEAN' : `${state.observed.driftCount} DRIFTED`}\n`,
+      )
+      for (const f of state.files) {
+        process.stdout.write(`    - ${f.path}: ${f.status}\n`)
+      }
+      if (!state.clean) {
+        process.stdout.write(
+          `  To apply projections, run with: --apply --confirm ${state.desired.planDigest}\n`,
+        )
+      }
+    }
+    return state.clean ? 0 : 1
+  }
+
+  if (subcommand === 'validate') {
+    const checkProjections = rest.includes('--projections')
+    const result = resolveConfigAuthority(targetDir)
+    const projectionState = checkProjections ? inspectConfigState(targetDir) : null
+    const errors = [...result.validation.errors]
+    if (projectionState && !projectionState.clean) {
+      for (const f of projectionState.files) {
+        if (f.status !== 'matched')
+          errors.push(`Projected file "${f.path}" has drifted (${f.status})`)
+      }
+    }
+    const report = {
+      ok: errors.length === 0,
+      isUnified: result.isUnified,
+      configPath: result.configPath,
+      errors,
+      warnings: result.validation.warnings,
+      projections: projectionState
+        ? { clean: projectionState.clean, driftCount: projectionState.observed.driftCount }
+        : null,
+    }
+    if (json) process.stdout.write(`${JSON.stringify(report, null, 2)}\n`)
+    else {
+      process.stdout.write(`[config validate] ${targetDir}\n`)
+      for (const w of report.warnings) process.stdout.write(`  WARNING ${w}\n`)
+      for (const e of report.errors) process.stdout.write(`  ERROR ${e}\n`)
+      process.stdout.write(`Result: ${report.ok ? 'READY' : 'FAILED'}\n`)
+    }
+    return report.ok ? 0 : 1
+  }
+
+  if (subcommand === 'consolidate') {
+    const apply = rest.includes('--apply')
+    const confirm = getFlag(rest, '--confirm', null)
+    const plan = planAuthorityConsolidation(targetDir)
+    if (apply) {
+      if (!confirm || confirm !== plan.token) {
+        process.stderr.write(
+          `Confirmation token required. Re-run with: --apply --confirm ${plan.token}\n`,
+        )
+        return 1
+      }
+      const applied = applyAuthorityConsolidation(targetDir, plan, { confirm })
+      if (json) process.stdout.write(`${JSON.stringify(applied, null, 2)}\n`)
+      else
+        process.stdout.write(
+          `Authority consolidated to ${applied.targetPath}. Plan token: ${applied.planToken}\n`,
+        )
+      return 0
+    }
+    if (json) process.stdout.write(`${JSON.stringify(plan, null, 2)}\n`)
+    else {
+      process.stdout.write(`[config consolidate] ${targetDir}\n`)
+      process.stdout.write(`  Target: ${plan.targetPath}\n`)
+      process.stdout.write(`  Changed: ${plan.changed}\n`)
+      process.stdout.write(`  Token: ${plan.token}\n`)
+      process.stdout.write(`  To apply consolidation, run with: --apply --confirm ${plan.token}\n`)
+    }
+    return 0
+  }
+
   process.stderr.write(`Usage:
-  agentflow-sdlc config <doctor|check|sync|inspect|prompt> [--target <dir>] [--harness <name>] [--dry-run|--apply] [--json]
+  agentflow-sdlc config <doctor|check|sync|inspect|prompt|project|validate|consolidate> [--target <dir>] [--harness <name>] [--dry-run|--apply] [--confirm <token>] [--json]
 `)
   return 2
 }
@@ -313,10 +424,12 @@ function handleSdlc(rest, targetDir) {
     return runScript('scripts/validate-multi-agent-acceptance.mjs', pass, targetDir)
   if (subcommand === 'audit') return runScript('scripts/sdlc-audit.mjs', pass, targetDir)
   if (subcommand === 'migrate') return runScript('scripts/sdlc-migrate.mjs', pass, targetDir)
+  if (subcommand === 'sync-goal') return runScript('scripts/sync-goal-ledger.mjs', pass, targetDir)
   process.stderr.write(`Usage:
   agentflow-sdlc sdlc validate [--target <dir>] [--json]
   agentflow-sdlc sdlc validate-authority [--target <dir>] [--json]
   agentflow-sdlc sdlc migrate-authority <plan|apply --confirm <plan-token>> [--target <dir>]
+  agentflow-sdlc sdlc sync-goal --goal <n> [--records <file.json>] [--apply] [--json]
   agentflow-sdlc sdlc validate-issue --path <issue.json> [--json]
   agentflow-sdlc sdlc validate-role-pass --path <role-pass.md> [--json]
   agentflow-sdlc sdlc validate-pr --path <pr-body.md> [--json]
@@ -945,14 +1058,19 @@ function handleResume(rest, targetDir) {
 }
 
 const ROOT_USAGE =
-  'Usage: agentflow-sdlc <init|run|doctor-env|config|adopt|providers|adapters|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding|onboarding-prompt|release-plan|handoff|resume|phase|board|gates> [path] [--target <dir>] [--json]\n' +
+  'Usage: agentflow-sdlc <init|run|doctor|doctor-env|config|adopt|providers|adapters|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding|onboarding-prompt|wizard|release-plan|handoff|resume|phase|board|gates|mcp|project|goal> [path] [--target <dir>] [--json]\n' +
   'Execution adapters: agentflow-sdlc adapters <install|update|squads provision|squads update|squads list|squads remove> <id> (see agentflow-sdlc adapters --help)\n'
 
 const COMMAND_USAGE = {
+  goal: 'Usage: agentflow-sdlc goal <sync|status|ledger> <number> [--records <file>] [--section <name>] [--apply] [--json]\nManage goal child completion tracking and synchronized delivery ledger.\n',
   init: 'Usage: agentflow-sdlc init [--profile <id>] [--posture <posture>] [--no-harness] [--sync] [--target <dir>] [--force] [--json]\nLow-level primitive: applies the adoption plan without a separate confirmation. To adopt a project, use `agentflow-sdlc onboarding`.\n',
   config:
-    "Usage: agentflow-sdlc config <doctor|check|sync|inspect|prompt> [--target <dir>] [--harness <name>] [--dry-run|--apply] [--json]\nLow-level primitive. To change an adopted project, use `agentflow-sdlc onboarding refine`. `config sync` changes other agents' harnesses and runs only when you ask for it.\n",
+    "Usage: agentflow-sdlc config <doctor|check|sync|inspect|prompt|project|validate|consolidate> [--target <dir>] [--harness <name>] [--dry-run|--apply] [--confirm <token>] [--json]\nLow-level primitive. To change an adopted project, use `agentflow-sdlc onboarding refine`. `config sync` changes other agents' harnesses and runs only when you ask for it.\n",
+  project:
+    'Usage: agentflow-sdlc project [--target <dir>] [--apply --confirm <digest>] [--json]\nInspect or apply deterministic projections to .agentflow/ and adapter specs.\n',
   run: 'Usage: agentflow-sdlc run <source-plan|start|status|context|next|freeze|verify|intent-plan|advance|checkpoint|pause|handoff|resume|grant-plan|grant-issue|grant-status|grant-revoke|act|reconcile|journal-reconcile|migrate|resolve-escalation|publish> <id> [--target <dir>] [--execute] [--plan <file> --confirm <digest>] [--json]\n',
+  doctor:
+    'Usage: agentflow-sdlc doctor [--target <dir>] [--harness <name>] [--baseline-receipt <file>] [--runtime-request <file>] [--runtime-evidence <file>] [--json]\nRead-only project inspection. Evidence file paths must remain inside the target project.\n',
   'doctor-env': 'Usage: agentflow-sdlc doctor-env [--inspect] [--target <dir>] [--json]\n',
   adopt:
     'Usage: agentflow-sdlc adopt <profiles|plan|apply|rollback|recover> [--profile <id>] [--target <dir>] [--json]\nLow-level primitive: the AgentFlow file transaction only. To adopt a project, use `agentflow-sdlc onboarding`.\n',
@@ -967,7 +1085,9 @@ const COMMAND_USAGE = {
   harness: 'Usage: agentflow-sdlc harness <inspect|scaffold> [--target <dir>] [--force] [--json]\n',
   github: 'Usage: agentflow-sdlc github <setup> [--target <dir>] [--dry-run|--apply] [--json]\n',
   onboarding:
-    'Usage: agentflow-sdlc onboarding <inspect|plan|apply|verify|undo|recover|refine|runtime-request> [--target <dir>] [--profile <id>] [--runtime-request <file>] [--runtime-evidence <file>] [--choices <file>] [--changes <file>] [--plan <file>] [--receipt <file>] [--confirm <digest>] [--json]\nAdopt or bring an installation forward: onboarding plan, then apply. Change an adopted project later: onboarding refine, then apply.\n',
+    'Usage: agentflow-sdlc onboarding <wizard|inspect|plan|apply|verify|undo|recover|refine|runtime-request> [--target <dir>] [--profile <id>] [--runtime-request <file>] [--runtime-evidence <file>] [--choices <file>] [--changes <file>] [--plan <file>] [--receipt <file>] [--confirm <digest>] [--json] [--yes]\nAdopt or bring an installation forward: onboarding plan, then apply. Change an adopted project later: onboarding refine, then apply.\n',
+  wizard:
+    'Usage: agentflow-sdlc wizard [--target <dir>] [--profile <id>] [--yes]\nInteractive terminal stepper guiding project adoption and configuration.\n',
   handoff:
     'Usage: agentflow-sdlc handoff deliver --to <session> (--body-file <file> | --body <text>) [--goal <uri>] [--transition <uri>] [--reply] [--json]\n       agentflow-sdlc handoff list [--rig <rig>] [--all] [--json]\n       agentflow-sdlc handoff flush [--rig <rig>]\n       agentflow-sdlc handoff release <hold-id>   (the person only)\n       agentflow-sdlc handoff busy <rig> --set [--note <text>] | --clear   (--clear: the person only)\n       agentflow-sdlc handoff --run <id> --writer <owner> --generation <n> --execute [--target <dir>] [--json]\nDeliver holds new work while the delivery squad is busy. No option sends anyway; only the person releases.\n',
   phase:
@@ -978,12 +1098,53 @@ const COMMAND_USAGE = {
     'Usage: agentflow-sdlc gates <open|answer|candidate|on-behalf|sync|waiting> --medium <filesystem|github> [--root <dir> | --repo <owner/repo> --issue <n>] [--json]\nPerson gates on the work record. A person runs gates answer in their own terminal; it refuses to run under an agent runtime.\n',
   resume:
     'Usage: agentflow-sdlc resume --run <id> --packet <file> --writer <replacement> --writer-pid <pid> [--plan <file> --confirm <digest> --generation <old-n> --execute] [--target <dir>] [--json]\n',
+  mcp: 'Usage: agentflow-sdlc mcp [--target <dir>]\nRun stdio Model Context Protocol (MCP) server exposing AgentFlow maintainer tools.\n',
 }
 
 function requestedHelp(args) {
   return args.includes('--help') || args.includes('-h')
 }
 
+function handleDoctor(rest, targetDir) {
+  const json = rest.includes('--json')
+  const harness = getFlag(rest, '--harness', 'all')
+  const inputs = {}
+  const scope = createReadScope()
+  for (const [flag, field] of [
+    ['--baseline-receipt', 'baselineReceipt'],
+    ['--runtime-request', 'runtimeRequest'],
+    ['--runtime-evidence', 'runtimeEvidence'],
+  ]) {
+    if (!rest.includes(flag)) continue
+    const file = getFlag(rest, flag, null)
+    const read =
+      typeof file === 'string' ? safeReadFileUtf8(targetDir, file, undefined, scope) : { ok: false }
+    try {
+      if (!read.ok) throw new Error('invalid-input')
+      inputs[field] = JSON.parse(read.content)
+    } catch {
+      const error = { schemaVersion: 1, error: 'doctor-input-invalid', field }
+      process.stdout.write(
+        json
+          ? JSON.stringify(error) + '\n'
+          : 'Doctor evidence input could not be safely parsed: ' + field + '\n',
+      )
+      return 2
+    }
+  }
+  const report = inspectDoctor({
+    packageRoot,
+    targetDir,
+    harnesses: harness.split(','),
+    ...inputs,
+  })
+  if (json) {
+    process.stdout.write(JSON.stringify(report, null, 2) + '\n')
+  } else {
+    process.stdout.write(formatDoctorPlain(report))
+  }
+  return report.summary.exitCode
+}
 function main() {
   const [command, ...rest] = process.argv.slice(2)
 
@@ -1008,9 +1169,22 @@ function main() {
     }
   }
 
+  if (command === 'doctor') {
+    return handleDoctor(rest, targetDir)
+  }
+
   if (command === 'config') {
     try {
       return handleConfig(rest, targetDir)
+    } catch (error) {
+      process.stderr.write(`${error.message}\n`)
+      return 1
+    }
+  }
+
+  if (command === 'project') {
+    try {
+      return handleConfig(['project', ...rest], targetDir)
     } catch (error) {
       process.stderr.write(`${error.message}\n`)
       return 1
@@ -1138,6 +1312,15 @@ function main() {
     }
   }
 
+  if (command === 'wizard') {
+    try {
+      return handleOnboarding(['wizard', ...rest], targetDir)
+    } catch (error) {
+      process.stderr.write(`${error.message}\n`)
+      return 1
+    }
+  }
+
   if (command === 'onboarding-prompt') {
     printOnboardingPrompt(targetDir)
     return 0
@@ -1183,6 +1366,19 @@ function main() {
       process.stderr.write(`${error.message}\n`)
       return 1
     }
+  }
+
+  if (command === 'mcp') {
+    startMcpStdioServer({ packageRoot, targetDir })
+    return 0
+  }
+
+  if (command === 'goal') {
+    const [subcommand, ...goalRest] = rest
+    if (subcommand === 'sync' || subcommand === 'status' || subcommand === 'ledger') {
+      return runScript('scripts/sync-goal-ledger.mjs', goalRest, targetDir)
+    }
+    return runScript('scripts/sync-goal-ledger.mjs', rest, targetDir)
   }
 
   process.stderr.write(ROOT_USAGE)

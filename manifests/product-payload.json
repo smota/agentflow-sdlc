@@ -367,6 +367,56 @@
       "ownership": "managed"
     },
     {
+      "source": "skills/agentflow-steerer/SKILL.md",
+      "target": "skills/agentflow-steerer/SKILL.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "skills/agentflow-maintainer/SKILL.md",
+      "target": "skills/agentflow-maintainer/SKILL.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "skills/agentflow-steerer/references/envelope.md",
+      "target": "skills/agentflow-steerer/references/envelope.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "skills/agentflow-steerer/references/heartbeat.md",
+      "target": "skills/agentflow-steerer/references/heartbeat.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "skills/agentflow-steerer/references/adapter-openrig.md",
+      "target": "skills/agentflow-steerer/references/adapter-openrig.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "skills/agentflow-steerer/references/adapter-tmux.md",
+      "target": "skills/agentflow-steerer/references/adapter-tmux.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "skills/agentflow-steerer/references/adapter-github.md",
+      "target": "skills/agentflow-steerer/references/adapter-github.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "skills/agentflow-steerer/references/seam-rules.md",
+      "target": "skills/agentflow-steerer/references/seam-rules.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "skills/agentflow-steerer/assets/steer-state.yaml",
+      "target": "skills/agentflow-steerer/assets/steer-state.yaml",
+      "ownership": "managed"
+    },
+    {
+      "source": "docs/sources/product-discipline.md",
+      "target": "docs/sources/product-discipline.md",
+      "ownership": "managed"
+    },
+    {
       "source": "docs/cockpit.md",
       "target": "docs/cockpit.md",
       "ownership": "managed"
@@ -689,6 +739,21 @@
     {
       "source": "lib/onboarding/prompt.mjs",
       "target": "lib/onboarding/prompt.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/services/doctor-readers.mjs",
+      "target": "lib/services/doctor-readers.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/services/doctor-report.mjs",
+      "target": "lib/services/doctor-report.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/services/doctor-service.mjs",
+      "target": "lib/services/doctor-service.mjs",
       "ownership": "managed"
     }
   ]

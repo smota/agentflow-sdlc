@@ -61,9 +61,11 @@ function installPackage() {
     'auditor',
     'collaborator',
     'designer',
+    'maintainer',
     'migrator',
     'orchestrator',
     'scanner',
+    'steerer',
   ])
   for (const skill of catalog.skills) {
     const source = readFileSync(join(installedRoot, skill.source, 'SKILL.md'), 'utf8')

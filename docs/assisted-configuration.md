@@ -12,6 +12,25 @@ first.
 
 ## Look at the current settings
 
+Run the unified health and drift inspector for a single read-only diagnostic across configs, adapters, lockfile integrity, and runtime tools:
+
+```bash
+agentflow-sdlc doctor --target /path/to/project
+agentflow-sdlc doctor --target /path/to/project --json
+```
+
+The inspector separates structural `missing`/`invalid`/`valid` from baseline `matched`/`differing`/`unknown`. A match requires a sealed applied adoption receipt bound to this project and its canonical `agent-framework-lock.json`; the content seal is not actor authentication. Unsupported refinement receipts, missing confirmation and incomplete coverage remain unknown. To supply retained evidence explicitly:
+
+```bash
+agentflow-sdlc doctor --target /path/to/project --baseline-receipt receipt.json --json
+```
+
+Evidence paths (`--baseline-receipt`, `--runtime-request`, `--runtime-evidence`) must remain inside the target project. The inspector never reads a default external receipt or launches a runtime probe. Executable presence is not live reachability; supplied runtime evidence with unknown source/freshness also remains unknown.
+
+Inspection is cooperative and bounded: regular files up to 10 MiB, an aggregate 64 MiB, 2,048 selected entries, and at most 512 details in each finding/dimension/remediation list. Symlink aliases and credential paths are not inspected. Counts describe observed scope; `summary.incomplete`, omitted-detail counts and unknown findings disclose incomplete scope. This is not a host sandbox or an exhaustive no-mutation certification. Exit codes are 0 for complete valid/matching scope, 1 for observed defects, and 2 for unknown-only scope or invalid evidence usage. Known defects take precedence over incomplete coverage.
+
+Repair pointers are prospective only: doctor does not write, synchronize, install, repair, or replace authored instructions and custom configuration. Review any later repair separately.
+
 These are read-only:
 
 ```bash
@@ -89,26 +108,26 @@ agentflow-sdlc onboarding undo --target /path/to/project --receipt .agentflow/tr
 ```
 
 Undo restores the prior configuration bytes exactly. It refuses when the file changed after the
-apply.
+apply. If `--receipt` is omitted, `onboarding undo` automatically discovers the most recent transaction receipt in `.agentflow/transactions/`. Running without `--confirm` previews the rollback mutations and displays the required confirmation token.
 
 ## Other settings
 
 `sdlc.config.json`, the harness defaults under `.agentflow/`, role routing and extension packs are
 not part of refinement. Change them with your usual review, and check them with `config doctor`.
 
-## Sync other agents' harnesses (only on request)
+## Sync other agents' harnesses (deprecated for direct writes)
 
 `config sync` generates skill, role, plugin and settings adapters for other agent harnesses. It is
-a maintainer operation, separate from refinement. Run it only when you ask for exactly that, after
-reviewing its preview:
+a maintainer operation, separate from refinement. Direct writes from `config sync --apply` are deprecated
+in favor of preview-confirmed transactional refinement via `agentflow-sdlc onboarding refine`.
+If you still need harness adapter sync, review its preview first:
 
 ```bash
 agentflow-sdlc config sync --dry-run --target /path/to/project
 agentflow-sdlc config sync --apply --target /path/to/project
 ```
 
-It is not a transaction: an error can leave earlier operations applied, and there is no automatic
-undo. Use version control to review or restore affected files.
+Direct sync is not an atomic transaction and has no rollback journal. Prefer `onboarding refine` for safe, reversible updates.
 
 ## Hand a refinement to an agent
 
@@ -126,4 +145,131 @@ You are acting as an assisted configuration collaborator. Follow the refinement 
 3. Preview: Write only those settings to changes.json and run `agentflow-sdlc onboarding refine --target "/path/to/project" --changes changes.json`. Show me the preview and its readiness report. Do not apply until I confirm.
 4. Apply: Once I confirm, run `agentflow-sdlc onboarding apply --target "/path/to/project" --changes changes.json --confirm <digest>`. It changes only this project. Runtimes manage their own skill discovery; change no other agent's harness unless I ask for that by name.
 5. Verify: Report the readiness report and its undo command, then re-run `agentflow-sdlc config doctor`; report unresolved warnings and their disposition.
+```
+
+## Conversational maintenance & MCP server
+
+Maintainers interacting directly inside coding agents (Claude Code, Codex, Antigravity, Pi) can use the typed Model Context Protocol (MCP) server `agentflow-mcp` or the canonical `agentflow-maintainer` skill.
+
+### MCP configuration
+
+Add `agentflow-mcp` to your harness configuration (e.g. `.claude/settings.json`, `claude.json`, or Antigravity config):
+
+```json
+{
+  "mcpServers": {
+    "agentflow": {
+      "command": "agentflow-mcp"
+    }
+  }
+}
+```
+
+Or via local npx:
+
+```json
+{
+  "mcpServers": {
+    "agentflow": {
+      "command": "npx",
+      "args": ["-y", "agentflow-sdlc", "mcp"]
+    }
+  }
+}
+```
+
+### Typed MCP tools
+
+- `agentflow_status`: Inspect whether the target project has adopted AgentFlow, its active profile, and rollback history.
+- `agentflow_doctor`: Run health diagnostics and configuration drift inspection.
+- `agentflow_plan_change`: Generate preview diffs and plan tokens without touching files.
+- `agentflow_apply_change`: Apply planned mutations transactionally with an automatic rollback journal. **Enforces human confirmation (`confirm: true`)**.
+- `agentflow_undo`: Restore previous files using the latest or specified journal receipt.
+
+### Slash commands
+
+When using Claude Code or Pi, the maintainer suite provides dedicated slash commands:
+
+- `/agentflow:setup`: Adopt AgentFlow SDLC in this project conversationally.
+- `/agentflow:doctor`: Run drift and health inspection.
+- `/agentflow:repair`: Transactionally fix configuration drift.
+- `/agentflow:undo`: Rollback the most recent change.
+
+## Guided Onboarding Stepper and Cockpit Affordance
+
+### Terminal Stepper Wizard
+
+For developers and maintainers adopting or initializing AgentFlow in greenfield or brownfield repositories without memorizing CLI flags, run the interactive terminal stepper wizard:
+
+```bash
+agentflow-sdlc onboarding wizard
+# Or use the top-level alias:
+agentflow-sdlc wizard
+```
+
+Options:
+
+- `--target <dir>`: Target project directory (defaults to current working directory).
+- `--profile <id>`: Composition profile (`standard`, `minimal`, `github`, `cockpit`).
+- `--yes` or `-y`: Non-interactive auto-confirm mode for automated scripts and headless runs.
+
+The wizard interactively:
+
+1. Verifies the target repository path.
+2. Runs live environment probes for required tools (`git`, `node`) and optional tools (`gh`, harness CLIs), displaying installation guidance if requirements are missing.
+3. Guides profile selection with plain-English descriptions.
+4. Allows toggling agent harnesses (Claude Code, Antigravity, Pi, Codex).
+5. Generates the exact scaffolding plan preview, including file-by-file action breakdown and SHA256 digest.
+6. Prompts for explicit human confirmation before writing files.
+
+### Cockpit Web Affordance
+
+Adopters managing projects visually can use the Cockpit Goal Command Center (`/onboarding`):
+
+- **Environment Readiness**: Visual health indicators for developer tools with installation recommendations.
+- **Composition Selection**: Interactive cards for `standard`, `minimal`, `github`, and `cockpit`.
+- **Scaffolding Preview**: Displays file creations, merges, and overwrites with the plan digest.
+- **Confirmation Gate**: Requires verified confirmation digest and CSRF authorization before applying changes.
+
+## Unified Configuration Authority and Deterministic Projections
+
+To eliminate dual-authority drift between root configuration files (`sdlc.config.json`, `agent-workflow.config.json`) and `.agentflow/` harness parameters, AgentFlow establishes a single canonical configuration authority: `agentflow.config.json`.
+
+### Inspecting Projections and Drift
+
+Inspect whether `.agentflow/*.json` projections (`orchestration-model.json`, `execution-policy.json`, `model-catalog.json`, `harness-parameters.json`) match the declared authority:
+
+```bash
+agentflow-sdlc project --target /path/to/project
+agentflow-sdlc project --target /path/to/project --json
+# Or via config subcommand:
+agentflow-sdlc config project --target /path/to/project
+```
+
+### Applying Projections
+
+If drift or missing projections are detected, apply projections deterministically with explicit confirmation digest:
+
+```bash
+agentflow-sdlc project --apply --confirm <plan-digest>
+```
+
+### Consolidating Authority
+
+To migrate legacy dual configuration files (`sdlc.config.json` and `agent-workflow.config.json`) into a single canonical `agentflow.config.json`:
+
+```bash
+# Preview consolidation plan
+agentflow-sdlc config consolidate --target /path/to/project
+# Apply with confirmation token
+agentflow-sdlc config consolidate --target /path/to/project --apply --confirm <token>
+```
+
+### Validating Configuration Authority
+
+Validate field ownership, role reference integrity, model tiers, and execution target compatibility:
+
+```bash
+agentflow-sdlc config validate --target /path/to/project
+agentflow-sdlc config validate --target /path/to/project --projections
 ```

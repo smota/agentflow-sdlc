@@ -59,10 +59,13 @@ record writer leases and execution provenance; these are not authenticated by co
 Semantic review receives only the
 contract, current delta, deterministic report, and unresolved questions.
 
-An acceptance criterion declares `verification: deterministic|semantic`. A required deterministic
-criterion passes only with a `pass` result and evidence. Semantic criteria remain owned by the
-handover sender and cannot replace specialist verdicts: planners check plan conformance, architects
-check design conformance, testers own test verdicts, and reviewers own independent review.
+An acceptance criterion declares `verification: deterministic|semantic` and optional
+`severity: blocking|advisory` (default `blocking`). A required deterministic criterion passes only with
+a `pass` result and evidence. Semantic criteria remain owned by the handover sender and cannot replace
+specialist verdicts: planners check plan conformance, architects check design conformance, testers own
+test verdicts, and reviewers own independent review. Blocking semantic criteria require passing findings
+(`status: pass`) with a reason; advisory criteria allow non-blocking observations (`status: observation`
+or `status: unverified`) without failing acceptance or blocking phase progression.
 
 ```bash
 agentflow-sdlc collaboration verify \
@@ -100,7 +103,7 @@ The record format and accountability do not change.
 - `AcceptanceContract`: criteria, complexity class, candidate digest, controls, and council policy.
 - `DeliveryReceipt`: criterion results, evidence, deviations, execution reference, and provenance.
 - `AcceptanceDecision`: deterministic report, semantic findings, conditions, and final state.
-- `ReworkRequest`: failed criteria and concrete required changes.
+- `ReworkRequest`: failed criteria, concrete required changes, and rework round (circuit breaker capped at `maxReworkRounds`, default 2).
 - `CouncilRequest`, `CouncilAdvice`, `CouncilSynthesis`: bounded advisory exchange.
 
 Validate any record through `agentflow-sdlc collaboration validate --path <record.json> --json` or
@@ -120,7 +123,9 @@ agentflow-sdlc collaboration advance \
 ```
 
 Supply the council request, advice array, and synthesis flags above when required. Rejection,
-rework, stale evidence, or conditional acceptance blocks advancement. Resolve conditions and issue
-a new unconditional `accepted` decision before continuing. The orchestrator owns obtaining the
-complete current ledger from the authoritative workflow source; a local file is only its input
-projection, not an independent source of truth.
+rework, stale evidence, or conditional acceptance blocks advancement. When open rework requests
+exceed `maxReworkRounds` (default 2, configurable in `agent-workflow.config.json#collaboration`),
+advancement is blocked with an explicit escalation requirement, preventing unbounded peer rework loops.
+Resolve conditions and issue a new unconditional `accepted` decision before continuing. The
+orchestrator owns obtaining the complete current ledger from the authoritative workflow source; a local
+file is only its input projection, not an independent source of truth.
