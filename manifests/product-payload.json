@@ -387,6 +387,21 @@
       "ownership": "managed"
     },
     {
+      "source": "skills/agentflow-steerer/references/adapter-openrig.md",
+      "target": "skills/agentflow-steerer/references/adapter-openrig.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "skills/agentflow-steerer/references/adapter-tmux.md",
+      "target": "skills/agentflow-steerer/references/adapter-tmux.md",
+      "ownership": "managed"
+    },
+    {
+      "source": "skills/agentflow-steerer/references/adapter-github.md",
+      "target": "skills/agentflow-steerer/references/adapter-github.md",
+      "ownership": "managed"
+    },
+    {
       "source": "skills/agentflow-steerer/assets/steer-state.yaml",
       "target": "skills/agentflow-steerer/assets/steer-state.yaml",
       "ownership": "managed"

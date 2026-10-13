@@ -19,6 +19,9 @@
     "adapters/claude-code/skills/agentflow-steerer/assets/steer-state.yaml",
     "adapters/claude-code/skills/agentflow-steerer/references/envelope.md",
     "adapters/claude-code/skills/agentflow-steerer/references/heartbeat.md",
+    "adapters/claude-code/skills/agentflow-steerer/references/adapter-openrig.md",
+    "adapters/claude-code/skills/agentflow-steerer/references/adapter-tmux.md",
+    "adapters/claude-code/skills/agentflow-steerer/references/adapter-github.md",
     "adapters/codex/manifest.json",
     "adapters/codex/plugin.json",
     "adapters/pi/manifest.json",
@@ -140,6 +143,9 @@
     "skills/agentflow-steerer/assets/steer-state.yaml",
     "skills/agentflow-steerer/references/envelope.md",
     "skills/agentflow-steerer/references/heartbeat.md",
+    "skills/agentflow-steerer/references/adapter-openrig.md",
+    "skills/agentflow-steerer/references/adapter-tmux.md",
+    "skills/agentflow-steerer/references/adapter-github.md",
     "skills/agentflow-maintainer/SKILL.md"
   ],
   "forbiddenPathPrefixes": [
