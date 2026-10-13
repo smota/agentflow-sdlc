@@ -110,6 +110,7 @@
     "bilateralDomainThreshold": 2,
     "councilOnPublicContract": true,
     "councilOnMigration": true,
+    "maxReworkRounds": 2,
     "councilHelpers": [
       "risk-scout",
       "implementation-strategist",

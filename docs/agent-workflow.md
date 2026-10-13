@@ -89,7 +89,10 @@ Before phase advancement, the orchestrator must run `collaboration advance` agai
 handoff, delivery, owner decision, council evidence when required, and explicit open-rework ledger.
 Rejected, returned, conditional, or stale decisions block advancement. A review return to
 implementation must carry the review findings in its rework contract; it cannot silently skip
-the rework gate.
+the rework gate. Rework iterations are capped by a circuit breaker (`maxReworkRounds: 2` by default);
+exceeding the cap triggers automatic escalation to Steerer/Person rather than unbounded bilateral rework.
+Criteria support `severity: blocking` (default) and `severity: advisory` (for non-blocking exploratory
+observations and disclosed limits).
 
 ### Phase diagram
 
