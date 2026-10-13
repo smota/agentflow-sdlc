@@ -32,6 +32,8 @@ const KNOWN_CLI_COMMANDS = new Set([
   'phase',
   'board',
   'gates',
+  'mcp',
+  'wizard',
 ])
 
 function markdownFiles(root) {

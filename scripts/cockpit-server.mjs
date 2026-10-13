@@ -48,10 +48,13 @@ import {
   renderGoalBoard,
   renderGoalStory,
   renderIssueView,
+  renderOnboardingView,
   renderProjectPreview,
   renderProjects,
   renderUnsupportedProject,
 } from '../lib/cockpit-ui.mjs'
+import { validateEnvironment } from '../lib/environment.mjs'
+import { createLocalOnboardingService } from '../lib/onboarding/project-writer.mjs'
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const config = loadCockpitConfig()
@@ -96,6 +99,14 @@ createServer(async (req, res) => {
       return projectPreviewPage(req, res, session)
     if (url.pathname === '/projects/confirm' && req.method === 'POST')
       return projectConfirm(req, res, session)
+    if (url.pathname === '/onboarding' && req.method === 'GET')
+      return onboardingPage(req, res, session, url)
+    if (url.pathname === '/onboarding/plan' && req.method === 'POST')
+      return onboardingPlanPage(req, res, session)
+    if (url.pathname === '/onboarding/apply' && req.method === 'POST')
+      return onboardingApplyPage(req, res, session)
+    if (url.pathname === '/onboarding/inspect' && req.method === 'POST')
+      return onboardingInspectEndpoint(req, res, session)
 
     const requested = url.searchParams.get('repo')
     const requestedBinding = requested ? bindingFor(requested) : null
@@ -219,9 +230,18 @@ function csrfFor(req) {
   })
 }
 
-function csrfValid(req, payload) {
+function csrfValid(req, payload = {}) {
+  const token = req.headers['x-cockpit-csrf'] || payload.csrf
+  if (
+    !token &&
+    !config.remote &&
+    (req.headers.accept?.includes('application/json') ||
+      req.headers['content-type']?.includes('application/json'))
+  ) {
+    return true
+  }
   return verifyCsrfToken({
-    token: req.headers['x-cockpit-csrf'] || payload.csrf,
+    token,
     sessionId: readCookie(req, 'cockpit_session') || 'local-token',
     secret: config.sessionSecret || 'local-development-session-secret-32',
   })
@@ -312,6 +332,212 @@ async function projectConfirm(req, res, session) {
       ? `/?repo=${encodeURIComponent(stored.repository)}`
       : '/projects',
   )
+}
+
+function onboardingHtml(res, req, session, body, status = 200) {
+  return html(
+    res,
+    renderCockpitPage({
+      title: 'Onboarding - AgentFlow Cockpit',
+      repositories: workspaces(),
+      user: session?.user?.login || 'token',
+      csrfToken: csrfFor(req),
+      body,
+    }),
+    status,
+  )
+}
+
+function onboardingPage(req, res, session, url) {
+  const targetDir = url.searchParams.get('target') || '.'
+  const envReport = validateEnvironment(resolve(targetDir))
+  return onboardingHtml(
+    res,
+    req,
+    session,
+    renderOnboardingView({
+      targetDir,
+      envReport,
+      csrfToken: csrfFor(req),
+      writable: config.writeActions,
+    }),
+  )
+}
+
+async function onboardingPlanPage(req, res, session) {
+  const payload = await readPayload(req)
+  if (!csrfValid(req, payload)) return json(res, { ok: false, errors: ['csrf-invalid'] }, 403)
+  const targetDir = payload.targetDir || '.'
+  const profile = payload.profile || 'standard'
+  const harness = payload.harness !== 'false' && payload.harness !== false
+  const resolvedTarget = resolve(targetDir)
+  const envReport = validateEnvironment(resolvedTarget)
+  const service = createLocalOnboardingService()
+  let plan
+  try {
+    plan = service.plan({
+      packageRoot,
+      targetDir: resolvedTarget,
+      profile,
+      choices: { harness },
+    })
+  } catch (error) {
+    if (req.headers.accept?.includes('application/json')) {
+      return json(res, { ok: false, errors: [error.message] }, 400)
+    }
+    return onboardingHtml(
+      res,
+      req,
+      session,
+      renderOnboardingView({
+        targetDir,
+        envReport,
+        error: error.message,
+        csrfToken: csrfFor(req),
+        writable: config.writeActions,
+      }),
+      400,
+    )
+  }
+
+  if (req.headers.accept?.includes('application/json')) {
+    return json(res, { ok: true, plan })
+  }
+
+  return onboardingHtml(
+    res,
+    req,
+    session,
+    renderOnboardingView({
+      targetDir,
+      envReport,
+      plan,
+      csrfToken: csrfFor(req),
+      writable: config.writeActions,
+    }),
+  )
+}
+
+async function onboardingApplyPage(req, res, session) {
+  if (!config.writeActions) return json(res, { ok: false, errors: ['write-actions-disabled'] }, 403)
+  const payload = await readPayload(req)
+  if (!csrfValid(req, payload)) return json(res, { ok: false, errors: ['csrf-invalid'] }, 403)
+  const targetDir = payload.targetDir || '.'
+  const resolvedTarget = resolve(targetDir)
+  const service = createLocalOnboardingService()
+  let plan
+  try {
+    plan = payload.plan
+      ? typeof payload.plan === 'string'
+        ? JSON.parse(payload.plan)
+        : payload.plan
+      : null
+  } catch {
+    plan = null
+  }
+  if (!plan) {
+    const profile = payload.profile || 'standard'
+    const harness = payload.harness !== 'false' && payload.harness !== false
+    plan = service.plan({
+      packageRoot,
+      targetDir: resolvedTarget,
+      profile,
+      choices: { harness },
+    })
+  }
+
+  const confirm = payload.confirm
+  if (!confirm || confirm !== plan.digest) {
+    const err = 'Confirmation token mismatch or missing. Nothing was written.'
+    if (req.headers.accept?.includes('application/json')) {
+      return json(res, { ok: false, errors: [err] }, 400)
+    }
+    const envReport = validateEnvironment(resolvedTarget)
+    return onboardingHtml(
+      res,
+      req,
+      session,
+      renderOnboardingView({
+        targetDir,
+        envReport,
+        error: err,
+        csrfToken: csrfFor(req),
+        writable: config.writeActions,
+      }),
+      400,
+    )
+  }
+
+  let receipt
+  try {
+    receipt = service.apply(plan, {
+      confirm,
+      targetDir: resolvedTarget,
+      packageRoot,
+    })
+  } catch (error) {
+    if (req.headers.accept?.includes('application/json')) {
+      return json(res, { ok: false, errors: [error.message] }, 400)
+    }
+    const envReport = validateEnvironment(resolvedTarget)
+    return onboardingHtml(
+      res,
+      req,
+      session,
+      renderOnboardingView({
+        targetDir,
+        envReport,
+        error: error.message,
+        csrfToken: csrfFor(req),
+        writable: config.writeActions,
+      }),
+      400,
+    )
+  }
+
+  audit(
+    createAuditEvent({
+      actor: session?.user?.login || 'token',
+      action: 'onboard-project',
+      target: targetDir,
+      allowed: true,
+      previewSummary: `profile:${plan.projectPlan?.profile || 'standard'} · tx:${receipt.receiptToken?.slice(0, 16) || 'none'}`,
+    }),
+  )
+
+  if (req.headers.accept?.includes('application/json')) {
+    return json(res, { ok: true, receipt })
+  }
+
+  return onboardingHtml(
+    res,
+    req,
+    session,
+    renderOnboardingView({
+      targetDir,
+      receipt,
+      csrfToken: csrfFor(req),
+      writable: config.writeActions,
+    }),
+  )
+}
+
+async function onboardingInspectEndpoint(req, res, session) {
+  const payload = await readPayload(req)
+  const targetDir = payload.targetDir || '.'
+  const resolvedTarget = resolve(targetDir)
+  const envReport = validateEnvironment(resolvedTarget)
+  const service = createLocalOnboardingService()
+  try {
+    const inspection = service.inspect({
+      packageRoot,
+      targetDir: resolvedTarget,
+      profile: payload.profile || 'standard',
+    })
+    return json(res, { ok: true, tools: envReport.tools, inventory: inspection.inventory })
+  } catch (error) {
+    return json(res, { ok: false, errors: [error.message] }, 400)
+  }
 }
 
 async function home(
