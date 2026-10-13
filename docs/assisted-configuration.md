@@ -194,3 +194,39 @@ When using Claude Code or Pi, the maintainer suite provides dedicated slash comm
 - `/agentflow:doctor`: Run drift and health inspection.
 - `/agentflow:repair`: Transactionally fix configuration drift.
 - `/agentflow:undo`: Rollback the most recent change.
+
+## Guided Onboarding Stepper and Cockpit Affordance
+
+### Terminal Stepper Wizard
+
+For developers and maintainers adopting or initializing AgentFlow in greenfield or brownfield repositories without memorizing CLI flags, run the interactive terminal stepper wizard:
+
+```bash
+agentflow-sdlc onboarding wizard
+# Or use the top-level alias:
+agentflow-sdlc wizard
+```
+
+Options:
+
+- `--target <dir>`: Target project directory (defaults to current working directory).
+- `--profile <id>`: Composition profile (`standard`, `minimal`, `github`, `cockpit`).
+- `--yes` or `-y`: Non-interactive auto-confirm mode for automated scripts and headless runs.
+
+The wizard interactively:
+
+1. Verifies the target repository path.
+2. Runs live environment probes for required tools (`git`, `node`) and optional tools (`gh`, harness CLIs), displaying installation guidance if requirements are missing.
+3. Guides profile selection with plain-English descriptions.
+4. Allows toggling agent harnesses (Claude Code, Antigravity, Pi, Codex).
+5. Generates the exact scaffolding plan preview, including file-by-file action breakdown and SHA256 digest.
+6. Prompts for explicit human confirmation before writing files.
+
+### Cockpit Web Affordance
+
+Adopters managing projects visually can use the Cockpit Goal Command Center (`/onboarding`):
+
+- **Environment Readiness**: Visual health indicators for developer tools with installation recommendations.
+- **Composition Selection**: Interactive cards for `standard`, `minimal`, `github`, and `cockpit`.
+- **Scaffolding Preview**: Displays file creations, merges, and overwrites with the plan digest.
+- **Confirmation Gate**: Requires verified confirmation digest and CSRF authorization before applying changes.

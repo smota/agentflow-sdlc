@@ -951,7 +951,7 @@ function handleResume(rest, targetDir) {
 }
 
 const ROOT_USAGE =
-  'Usage: agentflow-sdlc <init|run|doctor|doctor-env|config|adopt|providers|adapters|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding|onboarding-prompt|release-plan|handoff|resume|phase|board|gates|mcp> [path] [--target <dir>] [--json]\n' +
+  'Usage: agentflow-sdlc <init|run|doctor|doctor-env|config|adopt|providers|adapters|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding|onboarding-prompt|wizard|release-plan|handoff|resume|phase|board|gates|mcp> [path] [--target <dir>] [--json]\n' +
   'Execution adapters: agentflow-sdlc adapters <install|update|squads provision|squads update|squads list|squads remove> <id> (see agentflow-sdlc adapters --help)\n'
 
 const COMMAND_USAGE = {
@@ -975,7 +975,9 @@ const COMMAND_USAGE = {
   harness: 'Usage: agentflow-sdlc harness <inspect|scaffold> [--target <dir>] [--force] [--json]\n',
   github: 'Usage: agentflow-sdlc github <setup> [--target <dir>] [--dry-run|--apply] [--json]\n',
   onboarding:
-    'Usage: agentflow-sdlc onboarding <inspect|plan|apply|verify|undo|recover|refine|runtime-request> [--target <dir>] [--profile <id>] [--runtime-request <file>] [--runtime-evidence <file>] [--choices <file>] [--changes <file>] [--plan <file>] [--receipt <file>] [--confirm <digest>] [--json]\nAdopt or bring an installation forward: onboarding plan, then apply. Change an adopted project later: onboarding refine, then apply.\n',
+    'Usage: agentflow-sdlc onboarding <wizard|inspect|plan|apply|verify|undo|recover|refine|runtime-request> [--target <dir>] [--profile <id>] [--runtime-request <file>] [--runtime-evidence <file>] [--choices <file>] [--changes <file>] [--plan <file>] [--receipt <file>] [--confirm <digest>] [--json] [--yes]\nAdopt or bring an installation forward: onboarding plan, then apply. Change an adopted project later: onboarding refine, then apply.\n',
+  wizard:
+    'Usage: agentflow-sdlc wizard [--target <dir>] [--profile <id>] [--yes]\nInteractive terminal stepper guiding project adoption and configuration.\n',
   handoff:
     'Usage: agentflow-sdlc handoff deliver --to <session> (--body-file <file> | --body <text>) [--goal <uri>] [--transition <uri>] [--reply] [--json]\n       agentflow-sdlc handoff list [--rig <rig>] [--all] [--json]\n       agentflow-sdlc handoff flush [--rig <rig>]\n       agentflow-sdlc handoff release <hold-id>   (the person only)\n       agentflow-sdlc handoff busy <rig> --set [--note <text>] | --clear   (--clear: the person only)\n       agentflow-sdlc handoff --run <id> --writer <owner> --generation <n> --execute [--target <dir>] [--json]\nDeliver holds new work while the delivery squad is busy. No option sends anyway; only the person releases.\n',
   phase:
@@ -1185,6 +1187,15 @@ function main() {
   if (command === 'onboarding') {
     try {
       return handleOnboarding(rest, targetDir)
+    } catch (error) {
+      process.stderr.write(`${error.message}\n`)
+      return 1
+    }
+  }
+
+  if (command === 'wizard') {
+    try {
+      return handleOnboarding(['wizard', ...rest], targetDir)
     } catch (error) {
       process.stderr.write(`${error.message}\n`)
       return 1
