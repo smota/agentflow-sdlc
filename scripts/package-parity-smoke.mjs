@@ -155,6 +155,20 @@ try {
   const { resolveCompositionProfile } = await import(
     pathToFileURL(join(packageRoot, 'lib', 'adoption', 'profiles.mjs'))
   )
+  const { inspectDoctor } = await import(
+    pathToFileURL(join(packageRoot, 'lib/services/doctor-service.mjs'))
+  )
+  const doctorResult = inspectDoctor({ packageRoot, targetDir: scratch })
+  if (
+    doctorResult.schemaVersion !== 1 ||
+    Object.keys(doctorResult.dimensions).length !== 4 ||
+    doctorResult.dimensions['lock-integrity'].find((f) => f.id === 'baseline.receipt')
+      ?.alignment !== 'unknown'
+  )
+    throw new Error(
+      'Package consumer doctor service did not expose explicit unknown baseline and four dimensions',
+    )
+
   const profileEntrypoints = {
     minimal: 'lib/core/execution-receipt.mjs',
     standard: 'lib/providers/registry.mjs',
@@ -166,7 +180,7 @@ try {
     const profileTarget = join(scratch, `profile-${profile}`)
     const profilePlan = planAdoption(packageRoot, profileTarget, { profile })
     if (profilePlan.blocked) throw new Error(`packed ${profile} adoption plan is blocked`)
-    applyAdoption(packageRoot, profileTarget, profilePlan, {
+    const profileReceipt = applyAdoption(packageRoot, profileTarget, profilePlan, {
       confirm: profilePlan.token,
       receiptDestination: `${profileTarget}.receipt.json`,
     })
@@ -193,7 +207,88 @@ try {
       }
       JSON.parse(readFileSync(join(profileTarget, steeringPaths[2]), 'utf8'))
     }
-    verifiedProfiles[profile] = { files: selected.length, entrypoint, adoptedSteeringSupport }
+    const doctorConsumer = {}
+    if (profile !== 'minimal') {
+      const servicePaths = [
+        'lib/services/doctor-readers.mjs',
+        'lib/services/doctor-report.mjs',
+        'lib/services/doctor-service.mjs',
+      ]
+      for (const path of servicePaths) {
+        const source = readFileSync(join(root, path))
+        for (const deliveredRoot of [packageRoot, profileTarget]) {
+          if (!readFileSync(join(deliveredRoot, path)).equals(source))
+            throw new Error(`Doctor consumer bytes differ: ${profile}/${path}`)
+        }
+        doctorConsumer[path] = createHash('sha256').update(source).digest('hex')
+      }
+      const adoptedDoctor = await import(pathToFileURL(join(profileTarget, servicePaths[2])))
+      const actualReceipt = profileReceipt.receipt ?? profileReceipt
+      const observed = adoptedDoctor.inspectDoctor({
+        packageRoot: profileTarget,
+        targetDir: profileTarget,
+        baselineReceipt: actualReceipt,
+        harnesses: ['pi'],
+      })
+      if (
+        observed.schemaVersion !== 1 ||
+        Object.keys(observed.dimensions).length !== 4 ||
+        observed.dimensions['lock-integrity'].find((f) => f.id === 'baseline.receipt')
+          ?.alignment !== 'matched'
+      )
+        throw new Error(`Adopted ${profile} doctor failed confirmed consumer journey`)
+      const changedPath = servicePaths[1]
+      const original = readFileSync(join(profileTarget, changedPath))
+      writeFileSync(
+        join(profileTarget, changedPath),
+        Buffer.concat([original, Buffer.from('\n// controlled stale consumer bytes\n')]),
+      )
+      const stale = adoptedDoctor.inspectDoctor({
+        packageRoot: profileTarget,
+        targetDir: profileTarget,
+        baselineReceipt: actualReceipt,
+      })
+      if (
+        stale.dimensions['lock-integrity'].find((f) => f.id === 'baseline.drift.' + changedPath)
+          ?.alignment !== 'differing'
+      )
+        throw new Error(`Adopted ${profile} doctor missed stale service bytes`)
+      rmSync(join(profileTarget, changedPath))
+      const missing = adoptedDoctor.inspectDoctor({
+        packageRoot: profileTarget,
+        targetDir: profileTarget,
+        baselineReceipt: actualReceipt,
+      })
+      if (
+        missing.dimensions['lock-integrity'].find((f) => f.id === 'baseline.drift.' + changedPath)
+          ?.structural !== 'missing'
+      )
+        throw new Error(`Adopted ${profile} doctor missed missing service bytes`)
+      const freshImport = spawnSync(
+        process.execPath,
+        [
+          '--input-type=module',
+          '-e',
+          `await import(${JSON.stringify(pathToFileURL(join(profileTarget, servicePaths[2])).href)})`,
+        ],
+        { encoding: 'utf8', windowsHide: true },
+      )
+      if (freshImport.status === 0 || !freshImport.stderr.includes('ERR_MODULE_NOT_FOUND'))
+        throw new Error(`Adopted ${profile} missing dependency import was not rejected`)
+      writeFileSync(join(profileTarget, changedPath), original)
+      doctorConsumer.observations = {
+        confirmed: 'matched',
+        stale: 'differing',
+        missing: 'missing',
+        freshMissingImport: 'ERR_MODULE_NOT_FOUND',
+      }
+    }
+    verifiedProfiles[profile] = {
+      files: selected.length,
+      entrypoint,
+      adoptedSteeringSupport,
+      doctorConsumer,
+    }
   }
   const journeyTarget = join(scratch, 'delivery-consumer')
   const containedPlan = planAdoption(packageRoot, journeyTarget, {

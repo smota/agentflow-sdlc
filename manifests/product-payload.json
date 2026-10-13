@@ -715,6 +715,21 @@
       "source": "lib/onboarding/prompt.mjs",
       "target": "lib/onboarding/prompt.mjs",
       "ownership": "managed"
+    },
+    {
+      "source": "lib/services/doctor-readers.mjs",
+      "target": "lib/services/doctor-readers.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/services/doctor-report.mjs",
+      "target": "lib/services/doctor-report.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/services/doctor-service.mjs",
+      "target": "lib/services/doctor-service.mjs",
+      "ownership": "managed"
     }
   ]
 }

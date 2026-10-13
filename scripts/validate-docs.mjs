@@ -7,10 +7,12 @@ import { POSTURES, EVIDENCE_VOCABULARY_TERMS } from '../lib/sdlc-vocabulary.mjs'
 const KNOWN_CLI_COMMANDS = new Set([
   'init',
   'run',
+  'doctor',
   'doctor-env',
   'config',
   'adopt',
   'providers',
+  'adapters',
   'collaboration',
   'sdlc',
   'cockpit',
