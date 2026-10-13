@@ -168,11 +168,26 @@ tick, with actual custody/checkpoint evidence and terminal escalation on exhaust
 unknown effects rather than replay them, and reconcile distinct state-only/journal-only partial
 pairs from authoritative receipts; no atomic two-file or exactly-once claim.
 
-These support files specify a protocol, not a runtime engine. No scheduler, adapter implementation,
-new execution verb, live authentication service or reverse-seam mechanism ships here. Existing
-sources and roles retain authority; their unavailable or busy state remains held. Runtime adapters
-and reverse-seam mechanics remain deferred (#431/#432). Conversation context is never the source
-of truth; MUST NOT sleep, wait or poll inside a turn.
+These support files specify a protocol, not a runtime engine. No scheduler, live authentication
+service or reverse-seam mechanism ships here. Existing sources and roles retain authority; their
+unavailable or busy state remains held. Execution adapters are mapped in
+[adapter-openrig](references/adapter-openrig.md) (#431); reverse-seam mechanics remain in #432.
+Conversation context is never the source of truth; MUST NOT sleep, wait or poll inside a turn.
+
+## Execution Verbs and Adapter Decoupling
+
+When dispatching work or inspecting squad execution, the steering PO invokes a provider-neutral 6-verb interface:
+`assign(seat, brief_ref)`, `observe(seat)`, `nudge(seat, level)`, `read(artifact)`, `merge(pr)`, and `escalate(class, msg)`.
+Steering reasoning remains strictly decoupled from runtime mechanics through explicit markdown reference tables:
+
+- Primary OpenRig topology: [adapter-openrig](references/adapter-openrig.md)
+- Standalone tmux fallback: [adapter-tmux](references/adapter-tmux.md)
+- Remote GitHub native fallback: [adapter-github](references/adapter-github.md)
+
+Two core invariants govern execution:
+
+1. **Ground Truth Invariant**: Seats report progress exclusively through durable artifacts (`.agent-runs/`, git commits, PR bodies, issue comments). Telemetry and terminal glances are strictly for liveness checks and stall detection.
+2. **Bounded Observation Invariant**: Raw captures MUST NEVER exceed 40 lines and MUST be summarized immediately to exactly one discrete state (`idle`, `busy`, `waiting-input`, `stalled`, `exited`).
 
 ## Collaboration
 
