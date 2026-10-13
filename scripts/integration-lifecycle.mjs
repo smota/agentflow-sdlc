@@ -205,6 +205,11 @@ function normalizePr(pr) {
   }
 }
 
+export function parseGoalReferences(text = '') {
+  const matches = [...String(text).matchAll(/^Part of #(\d+)[ \t]*$/gim)].map((m) => Number(m[1]))
+  return [...new Set(matches)].sort((a, b) => a - b)
+}
+
 export function planIntegrationLifecycle(pr, config) {
   if (!pr.merged) return { ok: true, skipped: true, reason: 'PR is not merged', issues: [] }
   if (pr.baseRefName !== config.integrationBranch) {
@@ -216,11 +221,17 @@ export function planIntegrationLifecycle(pr, config) {
     }
   }
   const issues = parseIssueReferences(pr.body, config)
+  const affectedGoals = parseGoalReferences(pr.body)
   return {
     ok: true,
     skipped: issues.length === 0,
     reason: issues.length === 0 ? 'No integration issue references found' : undefined,
     issues,
+    affectedGoals,
+    goalSyncInstruction:
+      affectedGoals.length > 0
+        ? `Run: agentflow-sdlc goal sync ${affectedGoals.join(',')} --apply`
+        : undefined,
     comment: buildIntegrationComment({
       prNumber: pr.number,
       prUrl: pr.url,

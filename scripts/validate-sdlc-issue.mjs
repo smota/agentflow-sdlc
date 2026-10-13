@@ -28,6 +28,12 @@ else {
   for (const part of report.parts?.replaced ?? [])
     process.stdout.write(`  REPLACED #${part.number} by #${part.by}\n`)
   if (report.replacedBy) process.stdout.write(`  Replaced by #${report.replacedBy}\n`)
+  if (report.childStatus) {
+    process.stdout.write(`  CHILD STATUS: ${report.childStatus.statusMessage}\n`)
+    if (report.childStatus.readyForClosure) {
+      process.stdout.write('  READY FOR CLOSURE: yes (all child capabilities delivered)\n')
+    }
+  }
   process.stdout.write(`Result: ${report.ok ? 'READY' : 'FAILED'}\n`)
 }
 process.exit(report.ok ? 0 : 1)

@@ -424,10 +424,12 @@ function handleSdlc(rest, targetDir) {
     return runScript('scripts/validate-multi-agent-acceptance.mjs', pass, targetDir)
   if (subcommand === 'audit') return runScript('scripts/sdlc-audit.mjs', pass, targetDir)
   if (subcommand === 'migrate') return runScript('scripts/sdlc-migrate.mjs', pass, targetDir)
+  if (subcommand === 'sync-goal') return runScript('scripts/sync-goal-ledger.mjs', pass, targetDir)
   process.stderr.write(`Usage:
   agentflow-sdlc sdlc validate [--target <dir>] [--json]
   agentflow-sdlc sdlc validate-authority [--target <dir>] [--json]
   agentflow-sdlc sdlc migrate-authority <plan|apply --confirm <plan-token>> [--target <dir>]
+  agentflow-sdlc sdlc sync-goal --goal <n> [--records <file.json>] [--apply] [--json]
   agentflow-sdlc sdlc validate-issue --path <issue.json> [--json]
   agentflow-sdlc sdlc validate-role-pass --path <role-pass.md> [--json]
   agentflow-sdlc sdlc validate-pr --path <pr-body.md> [--json]
@@ -1056,10 +1058,11 @@ function handleResume(rest, targetDir) {
 }
 
 const ROOT_USAGE =
-  'Usage: agentflow-sdlc <init|run|doctor|doctor-env|config|adopt|providers|adapters|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding|onboarding-prompt|wizard|release-plan|handoff|resume|phase|board|gates|mcp|project> [path] [--target <dir>] [--json]\n' +
+  'Usage: agentflow-sdlc <init|run|doctor|doctor-env|config|adopt|providers|adapters|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding|onboarding-prompt|wizard|release-plan|handoff|resume|phase|board|gates|mcp|project|goal> [path] [--target <dir>] [--json]\n' +
   'Execution adapters: agentflow-sdlc adapters <install|update|squads provision|squads update|squads list|squads remove> <id> (see agentflow-sdlc adapters --help)\n'
 
 const COMMAND_USAGE = {
+  goal: 'Usage: agentflow-sdlc goal <sync|status|ledger> <number> [--records <file>] [--section <name>] [--apply] [--json]\nManage goal child completion tracking and synchronized delivery ledger.\n',
   init: 'Usage: agentflow-sdlc init [--profile <id>] [--posture <posture>] [--no-harness] [--sync] [--target <dir>] [--force] [--json]\nLow-level primitive: applies the adoption plan without a separate confirmation. To adopt a project, use `agentflow-sdlc onboarding`.\n',
   config:
     "Usage: agentflow-sdlc config <doctor|check|sync|inspect|prompt|project|validate|consolidate> [--target <dir>] [--harness <name>] [--dry-run|--apply] [--confirm <token>] [--json]\nLow-level primitive. To change an adopted project, use `agentflow-sdlc onboarding refine`. `config sync` changes other agents' harnesses and runs only when you ask for it.\n",
@@ -1368,6 +1371,14 @@ function main() {
   if (command === 'mcp') {
     startMcpStdioServer({ packageRoot, targetDir })
     return 0
+  }
+
+  if (command === 'goal') {
+    const [subcommand, ...goalRest] = rest
+    if (subcommand === 'sync' || subcommand === 'status' || subcommand === 'ledger') {
+      return runScript('scripts/sync-goal-ledger.mjs', goalRest, targetDir)
+    }
+    return runScript('scripts/sync-goal-ledger.mjs', rest, targetDir)
   }
 
   process.stderr.write(ROOT_USAGE)

@@ -437,6 +437,8 @@ If a PR implements the final remaining open child issues of an Epic, the PR body
 `Closes #<epic>` after the child closure lines. Do not add the Epic close line early while any child
 issue is still open or intentionally deferred.
 
+For **Goals** (`kind:goal`), parent goals must **never** be auto-closed by child PR merges. When all child capabilities are integrated, the goal's `## Child Work & History` ledger reflects the completed status and marks the goal as ready for human review and closure (`agentflow-sdlc goal sync <number>`). Closure of a goal remains an explicit action reserved for the human person.
+
 PR readiness is incomplete until the created PR is verified directly in GitHub for:
 
 - PR number/URL
