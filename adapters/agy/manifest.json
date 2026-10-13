@@ -13,7 +13,8 @@
     "agentflow-designer",
     "agentflow-migrator",
     "agentflow-auditor",
-    "agentflow-steerer"
+    "agentflow-steerer",
+    "agentflow-maintainer"
   ],
   "roles": [
     "requester",

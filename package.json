@@ -9,7 +9,8 @@
     "node": ">=20.0.0"
   },
   "bin": {
-    "agentflow-sdlc": "./bin/cli.mjs"
+    "agentflow-sdlc": "./bin/cli.mjs",
+    "agentflow-mcp": "./bin/agentflow-mcp.mjs"
   },
   "scripts": {
     "test": "vitest run",

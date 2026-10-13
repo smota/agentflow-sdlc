@@ -61,6 +61,7 @@ function installPackage() {
     'auditor',
     'collaborator',
     'designer',
+    'maintainer',
     'migrator',
     'orchestrator',
     'scanner',
