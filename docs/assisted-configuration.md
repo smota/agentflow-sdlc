@@ -108,26 +108,26 @@ agentflow-sdlc onboarding undo --target /path/to/project --receipt .agentflow/tr
 ```
 
 Undo restores the prior configuration bytes exactly. It refuses when the file changed after the
-apply.
+apply. If `--receipt` is omitted, `onboarding undo` automatically discovers the most recent transaction receipt in `.agentflow/transactions/`. Running without `--confirm` previews the rollback mutations and displays the required confirmation token.
 
 ## Other settings
 
 `sdlc.config.json`, the harness defaults under `.agentflow/`, role routing and extension packs are
 not part of refinement. Change them with your usual review, and check them with `config doctor`.
 
-## Sync other agents' harnesses (only on request)
+## Sync other agents' harnesses (deprecated for direct writes)
 
 `config sync` generates skill, role, plugin and settings adapters for other agent harnesses. It is
-a maintainer operation, separate from refinement. Run it only when you ask for exactly that, after
-reviewing its preview:
+a maintainer operation, separate from refinement. Direct writes from `config sync --apply` are deprecated
+in favor of preview-confirmed transactional refinement via `agentflow-sdlc onboarding refine`.
+If you still need harness adapter sync, review its preview first:
 
 ```bash
 agentflow-sdlc config sync --dry-run --target /path/to/project
 agentflow-sdlc config sync --apply --target /path/to/project
 ```
 
-It is not a transaction: an error can leave earlier operations applied, and there is no automatic
-undo. Use version control to review or restore affected files.
+Direct sync is not an atomic transaction and has no rollback journal. Prefer `onboarding refine` for safe, reversible updates.
 
 ## Hand a refinement to an agent
 

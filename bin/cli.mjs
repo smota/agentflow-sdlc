@@ -232,6 +232,9 @@ function handleConfig(rest, targetDir) {
   if (subcommand === 'sync') {
     const write = rest.includes('--apply') && !rest.includes('--dry-run')
     const result = runConfigSync({ packageRoot, targetDir, harness, write })
+    if (write && result.deprecation?.warning && !json) {
+      process.stderr.write(`[DEPRECATION] ${result.deprecation.warning}\n`)
+    }
     if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
     else printConfigSyncReport(result)
     return result.ok ? 0 : 1
