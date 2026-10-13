@@ -70,6 +70,39 @@ try {
       throw new Error(`Packed skill differs from canonical source: ${skill.qualifiedName}`)
   }
 
+  const steeringPaths = [
+    'skills/agentflow-steerer/references/envelope.md',
+    'skills/agentflow-steerer/references/heartbeat.md',
+    'skills/agentflow-steerer/assets/steer-state.yaml',
+  ]
+  const steeringSupport = {}
+  for (const path of steeringPaths) {
+    const canonical = readFileSync(join(root, path))
+    for (const delivered of [path, `adapters/claude-code/${path}`]) {
+      const packedBytes = readFileSync(join(packageRoot, delivered))
+      if (!packedBytes.equals(canonical))
+        throw new Error(`Packed steering support differs: ${delivered}`)
+      steeringSupport[delivered] = createHash('sha256').update(packedBytes).digest('hex')
+    }
+  }
+  JSON.parse(readFileSync(join(packageRoot, steeringPaths[2]), 'utf8'))
+  const { syncSkillAdapters, adapterStatus, HARNESS_TARGETS } = await import(
+    pathToFileURL(join(packageRoot, 'lib/skill-adapters.mjs'))
+  )
+  for (const harness of Object.keys(HARNESS_TARGETS)) {
+    const skillTarget = join(scratch, `steering-${harness}`)
+    mkdirSync(skillTarget)
+    syncSkillAdapters({ packageRoot, targetDir: skillTarget, harness, write: true })
+    for (const path of steeringPaths) {
+      const support = path.slice('skills/agentflow-steerer/'.length)
+      const copied = join(skillTarget, HARNESS_TARGETS[harness], 'agentflow-steerer', support)
+      if (!readFileSync(copied).equals(readFileSync(join(root, path))))
+        throw new Error(`Packed ${harness} steering support differs: ${path}`)
+    }
+    if (adapterStatus({ packageRoot, targetDir: skillTarget, harness }).stale.length)
+      throw new Error(`Packed ${harness} steering adapters are stale`)
+  }
+
   let symlinkRuntimeChecked = false
   if (process.platform === 'linux') {
     const { inspectProcessRuntime } = await import(
@@ -150,7 +183,17 @@ try {
         }
       }
     }
-    verifiedProfiles[profile] = { files: selected.length, entrypoint }
+    const adoptedSteeringSupport = {}
+    if (profile !== 'minimal') {
+      for (const path of steeringPaths) {
+        const bytes = readFileSync(join(profileTarget, path))
+        if (!bytes.equals(readFileSync(join(root, path))))
+          throw new Error(`Adopted ${profile} steering support differs: ${path}`)
+        adoptedSteeringSupport[path] = createHash('sha256').update(bytes).digest('hex')
+      }
+      JSON.parse(readFileSync(join(profileTarget, steeringPaths[2]), 'utf8'))
+    }
+    verifiedProfiles[profile] = { files: selected.length, entrypoint, adoptedSteeringSupport }
   }
   const journeyTarget = join(scratch, 'delivery-consumer')
   const containedPlan = planAdoption(packageRoot, journeyTarget, {
@@ -381,6 +424,8 @@ try {
         sourceDirty: Boolean(run('git', ['status', '--porcelain']).trim()),
         files: packEntry.files.length,
         sourceAndPackedHelpMatch: true,
+        steeringSupport,
+        steeringHarnesses: Object.keys(HARNESS_TARGETS),
         symlinkRuntimeChecked,
         roleCatalogValid: roleValidation.ok,
         methodCatalogValid: methodValidation.ok,
