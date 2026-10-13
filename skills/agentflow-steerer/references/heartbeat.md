@@ -4,7 +4,7 @@ A tick is one bounded decision turn triggered externally. It reads small durable
 current source authority, and exits. It MUST NOT accumulate conversation as state, schedule itself,
 sleep, wait for a reset, or poll inside the turn. This document specifies a protocol, not a shipped
 runtime loop. Execution verbs are mapped via [adapter-openrig](adapter-openrig.md); reverse-seam
-mechanics remain in #432. No new source owner, lifecycle phase or scheduler is installed by this skill.
+governance is codified in [seam-rules](seam-rules.md). No new source owner, lifecycle phase or scheduler is installed by this skill.
 
 Read the [envelope and state contract](envelope.md) before using this procedure. The
 [inert template](../assets/steer-state.yaml) is a starting shape only. Availability of the skill

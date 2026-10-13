@@ -402,6 +402,11 @@
       "ownership": "managed"
     },
     {
+      "source": "skills/agentflow-steerer/references/seam-rules.md",
+      "target": "skills/agentflow-steerer/references/seam-rules.md",
+      "ownership": "managed"
+    },
+    {
       "source": "skills/agentflow-steerer/assets/steer-state.yaml",
       "target": "skills/agentflow-steerer/assets/steer-state.yaml",
       "ownership": "managed"
