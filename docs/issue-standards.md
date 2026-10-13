@@ -133,6 +133,29 @@ records (`validate-sdlc-issue --records <file>`), the issue validator refuses tw
 replace one note, a capability that names more than one note, a note under another parent, and a
 replacement of a goal, a spec, an admitted capability, or itself.
 
+### Goal Child Completion and Parts Ledger
+
+Goals maintain a deterministic, structured section under `## Child Work & History` (or `## Parts Ledger`) documenting all child parts, replacement relations, merging PRs, commits, dates, and delivery completion:
+
+```markdown
+## Child Work & History
+
+> **Status:** All child capabilities delivered — ready for person review/closure
+> **Progress:** 5/5 delivered (100%)
+
+| Part | Kind       | Title                                    | Status    | Replacement   | Delivery PR | Commit    | Date       |
+| :--- | :--------- | :--------------------------------------- | :-------- | :------------ | :---------- | :-------- | :--------- |
+| #440 | capability | capability: zero-friction assisted setup | Delivered | Replaces #435 | #445        | `573989c` | 2026-10-13 |
+| #441 | capability | capability: self-healing configuration   | Delivered | —             | #446        | `6b823dd` | 2026-10-13 |
+```
+
+Rules and Invariants:
+
+1. **Non-Automatic Closure Invariant**: Parent goals must **never** be auto-closed by child PR merges. The human person retains final authority to review and close the completed goal.
+2. **Ready-for-Closure Milestone**: When all admitted child capabilities are delivered, the goal ledger visibly reflects this milestone with `> **Status:** All child capabilities delivered — ready for person review/closure`.
+3. **Audit Trail**: Every delivered child records its merging PR, merge commit SHA, completion date, and replacement mapping.
+4. **Validation & Synchronization**: Tooling (`agentflow-sdlc goal sync <number>`, `scripts/sync-goal-ledger.mjs`, and `scripts/validate-sdlc-issue.mjs --records`) validates ledger consistency against child issue records and rejects desynchronized or premature ready-for-closure statuses. Updating the ledger section does not move the goal subject a person agreed to in human gates.
+
 ## Issue Titles
 
 A legacy record, which has no work kind, must start with one of these exact Conventional Commit prefixes. A goal, capability, or spec uses the kind prefix in [Issue Hierarchy](#issue-hierarchy) instead.
