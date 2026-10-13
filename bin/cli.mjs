@@ -55,6 +55,7 @@ import { handleOnboarding } from '../lib/onboarding/cli.mjs'
 import { ADAPTERS_USAGE, runAdapterLifecycle } from '../lib/adapters/lifecycle.mjs'
 import { formatOnboardingPrompt } from '../lib/onboarding/prompt.mjs'
 import { inspectDoctor, formatDoctorPlain } from '../lib/services/doctor-service.mjs'
+import { safeReadFileUtf8, createReadScope } from '../lib/services/doctor-readers.mjs'
 import os from 'node:os'
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -954,6 +955,8 @@ const COMMAND_USAGE = {
   config:
     "Usage: agentflow-sdlc config <doctor|check|sync|inspect|prompt> [--target <dir>] [--harness <name>] [--dry-run|--apply] [--json]\nLow-level primitive. To change an adopted project, use `agentflow-sdlc onboarding refine`. `config sync` changes other agents' harnesses and runs only when you ask for it.\n",
   run: 'Usage: agentflow-sdlc run <source-plan|start|status|context|next|freeze|verify|intent-plan|advance|checkpoint|pause|handoff|resume|grant-plan|grant-issue|grant-status|grant-revoke|act|reconcile|journal-reconcile|migrate|resolve-escalation|publish> <id> [--target <dir>] [--execute] [--plan <file> --confirm <digest>] [--json]\n',
+  doctor:
+    'Usage: agentflow-sdlc doctor [--target <dir>] [--harness <name>] [--baseline-receipt <file>] [--runtime-request <file>] [--runtime-evidence <file>] [--json]\nRead-only project inspection. Evidence file paths must remain inside the target project.\n',
   'doctor-env': 'Usage: agentflow-sdlc doctor-env [--inspect] [--target <dir>] [--json]\n',
   adopt:
     'Usage: agentflow-sdlc adopt <profiles|plan|apply|rollback|recover> [--profile <id>] [--target <dir>] [--json]\nLow-level primitive: the AgentFlow file transaction only. To adopt a project, use `agentflow-sdlc onboarding`.\n',
@@ -988,10 +991,35 @@ function requestedHelp(args) {
 function handleDoctor(rest, targetDir) {
   const json = rest.includes('--json')
   const harness = getFlag(rest, '--harness', 'all')
+  const inputs = {}
+  const scope = createReadScope()
+  for (const [flag, field] of [
+    ['--baseline-receipt', 'baselineReceipt'],
+    ['--runtime-request', 'runtimeRequest'],
+    ['--runtime-evidence', 'runtimeEvidence'],
+  ]) {
+    if (!rest.includes(flag)) continue
+    const file = getFlag(rest, flag, null)
+    const read =
+      typeof file === 'string' ? safeReadFileUtf8(targetDir, file, undefined, scope) : { ok: false }
+    try {
+      if (!read.ok) throw new Error('invalid-input')
+      inputs[field] = JSON.parse(read.content)
+    } catch {
+      const error = { schemaVersion: 1, error: 'doctor-input-invalid', field }
+      process.stdout.write(
+        json
+          ? JSON.stringify(error) + '\n'
+          : 'Doctor evidence input could not be safely parsed: ' + field + '\n',
+      )
+      return 2
+    }
+  }
   const report = inspectDoctor({
     packageRoot,
     targetDir,
-    harnesses: [harness],
+    harnesses: harness.split(','),
+    ...inputs,
   })
   if (json) {
     process.stdout.write(JSON.stringify(report, null, 2) + '\n')

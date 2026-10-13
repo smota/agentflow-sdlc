@@ -19,7 +19,17 @@ agentflow-sdlc doctor --target /path/to/project
 agentflow-sdlc doctor --target /path/to/project --json
 ```
 
-The inspector separates missing, invalid, and matched dimensions, flags drift against the confirmed baseline, preserves authored AGENTS and instructions, and honestly reports unverified runtime reachability as unknown.
+The inspector separates structural `missing`/`invalid`/`valid` from baseline `matched`/`differing`/`unknown`. A match requires a sealed applied adoption receipt bound to this project and its canonical `agent-framework-lock.json`; the content seal is not actor authentication. Unsupported refinement receipts, missing confirmation and incomplete coverage remain unknown. To supply retained evidence explicitly:
+
+```bash
+agentflow-sdlc doctor --target /path/to/project --baseline-receipt receipt.json --json
+```
+
+Evidence paths (`--baseline-receipt`, `--runtime-request`, `--runtime-evidence`) must remain inside the target project. The inspector never reads a default external receipt or launches a runtime probe. Executable presence is not live reachability; supplied runtime evidence with unknown source/freshness also remains unknown.
+
+Inspection is cooperative and bounded: regular files up to 10 MiB, an aggregate 64 MiB, 2,048 selected entries, and at most 512 details in each finding/dimension/remediation list. Symlink aliases and credential paths are not inspected. Counts describe observed scope; `summary.incomplete`, omitted-detail counts and unknown findings disclose incomplete scope. This is not a host sandbox or an exhaustive no-mutation certification. Exit codes are 0 for complete valid/matching scope, 1 for observed defects, and 2 for unknown-only scope or invalid evidence usage. Known defects take precedence over incomplete coverage.
+
+Repair pointers are prospective only: doctor does not write, synchronize, install, repair, or replace authored instructions and custom configuration. Review any later repair separately.
 
 These are read-only:
 
