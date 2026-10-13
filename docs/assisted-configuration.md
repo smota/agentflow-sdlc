@@ -146,3 +146,51 @@ You are acting as an assisted configuration collaborator. Follow the refinement 
 4. Apply: Once I confirm, run `agentflow-sdlc onboarding apply --target "/path/to/project" --changes changes.json --confirm <digest>`. It changes only this project. Runtimes manage their own skill discovery; change no other agent's harness unless I ask for that by name.
 5. Verify: Report the readiness report and its undo command, then re-run `agentflow-sdlc config doctor`; report unresolved warnings and their disposition.
 ```
+
+## Conversational maintenance & MCP server
+
+Maintainers interacting directly inside coding agents (Claude Code, Codex, Antigravity, Pi) can use the typed Model Context Protocol (MCP) server `agentflow-mcp` or the canonical `agentflow-maintainer` skill.
+
+### MCP configuration
+
+Add `agentflow-mcp` to your harness configuration (e.g. `.claude/settings.json`, `claude.json`, or Antigravity config):
+
+```json
+{
+  "mcpServers": {
+    "agentflow": {
+      "command": "agentflow-mcp"
+    }
+  }
+}
+```
+
+Or via local npx:
+
+```json
+{
+  "mcpServers": {
+    "agentflow": {
+      "command": "npx",
+      "args": ["-y", "agentflow-sdlc", "mcp"]
+    }
+  }
+}
+```
+
+### Typed MCP tools
+
+- `agentflow_status`: Inspect whether the target project has adopted AgentFlow, its active profile, and rollback history.
+- `agentflow_doctor`: Run health diagnostics and configuration drift inspection.
+- `agentflow_plan_change`: Generate preview diffs and plan tokens without touching files.
+- `agentflow_apply_change`: Apply planned mutations transactionally with an automatic rollback journal. **Enforces human confirmation (`confirm: true`)**.
+- `agentflow_undo`: Restore previous files using the latest or specified journal receipt.
+
+### Slash commands
+
+When using Claude Code or Pi, the maintainer suite provides dedicated slash commands:
+
+- `/agentflow:setup`: Adopt AgentFlow SDLC in this project conversationally.
+- `/agentflow:doctor`: Run drift and health inspection.
+- `/agentflow:repair`: Transactionally fix configuration drift.
+- `/agentflow:undo`: Rollback the most recent change.

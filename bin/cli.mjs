@@ -56,6 +56,7 @@ import { ADAPTERS_USAGE, runAdapterLifecycle } from '../lib/adapters/lifecycle.m
 import { formatOnboardingPrompt } from '../lib/onboarding/prompt.mjs'
 import { inspectDoctor, formatDoctorPlain } from '../lib/services/doctor-service.mjs'
 import { safeReadFileUtf8, createReadScope } from '../lib/services/doctor-readers.mjs'
+import { startMcpStdioServer } from '../lib/mcp/server.mjs'
 import os from 'node:os'
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -950,7 +951,7 @@ function handleResume(rest, targetDir) {
 }
 
 const ROOT_USAGE =
-  'Usage: agentflow-sdlc <init|run|doctor|doctor-env|config|adopt|providers|adapters|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding|onboarding-prompt|release-plan|handoff|resume|phase|board|gates> [path] [--target <dir>] [--json]\n' +
+  'Usage: agentflow-sdlc <init|run|doctor|doctor-env|config|adopt|providers|adapters|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding|onboarding-prompt|release-plan|handoff|resume|phase|board|gates|mcp> [path] [--target <dir>] [--json]\n' +
   'Execution adapters: agentflow-sdlc adapters <install|update|squads provision|squads update|squads list|squads remove> <id> (see agentflow-sdlc adapters --help)\n'
 
 const COMMAND_USAGE = {
@@ -985,6 +986,7 @@ const COMMAND_USAGE = {
     'Usage: agentflow-sdlc gates <open|answer|candidate|on-behalf|sync|waiting> --medium <filesystem|github> [--root <dir> | --repo <owner/repo> --issue <n>] [--json]\nPerson gates on the work record. A person runs gates answer in their own terminal; it refuses to run under an agent runtime.\n',
   resume:
     'Usage: agentflow-sdlc resume --run <id> --packet <file> --writer <replacement> --writer-pid <pid> [--plan <file> --confirm <digest> --generation <old-n> --execute] [--target <dir>] [--json]\n',
+  mcp: 'Usage: agentflow-sdlc mcp [--target <dir>]\nRun stdio Model Context Protocol (MCP) server exposing AgentFlow maintainer tools.\n',
 }
 
 function requestedHelp(args) {
@@ -1234,6 +1236,11 @@ function main() {
       process.stderr.write(`${error.message}\n`)
       return 1
     }
+  }
+
+  if (command === 'mcp') {
+    startMcpStdioServer({ packageRoot, targetDir })
+    return 0
   }
 
   process.stderr.write(ROOT_USAGE)

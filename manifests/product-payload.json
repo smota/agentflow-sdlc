@@ -372,6 +372,11 @@
       "ownership": "managed"
     },
     {
+      "source": "skills/agentflow-maintainer/SKILL.md",
+      "target": "skills/agentflow-maintainer/SKILL.md",
+      "ownership": "managed"
+    },
+    {
       "source": "skills/agentflow-steerer/references/envelope.md",
       "target": "skills/agentflow-steerer/references/envelope.md",
       "ownership": "managed"

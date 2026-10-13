@@ -15,20 +15,21 @@ Documenting skills makes agent-assisted work easier to audit:
 
 ## Framework-owned skills
 
-AgentFlow ships seven skills with one public naming rule: `agentflow-<skill>`.
+AgentFlow ships eight skills with one public naming rule: `agentflow-<skill>`.
 Use that exact name for discovery, invocation and handoffs. Source folders, `SKILL.md`
 frontmatter, catalog identities and generated adapters use the same name.
 Short names and colon-separated names are not supported invocation aliases.
 
-| Skill                    | Owns                                                                          | Does not own                                           | Local source                                                          |
-| ------------------------ | ----------------------------------------------------------------------------- | ------------------------------------------------------ | --------------------------------------------------------------------- |
-| `agentflow-orchestrator` | Phase state, transition and acceptance evidence, PR-readiness synthesis       | Policy, migration, scans, collaboration, verdicts      | [`skills/agentflow-orchestrator/`](../skills/agentflow-orchestrator/) |
-| `agentflow-collaborator` | Complexity routing, mode, council policy, helper bounds, synthesis            | Phase state, implementation, acceptance verdict        | [`skills/agentflow-collaborator/`](../skills/agentflow-collaborator/) |
-| `agentflow-scanner`      | Read-only discovery scope, findings, evidence maps                            | Remediation, audit verdicts, coordination              | [`skills/agentflow-scanner/`](../skills/agentflow-scanner/)           |
-| `agentflow-designer`     | Canonical policy, schemas, role boundaries                                    | Consumer migration, orchestration, self-audit          | [`skills/agentflow-designer/`](../skills/agentflow-designer/)         |
-| `agentflow-migrator`     | Adoption inventory, mutation plans, transactions                              | Canonical policy, independent certification            | [`skills/agentflow-migrator/`](../skills/agentflow-migrator/)         |
-| `agentflow-auditor`      | Validation, compliance verdict, remediation advice                            | Mutation, implementation, phase coordination           | [`skills/agentflow-auditor/`](../skills/agentflow-auditor/)           |
-| `agentflow-steerer`      | Advisory job framing, capability grooming, dependency and trade-off reasoning | Execution, phase state, acceptance or release approval | [`skills/agentflow-steerer/`](../skills/agentflow-steerer/)           |
+| Skill                    | Owns                                                                                              | Does not own                                                                         | Local source                                                          |
+| ------------------------ | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | --------------------------------------------------------------------- |
+| `agentflow-orchestrator` | Phase state, transition and acceptance evidence, PR-readiness synthesis                           | Policy, migration, scans, collaboration, verdicts                                    | [`skills/agentflow-orchestrator/`](../skills/agentflow-orchestrator/) |
+| `agentflow-collaborator` | Complexity routing, mode, council policy, helper bounds, synthesis                                | Phase state, implementation, acceptance verdict                                      | [`skills/agentflow-collaborator/`](../skills/agentflow-collaborator/) |
+| `agentflow-scanner`      | Read-only discovery scope, findings, evidence maps                                                | Remediation, audit verdicts, coordination                                            | [`skills/agentflow-scanner/`](../skills/agentflow-scanner/)           |
+| `agentflow-designer`     | Canonical policy, schemas, role boundaries                                                        | Consumer migration, orchestration, self-audit                                        | [`skills/agentflow-designer/`](../skills/agentflow-designer/)         |
+| `agentflow-migrator`     | Adoption inventory, mutation plans, transactions                                                  | Canonical policy, independent certification                                          | [`skills/agentflow-migrator/`](../skills/agentflow-migrator/)         |
+| `agentflow-auditor`      | Validation, compliance verdict, remediation advice                                                | Mutation, implementation, phase coordination                                         | [`skills/agentflow-auditor/`](../skills/agentflow-auditor/)           |
+| `agentflow-steerer`      | Advisory job framing, capability grooming, dependency and trade-off reasoning                     | Execution, phase state, acceptance or release approval                               | [`skills/agentflow-steerer/`](../skills/agentflow-steerer/)           |
+| `agentflow-maintainer`   | Health diagnostics, drift inspection, change planning, transactional repair, rollback restoration | Policy redefinition, final compliance certification, autonomous unconfirmed mutation | [`skills/agentflow-maintainer/`](../skills/agentflow-maintainer/)     |
 
 `manifests/skill-catalog.json` is the machine authority for identity, ownership, peer recognition,
 and typed handoffs. Run `agentflow-sdlc skills catalog --json` to inspect it and
@@ -37,7 +38,7 @@ and typed handoffs. Run `agentflow-sdlc skills catalog --json` to inspect it and
 ### Names, installation and discovery
 
 The supported names are `agentflow-auditor`, `agentflow-collaborator`, `agentflow-designer`,
-`agentflow-migrator`, `agentflow-orchestrator`, `agentflow-scanner` and `agentflow-steerer`.
+`agentflow-maintainer`, `agentflow-migrator`, `agentflow-orchestrator`, `agentflow-scanner` and `agentflow-steerer`.
 Each source lives in `skills/<full-skill-name>/SKILL.md`; its `name` field matches its folder.
 
 Inspect the catalog, preview synchronization, then apply it to the intended project:
