@@ -22,6 +22,7 @@
     "adapters/claude-code/skills/agentflow-steerer/references/adapter-openrig.md",
     "adapters/claude-code/skills/agentflow-steerer/references/adapter-tmux.md",
     "adapters/claude-code/skills/agentflow-steerer/references/adapter-github.md",
+    "adapters/claude-code/skills/agentflow-steerer/references/seam-rules.md",
     "adapters/codex/manifest.json",
     "adapters/codex/plugin.json",
     "adapters/pi/manifest.json",
@@ -146,6 +147,7 @@
     "skills/agentflow-steerer/references/adapter-openrig.md",
     "skills/agentflow-steerer/references/adapter-tmux.md",
     "skills/agentflow-steerer/references/adapter-github.md",
+    "skills/agentflow-steerer/references/seam-rules.md",
     "skills/agentflow-maintainer/SKILL.md"
   ],
   "forbiddenPathPrefixes": [

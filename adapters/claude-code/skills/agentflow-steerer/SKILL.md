@@ -168,10 +168,10 @@ tick, with actual custody/checkpoint evidence and terminal escalation on exhaust
 unknown effects rather than replay them, and reconcile distinct state-only/journal-only partial
 pairs from authoritative receipts; no atomic two-file or exactly-once claim.
 
-These support files specify a protocol, not a runtime engine. No scheduler, live authentication
-service or reverse-seam mechanism ships here. Existing sources and roles retain authority; their
-unavailable or busy state remains held. Execution adapters are mapped in
-[adapter-openrig](references/adapter-openrig.md) (#431); reverse-seam mechanics remain in #432.
+These support files specify a protocol, not a runtime engine. No scheduler or live authentication
+service ships here. Existing sources and roles retain authority; their unavailable or busy state
+remains held. Execution adapters are mapped in [adapter-openrig](references/adapter-openrig.md) (#431);
+reverse-seam governance is codified in [seam-rules](references/seam-rules.md) (#432).
 Conversation context is never the source of truth; MUST NOT sleep, wait or poll inside a turn.
 
 ## Execution Verbs and Adapter Decoupling
@@ -188,6 +188,14 @@ Two core invariants govern execution:
 
 1. **Ground Truth Invariant**: Seats report progress exclusively through durable artifacts (`.agent-runs/`, git commits, PR bodies, issue comments). Telemetry and terminal glances are strictly for liveness checks and stall detection.
 2. **Bounded Observation Invariant**: Raw captures MUST NEVER exceed 40 lines and MUST be summarized immediately to exactly one discrete state (`idle`, `busy`, `waiting-input`, `stalled`, `exited`).
+
+## Seam Discipline and Reverse Seam Governance
+
+The interface between product shaping (`agentflow-pm`) and engineering delivery (`agentflow-dev`) follows [seam-rules](references/seam-rules.md):
+
+- **Artifact-Only Handoffs**: Work moving across the seam carries strictly stable capability IDs, goal URIs, immutable disk spec paths, and Given-When-Then observable criteria. Conversational instructions and uncommitted messages are prohibited.
+- **Reverse Seam Returns**: When engineering seats detect technical roadblocks, contradictory assumptions, or scope explosions, they halt implementation and return a structured packet to Phase 1 (Product Intake) rather than inventing workarounds.
+- **Four-Eyes Baseline**: The steering PO never approves code or merges PRs; every integration requires independent reviewer sign-off or council consensus.
 
 ## Collaboration
 
