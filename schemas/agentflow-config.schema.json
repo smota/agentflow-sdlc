@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentflow.dev/schemas/agentflow-config.schema.json",
+  "title": "AgentFlow Canonical Configuration",
+  "type": "object",
+  "required": ["version"],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1
+    },
+    "authority": {
+      "type": "object",
+      "properties": {
+        "human": { "type": "string" },
+        "machine": { "type": "string" },
+        "executionAdapter": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "principles": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "vocabulary": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "roles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["phase", "slug", "label", "owns"],
+        "properties": {
+          "phase": { "type": "integer", "minimum": 0 },
+          "slug": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+          "label": { "type": "string" },
+          "owns": { "type": "array", "items": { "type": "string" } }
+        },
+        "additionalProperties": true
+      }
+    },
+    "paths": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "transitions": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "minItems": 2,
+        "maxItems": 2,
+        "items": { "type": "string" }
+      }
+    },
+    "labels": { "type": "object", "additionalProperties": true },
+    "release": { "type": "object", "additionalProperties": true },
+    "gateways": { "type": "object", "additionalProperties": true },
+    "actionPolicy": { "type": "object", "additionalProperties": true },
+    "extensionPolicy": { "type": "object", "additionalProperties": true },
+    "deliveryPolicy": { "type": "object", "additionalProperties": true },
+    "ciCommands": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "bounded": { "type": "object", "additionalProperties": true },
+    "branching": { "type": "object", "additionalProperties": true },
+    "integrationLifecycle": { "type": "object", "additionalProperties": true },
+    "routing": {
+      "type": "object",
+      "properties": {
+        "defaultMode": { "type": "string" },
+        "agents": { "type": "object", "additionalProperties": true },
+        "roles": { "type": "object", "additionalProperties": true }
+      },
+      "additionalProperties": true
+    },
+    "orchestration": {
+      "type": "object",
+      "properties": {
+        "lifecycle": { "type": "string" },
+        "preCodeReview": { "type": "object", "additionalProperties": true },
+        "concurrency": { "type": "object", "additionalProperties": true }
+      },
+      "additionalProperties": true
+    },
+    "execution": {
+      "type": "object",
+      "properties": {
+        "escalation": { "type": "object", "additionalProperties": true },
+        "fallbackCascade": { "type": "object", "additionalProperties": true }
+      },
+      "additionalProperties": true
+    },
+    "models": {
+      "type": "object",
+      "properties": {
+        "tiers": { "type": "object", "additionalProperties": true },
+        "roleAssignments": { "type": "object", "additionalProperties": true }
+      },
+      "additionalProperties": true
+    },
+    "harness": {
+      "type": "object",
+      "properties": {
+        "shellRunner": { "type": "object", "additionalProperties": true },
+        "limits": { "type": "object", "additionalProperties": true },
+        "scratchPath": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "adapters": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}
