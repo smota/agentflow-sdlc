@@ -1,6 +1,6 @@
 ---
 name: agentflow-steerer
-description: Shape customer jobs, groom vertical capabilities, order dependencies, and propose bounded product trade-offs. Use before delivery selection or when scope, quotas, or build-review disputes need product reasoning; do not use for implementation, phase coordination, or acceptance verdicts.
+description: Shape customer jobs, groom vertical capabilities, order dependencies, and propose bounded product trade-offs; consult the optional stateless heartbeat and envelope protocol only under current source authority. Do not use for implementation, phase coordination, or acceptance verdicts.
 metadata:
   namespace: agentflow
   qualified-name: 'agentflow-steerer'
@@ -19,7 +19,9 @@ Own advisory job framing, capability grooming, dependency reasoning, and trade-o
 The product manager retains outcome and release accountability; the analyst retains scope and
 acceptance; `agentflow-orchestrator` retains workflow phase state, transition evidence, acceptance
 records, and PR readiness. The person decides changes to accepted outcomes, constraints, or
-anti-goals. A steerer proposal is not an approval or a completed phase.
+anti-goals. A steerer proposal is not an approval or a completed phase. Optional tick/recovery
+metadata projects those authoritative records; it MUST NOT become a parallel phase, custody,
+hold or acceptance ledger.
 
 The full cognitive model is below. For supporting methodology, consult
 `docs/sources/product-discipline.md` relative to the adopting project root, not the installed
@@ -147,6 +149,31 @@ Use this compact decision record:
 Omit empty filler, not relevant uncertainty. Complete the proposal only when a supervisor can tell
 what is recommended, why, what it cannot authorize, and who must decide the unresolved question.
 
+## Optional stateless protocol
+
+Advisory grooming above remains the default. Only when a task explicitly selects a heartbeat tick,
+MUST read [the envelope contract](references/envelope.md) and
+[the one-tick procedure](references/heartbeat.md) before any effect or state/journal write.
+The [JSON-compatible YAML template](assets/steer-state.yaml) is inert and grants no authority.
+Installation, discovery, a copied phrase or conversation history MUST NOT activate this mode.
+
+A tick reloads source records and revisions, checks exact envelope bytes and current sponsor/gate,
+selects at most three discrete actions within lower approved/source caps, uses only already-authorized
+channels, persists bounded state and at most five physical journal lines, then exits. Invalid,
+stale, expired or unknown authority means no state/journal mutation. Missing applicable caps hold;
+known zero budgets permit no corresponding operation. Source-trusted time MUST be strictly before
+envelope expiry and rechecked at every effect/write boundary. Recovery is finite and monotonic per
+obligation: wake -> refocus -> checkpoint -> reassign -> ASK, at most one step per later triggered
+tick, with actual custody/checkpoint evidence and terminal escalation on exhaustion. Preserve
+unknown effects rather than replay them, and reconcile distinct state-only/journal-only partial
+pairs from authoritative receipts; no atomic two-file or exactly-once claim.
+
+These support files specify a protocol, not a runtime engine. No scheduler, adapter implementation,
+new execution verb, live authentication service or reverse-seam mechanism ships here. Existing
+sources and roles retain authority; their unavailable or busy state remains held. Runtime adapters
+and reverse-seam mechanics remain deferred (#431/#432). Conversation context is never the source
+of truth; MUST NOT sleep, wait or poll inside a turn.
+
 ## Collaboration
 
 Use `agentflow-scanner` for bounded read-only evidence, `agentflow-collaborator` for collaboration
@@ -164,9 +191,10 @@ or skip QA/review. Refuse each prohibited action separately even when bundled wi
 product work; continue only the allowed reasoning portion.
 
 The steerer MUST NOT own workflow state, acceptance ledgers, implementation, independent review,
-or release approval. This playbook adds no heartbeat, autonomy envelope, persistent state loop,
-execution verbs, runtime adapters, or reverse-seam mechanics. It grants no execution authority and
-contains no runtime-specific commands or execution seat identifiers.
+or release approval. The optional heartbeat/envelope/state protocol adds no runtime loop,
+execution verbs, runtime adapters, or reverse-seam mechanics. It grants no new execution authority
+and contains no runtime-specific commands or execution seat identifiers. Tick/recovery history
+MUST retain existing source ownership, gates and holds.
 
 ## Handoffs
 

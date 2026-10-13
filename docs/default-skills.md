@@ -75,7 +75,7 @@ matching canonical source directories for local inspection.
 
 ### Optional product steering
 
-`agentflow-steerer` is an optional cognitive-only playbook for JTBD/Four Forces, vertical
+`agentflow-steerer` defaults to an optional advisory playbook for JTBD/Four Forces, vertical
 capabilities, prerequisite DAGs, black-box acceptance proposals, and bounded trade-off rationale.
 Standard adoption ships its self-contained rules and supporting methodology at
 `docs/sources/product-discipline.md`, relative to the adopting project root. Availability does
@@ -85,8 +85,24 @@ The product manager retains outcome and release accountability; the analyst reta
 acceptance; the orchestrator retains phase state and acceptance evidence. The person decides
 changes to accepted outcomes, constraints, and anti-goals. Steering yields proposals, not approvals.
 It cannot write application code, modify source, run linters/fix scripts, bypass delivery holds or
-person gates, merge, publish, or skip QA/review. Heartbeats, autonomy envelopes, persistent state,
-execution verbs, runtime adapters, and reverse-seam mechanics remain deferred (#430–#432).
+person gates, merge, publish, or skip QA/review.
+
+For an explicitly selected stateless tick, read its local
+[envelope contract](../skills/agentflow-steerer/references/envelope.md) and
+[heartbeat procedure](../skills/agentflow-steerer/references/heartbeat.md).
+Standard and inherited profiles ship both references and an
+[inert JSON-compatible YAML state template](../skills/agentflow-steerer/assets/steer-state.yaml).
+A tick reloads durable source records, admits exact envelope bytes through the current original
+sponsor/person gate and trusted time, obeys lower approved/source caps within three actions/five
+physical lines, reconciles real receipts and generations, then exits without polling. Invalid or
+expired authority produces no state/journal mutation. Recovery is finite and monotonic per obligation;
+state projections never replace source phase, custody, holds or acceptance records. Known zero grants
+permit no corresponding operation; missing applicable source caps remain unknown and held.
+
+Availability does not activate this protocol or grant an adapter. No scheduler, live authentication
+service, core authority change, execution verb or running-host configuration is added. Actual source
+and template consumer-byte tests are distinct from independent QA application/receipt proof. Runtime
+adapters and reverse-seam mechanics remain deferred (#431/#432).
 
 ## Metaskills companion source
 

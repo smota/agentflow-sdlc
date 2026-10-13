@@ -9,4 +9,13 @@ export default {
   bracketSpacing: true,
   arrowParens: 'always',
   endOfLine: 'auto',
+  overrides: [
+    {
+      files: [
+        'skills/agentflow-steerer/assets/steer-state.yaml',
+        'adapters/claude-code/skills/agentflow-steerer/assets/steer-state.yaml',
+      ],
+      options: { parser: 'json' },
+    },
+  ],
 }
