@@ -230,3 +230,46 @@ Adopters managing projects visually can use the Cockpit Goal Command Center (`/o
 - **Composition Selection**: Interactive cards for `standard`, `minimal`, `github`, and `cockpit`.
 - **Scaffolding Preview**: Displays file creations, merges, and overwrites with the plan digest.
 - **Confirmation Gate**: Requires verified confirmation digest and CSRF authorization before applying changes.
+
+## Unified Configuration Authority and Deterministic Projections
+
+To eliminate dual-authority drift between root configuration files (`sdlc.config.json`, `agent-workflow.config.json`) and `.agentflow/` harness parameters, AgentFlow establishes a single canonical configuration authority: `agentflow.config.json`.
+
+### Inspecting Projections and Drift
+
+Inspect whether `.agentflow/*.json` projections (`orchestration-model.json`, `execution-policy.json`, `model-catalog.json`, `harness-parameters.json`) match the declared authority:
+
+```bash
+agentflow-sdlc project --target /path/to/project
+agentflow-sdlc project --target /path/to/project --json
+# Or via config subcommand:
+agentflow-sdlc config project --target /path/to/project
+```
+
+### Applying Projections
+
+If drift or missing projections are detected, apply projections deterministically with explicit confirmation digest:
+
+```bash
+agentflow-sdlc project --apply --confirm <plan-digest>
+```
+
+### Consolidating Authority
+
+To migrate legacy dual configuration files (`sdlc.config.json` and `agent-workflow.config.json`) into a single canonical `agentflow.config.json`:
+
+```bash
+# Preview consolidation plan
+agentflow-sdlc config consolidate --target /path/to/project
+# Apply with confirmation token
+agentflow-sdlc config consolidate --target /path/to/project --apply --confirm <token>
+```
+
+### Validating Configuration Authority
+
+Validate field ownership, role reference integrity, model tiers, and execution target compatibility:
+
+```bash
+agentflow-sdlc config validate --target /path/to/project
+agentflow-sdlc config validate --target /path/to/project --projections
+```
