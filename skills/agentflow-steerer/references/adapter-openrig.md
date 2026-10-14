@@ -117,7 +117,7 @@ The external steering PO connects optionally to the local non-causal decision mo
 
 ### Strict Invariants & Boundaries
 
-1. **Plane Isolation**: The decider port connects strictly in the external supervisory steering plane. In-rig delivery seats (`dev.build`, `dev.test-eng`, `dev.qa`, `orch.pm`, `pm.manager`, etc.) are barred from invoking the decider port; invocations require an authorized steering seat (`steer`, `steerer`, `supervisor`, `antigravity`) and fail closed.
+1. **Plane Isolation**: The decider port connects strictly in the external supervisory steering plane. In-rig delivery seats (`dev.build`, `dev.test-eng`, `dev.qa`, `orch.pm`, `pm.manager`, etc.) are barred from invoking the decider port; invocations require an authorized steering seat (`steer`, `steerer`, `supervisor`, `steer.po`, `orch.steer`, `antigravity`) and fail closed.
 2. **Zero Source Code Egress**: All payloads transmitted to the decider port are sanitized: raw source code, patches, diff contents, and secrets are strictly redacted. Transmitted payloads carry only criterion IDs, exit codes, diff statistics (`filesChanged`, `insertions`, `deletions`), and defect summaries.
 3. **Strict Allowlist**: Restricted exclusively to advisory triage:
    - `queue-ordering`: `triageQueueOrdering` for candidate brief priority.
