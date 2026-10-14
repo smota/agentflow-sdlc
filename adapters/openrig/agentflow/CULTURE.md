@@ -32,23 +32,23 @@ This team delivers production-grade software in the repository given as its work
    - **P4** (`human-gated`): migrations, breaking contracts, security-critical changes -> the person confirms before `orch.arch` delegates.
 
 6. **Two-Plane Separation**:
-   - The external supervisory steering plane (`steering.steer`, `steering.lead`) operates out-of-rig via CLI orchestration, direct session interaction, or external supervisory runtimes.
-   - External steering owns high-level goal decomposition, unfreeze tokens, defect triage (`accept_and_register`), and merge verbs.
-   - Internal execution squads (`orch`, `dev`, `rev`) execute inside isolated git worktrees and cannot modify external steering state or grant self-approvals.
+   - The external supervisory steering plane (`orch.steer`) operates out-of-rig via CLI orchestration, direct session interaction, or external supervisory runtimes.
+   - External steering owns high-level goal decomposition, unfreeze resolutions, defect triage (`accept_and_register`), and merge verbs.
+   - Internal execution squads (`dev.build*`, `dev.test-eng`, `pm.*`, `rev.gate`, `orch.arch`) execute inside isolated git worktrees and cannot modify external steering state or grant self-approvals.
 
 7. **Path Ownership & Oracle Pinning**:
-   - PM seats (`pm.manager`, `pm.analyst`) write only `.agentflow/` and `goals/**`. Commits modifying code, libraries, or test fixtures are mechanically rejected.
-   - Builder seats (`dev.build*`) cannot edit `tests/oracles/**` and require a Phase 3 oracle digest pin before building starts.
-   - Test engineering seats (`dev.test-eng`) own `tests/oracles/**` and cannot edit `src/**` or `lib/**`.
+   - PM seats (`pm.manager`, `pm.analyst`, `pm.lead` / `pm.*`) write only `.agentflow/**` and `goals/**` (`defaultDeny: true`). Commits touching code, libraries, or test fixtures are rejected.
+   - Builder seats (`dev.build`, `dev.build-jr`, `dev.build-sr`) cannot edit `tests/oracles/**` or `tests/**/oracles/**` and require a Phase 3 oracle digest pin before building starts.
+   - Test engineering seat (`dev.test-eng`) is allowed `tests/**`, `lib/__tests__/**`, `scripts/__tests__/**`, and `guidance/**`, with `src/**` denied explicitly (`defaultDeny: true`).
 
 8. **Epoch Fencing & Circuit Breaker**:
    - Rework iterations are counted monotonically from the transition ledger.
-   - Exceeding `maxReworkRounds` (default 2) triggers an epoch fencing token, freezing the branch against subsequent commits.
-   - Unfreezing requires a signed reverse-seam unfreeze resolution packet (`unfreeze_token`, `resolution: pivot | rearchitect | escalate`).
+   - Exceeding `maxReworkRounds` (default 2) trips the ledger breaker: sets `ledger.frozen = true`, increments integer `fencingToken`, and emits a sealed `reverse-seam-packet` record.
+   - Unfreezing requires a sealed `unfreeze-resolution` record from `orch.steer` (`resolution: re-scope | slice-split | person-waiver | abandonment`).
 
 9. **Pragmatic Defect Triage (`accept_and_register`)**:
    - The external steerer may accept non-critical observations and auxiliary telemetry edge cases under `accepted-with-conditions` with mandatory, idempotent GitHub follow-up issue creation.
-   - Strictly prohibited from waiving initial blocker findings, sensitive surfaces (auth, crypto, billing, security), or broken core test suites.
+   - Strictly prohibited while breaker is tripped, when findings were initially `[B] Blocker`, or on sensitive surfaces (`auth`, `crypto`, `migration`, `billing`).
 
 ---
 

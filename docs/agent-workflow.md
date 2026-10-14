@@ -662,52 +662,54 @@ To eliminate autonomous deadlocks, rework loops, and metric-gaming across multi-
 
 The workflow is divided into two strictly isolated operating planes:
 
-1. **External Supervisory Steering Plane** (`steering.steer`, `steering.lead`):
-   - Operates outside execution rigs via CLI orchestration, direct session interaction, or external supervisory runtimes.
-   - Owns high-level goal decomposition, workstream prioritization, reverse-seam unfreeze resolution, pragmatic defect triage (`accept_and_register`), and merge verbs.
-   - Barred from writing code, authoring tests, or fabricating self-approvals.
-2. **Internal Execution Worker Squads** (`agentflow-dev`, `agentflow-pm`, execution seats):
+1. **External Supervisory Steering Plane** (`orch.steer`):
+   - Operates outside worker execution rigs via CLI orchestration, direct session interaction, or external supervisory runtimes.
+   - Owns high-level goal decomposition, workstream prioritization, unfreeze resolution, pragmatic defect triage (`accept_and_register`), and merge verbs.
+   - Barred from writing production code, authoring test oracles, or fabricating self-approvals.
+2. **Internal Execution Worker Squads** (`dev.build*`, `dev.test-eng`, `pm.*`, `rev.gate`, `orch.arch`):
    - Execute strictly inside dedicated git worktrees (`.worktrees/<branch-name>`).
    - Own Phase 0–8 delivery artifacts, code authoring, and test execution.
-   - Barred from granting merge verbs, modifying external steering state, or unfreezing deadlocked worktrees without external signed packets.
+   - Barred from granting merge verbs, modifying external steering state, or unfreezing deadlocked worktrees without external unfreeze resolutions.
 
 ### 13.2 Dedicated Test Engineering (`dev.test-eng`) & Oracle Pinning
 
 - **Phase 3 Oracle Pinning**: Before implementation starts (Phase 4), `dev.test-eng` authors verification oracles and test suites under `tests/oracles/**` from the Phase 1/2 specifications.
-- **Oracle Digest Pin**: The implementation plan in Phase 3 pins an immutable cryptographic digest of `tests/oracles/**`.
-- **Builder Bar**: Builder seats (`dev.build*`) are barred from editing `tests/oracles/**` to prevent metric-gaming or relaxing acceptance checks.
-- **Test Engineer Bar**: `dev.test-eng` is barred from editing production source code in `src/**` or `lib/**`.
+- **Oracle Digest Pin**: The implementation plan in Phase 3 pins an immutable SHA256 digest of `tests/oracles/**`.
+- **Builder Bar**: Builder seats (`dev.build`, `dev.build-jr`, `dev.build-sr`) are barred from editing `tests/oracles/**` and `tests/**/oracles/**` to prevent metric-gaming or relaxing acceptance checks.
+- **Test Engineer Allowlist**: `dev.test-eng` is allowed to edit `tests/**`, `lib/__tests__/**`, `scripts/__tests__/**`, and `guidance/**`, with `src/**` denied explicitly and `defaultDeny: true`.
 - **Phase 5 Verification**: Tester seats execute verification as read-only runners against the pinned oracles.
 
 ### 13.3 Path Ownership Boundaries
 
-- **PM Allowlist**: Product management seats (`pm.manager`, `pm.analyst`) write only to `.agentflow/` and `goals/**`. Any commit modifying code, libraries, or test fixtures (`src/**`, `lib/**`, `tests/**`) is mechanically rejected in CI.
-- **Enforcement**: Path ownership is validated deterministically via `scripts/validate-path-ownership.mjs` on every commit and PR.
+- **PM Allowlist**: Product management seats (`pm.manager`, `pm.analyst`, `pm.lead` / `pm.*`) write only to `.agentflow/**` and `goals/**` (`defaultDeny: true`). Commits touching code, libraries, or test fixtures (`src/**`, `lib/**`, `tests/**`) are rejected.
+- **Governance Protection**: All agent seats are barred from modifying governance files (`manifests/path-ownership.json`, `scripts/validate-path-ownership.mjs`).
+- **Enforcement**: Path ownership is validated deterministically in CI via `node scripts/validate-path-ownership.mjs` (and `pnpm validate:release`) on pull requests into integration branches (`development`, `staging`, `main`) for commits bearing seat attribution.
 
 ### 13.4 Deterministic Ledger Circuit Breaker & Epoch Fencing
 
 - Rework iterations are counted monotonically from the transition ledger (keyed per criterion).
-- When `reworkRound > maxReworkRounds` (default 2), advancement is blocked with an explicit escalation requirement.
-- The ledger circuit breaker generates an epoch fencing token (`epoch_fencing_token`), freezing the candidate worktree.
-- Subsequent commits on a frozen branch are cryptographically orphaned and rejected until an unfreeze resolution is recorded.
+- When `reworkRound > maxReworkRounds` (default 2), advancement fails closed with `circuit-breaker-exhausted`.
+- The ledger breaker trips via `tripLedgerBreaker`, setting `ledger.frozen = true`, incrementing integer `fencingToken`, and emitting a sealed `reverse-seam-packet` record (`{ triggerCondition: 'rework-exhausted', fencingToken, round, targetIdentityDigest }`).
+- Subsequent commits or transitions carrying an older fencing token (`authored.fencingToken < ledger.fencingToken`) are rejected on the frozen branch.
 
 ### 13.5 Reverse-Seam Unfreeze Resolution Protocol
 
-- Unfreezing a deadlocked worktree requires an external supervisory resolution packet conforming to `schemas/reverse-seam-packet.schema.json` and recorded in `schemas/resolution-ledger.schema.json`.
-- The resolution must include:
-  - `unfreeze_token`: cryptographically verifiable token matching the active epoch fence.
-  - `ledger_epoch`: incremented epoch counter.
-  - `resolution`: valid resolution action (`pivot`, `rearchitect`, `escalate`).
-  - `signature`: attestation by the authorized external steerer.
-- Worker squads resume execution under the incremented epoch without history rewriting.
+- Unfreezing a deadlocked worktree is an external steering action performed by `orch.steer`.
+- The supervisory authority records a sealed `unfreeze-resolution` record (`createUnfreezeResolution`) containing:
+  - `resolution`: must be one of `re-scope`, `slice-split`, `person-waiver`, or `abandonment`.
+  - `actor`: verified steering seat (`orch.steer`) or human authority.
+  - `rationale`: substantive rationale explaining the intervention.
+  - `fencingToken`: integer epoch token matching `ledger.fencingToken + 1`.
+- `unfreezeLedger` verifies the resolution record, clears `ledger.frozen = false`, advances `ledger.fencingToken`, and records `unfreezeResolutionDigest`. Worker squads resume execution under the incremented epoch without history rewriting.
 
 ### 13.6 Pragmatic Defect Triage (`accept_and_register`)
 
 - To prevent minor or non-blocking exploratory observations from stalling delivery, the external steerer may apply `accept_and_register`.
-- This maps to `accepted-with-conditions` with mandatory, idempotent creation of a tracked GitHub follow-up issue.
+- This maps to `accepted-with-conditions` with mandatory, idempotent creation of a tracked GitHub follow-up issue on every condition.
 - **Strict Boundaries**:
-  - Only allowlisted non-critical surfaces (documentation, auxiliary telemetry, exploratory observations) may be accepted.
-  - Strictly prohibited from waiving initial blocker findings, broken core test suites, or sensitive surfaces (auth, crypto, billing, security, governance policies).
+  - Rejected while the ledger circuit breaker is tripped (`ledger.frozen === true`).
+  - Rejected if any finding was initially logged as `[B] Blocker`.
+  - Rejected on sensitive surfaces (`ACCEPT_AND_REGISTER_SURFACES`): `auth`, `crypto`, `migration`, `billing`.
 
 ### 13.7 Pure-Function Model Escalation Ladder & Decider Port
 

@@ -126,7 +126,8 @@ Supply the council request, advice array, and synthesis flags above when require
 rework, stale evidence, or conditional acceptance blocks advancement. When open rework requests
 exceed `maxReworkRounds` (default 2, configurable in `agent-workflow.config.json#collaboration`),
 advancement is blocked with an explicit escalation requirement, preventing unbounded peer rework loops.
-Resolve conditions and issue a new unconditional `accepted` decision before continuing. The orchestrator owns obtaining the complete current ledger from the authoritative workflow source; a local
+Resolve conditions and issue a new unconditional `accepted` decision before continuing.
+The orchestrator owns obtaining the complete current ledger from the authoritative workflow source; a local
 file is only its input projection, not an independent source of truth.
 
 ## Epoch fencing and circuit breaker
@@ -135,28 +136,28 @@ Peer rework between delivery roles is bounded deterministically:
 
 1. Every rework request monotonically increments `reworkRound` for that criterion in the durable transition ledger (`open-rework.json` / `resolution-ledger.json`).
 2. When `reworkRound > maxReworkRounds` (default 2), the advancement gate fails closed with `circuit-breaker-exhausted`.
-3. An `epoch_fencing_token` is generated and recorded. The worktree is frozen: subsequent builder commits are rejected as orphaned until the epoch is officially resolved.
+3. The breaker trips via `tripLedgerBreaker`: sets `ledger.frozen = true`, increments integer `fencingToken`, and emits a sealed `reverse-seam-packet` record (`{ triggerCondition: 'rework-exhausted', fencingToken, round, targetIdentityDigest }`).
+4. Subsequent commits or transitions carrying an older fencing token (`authored.fencingToken < ledger.fencingToken`) are rejected on the frozen branch.
 
 ## Reverse-seam unfreeze protocol
 
 Unfreezing a deadlocked worktree is an external steering action and cannot be executed by in-rig worker seats.
 
-1. The external steerer reviews the deadlocked ledger and issues a signed unfreeze resolution packet (`schemas/reverse-seam-packet.schema.json`).
-2. The packet must declare:
-   - `unfreeze_token`: cryptographically matching the active fence token.
-   - `target_issue`: the active issue number.
-   - `ledger_epoch`: incremented epoch counter.
-   - `resolution`: `pivot` (adjust requirement/scope), `rearchitect` (revise technical approach), or `escalate` (request human steering).
-   - `signature` / `attestation`: verified identity of the supervisory authority.
-3. Verification re-validates the resolution packet against `schemas/resolution-ledger.schema.json`. Upon successful verification, the candidate branch unfreezes and resumes at the specified phase under the new epoch.
+1. The external steerer (`orch.steer`) reviews the deadlocked ledger and records a sealed `unfreeze-resolution` record (`createUnfreezeResolution`).
+2. The record must declare:
+   - `resolution`: must be one of `re-scope`, `slice-split`, `person-waiver`, or `abandonment`.
+   - `actor`: verified steering seat (`orch.steer`) or human authority.
+   - `rationale`: substantive rationale explaining the intervention.
+   - `fencingToken`: the next integer epoch token (`ledger.fencingToken + 1`).
+3. `unfreezeLedger` verifies the resolution record, clears `ledger.frozen = false`, advances `ledger.fencingToken = nextToken`, and records `unfreezeResolutionDigest`. The candidate branch resumes execution at the target phase under the new epoch.
 
 ## Pragmatic defect triage (`accept_and_register`)
 
 When a delivery candidate exhibits minor, non-blocking discrepancies or auxiliary telemetry anomalies that do not compromise primary functionality:
 
 1. The external steerer may invoke `accept_and_register`.
-2. This transitions the decision to `accepted-with-conditions` and mandates the immediate, idempotent registration of a tracked GitHub follow-up issue referencing the observed defect.
+2. This transitions the decision to `accepted-with-conditions` and mandates the immediate, idempotent registration of a tracked GitHub follow-up issue URL on every condition.
 3. **Boundaries and Guardrails**:
-   - Permitted only for allowlisted non-critical surfaces (`docs`, auxiliary telemetry, non-blocking exploratory edge cases).
-   - Strictly prohibited for sensitive surfaces: authentication, cryptography, permissions, billing, release metadata, and core test suite failures.
-   - An initial blocker finding from Phase 6 independent review cannot be waived via `accept_and_register`.
+   - Rejected while the ledger circuit breaker is tripped (`ledger.frozen === true`).
+   - Rejected if any finding was initially logged as `[B] Blocker`.
+   - Rejected on sensitive surfaces (`ACCEPT_AND_REGISTER_SURFACES`): `auth`, `crypto`, `migration`, `billing`.

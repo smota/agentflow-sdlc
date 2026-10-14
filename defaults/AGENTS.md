@@ -33,11 +33,11 @@ Governed delivery and lifecycle contracts are defined in the shared framework do
 
 ## Path ownership boundaries
 
-- PM seats (`pm.manager`, `pm.analyst`) write only `.agentflow/` and `goals/**`. Commits modifying code, libraries, or test fixtures are mechanically rejected.
-- Builder seats (`dev.build*`) cannot edit `tests/oracles/**` and require a Phase 3 oracle digest pin before building starts.
-- Test engineering seats (`dev.test-eng`) own `tests/oracles/**` and cannot edit `src/**` or `lib/**`.
+- PM seats (`pm.manager`, `pm.analyst`, `pm.lead` / `pm.*`) write only `.agentflow/**` and `goals/**` (`defaultDeny: true`). Commits modifying code, libraries, or test fixtures are rejected.
+- Builder seats (`dev.build`, `dev.build-jr`, `dev.build-sr`) cannot edit `tests/oracles/**` or `tests/**/oracles/**` and require a Phase 3 oracle digest pin before building starts.
+- Test engineering seat (`dev.test-eng`) is allowed `tests/**`, `lib/__tests__/**`, `scripts/__tests__/**`, and `guidance/**`, with `src/**` denied explicitly (`defaultDeny: true`).
 
 ## Two-Plane Separation
 
-- External Supervisory Steering Plane (`steering.steer`, `steering.lead`) operates out-of-rig via CLI/orchestration to govern goals, unfreeze tokens, defect triage (`accept_and_register`), and merge verbs.
+- External Supervisory Steering Plane (`orch.steer`) operates out-of-rig via CLI/orchestration to govern goals, unfreeze resolutions, defect triage (`accept_and_register`), and merge verbs.
 - Worker Execution Rigs execute inside isolated git worktrees (`.worktrees/*`) and are barred from modifying steering controls or granting self-approvals.
