@@ -112,12 +112,14 @@ const OFF_PATH_EXEMPTIONS = new Map([
   [
     'lib/core/decision-policy.mjs#evaluateDecisionPolicy',
     'pure rule table for autonomous model escalation and oracle defect routing (#463); ' +
-      'consumed by external steering plane and decider port (lib/providers/decider-port.mjs)',
+      'planned consumer is the external steering plane and decider port (Slice 7, #464), ' +
+      'with no consumer in this repository yet — exercised by lib/__tests__/decision-policy.test.mjs',
   ],
   [
     'lib/core/decision-policy.mjs#isSensitivePath',
     'pure predicate for detecting sensitive and governance path modifications (#463); ' +
-      'used by evaluateDecisionPolicy to enforce direct human escalation',
+      'used by evaluateDecisionPolicy to enforce direct human escalation — ' +
+      'exercised by lib/__tests__/decision-policy.test.mjs',
   ],
   [
     'lib/core/delivery-policy.mjs#normalizeUsage',
