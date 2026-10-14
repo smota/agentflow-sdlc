@@ -12,9 +12,11 @@ resources:
     - { id: agentflow-auditor, path: skills/agentflow-auditor }
     - { id: agentflow-collaborator, path: skills/agentflow-collaborator }
     - { id: agentflow-designer, path: skills/agentflow-designer }
+    - { id: agentflow-maintainer, path: skills/agentflow-maintainer }
     - { id: agentflow-migrator, path: skills/agentflow-migrator }
     - { id: agentflow-orchestrator, path: skills/agentflow-orchestrator }
     - { id: agentflow-scanner, path: skills/agentflow-scanner }
+    - { id: agentflow-steerer, path: skills/agentflow-steerer }
     - { id: applying-a-permission-policy, path: skills/applying-a-permission-policy }
     - { id: claude-compaction-restore, path: skills/claude-compaction-restore }
     - { id: delegating-work, path: skills/delegating-work }
