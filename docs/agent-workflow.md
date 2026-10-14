@@ -688,7 +688,7 @@ The workflow is divided into two strictly isolated operating planes:
 ### 13.4 Deterministic Ledger Circuit Breaker & Epoch Fencing
 
 - Rework iterations are counted monotonically from the transition ledger via `deriveReworkRound`.
-- When rework iterations reach the circuit breaker limit (`DEFAULT_MAX_REWORK_ROUNDS = 2`), advancement fails closed.
+- When rework iterations exceed the circuit breaker limit (`DEFAULT_MAX_REWORK_ROUNDS = 2`), advancement fails closed.
 - The ledger breaker trips via `tripLedgerBreaker`, setting `ledger.frozen = true`, incrementing integer `fencingToken`, and emitting a sealed `reverse-seam-packet` record (`{ triggerCondition: 'rework-exhausted', fencingToken, round, targetIdentityDigest }`).
 - Subsequent commits or transitions carrying an older fencing token (`authored.fencingToken < ledger.fencingToken`) are rejected on the frozen branch.
 

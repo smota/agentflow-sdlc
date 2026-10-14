@@ -134,8 +134,8 @@ file is only its input projection, not an independent source of truth.
 
 Peer rework between delivery roles is bounded deterministically:
 
-1. Every rework request monotonically advances rework tracking via `deriveReworkRound`.
-2. When rework iterations reach the circuit breaker limit (`DEFAULT_MAX_REWORK_ROUNDS = 2`), the advancement gate fails closed.
+1. Every rework request monotonically updates rework tracking, derived via `deriveReworkRound`.
+2. When rework iterations exceed the circuit breaker limit (`DEFAULT_MAX_REWORK_ROUNDS = 2`), the advancement gate fails closed.
 3. The breaker trips via `tripLedgerBreaker`: sets `ledger.frozen = true`, increments integer `fencingToken`, and emits a sealed `reverse-seam-packet` record (`{ triggerCondition: 'rework-exhausted', fencingToken, round, targetIdentityDigest }`).
 4. Subsequent commits or transitions carrying an older fencing token (`authored.fencingToken < ledger.fencingToken`) are rejected on the frozen branch.
 
