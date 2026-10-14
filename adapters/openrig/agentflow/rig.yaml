@@ -120,6 +120,24 @@ pods:
               required: true
     edges: []
 
+  - id: eval
+    label: Autonomous Dogfood & Evaluation
+    summary: Out-of-band exploratory testing against shipped artifacts and live endpoints. Emits backlog findings; never implements or gates PRs.
+    members:
+      - id: tester
+        agent_ref: 'local:agents/agentflow'
+        profile: eval-tester
+        runtime: codex
+        model: gpt-6.1-sol
+        effort: medium
+        cwd: '.'
+        startup:
+          files:
+            - path: startup/eval-tester.md
+              delivery_hint: send_text
+              required: true
+    edges: []
+
 edges:
   - kind: delegates_to
     from: orch.arch
@@ -154,3 +172,6 @@ edges:
   - kind: can_observe
     from: orch.arch
     to: dev.build-sr
+  - kind: can_observe
+    from: orch.arch
+    to: eval.tester

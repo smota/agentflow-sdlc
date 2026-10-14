@@ -1,0 +1,45 @@
+name: agentflow-eval-seat
+version: '1.0'
+description: >
+  Autonomous out-of-band evaluation seat. Exercises shipped products and running services
+  against golden journeys and edge-case fuzzing; emits empirical intake findings without
+  dirtying worktrees or gating delivery PRs.
+
+profiles:
+  eval-tester:
+    summary: Autonomous exploratory dogfood tester. Validates shipped artifacts and emits backlog findings.
+    preferences:
+      runtime: codex
+    startup:
+      files:
+        - path: guidance/role.md
+          delivery_hint: send_text
+          required: true
+      actions: []
+    uses:
+      skills:
+        - openrig-user
+        - messaging-the-human
+        - writing-for-agents
+
+  eval-tester-pi:
+    summary: High-throughput exploratory dogfood tester on Pi runtime.
+    preferences:
+      runtime: pi
+    startup:
+      files:
+        - path: guidance/role.md
+          delivery_hint: send_text
+          required: true
+      actions: []
+    uses:
+      skills:
+        - openrig-user
+        - messaging-the-human
+        - writing-for-agents
+
+resources:
+  skills:
+    - { id: openrig-user, path: skills/openrig-user }
+    - { id: messaging-the-human, path: skills/messaging-the-human }
+    - { id: writing-for-agents, path: skills/writing-for-agents }

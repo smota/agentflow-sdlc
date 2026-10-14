@@ -32,6 +32,11 @@ seats:
       codex: reviewer
       pi: reviewer-pi
       claude-code: reviewer
+  eval.tester:
+    runtimes:
+      codex: eval-tester
+      claude-code: eval-tester
+      pi: eval-tester-pi
 
 presets:
   balanced-grok-lead:

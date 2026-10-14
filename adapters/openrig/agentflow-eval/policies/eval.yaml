@@ -1,0 +1,62 @@
+schema: openrig.permission-policy/v1
+name: eval-restricted
+summary: >
+  Non-yolo permission policy for the autonomous exploratory dogfood tester. Allows read commands,
+  surface reader execution, running test commands and built binaries against trunk, and querying local
+  servers. Strictly denies git commits, git pushes, worktree creation, PR merges, and inner delivery handoffs.
+
+harnesses:
+  claude-code:
+    permissions:
+      allow:
+        - 'Bash(rig ps*)'
+        - 'Bash(rig queue list*)'
+        - 'Bash(rig queue inspect*)'
+        - 'Bash(rig send*)'
+        - 'Bash(rig capture*)'
+        - 'Bash(rig whoami*)'
+        - 'Bash(git log*)'
+        - 'Bash(git status*)'
+        - 'Bash(git diff*)'
+        - 'Bash(gh pr view*)'
+        - 'Bash(gh issue view*)'
+        - 'Bash(node scripts/dogfood/*)'
+        - 'Bash(pnpm test*)'
+        - 'Bash(npm test*)'
+        - 'Bash(pnpm run*)'
+        - 'Bash(npm run*)'
+        - 'Bash(curl*)'
+      deny:
+        - 'Bash(git commit*)'
+        - 'Bash(git push*)'
+        - 'Bash(git checkout -b*)'
+        - 'Bash(git merge*)'
+        - 'Bash(gh pr merge*)'
+        - 'Bash(agentflow-sdlc handoff deliver*)'
+  codex:
+    execpolicy:
+      allow:
+        - 'rig ps*'
+        - 'rig queue list*'
+        - 'rig queue inspect*'
+        - 'rig send*'
+        - 'rig capture*'
+        - 'rig whoami*'
+        - 'git log*'
+        - 'git status*'
+        - 'git diff*'
+        - 'gh pr view*'
+        - 'gh issue view*'
+        - 'node scripts/dogfood/*'
+        - 'pnpm test*'
+        - 'npm test*'
+        - 'pnpm run*'
+        - 'npm run*'
+        - 'curl*'
+      deny:
+        - 'git commit*'
+        - 'git push*'
+        - 'git checkout -b*'
+        - 'git merge*'
+        - 'gh pr merge*'
+        - 'agentflow-sdlc handoff deliver*'
