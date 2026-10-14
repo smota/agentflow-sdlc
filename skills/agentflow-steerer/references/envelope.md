@@ -180,3 +180,11 @@ intent/receipt references and uncertainty. Respect line budget even for reconcil
 The [heartbeat](heartbeat.md) owns the bounded ordering. Application-source edits, linters/fix
 scripts, workflow transitions, QA/review verdicts, merge, publication, accepted-scope rewrites,
 hold bypass and unapproved provider/model changes remain forbidden in every mode.
+
+## Unfreeze resolution record
+
+A frozen resolution ledger does not clear its fencing token inside this envelope. The transition
+envelope may carry one signed `unfreeze-resolution` record, as defined in
+[seam-rules](seam-rules.md): `resolution` is `re-scope`, `slice-split`, `person-waiver`, or
+`abandonment`; `actor` and `rationale` are nonempty; `fencingToken` is the next epoch token; and
+the record digest is current. Absent that signed record, the fence stays in force.

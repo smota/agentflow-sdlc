@@ -28,6 +28,7 @@ Dispatches an admitted task brief to a designated squad seat.
   rig send <seat> "Goal: <goal_uri> | Transition: <transition_uri> | Brief: <brief_ref>"
   ```
 - **Postconditions**: Task is durable in the seat's queue; target terminal is nudged.
+- **Heuristic Acceleration (Decider Port)**: When multiple candidate tasks await assignment, the external steerer may triage queue priority using `triageQueueOrdering` via the local decider port (`http://127.0.0.1:8002/v1/decide` with Jev auth and deterministic fallback).
 
 ### 2. `observe(seat)`
 
@@ -69,6 +70,7 @@ Sends a prompt, wake, or interrupt signal to an executing seat.
     rig send <seat> "^C"
     rig send <seat> "Recovering turn: check last error and resume or yield"
     ```
+- **Heuristic Acceleration (Decider Port)**: The external steerer may resolve calibrated nudge urgency (`gentle` | `standard` | `interrupt`) using `triageNudgeLevel` via the decider port, with deterministic threshold fallbacks (`idle >= 300s` or `round >= 2` -> `interrupt`).
 
 ### 4. `read(artifact)`
 
@@ -87,7 +89,9 @@ Executes squash-and-merge of a verified pull request after bilateral/council rev
   - Independent reviewer or auditor sign-off recorded.
   - Four-eyes principle satisfied (builder != reviewer).
   - All CI status checks green.
-- **Mapping**:
+  - Explicit human approval recorded for this PR merge, or a recorded auto-merge configuration for this delivery.
+- **Gate**: Without that recorded human approval or recorded auto-merge configuration, halt. Do not run the merge command. Emit `escalate("human-gate", "PR #<pr> requires human approval before merge")`.
+- **Mapping** (only after the gate passes):
   ```bash
   gh pr merge <pr> --squash --delete-branch
   ```
@@ -104,3 +108,20 @@ Raises an out-of-band escalation to the human operator or supervising orchestrat
   # Record durable escalation on issue or PR
   gh issue comment <issue> --body "⚠️ **ESCALATION [<class>]**: <msg>"
   ```
+
+---
+
+## Decider Provider Port Integration (`d3-flash`)
+
+The external steering PO connects optionally to the local non-causal decision model (`d3-flash` on `http://127.0.0.1:8002/v1/decide` with Jev authentication headers) via `lib/providers/decider-port.mjs` for low-latency (<15ms) heuristic triage.
+
+### Strict Invariants & Boundaries
+
+1. **Plane Isolation**: The decider port connects strictly in the external supervisory steering plane. In-rig delivery seats (`dev.build`, `dev.test-eng`, `dev.qa`, `orch.pm`, `pm.manager`, etc.) are barred from invoking the decider port; invocations require an authorized steering seat (`steer`, `steerer`, `supervisor`, `steer.po`, `orch.steer`, `antigravity`) and fail closed.
+2. **Zero Source Code Egress**: All payloads transmitted to the decider port are sanitized: raw source code, patches, diff contents, and secrets are strictly redacted. Transmitted payloads carry only criterion IDs, exit codes, diff statistics (`filesChanged`, `insertions`, `deletions`), and defect summaries.
+3. **Strict Allowlist**: Restricted exclusively to advisory triage:
+   - `queue-ordering`: `triageQueueOrdering` for candidate brief priority.
+   - `issue-dedupe`: `triageIssueDedupe` for finding deduplication against open backlog.
+   - `nudge-level`: `triageNudgeLevel` for calibrated wake urgency (`gentle` | `standard` | `interrupt`).
+4. **Absolute Prohibitions**: The decider port is strictly barred from granting gate sign-offs, advancing phases, altering scope, or executing code merges.
+5. **Deterministic Fallbacks**: Every triage operation includes an autonomous deterministic fallback if the decider service is offline, unresponsive, or unauthenticated.

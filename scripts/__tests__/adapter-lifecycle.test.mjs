@@ -526,7 +526,7 @@ describe('adapters squads openrig (AC8-AC11)', () => {
     ok(cli(['adapters', 'squads', 'remove', 'openrig', 'demo'], { home }))
     expect(existsSync(specs(home, 'agentflow-demo'))).toBe(false)
     expect(piSeats(home).filter((seat) => seat.endsWith('@agentflow-demo'))).toEqual([])
-    expect(piSeats(home).filter((seat) => seat.endsWith('@agentflow-other'))).toHaveLength(6)
+    expect(piSeats(home).filter((seat) => seat.endsWith('@agentflow-other'))).toHaveLength(7)
     expect(tree(specs(home, 'agentflow-other'))).toEqual(other)
     expect(tree(specs(home, 'agentflow'))).toEqual(bases)
     expect(tree(join(home, '.pi'))).toEqual(pi)
@@ -661,7 +661,7 @@ if (args[0] === 'down' && ${downStops}) fs.writeFileSync(stoppedFile, JSON.strin
     expect(result.stderr).toContain('rig down agentflow-demo failed (exit 7): STOP REFUSED')
     expect(result.stderr).toContain('Nothing was removed')
     expect(tree(home)).toEqual(before)
-    expect(piSeats(home).filter((seat) => seat.endsWith('@agentflow-demo'))).toHaveLength(6)
+    expect(piSeats(home).filter((seat) => seat.endsWith('@agentflow-demo'))).toHaveLength(7)
   })
 
   it.each([

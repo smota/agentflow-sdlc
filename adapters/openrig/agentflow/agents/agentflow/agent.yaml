@@ -12,9 +12,11 @@ resources:
     - { id: agentflow-auditor, path: skills/agentflow-auditor }
     - { id: agentflow-collaborator, path: skills/agentflow-collaborator }
     - { id: agentflow-designer, path: skills/agentflow-designer }
+    - { id: agentflow-maintainer, path: skills/agentflow-maintainer }
     - { id: agentflow-migrator, path: skills/agentflow-migrator }
     - { id: agentflow-orchestrator, path: skills/agentflow-orchestrator }
     - { id: agentflow-scanner, path: skills/agentflow-scanner }
+    - { id: agentflow-steerer, path: skills/agentflow-steerer }
     - { id: applying-a-permission-policy, path: skills/applying-a-permission-policy }
     - { id: claude-compaction-restore, path: skills/claude-compaction-restore }
     - { id: delegating-work, path: skills/delegating-work }
@@ -259,6 +261,33 @@ profiles:
     startup:
       files:
         - path: guidance/qa.md
+          delivery_hint: send_text
+          required: true
+      actions: []
+
+  test-eng:
+    summary: Test Engineer authoring tests and test oracles in Phase 3/4 before code implementation.
+    preferences:
+      runtime: codex
+    uses:
+      skills: *builder-skills
+      runtime_resources: [claude-activity-hooks]
+    startup:
+      files:
+        - path: guidance/test-eng.md
+          delivery_hint: send_text
+          required: true
+      actions: []
+
+  test-eng-pi:
+    summary: Test Engineer on Pi authoring tests and test oracles in Phase 3/4 before code implementation.
+    preferences:
+      runtime: pi
+    uses:
+      skills: *builder-pi-skills
+    startup:
+      files:
+        - path: guidance/test-eng.md
           delivery_hint: send_text
           required: true
       actions: []

@@ -178,6 +178,7 @@ Conversation context is never the source of truth; MUST NOT sleep, wait or poll 
 
 When dispatching work or inspecting squad execution, the steering PO invokes a provider-neutral 6-verb interface:
 `assign(seat, brief_ref)`, `observe(seat)`, `nudge(seat, level)`, `read(artifact)`, `merge(pr)`, and `escalate(class, msg)`.
+`merge(pr)` is strictly human-gated. It runs only when delivery-bound human approval or a recorded auto-merge configuration is present. Otherwise it halts and emits `escalate("human-gate", "PR #<pr> requires human approval before merge")`.
 Steering reasoning remains strictly decoupled from runtime mechanics through explicit markdown reference tables:
 
 - Primary OpenRig topology: [adapter-openrig](references/adapter-openrig.md)
@@ -195,7 +196,7 @@ The interface between product shaping (`agentflow-pm`) and engineering delivery 
 
 - **Artifact-Only Handoffs**: Work moving across the seam carries strictly stable capability IDs, goal URIs, immutable disk spec paths, and Given-When-Then observable criteria. Conversational instructions and uncommitted messages are prohibited.
 - **Reverse Seam Returns**: When engineering seats detect technical roadblocks, contradictory assumptions, or scope explosions, they halt implementation and return a structured packet to Phase 1 (Product Intake) rather than inventing workarounds.
-- **Four-Eyes Baseline**: The steering PO never approves code or merges PRs; every integration requires independent reviewer sign-off or council consensus.
+- **Four-Eyes Baseline**: The steering PO never approves code. `merge(pr)` runs only after recorded human approval or a recorded auto-merge configuration; every integration still requires independent reviewer sign-off or council consensus.
 
 ## Collaboration
 
@@ -209,7 +210,7 @@ retain existing accountability; they create no new lifecycle roles or phases.
 
 The steerer MUST NOT write or generate application-code edits, run linters or automated fix scripts,
 or modify working-tree source directly. Return a product proposal to the accountable delivery role.
-The steerer MUST NOT bypass delivery hold queues, merge code, publish releases, bypass person gates,
+The steerer MUST NOT bypass delivery hold queues, merge code without recorded delivery-bound human approval or a recorded auto-merge configuration, publish releases, bypass person gates,
 or skip QA/review. Refuse each prohibited action separately even when bundled with legitimate
 product work; continue only the allowed reasoning portion.
 
