@@ -2,9 +2,11 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { pinOracleDigest, verifyOraclePin } from '../../lib/core/role-collaboration.mjs'
 import {
+  checkBranchCommits,
   checkPathOwnership,
   loadPathOwnership,
   resolveOwnershipCheck,
+  seatFromCommit,
   validatePathOwnershipManifest,
 } from '../validate-path-ownership.mjs'
 
@@ -99,5 +101,20 @@ describe('path ownership', () => {
     expect(verifyOraclePin({ pin, seat: 'dev.build' }).ok).toBe(true)
     expect(verifyOraclePin({ seat: 'dev.build-jr' }).ok).toBe(false)
     expect(() => pinOracleDigest({ digest: 'short' })).toThrow(/sha256/)
+  })
+
+  it('resolves seat from commit metadata or trailers', () => {
+    expect(seatFromCommit({ message: 'feat: add goal\n\nSeat: pm.analyst' })).toBe('pm.analyst')
+    expect(seatFromCommit({ authorEmail: 'pm-analyst@agentflow-pm' })).toBe('pm.analyst')
+    expect(seatFromCommit({ authorName: 'pm-manager' })).toBe('pm.manager')
+    expect(seatFromCommit({ authorName: 'Samuel Mota', authorEmail: 'samuelmota@gmail.com' })).toBe(
+      null,
+    )
+  })
+
+  it('checks branch commits cleanly on clean history', () => {
+    const result = checkBranchCommits({ manifest })
+    expect(result.ok).toBe(true)
+    expect(result.errors).toEqual([])
   })
 })

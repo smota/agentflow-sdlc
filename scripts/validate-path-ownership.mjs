@@ -103,6 +103,80 @@ export function checkPathOwnership({ seat, paths = [], manifest } = {}) {
   return { ok: errors.length === 0, errors }
 }
 
+export function seatFromCommit({ authorName = '', authorEmail = '', message = '' } = {}) {
+  const trailerMatch = message.match(/(?:^|\n)Seat:\s*([^\s\n]+)/i)
+  if (trailerMatch) return trailerMatch[1]
+  const sessionSeat = seatFromSession(authorEmail)
+  if (
+    sessionSeat &&
+    (sessionSeat.startsWith('pm.') ||
+      sessionSeat.startsWith('dev.') ||
+      sessionSeat.startsWith('orch.'))
+  ) {
+    return sessionSeat
+  }
+  const user = authorEmail.split('@')[0] ?? ''
+  for (const candidate of [authorName.trim(), user]) {
+    const normalized = candidate.replace('-', '.')
+    if (
+      normalized.startsWith('pm.') ||
+      normalized.startsWith('dev.') ||
+      normalized.startsWith('orch.')
+    ) {
+      return normalized
+    }
+  }
+  return null
+}
+
+export function checkBranchCommits({ packageRoot = process.cwd(), manifest } = {}) {
+  const git = (args) => {
+    try {
+      return execFileSync('git', args, { cwd: packageRoot, encoding: 'utf8' }).trim()
+    } catch {
+      return ''
+    }
+  }
+  let base = ''
+  try {
+    base = execFileSync('git', ['merge-base', 'HEAD', 'origin/development'], {
+      cwd: packageRoot,
+      encoding: 'utf8',
+    }).trim()
+  } catch {
+    return { ok: true, errors: [] }
+  }
+  if (!base) return { ok: true, errors: [] }
+
+  const logOutput = git(['log', '--format=%H%x09%an%x09%ae%x09%B%x1e', `${base}...HEAD`])
+  if (!logOutput) return { ok: true, errors: [] }
+
+  const errors = []
+  const commits = logOutput
+    .split('\x1e')
+    .map((c) => c.trim())
+    .filter(Boolean)
+  for (const commitText of commits) {
+    const [header, ...bodyLines] = commitText.split('\t')
+    const hash = header
+    const authorName = bodyLines[0] ?? ''
+    const authorEmail = bodyLines[1] ?? ''
+    const message = bodyLines.slice(2).join('\t')
+    const seat = seatFromCommit({ authorName, authorEmail, message })
+    if (seat) {
+      const paths = git(['diff-tree', '--no-commit-id', '--name-only', '-r', hash])
+        .split('\n')
+        .map((p) => p.trim())
+        .filter(Boolean)
+      const check = checkPathOwnership({ seat, paths, manifest })
+      if (!check.ok) {
+        errors.push(...check.errors.map((err) => `${err} (commit ${hash.slice(0, 7)})`))
+      }
+    }
+  }
+  return { ok: errors.length === 0, errors }
+}
+
 function flag(args, name) {
   const index = args.indexOf(name)
   return index === -1 ? null : (args[index + 1] ?? '')
@@ -112,22 +186,40 @@ function main(argv) {
   const packageRoot = resolve(flag(argv, '--root') ?? process.cwd())
   const manifest = loadPathOwnership(packageRoot)
   const manifestCheck = validatePathOwnershipManifest(manifest)
+  if (argv.includes('--manifest-only')) {
+    const result = manifestCheck
+    if (argv.includes('--json')) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+    else process.stdout.write(`${result.ok ? 'READY' : 'BLOCKED'}\n${result.errors.join('\n')}\n`)
+    return result.ok ? 0 : 1
+  }
+
   const seatFlag = flag(argv, '--seat')
   const pathsFlag = flag(argv, '--paths')
-  const paths =
-    pathsFlag === null
-      ? changedPaths(packageRoot)
-      : pathsFlag
-          .split(',')
-          .map((item) => item.trim())
-          .filter(Boolean)
-  const pathCheck = resolveOwnershipCheck({
-    seat: seatFlag,
-    paths,
-    manifest,
-    env: process.env,
-  })
-  const errors = [...manifestCheck.errors, ...pathCheck.errors]
+  const envSeat = process.env.AGENTFLOW_SEAT || seatFromSession(process.env.OPENRIG_SESSION_NAME)
+  const activeSeat = seatFlag || envSeat
+
+  let pathCheckErrors = []
+  if (pathsFlag !== null || activeSeat) {
+    const paths =
+      pathsFlag === null
+        ? changedPaths(packageRoot)
+        : pathsFlag
+            .split(',')
+            .map((item) => item.trim())
+            .filter(Boolean)
+    const pathCheck = resolveOwnershipCheck({
+      seat: seatFlag,
+      paths,
+      manifest,
+      env: process.env,
+    })
+    pathCheckErrors = pathCheck.errors
+  } else {
+    const branchCheck = checkBranchCommits({ packageRoot, manifest })
+    pathCheckErrors = branchCheck.errors
+  }
+
+  const errors = [...manifestCheck.errors, ...pathCheckErrors]
   const result = { ok: errors.length === 0, errors }
   if (argv.includes('--json')) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
   else process.stdout.write(`${result.ok ? 'READY' : 'BLOCKED'}\n${errors.join('\n')}\n`)

@@ -75,6 +75,13 @@ pods:
         model: grok-cli/grok-4.7
         effort: medium
         cwd: '.'
+      - id: test-eng
+        agent_ref: 'local:agents/agentflow'
+        profile: qa-pi
+        runtime: pi
+        model: grok-cli/grok-4.7
+        effort: medium
+        cwd: '.'
     edges:
       - kind: delegates_to
         from: build
@@ -85,6 +92,15 @@ pods:
       - kind: delegates_to
         from: build-sr
         to: qa
+      - kind: delegates_to
+        from: build
+        to: test-eng
+      - kind: delegates_to
+        from: build-jr
+        to: test-eng
+      - kind: delegates_to
+        from: build-sr
+        to: test-eng
 
   - id: rev
     label: Independent Audit & Council
