@@ -12,6 +12,7 @@ import {
 import {
   checkBranchCommits,
   checkPathOwnership,
+  computeOracleDigest,
   isAgentCommit,
   loadPathOwnership,
   matchOwnedPath,
@@ -322,5 +323,149 @@ describe('path ownership', () => {
     } finally {
       rmSync(fixtureDir, { recursive: true, force: true })
     }
+  })
+
+  it('bars builders, test-eng, and PM from modifying governance files', () => {
+    for (const seat of ['dev.build', 'dev.test-eng', 'pm.analyst']) {
+      expect(
+        checkPathOwnership({
+          seat,
+          paths: ['manifests/path-ownership.json'],
+          manifest,
+        }).ok,
+      ).toBe(false)
+      expect(
+        checkPathOwnership({
+          seat,
+          paths: ['scripts/validate-path-ownership.mjs'],
+          manifest,
+        }).ok,
+      ).toBe(false)
+    }
+  })
+
+  it('restricts test-eng to test surfaces via defaultDeny', () => {
+    // Permitted test paths
+    expect(
+      checkPathOwnership({
+        seat: 'dev.test-eng',
+        paths: ['tests/oracles/pin.json', 'lib/__tests__/foo.test.mjs', 'guidance/test-eng.md'],
+        manifest,
+      }).ok,
+    ).toBe(true)
+    // Denied non-test paths
+    for (const deniedPath of [
+      'scripts/run-delivery.mjs',
+      'package.json',
+      '.github/workflows/validate-pr.yml',
+      'src/index.js',
+      'lib/core/role-collaboration.mjs',
+    ]) {
+      expect(
+        checkPathOwnership({
+          seat: 'dev.test-eng',
+          paths: [deniedPath],
+          manifest,
+        }).ok,
+      ).toBe(false)
+    }
+  })
+
+  it('does not produce false positives on human commits with names like Kapil, Abbott, Pierre Dupont, or pm-lead@corp.com', () => {
+    expect(
+      isAgentCommit({
+        authorName: 'Pierre Dupont',
+        authorEmail: 'pierre.dupont@company.com',
+        message: 'fix: typo in documentation\n\nSigned-off-by: Pierre Dupont <pierre@company.com>',
+      }),
+    ).toBe(false)
+    expect(
+      isAgentCommit({
+        authorName: 'Kapil Abbott',
+        authorEmail: 'kapil.abbott@corp.org',
+        message: 'chore: update dependency\n\nSigned-off-by: Kapil Abbott <kapil@corp.org>',
+      }),
+    ).toBe(false)
+    expect(
+      isAgentCommit({
+        authorName: 'PM Lead',
+        authorEmail: 'pm-lead@corp.com',
+        message: 'docs: roadmap update',
+      }),
+    ).toBe(false)
+    expect(
+      seatFromCommit({
+        authorName: 'PM Lead',
+        authorEmail: 'pm-lead@corp.com',
+        message: 'docs: roadmap update',
+      }),
+    ).toBe(null)
+  })
+
+  it('rejects unknown or invalid Seat attributions', () => {
+    expect(() =>
+      seatFromCommit({
+        message: 'feat: add feature\n\nSeat: human',
+      }),
+    ).toThrow(/unknown or invalid Seat attribution: human/)
+    expect(() =>
+      seatFromCommit({
+        message: 'feat: add feature\n\nSeat: invalid-seat',
+      }),
+    ).toThrow(/unknown or invalid Seat attribution: invalid-seat/)
+  })
+
+  it('computes oracle directory sha256 digest', () => {
+    const fixtureDir = mkdtempSync(join(tmpdir(), 'oracle-digest-'))
+    try {
+      const oracleDir = join(fixtureDir, 'tests/oracles')
+      mkdirSync(oracleDir, { recursive: true })
+      writeFileSync(join(oracleDir, 'oracle-1.json'), '{"expected": 42}\n')
+      writeFileSync(join(oracleDir, 'oracle-2.json'), '{"expected": 99}\n')
+
+      const digest1 = computeOracleDigest({ packageRoot: fixtureDir })
+      expect(digest1).toMatch(/^[a-f0-9]{64}$/)
+
+      // Deterministic digest
+      const digest2 = computeOracleDigest({ packageRoot: fixtureDir })
+      expect(digest2).toBe(digest1)
+
+      // Changing content changes digest
+      writeFileSync(join(oracleDir, 'oracle-1.json'), '{"expected": 43}\n')
+      const digest3 = computeOracleDigest({ packageRoot: fixtureDir })
+      expect(digest3).not.toBe(digest1)
+    } finally {
+      rmSync(fixtureDir, { recursive: true, force: true })
+    }
+  })
+
+  it('verifies oracle pin with expectedDigest check', () => {
+    const digestA = 'a'.repeat(64)
+    const digestB = 'b'.repeat(64)
+    const pin = pinOracleDigest({ digest: digestA })
+
+    expect(verifyOraclePin({ pin, seat: 'dev.build', expectedDigest: digestA }).ok).toBe(true)
+    const mismatch = verifyOraclePin({ pin, seat: 'dev.build', expectedDigest: digestB })
+    expect(mismatch.ok).toBe(false)
+    expect(mismatch.errors[0]).toContain('does not match expected digest')
+  })
+
+  it('fails closed when advancing to developer role without oracle pin using canonical deliveryRole', () => {
+    const decision = {
+      version: 1,
+      type: 'acceptance-decision',
+      state: 'accepted',
+      deterministicReport: { version: 1, digest: 'b'.repeat(64) },
+      digest: 'c'.repeat(64),
+    }
+    const result = verifyRoleAdvance({
+      decision,
+      openReworkRequests: [],
+      contract: { deliveryRole: 'agentflow:developer' },
+      handoff: { toRole: 'agentflow:developer' },
+      delivery: { role: 'agentflow:implementation-planner' },
+    })
+    expect(result.ok).toBe(false)
+    expect(result.errors).toContain('phase 3 must pin an oracle digest before dev.build starts')
   })
 })

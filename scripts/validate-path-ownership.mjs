@@ -1,9 +1,30 @@
 #!/usr/bin/env node
 import { execFileSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
-import { posix, resolve } from 'node:path'
+import { createHash } from 'node:crypto'
+import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { join, posix, resolve } from 'node:path'
 
-const REQUIRED_RULES = ['pm-write-guard', 'builder-oracle-guard', 'test-eng-source-guard']
+const REQUIRED_RULES = [
+  'pm-write-guard',
+  'builder-oracle-guard',
+  'test-eng-source-guard',
+  'governance-files-guard',
+]
+
+export const DEFAULT_KNOWN_SEATS = Object.freeze([
+  'pm.manager',
+  'pm.analyst',
+  'pm.lead',
+  'dev.build',
+  'dev.build-jr',
+  'dev.build-sr',
+  'dev.test-eng',
+  'arch.lead',
+  'rev.gate',
+  'orch.lead',
+  'orch.steer',
+  'orch.arch',
+])
 
 export function matchOwnedPath(pattern, filePath) {
   const normalized = posix.normalize(String(filePath).replace(/\\/g, '/')).replace(/^\.\//, '')
@@ -31,7 +52,7 @@ export function validatePathOwnershipManifest(manifest) {
 }
 
 function rulesForSeat(manifest, seat) {
-  return (manifest.rules ?? []).filter(
+  return (manifest?.rules ?? []).filter(
     (rule) =>
       rule.seats?.includes(seat) || rule.seatPrefixes?.some((prefix) => seat.startsWith(prefix)),
   )
@@ -121,33 +142,33 @@ export function checkPathOwnership({ seat, paths = [], manifest } = {}) {
   return { ok: errors.length === 0, errors }
 }
 
-export function seatFromCommit({ authorName = '', authorEmail = '', message = '' } = {}) {
-  const sessionSeat = seatFromSession(authorEmail)
-  const user = authorEmail.split('@')[0] ?? ''
+export function seatFromCommit({ authorName = '', authorEmail = '', message = '', manifest } = {}) {
+  const knownSeats = manifest?.knownSeats ?? DEFAULT_KNOWN_SEATS
   let identitySeat = null
+
+  // Check if authorEmail is an OpenRig/AgentFlow rig domain
   if (
-    sessionSeat &&
-    (sessionSeat.startsWith('pm.') ||
-      sessionSeat.startsWith('dev.') ||
-      sessionSeat.startsWith('orch.'))
+    /@(?:agentflow-[a-z0-9_-]+|openrig-[a-z0-9_-]+|agentflow\.org|openrig\.org)$/i.test(authorEmail)
   ) {
-    identitySeat = sessionSeat
-  } else {
-    for (const candidate of [authorName.trim(), user]) {
-      const normalized = candidate.replace('-', '.')
-      if (
-        normalized.startsWith('pm.') ||
-        normalized.startsWith('dev.') ||
-        normalized.startsWith('orch.')
-      ) {
-        identitySeat = normalized
-        break
-      }
+    const user = (authorEmail.split('@')[0] ?? '').replace('-', '.')
+    if (knownSeats.includes(user)) {
+      identitySeat = user
+    }
+  }
+
+  if (!identitySeat && authorName) {
+    const user = authorName.trim().replace('-', '.')
+    if (knownSeats.includes(user)) {
+      identitySeat = user
     }
   }
 
   const trailerMatch = message.match(/(?:^|\n)Seat:\s*([^\s\n]+)/i)
   const trailerSeat = trailerMatch ? trailerMatch[1].trim() : null
+
+  if (trailerSeat && !knownSeats.includes(trailerSeat)) {
+    throw new Error(`unknown or invalid Seat attribution: ${trailerSeat}`)
+  }
 
   if (identitySeat && trailerSeat && identitySeat !== trailerSeat) {
     throw new Error(
@@ -160,22 +181,65 @@ export function seatFromCommit({ authorName = '', authorEmail = '', message = ''
 
 export function isAgentCommit({ authorName = '', authorEmail = '', message = '' } = {}) {
   if (
-    /(?:Co-authored-by|Signed-off-by):\s*.*(?:claude|codex|gemini|pi|agy|grok|agent|bot|openrig)/i.test(
+    /@(?:agentflow-[a-z0-9_-]+|openrig-[a-z0-9_-]+|agentflow\.org|openrig\.org)$/i.test(authorEmail)
+  ) {
+    return true
+  }
+  if (/[a-z0-9._%+-]+\[bot\]@users\.noreply\.github\.com$/i.test(authorEmail)) {
+    return true
+  }
+  if (/\b(?:agentflow|openrig)\b/i.test(authorName) || /\[bot\]$/i.test(authorName.trim())) {
+    return true
+  }
+  if (/(?:^|\n)(?:Agent|Executor|Platform|Seat):\s*\S+/i.test(message)) {
+    return true
+  }
+  if (
+    /(?:Co-authored-by|Signed-off-by):\s*.*\b(?:Claude(?:-Code)?|Codex|Gemini|Antigravity|Agy|Grok)\b/i.test(
       message,
     )
   ) {
     return true
   }
-  if (/(?:@agentflow|@openrig|\.agentflow|\.openrig)/i.test(authorEmail)) {
-    return true
-  }
-  if (/\b(?:agentflow|openrig)\b/i.test(authorName)) {
-    return true
-  }
-  if (/(?:^|\n)(?:Agent|Executor|Platform):\s*\S+/i.test(message)) {
+  if (
+    /(?:Co-authored-by|Signed-off-by):\s*.*<(?:noreply@(?:anthropic|openai|google|xai)\.com|[a-z0-9._%+-]+\[bot\]@users\.noreply\.github\.com)>/i.test(
+      message,
+    )
+  ) {
     return true
   }
   return false
+}
+
+export function computeOracleDigest({ dir = 'tests/oracles', packageRoot = process.cwd() } = {}) {
+  const targetDir = resolve(packageRoot, dir)
+  try {
+    const stat = statSync(targetDir)
+    if (!stat.isDirectory()) return null
+  } catch {
+    return null
+  }
+  const files = []
+  function walk(current) {
+    for (const entry of readdirSync(current, { withFileTypes: true })) {
+      const full = join(current, entry.name)
+      if (entry.isDirectory()) {
+        walk(full)
+      } else if (entry.isFile()) {
+        files.push(full)
+      }
+    }
+  }
+  walk(targetDir)
+  if (!files.length) return null
+  files.sort()
+  const hash = createHash('sha256')
+  for (const file of files) {
+    const rel = posix.normalize(file.slice(targetDir.length + 1).replace(/\\/g, '/'))
+    hash.update(`${rel}\n`)
+    hash.update(readFileSync(file))
+  }
+  return hash.digest('hex')
 }
 
 export function checkBranchCommits({ packageRoot = process.cwd(), manifest } = {}) {
@@ -213,7 +277,7 @@ export function checkBranchCommits({ packageRoot = process.cwd(), manifest } = {
     const message = bodyLines.slice(2).join('\t')
     let seat = null
     try {
-      seat = seatFromCommit({ authorName, authorEmail, message })
+      seat = seatFromCommit({ authorName, authorEmail, message, manifest })
     } catch (err) {
       errors.push(`${err.message} (commit ${hash.slice(0, 7)})`)
       continue

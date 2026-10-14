@@ -1,9 +1,36 @@
 {
   "version": 1,
+  "knownSeats": [
+    "pm.manager",
+    "pm.analyst",
+    "pm.lead",
+    "dev.build",
+    "dev.build-jr",
+    "dev.build-sr",
+    "dev.test-eng",
+    "arch.lead",
+    "rev.gate",
+    "orch.lead",
+    "orch.steer",
+    "orch.arch"
+  ],
   "rules": [
     {
+      "id": "governance-files-guard",
+      "seats": [
+        "pm.manager",
+        "pm.analyst",
+        "pm.lead",
+        "dev.build",
+        "dev.build-jr",
+        "dev.build-sr",
+        "dev.test-eng"
+      ],
+      "deny": ["manifests/path-ownership.json", "scripts/validate-path-ownership.mjs"]
+    },
+    {
       "id": "pm-write-guard",
-      "seats": ["pm.manager", "pm.analyst"],
+      "seats": ["pm.manager", "pm.analyst", "pm.lead"],
       "seatPrefixes": ["pm."],
       "allow": [".agentflow/**", "goals/**"],
       "defaultDeny": true
@@ -11,12 +38,14 @@
     {
       "id": "builder-oracle-guard",
       "seats": ["dev.build", "dev.build-jr", "dev.build-sr"],
-      "deny": ["tests/oracles/**"]
+      "deny": ["tests/oracles/**", "tests/**/oracles/**"]
     },
     {
       "id": "test-eng-source-guard",
       "seats": ["dev.test-eng"],
-      "deny": ["src/**", "lib/**"]
+      "allow": ["tests/**", "lib/__tests__/**", "scripts/__tests__/**", "guidance/**"],
+      "deny": ["src/**"],
+      "defaultDeny": true
     }
   ]
 }
