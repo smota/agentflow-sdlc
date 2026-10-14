@@ -604,4 +604,37 @@ describe('path ownership', () => {
       ).toBe(false)
     }
   })
+
+  it('rejects caller pin when it contradicts contract oracle digest', () => {
+    const pinnedDigest = 'a'.repeat(64)
+    const spoofedDigest = 'b'.repeat(64)
+    const decision = {
+      version: 1,
+      type: 'acceptance-decision',
+      state: 'accepted',
+      deterministicReport: { version: 1, digest: 'c'.repeat(64) },
+      digest: 'd'.repeat(64),
+    }
+    const contract = {
+      deliveryRole: 'agentflow:developer',
+      controls: [`oracle-digest:${pinnedDigest}`],
+    }
+    const result = verifyRoleAdvance({
+      decision,
+      contract,
+      handoff: { toRole: 'agentflow:developer' },
+      delivery: { role: 'agentflow:implementation-planner' },
+      openReworkRequests: [],
+      options: {
+        pin: { phase: 3, oracleDigest: spoofedDigest },
+        expectedDigest: spoofedDigest,
+      },
+    })
+    expect(result.ok).toBe(false)
+    expect(
+      result.errors.some((e) =>
+        e.includes('caller-supplied oracle pin digest contradicts contract oracle digest'),
+      ),
+    ).toBe(true)
+  })
 })
