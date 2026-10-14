@@ -36,7 +36,7 @@ OpenRig bundle configuration schema: `openrig.bundle-configurations/v1`:
 
 All rig assets are maintained in [`adapters/openrig/agentflow/`](adapters/openrig/agentflow/).
 
-To install or recover the delivery and product bases into your OpenRig user library:
+To install or recover the delivery, product, and steer bases into your OpenRig user library:
 
 ```bash
 agentflow-sdlc adapters install openrig [--preset <name>] [/path/to/project]
@@ -68,17 +68,18 @@ rig up agentflow --existing --cwd /path/to/project
 To run simultaneous squads on different projects at the same time:
 
 ```bash
-# Provision a dedicated squad for a project (creates spec + Pi bridges)
+# Provision all 3 squads (product, delivery, steer) atomically with cross-rig bindings
+agentflow-sdlc adapters squads provision openrig --kind all my-project /path/to/my-project
+
+# Or provision dedicated squads individually
 agentflow-sdlc adapters squads provision openrig my-project /path/to/my-project
-agentflow-sdlc adapters squads provision openrig other-project /path/to/other-project
+agentflow-sdlc adapters squads provision openrig --kind product --sibling agentflow-my-project pm /path/to/my-project
+agentflow-sdlc adapters squads provision openrig --kind steer --product agentflow-my-project-pm --delivery agentflow-my-project-dev my-project-steer /path/to/my-project
 
 # Launch squads in parallel
-rig up agentflow-my-project --cwd /path/to/my-project
-rig up agentflow-other-project --cwd /path/to/other-project
-
-# Product copy for that project. Not a renamed delivery squad.
-agentflow-sdlc adapters squads provision openrig --kind product --sibling agentflow-my-project pm /path/to/my-project
-rig up agentflow-pm --cwd /path/to/my-project
+rig up agentflow-my-project-pm --cwd /path/to/my-project
+rig up agentflow-my-project-dev --cwd /path/to/my-project
+rig up agentflow-my-project-steer --cwd /path/to/my-project
 
 # Monitor all squads
 rig ps
@@ -87,8 +88,8 @@ agentflow-sdlc adapters squads list openrig
 # Refresh a squad after `adapters update openrig` (keeps seat runtime state)
 agentflow-sdlc adapters squads update openrig my-project
 
-# Teardown when done (stops the rig first if it is running)
-agentflow-sdlc adapters squads remove openrig my-project
+# Teardown when done (preserves steering audit state unless --purge is passed)
+agentflow-sdlc adapters squads remove openrig [--purge] my-project
 ```
 
 ## Product-to-delivery handoffs

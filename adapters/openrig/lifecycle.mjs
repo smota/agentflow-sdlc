@@ -4,6 +4,7 @@
 // It calls `rig` only for status, stop, and spec sync, as an argument array without a shell.
 import { spawnSync } from 'node:child_process'
 import {
+  chmodSync,
   copyFileSync,
   cpSync,
   existsSync,
@@ -22,7 +23,7 @@ import { homedir } from 'node:os'
 import { delimiter, dirname, join, relative, resolve } from 'node:path'
 
 const ADAPTER_ID = 'openrig'
-const BASES = { delivery: 'agentflow', product: 'agentflow-product' }
+const BASES = { delivery: 'agentflow', product: 'agentflow-product', steer: 'agentflow-steer' }
 const BASE_NAMES = Object.values(BASES)
 const DELIVERY_PI_SEATS = [
   'orch-arch',
@@ -33,8 +34,8 @@ const DELIVERY_PI_SEATS = [
   'dev-qa',
   'dev-test-eng',
 ]
-const SHARED_DIRS = ['agents', 'startup']
-const SHARED_FILES = ['CULTURE.md', 'README.md', 'configurations.yaml']
+const SHARED_DIRS = ['agents', 'startup', 'policies']
+const SHARED_FILES = ['CULTURE.md', 'README.md', 'configurations.yaml', 'steer-guard.mjs']
 const PI_SHARED_FILES = ['settings.json', 'models-store.json', 'auth.json']
 const PI_SHARED_DIRS = ['npm']
 const GROK_MARKER = {
@@ -65,6 +66,7 @@ function locations(home) {
     specs: join(home, '.openrig', 'specs'),
     piState: join(home, '.openrig', 'state', 'pi'),
     piAgent: join(home, '.pi', 'agent'),
+    steerState: join(home, '.openrig', 'steer'),
   }
 }
 
@@ -115,16 +117,40 @@ function planInstall(adapterDir, requested) {
   const sources = {
     delivery: join(adapterDir, BASES.delivery),
     product: join(adapterDir, BASES.product),
+    steer: join(adapterDir, BASES.steer),
   }
   const delivery = resolvePreset(join(sources.delivery, 'configurations.yaml'), requested)
   const product = resolvePreset(join(sources.product, 'configurations.yaml'), requested)
   if (delivery.name !== product.name) {
     fail(`Delivery preset "${delivery.name}" and product preset "${product.name}" differ.`)
   }
+  let steerPiSeats = []
+  const steerConfig = join(sources.steer, 'configurations.yaml')
+  if (isFile(steerConfig)) {
+    const { presets: steerPresets, recommended: steerRec } = parsePresets(
+      readFileSync(steerConfig, 'utf8'),
+    )
+    const steerPresetName =
+      requested && steerPresets[requested]
+        ? requested
+        : steerPresets[delivery.name]
+          ? delivery.name
+          : steerRec
+    if (steerPresets[steerPresetName]) {
+      steerPiSeats = piSeatsOf(
+        { name: steerPresetName, seats: steerPresets[steerPresetName] },
+        BASES.steer,
+      )
+    }
+  }
   return {
     sources,
     preset: delivery.name,
-    piSeats: [...piSeatsOf(delivery, BASES.delivery), ...piSeatsOf(product, BASES.product)],
+    piSeats: [
+      ...piSeatsOf(delivery, BASES.delivery),
+      ...piSeatsOf(product, BASES.product),
+      ...steerPiSeats,
+    ],
   }
 }
 
@@ -401,7 +427,7 @@ function refreshTree(source, target, { exact }) {
 
 function writeBases(home, plan, out) {
   const { specs } = locations(home)
-  out('==> 1. Syncing AgentFlow delivery and product bases to the OpenRig user library...')
+  out('==> 1. Syncing AgentFlow delivery, product, and steer bases to the OpenRig user library...')
   for (const [kind, name] of Object.entries(BASES)) mirror(plan.sources[kind], join(specs, name))
 }
 
@@ -450,8 +476,9 @@ export function install(ctx) {
   out('==> AgentFlow SDLC bases installed.')
   out('    Delivery base: rig up agentflow --cwd /path/to/project')
   out('    Product base:  rig up agentflow-product --cwd /path/to/project')
+  out('    Steer base:    rig up agentflow-steer --cwd /path/to/project')
   out(
-    `    Per-project squad: agentflow-sdlc adapters squads provision ${ADAPTER_ID} --kind delivery|product <project> <path>`,
+    `    Per-project squad: agentflow-sdlc adapters squads provision ${ADAPTER_ID} --kind delivery|product|steer|all <project> <path>`,
   )
   return 0
 }
@@ -467,7 +494,7 @@ export function update(ctx) {
     )
   }
   const exact = Boolean(ctx.options?.exact)
-  out('==> 1. Refreshing AgentFlow delivery and product bases from this product...')
+  out('==> 1. Refreshing AgentFlow delivery, product, and steer bases from this product...')
   const extras = []
   for (const [kind, name] of Object.entries(BASES)) {
     const kept = refreshTree(join(adapterDir, BASES[kind]), join(specs, name), { exact })
@@ -496,27 +523,38 @@ export function squadRigName(project) {
 }
 
 function detectKind(rigName, targetDir) {
+  const steeringPath = join(targetDir, 'steering.md')
+  if (isFile(steeringPath)) return 'steer'
   const siblingPath = join(targetDir, 'sibling.md')
-  if (
-    isFile(siblingPath) &&
-    readFileSync(siblingPath, 'utf8').includes('This copy is the product squad')
-  ) {
-    return 'product'
+  if (isFile(siblingPath)) {
+    const text = readFileSync(siblingPath, 'utf8')
+    if (text.includes('steering squad') || text.includes('Supervisory Steering')) return 'steer'
+    if (text.includes('This copy is the product squad')) return 'product'
   }
   const rigPath = join(targetDir, 'rig.yaml')
   const rigText = isFile(rigPath) ? readFileSync(rigPath, 'utf8') : ''
+  if (/agentflow-steer|id: steer\b/.test(rigText) || rigName.endsWith('-steer')) return 'steer'
   if (/agentflow-product|pm-analyst|id: pm\b/.test(rigText) || rigName.endsWith('-pm'))
     return 'product'
   return 'delivery'
 }
 
-function detectSibling(targetDir) {
-  const siblingPath = join(targetDir, 'sibling.md')
-  if (!isFile(siblingPath)) return ''
-  const match = readFileSync(siblingPath, 'utf8').match(
-    /The (?:delivery|product) squad for this project is `([^`]*)`/,
-  )
-  return match ? match[1] : ''
+function detectSiblings(targetDir) {
+  const result = { sibling: '', product: '', delivery: '', steer: '' }
+  for (const filename of ['steering.md', 'sibling.md']) {
+    const filePath = join(targetDir, filename)
+    if (!isFile(filePath)) continue
+    const text = readFileSync(filePath, 'utf8')
+    const productMatch = text.match(/The product squad for this project is `([^`]*)`/)
+    if (productMatch && !result.product) result.product = productMatch[1]
+    const deliveryMatch = text.match(/The delivery squad for this project is `([^`]*)`/)
+    if (deliveryMatch && !result.delivery) result.delivery = deliveryMatch[1]
+    const steerMatch = text.match(/steer-lead@([A-Za-z0-9._-]+)/)
+    if (steerMatch && !result.steer) result.steer = steerMatch[1]
+    const siblingMatch = text.match(/The (?:delivery|product) squad for this project is `([^`]*)`/)
+    if (siblingMatch && !result.sibling) result.sibling = siblingMatch[1]
+  }
+  return result
 }
 
 function renameRig(rigText, rigName) {
@@ -550,37 +588,102 @@ function applyProductPreset(rigText, preset) {
   return out.join('\n')
 }
 
-// Add sibling.md to the startup files, after the startup/context.md entry.
-function addSiblingStartup(rigText) {
-  if (rigText.includes('path: sibling.md')) return rigText
+// Set steer lead seat's runtime from the preset if declared.
+function applySteerPreset(rigText, preset) {
+  if (!preset?.seats?.['steer.lead']) return rigText
+  const runtime = preset.seats['steer.lead']
+  const lines = rigText.split('\n')
+  const out = []
+  let member = null
+  for (let index = 0; index < lines.length; index += 1) {
+    const id = lines[index].match(/^ +- id: (\S+)\s*$/)
+    if (id) member = id[1]
+    if (member === 'lead' && /^ +runtime: \S+\s*$/.test(lines[index])) {
+      const indent = lines[index].match(/^ +/)[0]
+      out.push(`${indent}runtime: ${runtime}`)
+      const next = lines[index + 1] || ''
+      if (runtime === 'pi' && !/^ +model: /.test(next))
+        out.push(`${indent}model: antigravity/gemini-3.1-pro`)
+      if (runtime !== 'pi' && /^ +model: /.test(next)) index += 1
+      continue
+    }
+    out.push(lines[index])
+  }
+  return out.join('\n')
+}
+
+// Add sibling or steering file to the startup files, after the startup/context.md entry.
+function addSiblingStartup(rigText, filename = 'sibling.md') {
+  if (rigText.includes(`path: ${filename}`)) return rigText
   const lines = rigText.split('\n')
   const index = lines.findIndex((line) => line.includes('path: startup/context.md'))
   if (index === -1) return rigText
   lines.splice(
     index + 3,
     0,
-    '    - path: sibling.md',
+    `    - path: ${filename}`,
     '      delivery_hint: send_text',
     '      required: true',
   )
   return lines.join('\n')
 }
 
-export function siblingRecord(kind, rigName, sibling) {
+export function siblingRecord(kind, rigName, sibling, extra = {}) {
+  const options = typeof sibling === 'object' && sibling !== null ? sibling : extra
+  const siblingStr = typeof sibling === 'string' ? sibling : ''
+  const steer = options.steer || ''
+
+  if (kind === 'steer') {
+    const product = options.product || (siblingStr && !options.delivery ? siblingStr : '')
+    const delivery = options.delivery || ''
+    const lines = ['# Supervisory Steering Topology', '']
+    if (!product && !delivery) {
+      lines.push('No sibling squads were named for this copy. Do not invent session names.')
+    } else {
+      lines.push(
+        `This copy is the steering squad \`${rigName}\`.`,
+        `The product squad for this project is \`${product}\`.`,
+        `The delivery squad for this project is \`${delivery}\`.`,
+        '',
+        'Target Routing Allowlist:',
+        `- pm-manager@${product} (goal intake, macro priority)`,
+        `- orch-arch@${delivery} (unfreeze resolutions, delivery sync, defect triage)`,
+        '- human (gates, waivers, person escalations)',
+        '',
+        'Prohibited Targets:',
+        '- Never route directly to in-rig execution seats (dev-build*, dev-qa, dev-test-eng, rev-review, pm-analyst).',
+        '',
+        'Supervisory steering operates out-of-rig without git worktrees or code-authoring permissions.',
+      )
+    }
+    return `${lines.join('\n')}\n`
+  }
+
+  const deliveryOrProductSibling =
+    siblingStr || (kind === 'product' ? options.delivery : options.product) || ''
   const lines = ['# Sibling squad', '']
-  if (!sibling) {
+  if (!deliveryOrProductSibling) {
     lines.push('No sibling squad was named for this copy. Do not invent session names.')
   } else if (kind === 'product') {
     lines.push(
       `This copy is the product squad \`${rigName}\`.`,
-      `The delivery squad for this project is \`${sibling}\`.`,
+      `The delivery squad for this project is \`${deliveryOrProductSibling}\`.`,
       '',
       ...['orch-arch', 'dev-build-jr', 'dev-build', 'dev-build-sr', 'dev-qa', 'rev-review'].map(
-        (seat) => `- ${seat}@${sibling}`,
+        (seat) => `- ${seat}@${deliveryOrProductSibling}`,
       ),
       '',
       'A message to delivery is a question or the phase 1 handoff. It is not an implementation order.',
       'Send it with `agentflow-sdlc handoff deliver --to <session> --body-file <file> --goal <uri>`. It is held while the delivery squad is busy.',
+    )
+    if (steer) {
+      lines.push(
+        '',
+        'Supervisory steering plane:',
+        `- steer-lead@${steer} (supervisory steering plane; escalation only)`,
+      )
+    }
+    lines.push(
       '',
       'Reverse seam defect handling:',
       'If delivery returns a defect to phase 1 (`--status skipped --reason "... return to phase 1"`), `pm-analyst` resolves the defect, updates analysis and artifacts, and reappends phase 1 (`--status pass`).',
@@ -588,26 +691,57 @@ export function siblingRecord(kind, rigName, sibling) {
   } else {
     lines.push(
       `This copy is the delivery squad \`${rigName}\`.`,
-      `The product squad for this project is \`${sibling}\`.`,
+      `The product squad for this project is \`${deliveryOrProductSibling}\`.`,
       '',
-      `- pm-manager@${sibling}`,
-      `- pm-analyst@${sibling}`,
+      `- pm-manager@${deliveryOrProductSibling}`,
+      `- pm-analyst@${deliveryOrProductSibling}`,
       '',
       'Phases 0 and 1 belong to that product squad. This squad starts at phase 2.',
       'A question to the analyst is allowed. Changing the outcome, a constraint, or an anti-goal waits for the person.',
+    )
+    if (steer) {
+      lines.push(
+        '',
+        'Supervisory steering plane:',
+        `- steer-lead@${steer} (supervisory steering plane; escalation only for unfreeze / deadlock resolution)`,
+      )
+    }
+    lines.push(
       '',
       'Reverse seam defect return:',
       'If phase 2, 3, or 4 identifies an unresolvable intake ambiguity, invalid assumption, or scope defect, record a defect transition:',
       '`agentflow-sdlc phase append --phase <current> --status skipped --reason "Defect: <summary> (return to phase 1)" --seat <seat>`',
       'Then wake the product squad analyst:',
-      `\`rig queue handoff --to pm-analyst@${sibling} --goal <goal-uri> --from-phase <current> --reason "Defect return to phase 1"\``,
+      `\`rig queue handoff --to pm-analyst@${deliveryOrProductSibling} --goal <goal-uri> --from-phase <current> --reason "Defect return to phase 1"\``,
     )
   }
   return `${lines.join('\n')}\n`
 }
 
+function ensureSteerDir(home, rigName) {
+  const { steerState } = locations(home)
+  const dir = join(steerState, rigName)
+  mkdirSync(dir, { recursive: true, mode: 0o700 })
+  try {
+    chmodSync(dir, 0o700)
+  } catch {
+    // Non-POSIX or restricted file systems may ignore chmod
+  }
+  return dir
+}
+
 function squadPiSeats(kind, rigName, rigText) {
   if (kind === 'delivery') return DELIVERY_PI_SEATS.map((seat) => `${seat}@${rigName}`)
+  if (kind === 'steer') {
+    const seats = []
+    let id = ''
+    for (const line of rigText.split('\n')) {
+      const member = line.match(/^ +- id: (\S+)\s*$/)
+      if (member) id = member[1]
+      if (/^ +runtime: pi\s*$/.test(line) && id) seats.push(`steer-${id}@${rigName}`)
+    }
+    return seats
+  }
   const seats = []
   let id = ''
   for (const line of rigText.split('\n')) {
@@ -618,64 +752,65 @@ function squadPiSeats(kind, rigName, rigText) {
   return seats
 }
 
-function writeSquad(ctx, isUpdate) {
-  const { home, options, operands, cwd, env, out } = ctx
+function writeSquadSpec({
+  ctx,
+  kind,
+  rigName,
+  projectCwd,
+  sibling,
+  steer,
+  product,
+  delivery,
+  isUpdate,
+}) {
+  const { home, options, env, out } = ctx
   const { specs, piState } = locations(home)
-  let kind = options.kind
-  if (kind !== undefined && kind !== 'delivery' && kind !== 'product') {
-    fail(`--kind must be delivery or product, not '${kind}'.`)
-  }
-  const project = operands[0]
-  const rigName = squadRigName(project)
-  if (BASE_NAMES.includes(rigName)) {
-    fail(`'${rigName}' is a generic base name. Pass a project copy name, such as dev or pm.`)
-  }
-  const targetDir = join(specs, rigName)
-  let sibling = options.sibling ?? ''
-  if (isUpdate) {
-    if (!isDirectory(targetDir)) {
-      fail(`Squad '${rigName}' does not exist in ${specs}. Provision it first.`)
-    }
-    kind ??= detectKind(rigName, targetDir)
-    if (options.sibling === undefined) sibling = detectSibling(targetDir)
-  }
-  kind ??= 'delivery'
-
-  let projectCwd = cwd
-  if (operands[1] !== undefined) {
-    projectCwd = resolve(cwd, operands[1])
-    if (!isDirectory(projectCwd)) fail(`Project directory '${operands[1]}' does not exist.`)
-  }
-
   const baseDir = join(specs, BASES[kind])
   if (!isFile(join(baseDir, 'rig.yaml'))) {
     out(`==> Base spec not found in ${baseDir}. Installing the ${ADAPTER_ID} adapter first...`)
     installBases(ctx, options.preset, null)
   }
 
-  // Build the copy in memory so a bad preset writes nothing.
+  const targetDir = join(specs, rigName)
   let rigText = renameRig(readFileSync(join(baseDir, 'rig.yaml'), 'utf8'), rigName)
   if (kind === 'product') {
     rigText = applyProductPreset(
       rigText,
       resolvePreset(join(baseDir, 'configurations.yaml'), options.preset),
     )
+  } else if (kind === 'steer') {
+    if (options.preset) {
+      rigText = applySteerPreset(
+        rigText,
+        resolvePreset(join(baseDir, 'configurations.yaml'), options.preset),
+      )
+    }
   }
-  rigText = addSiblingStartup(rigText)
+
+  const startupFile = kind === 'steer' ? 'steering.md' : 'sibling.md'
+  rigText = addSiblingStartup(rigText, startupFile)
 
   out(`==> 1. ${isUpdate ? 'Updating' : 'Provisioning'} spec for squad '${rigName}'...`)
   mkdirSync(targetDir, { recursive: true })
-  for (const name of SHARED_DIRS) bridge(join(baseDir, name), join(targetDir, name), true)
+  for (const name of SHARED_DIRS) {
+    if (isDirectory(join(baseDir, name))) bridge(join(baseDir, name), join(targetDir, name), true)
+  }
   for (const name of SHARED_FILES) {
     if (isFile(join(baseDir, name))) bridge(join(baseDir, name), join(targetDir, name), false)
   }
   writeFileSync(join(targetDir, 'rig.yaml'), rigText)
-  writeFileSync(join(targetDir, 'sibling.md'), siblingRecord(kind, rigName, sibling))
+
+  const siblingContent = siblingRecord(kind, rigName, sibling, { steer, product, delivery })
+  if (kind === 'steer') {
+    writeFileSync(join(targetDir, 'steering.md'), siblingContent)
+    writeFileSync(join(targetDir, 'sibling.md'), siblingContent)
+    ensureSteerDir(home, rigName)
+  } else {
+    writeFileSync(join(targetDir, 'sibling.md'), siblingContent)
+  }
 
   out(`==> 2. ${isUpdate ? 'Keeping' : 'Provisioning'} Pi state bridges for squad '${rigName}'...`)
   for (const seat of squadPiSeats(kind, rigName, rigText)) {
-    // Update leaves existing seat runtime state alone and only adds a missing seat. The send guard
-    // is configuration, not runtime state, so a product seat always gets the current one.
     if (!isUpdate || !lexists(join(piState, seat))) bridgePiSeat(home, seat)
     if (kind === 'product') installPiGuard(home, seat)
   }
@@ -696,6 +831,192 @@ function writeSquad(ctx, isUpdate) {
     if (result && result.status !== 0)
       fail(`rig spec validate failed for ${join(targetDir, 'rig.yaml')}.`)
   }
+
+  return { rigName, targetDir }
+}
+
+function provisionAll(ctx) {
+  const { home, options, operands, cwd, out } = ctx
+  const { specs, piState, steerState } = locations(home)
+  const project = operands[0]
+  squadRigName(project)
+
+  const pmProject = `${project}-pm`
+  const devProject = `${project}-dev`
+  const steerProject = `${project}-steer`
+
+  const pmRig = squadRigName(pmProject)
+  const devRig = squadRigName(devProject)
+  const steerRig = squadRigName(steerProject)
+
+  for (const name of [pmRig, devRig, steerRig]) {
+    if (BASE_NAMES.includes(name)) {
+      fail(`'${name}' is a generic base name. Pass a project copy name.`)
+    }
+  }
+
+  let projectCwd = cwd
+  if (operands[1] !== undefined) {
+    projectCwd = resolve(cwd, operands[1])
+    if (!isDirectory(projectCwd)) fail(`Project directory '${operands[1]}' does not exist.`)
+  }
+
+  for (const base of Object.values(BASES)) {
+    if (!isFile(join(specs, base, 'rig.yaml'))) {
+      out(
+        `==> Base spec not found in ${join(specs, base)}. Installing the ${ADAPTER_ID} adapter first...`,
+      )
+      installBases(ctx, options.preset, null)
+      break
+    }
+  }
+
+  resolvePreset(join(specs, BASES.delivery, 'configurations.yaml'), options.preset)
+  resolvePreset(join(specs, BASES.product, 'configurations.yaml'), options.preset)
+  if (options.preset) {
+    const steerConfig = join(specs, BASES.steer, 'configurations.yaml')
+    if (isFile(steerConfig)) {
+      resolvePreset(steerConfig, options.preset)
+    }
+  }
+
+  const createdTargetDirs = []
+  const createdSteerDirs = []
+
+  try {
+    out(`==> Provisioning 3-rig topology for project '${project}' (product, delivery, steer)...`)
+
+    writeSquadSpec({
+      ctx,
+      kind: 'product',
+      rigName: pmRig,
+      projectCwd,
+      sibling: devRig,
+      steer: steerRig,
+      isUpdate: false,
+    })
+    createdTargetDirs.push(join(specs, pmRig))
+
+    writeSquadSpec({
+      ctx,
+      kind: 'delivery',
+      rigName: devRig,
+      projectCwd,
+      sibling: pmRig,
+      steer: steerRig,
+      isUpdate: false,
+    })
+    createdTargetDirs.push(join(specs, devRig))
+
+    writeSquadSpec({
+      ctx,
+      kind: 'steer',
+      rigName: steerRig,
+      projectCwd,
+      product: pmRig,
+      delivery: devRig,
+      isUpdate: false,
+    })
+    createdTargetDirs.push(join(specs, steerRig))
+    createdSteerDirs.push(join(steerState, steerRig))
+
+    out('')
+    out(`Three squads provisioned for '${project}'. Working directory: ${projectCwd}`)
+    out(`  Product:  rig up ${pmRig} --cwd ${projectCwd}`)
+    out(`  Delivery: rig up ${devRig} --cwd ${projectCwd}`)
+    out(`  Steer:    rig up ${steerRig} --cwd ${projectCwd}`)
+    out(`  Monitor:  rig ps`)
+    out(`  Remove:   agentflow-sdlc adapters squads remove ${ADAPTER_ID} ${pmProject}`)
+    out(`            agentflow-sdlc adapters squads remove ${ADAPTER_ID} ${devProject}`)
+    out(`            agentflow-sdlc adapters squads remove ${ADAPTER_ID} ${steerProject}`)
+    return 0
+  } catch (error) {
+    for (const dir of createdTargetDirs) {
+      if (lexists(dir)) removeTree(dir)
+    }
+    for (const dir of createdSteerDirs) {
+      if (lexists(dir)) removeTree(dir)
+    }
+    if (isDirectory(piState)) {
+      for (const rigName of [pmRig, devRig, steerRig]) {
+        for (const seat of readdirSync(piState).filter((name) => name.endsWith(`@${rigName}`))) {
+          removeTree(join(piState, seat))
+        }
+      }
+    }
+    throw error
+  }
+}
+
+function writeSquad(ctx, isUpdate) {
+  const { home, options, operands, cwd, out } = ctx
+  const { specs } = locations(home)
+  let kind = options.kind
+  if (
+    kind !== undefined &&
+    kind !== 'delivery' &&
+    kind !== 'product' &&
+    kind !== 'steer' &&
+    kind !== 'all'
+  ) {
+    fail(`--kind must be delivery, product, steer, or all, not '${kind}'.`)
+  }
+
+  if (kind === 'all') {
+    if (isUpdate) {
+      fail('--kind all is supported for provision only.')
+    }
+    return provisionAll(ctx)
+  }
+
+  const project = operands[0]
+  const rigName = squadRigName(project)
+  if (BASE_NAMES.includes(rigName)) {
+    fail(`'${rigName}' is a generic base name. Pass a project copy name, such as dev or pm.`)
+  }
+  const targetDir = join(specs, rigName)
+
+  let sibling = options.sibling ?? ''
+  let steer = options.steer ?? ''
+  let product = options.product ?? ''
+  let delivery = options.delivery ?? ''
+
+  if (isUpdate) {
+    if (!isDirectory(targetDir)) {
+      fail(`Squad '${rigName}' does not exist in ${specs}. Provision it first.`)
+    }
+    kind ??= detectKind(rigName, targetDir)
+    const detected = detectSiblings(targetDir)
+    if (options.sibling === undefined) sibling = detected.sibling
+    if (options.steer === undefined) steer = detected.steer
+    if (options.product === undefined) product = detected.product
+    if (options.delivery === undefined) delivery = detected.delivery
+  }
+  kind ??= 'delivery'
+
+  if (kind === 'steer') {
+    if (!product || !delivery) {
+      fail('--kind steer requires --product <rig> and --delivery <rig>.')
+    }
+  }
+
+  let projectCwd = cwd
+  if (operands[1] !== undefined) {
+    projectCwd = resolve(cwd, operands[1])
+    if (!isDirectory(projectCwd)) fail(`Project directory '${operands[1]}' does not exist.`)
+  }
+
+  writeSquadSpec({
+    ctx,
+    kind,
+    rigName,
+    projectCwd,
+    sibling,
+    steer,
+    product,
+    delivery,
+    isUpdate,
+  })
 
   out('')
   out(
@@ -746,8 +1067,8 @@ export function squadList(ctx) {
 }
 
 export function squadRemove(ctx) {
-  const { home, operands, out } = ctx
-  const { specs, piState } = locations(home)
+  const { home, operands, options, out } = ctx
+  const { specs, piState, steerState } = locations(home)
   const rigName = squadRigName(operands[0])
   if (BASE_NAMES.includes(rigName)) {
     fail(
@@ -789,6 +1110,23 @@ export function squadRemove(ctx) {
       out(`    Removed Pi bridge: ${join(piState, seat)}`)
     }
   }
+
+  const steerDirCandidates = [join(steerState, rigName)]
+  const candidateSuffix = join(steerState, `${rigName}-steer`)
+  if (candidateSuffix !== join(steerState, rigName) && lexists(candidateSuffix)) {
+    steerDirCandidates.push(candidateSuffix)
+  }
+  for (const rigSteerDir of steerDirCandidates) {
+    if (lexists(rigSteerDir)) {
+      if (options?.purge) {
+        removeTree(rigSteerDir)
+        out(`    Purged steering audit directory: ${rigSteerDir}`)
+      } else {
+        out(`    Preserved steering audit directory: ${rigSteerDir} (pass --purge to remove)`)
+      }
+    }
+  }
+
   if (daemonRunning(ctx)) rig(['specs', 'sync'], ctx)
   out(`==> Squad '${rigName}' removed.`)
   return 0
