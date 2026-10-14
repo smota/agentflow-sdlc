@@ -1,0 +1,53 @@
+name: agentflow-steer-seat
+version: '1.0'
+description: >
+  Supervisory steering plane seat. Governs customer goals, macro prerequisite sequencing,
+  unfreeze resolutions, pragmatic defect triage, and merge readiness.
+  Does not author code, advance internal delivery phases, or micromanage turns.
+
+profiles:
+  steering-lead:
+    summary: Out-of-rig supervisory steering lead. Reasons and unfreezes; never implements.
+    preferences:
+      runtime: claude-code
+    startup:
+      files:
+        - path: guidance/lead.md
+          delivery_hint: send_text
+          required: true
+      actions: []
+    uses:
+      skills:
+        - agentflow-steerer
+        - agentflow-collaborator
+        - agentflow-scanner
+        - agentflow-designer
+        - agentflow-maintainer
+        - openrig-user
+        - applying-a-permission-policy
+        - messaging-the-human
+        - writing-for-agents
+      runtime_resources:
+        - steer-guard-claude
+        - steer-guard-codex
+
+resources:
+  skills:
+    - { id: agentflow-steerer, path: skills/agentflow-steerer }
+    - { id: agentflow-collaborator, path: skills/agentflow-collaborator }
+    - { id: agentflow-scanner, path: skills/agentflow-scanner }
+    - { id: agentflow-designer, path: skills/agentflow-designer }
+    - { id: agentflow-maintainer, path: skills/agentflow-maintainer }
+    - { id: openrig-user, path: skills/openrig-user }
+    - { id: applying-a-permission-policy, path: skills/applying-a-permission-policy }
+    - { id: messaging-the-human, path: skills/messaging-the-human }
+    - { id: writing-for-agents, path: skills/writing-for-agents }
+  runtime_resources:
+    - id: steer-guard-claude
+      path: runtime/steer-guard.claude.json
+      runtime: claude-code
+      type: claude_settings_fragment
+    - id: steer-guard-codex
+      path: runtime/steer-guard.codex.toml
+      runtime: codex
+      type: codex_config_fragment

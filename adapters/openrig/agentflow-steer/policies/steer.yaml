@@ -1,0 +1,55 @@
+schema: openrig.permission-policy/v1
+name: steer-restricted
+summary: >
+  Non-yolo permission policy for the external supervisory steering seat. Allows read commands,
+  gh PR merge/view, and rig queue inspection. Strictly denies git commits and file modifications.
+
+harnesses:
+  claude-code:
+    permissions:
+      allow:
+        - 'Bash(rig ps*)'
+        - 'Bash(rig queue list*)'
+        - 'Bash(rig queue inspect*)'
+        - 'Bash(rig queue create*)'
+        - 'Bash(rig send*)'
+        - 'Bash(rig capture*)'
+        - 'Bash(rig whoami*)'
+        - 'Bash(git log*)'
+        - 'Bash(git status*)'
+        - 'Bash(git diff*)'
+        - 'Bash(gh pr view*)'
+        - 'Bash(gh pr checks*)'
+        - 'Bash(gh issue view*)'
+        - 'Bash(gh issue comment*)'
+        - 'Bash(agentflow-sdlc steer*)'
+      deny:
+        - 'Bash(git commit*)'
+        - 'Bash(git push*)'
+        - 'Bash(git checkout -b*)'
+        - 'Bash(git merge*)'
+        - 'Bash(agentflow-sdlc handoff deliver*)'
+  codex:
+    execpolicy:
+      allow:
+        - 'rig ps*'
+        - 'rig queue list*'
+        - 'rig queue inspect*'
+        - 'rig queue create*'
+        - 'rig send*'
+        - 'rig capture*'
+        - 'rig whoami*'
+        - 'git log*'
+        - 'git status*'
+        - 'git diff*'
+        - 'gh pr view*'
+        - 'gh pr checks*'
+        - 'gh issue view*'
+        - 'gh issue comment*'
+        - 'agentflow-sdlc steer*'
+      deny:
+        - 'git commit*'
+        - 'git push*'
+        - 'git checkout -b*'
+        - 'git merge*'
+        - 'agentflow-sdlc handoff deliver*'

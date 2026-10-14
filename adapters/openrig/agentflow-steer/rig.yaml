@@ -1,0 +1,44 @@
+version: '0.2'
+name: agentflow-steer
+summary: >
+  AgentFlow external supervisory steering squad. The steering lead governs goal intake,
+  macro dependency ordering, unfreeze resolutions, pragmatic defect triage, and merge-checks
+  across delivery squads. Operates strictly out-of-rig without git worktrees or code-authoring permissions.
+
+culture_file: CULTURE.md
+
+docs:
+  - path: README.md
+
+permission_policy: 'local:policies/steer.yaml'
+
+startup:
+  files:
+    - path: startup/context.md
+      delivery_hint: send_text
+      required: true
+  actions:
+    - type: startup_proof
+      value: authenticated
+      idempotent: true
+
+pods:
+  - id: steer
+    label: Steering
+    summary: Out-of-rig supervisory steering plane. Reasons and unfreezes; never implements.
+    members:
+      - id: lead
+        agent_ref: 'local:agents/agentflow-steer'
+        profile: steering-lead
+        runtime: claude-code
+        model: claude-3-7-sonnet
+        effort: high
+        cwd: '.'
+        startup:
+          files:
+            - path: startup/lead.md
+              delivery_hint: send_text
+              required: true
+    edges: []
+
+edges: []

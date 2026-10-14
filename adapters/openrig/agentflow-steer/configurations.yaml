@@ -1,0 +1,19 @@
+schema: openrig.bundle-configurations/v1
+recommended: claude-lead
+
+seats:
+  steer.lead:
+    runtimes:
+      claude-code: steering-lead
+      codex: steering-lead
+      pi: steering-lead
+
+presets:
+  claude-lead:
+    steer.lead: claude-code
+
+  codex-lead:
+    steer.lead: codex
+
+  pi-lead:
+    steer.lead: pi
