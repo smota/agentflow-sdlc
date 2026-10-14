@@ -87,7 +87,9 @@ Executes squash-and-merge of a verified pull request after bilateral/council rev
   - Independent reviewer or auditor sign-off recorded.
   - Four-eyes principle satisfied (builder != reviewer).
   - All CI status checks green.
-- **Mapping**:
+  - Explicit human approval recorded for this PR merge, or a recorded auto-merge configuration for this delivery.
+- **Gate**: Without that recorded human approval or recorded auto-merge configuration, halt. Do not run the merge command. Emit `escalate("human-gate", "PR #<pr> requires human approval before merge")`.
+- **Mapping** (only after the gate passes):
   ```bash
   gh pr merge <pr> --squash --delete-branch
   ```
