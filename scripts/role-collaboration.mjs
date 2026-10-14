@@ -107,7 +107,14 @@ if (command === 'verify' || command === 'advance') {
   if (command === 'advance') {
     const decision = readJson('--decision')
     const openReworkRequests = value('--rework') ? readJson('--rework') : undefined
-    const result = verifyRoleAdvance({ ...sources, decision, openReworkRequests })
+    const ledger = value('--ledger') ? readJson('--ledger') : undefined
+    const result = verifyRoleAdvance({
+      ...sources,
+      decision,
+      openReworkRequests,
+      ledger,
+      changeSurface: list('--change-surface'),
+    })
     output(result)
     process.exit(result.ok ? 0 : 1)
   }
