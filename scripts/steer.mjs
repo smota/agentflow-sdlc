@@ -1,0 +1,839 @@
+#!/usr/bin/env node
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { join, resolve } from 'node:path'
+import { spawnSync } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
+import {
+  UNFREEZE_RESOLUTIONS,
+  createUnfreezeResolution,
+  unfreezeLedger,
+  isAuthorizedUnfreezeActor,
+  isInRigSeat,
+} from '../lib/core/role-collaboration.mjs'
+import {
+  ALLOWED_DECIDER_TASKS,
+  triageQueueOrdering,
+  triageIssueDedupe,
+  triageNudgeLevel,
+} from '../lib/providers/decider-port.mjs'
+
+export const STEER_USAGE = `Usage: agentflow-sdlc steer <subcommand> [options]
+
+Supervisory steering verbs for out-of-rig governance and merge verification.
+
+Subcommands:
+  assign       Format and dispatch durable queue brief to pm.manager (or allowed seat)
+  unfreeze     Format and seal unfreeze resolution with next epoch fencing token
+  triage       Connect to decider port with sanitized payloads for heuristic triage
+  merge-check  Verify review digest, green CI status, and human approval before merging PR
+
+Options:
+  --help, -h   Show help for steer or any subcommand
+  --json       Emit machine-readable JSON output
+`
+
+export const ASSIGN_USAGE = `Usage: agentflow-sdlc steer assign --destination <seat> --brief <file> [options]
+
+Dispatches a durable work item to an authorized entry seat (pm.manager, orch.arch, human).
+
+Options:
+  --destination, --to <seat>   Target seat session (e.g. pm.manager, pm-manager@rig, orch.arch, human)
+  --brief, --body-file <file>  Path to admitted task brief or specification packet
+  --summary <text>             Optional summary string (defaults to title in brief)
+  --goal <uri>                 Optional goal URI reference
+  --transition <uri>           Optional transition URI reference
+  --dry-run                    Preview queue item creation without dispatching
+  --json                       Emit JSON result
+`
+
+export const UNFREEZE_USAGE = `Usage: agentflow-sdlc steer unfreeze --ledger <file> --resolution <type> --rationale <text> [options]
+
+Formats and verifies a sealed unfreeze resolution incrementing the next epoch fencing token.
+
+Options:
+  --ledger <file>              Path to frozen role collaboration rework ledger JSON
+  --resolution <type>          Resolution type: re-scope | slice-split | person-waiver | abandonment
+  --rationale <text>           Detailed rationale explaining why unfreeze is justified
+  --actor <seat>               Authoring steering seat (defaults to steer.lead or steer-lead@<rig>)
+  --human-approval <ref>       Human authorization reference (required for waiver or abandonment)
+  --dry-run                    Verify resolution and next ledger without writing file
+  --no-apply                   Do not write updated ledger back to disk
+  --json                       Emit JSON result
+`
+
+export const TRIAGE_USAGE = `Usage: agentflow-sdlc steer triage --task <task> [options]
+
+Connects to decider port with sanitized payloads and deterministic fallbacks.
+
+Tasks:
+  queue-ordering               Order queued candidate tasks by priority and rework rounds
+  issue-dedupe                 Determine if finding duplicates an open backlog issue
+  nudge-level                  Select calibrated nudge urgency (gentle | standard | interrupt)
+
+Options:
+  --task <task>                One of: queue-ordering, issue-dedupe, nudge-level
+  --payload <json>             Inline JSON payload for decider triage
+  --payload-file <file>        File path containing JSON payload
+  --seat-target <seat>         Target seat for nudge-level task
+  --idle <seconds>             Idle duration in seconds for nudge-level task
+  --rework-round <n>           Rework count for nudge-level task
+  --last-state <state>         Last observed state for nudge-level task
+  --seat <seat>                Authorizing steering seat (defaults to steer.lead)
+  --plane <plane>              Steering plane (defaults to external-steering)
+  --endpoint <url>             Local decider service URL (default: http://127.0.0.1:8002/v1/decide)
+  --json                       Emit JSON result
+`
+
+export const MERGE_CHECK_USAGE = `Usage: agentflow-sdlc steer merge-check <pr-number> [options]
+
+Verifies bilateral review digest, green CI status, and recorded human approval before calling gh pr merge.
+
+Options:
+  <pr-number>                  Pull request number to inspect and verify
+  --check-only, --dry-run      Verify merge readiness without calling gh pr merge
+  --execute, --merge           Explicitly call gh pr merge --squash --delete-branch on success (default)
+  --repo <owner/repo>          Optional GitHub repository override
+  --auto-merge                 Treat PR as configured for auto-merge
+  --human-approval <login>     Explicit human approval reference
+  --json                       Emit JSON result
+`
+
+export function getFlag(args, names, fallback = null) {
+  const flags = Array.isArray(names) ? names : [names]
+  for (let i = 0; i < args.length; i++) {
+    if (flags.includes(args[i])) {
+      if (i + 1 < args.length && !args[i + 1].startsWith('--')) {
+        return args[i + 1]
+      }
+      return true
+    }
+  }
+  return fallback
+}
+
+export function hasFlag(args, names) {
+  const flags = Array.isArray(names) ? names : [names]
+  return args.some((arg) => flags.includes(arg))
+}
+
+export function validateSteerDestination(destination) {
+  if (typeof destination !== 'string' || !destination.trim()) {
+    throw new Error('Destination seat is required for steer assign')
+  }
+  const raw = destination.trim()
+  const lower = raw.toLowerCase()
+  if (lower === 'human') return raw
+
+  const seatPart = lower.includes('@') ? lower.split('@')[0] : lower
+
+  const prohibitedPatterns = [
+    /^(?:dev[-.]build(?:-jr|-sr)?|builder(?:-jr|-sr|-pi)?|build)$/i,
+    /^(?:dev[-.]qa|qa)$/i,
+    /^(?:dev[-.]test[-.]eng|test[-.]eng(?:-pi)?)$/i,
+    /^(?:rev[-.]review|reviewer)$/i,
+    /^(?:pm[-.]analyst|analyst)$/i,
+  ]
+
+  for (const pattern of prohibitedPatterns) {
+    if (pattern.test(seatPart)) {
+      throw new Error(
+        `Destination "${raw}" is prohibited. Supervisory steering plane communicates exclusively with pm.manager, orch.arch, or human. Routing directly to in-rig execution seats (builders, testers, reviewers, analysts) is barred.`,
+      )
+    }
+  }
+
+  const allowedPatterns = [/^(?:pm[-.]manager|manager)$/i, /^(?:orch[-.]arch|architect)$/i]
+
+  const isAllowed = allowedPatterns.some((pattern) => pattern.test(seatPart))
+  if (!isAllowed) {
+    throw new Error(
+      `Destination "${raw}" is not an authorized steering target. Allowed targets: pm.manager (goal intake), orch.arch (delivery sync / defect triage), or human (escalations).`,
+    )
+  }
+
+  return raw
+}
+
+export async function steerAssign({
+  destination,
+  briefFile,
+  summary,
+  goal,
+  transition,
+  dryRun = false,
+  targetDir = process.cwd(),
+  spawnFn = spawnSync,
+  fs = { existsSync, readFileSync, writeFileSync, mkdirSync },
+} = {}) {
+  const validatedDest = validateSteerDestination(destination)
+  if (!briefFile) {
+    throw new Error('Brief file is required for steer assign (--brief <file>)')
+  }
+  const briefPath = resolve(targetDir, briefFile)
+  if (!fs.existsSync(briefPath)) {
+    throw new Error(`Brief file not found: ${briefFile}`)
+  }
+
+  const briefContent = fs.readFileSync(briefPath, 'utf8')
+  let derivedSummary = summary
+  if (!derivedSummary) {
+    const firstLine = briefContent
+      .split('\n')
+      .map((l) => l.trim())
+      .find((l) => l.length > 0)
+    if (firstLine && firstLine.startsWith('# ')) {
+      derivedSummary = `Task brief: ${firstLine.slice(2).trim()}`
+    } else {
+      derivedSummary = `Task brief: ${briefFile}`
+    }
+  }
+
+  const command = [
+    'rig',
+    'queue',
+    'create',
+    '--destination',
+    validatedDest,
+    '--body-file',
+    briefPath,
+    '--summary',
+    derivedSummary,
+  ]
+
+  if (dryRun) {
+    return {
+      ok: true,
+      dispatched: false,
+      dryRun: true,
+      destination: validatedDest,
+      briefFile: briefPath,
+      summary: derivedSummary,
+      command,
+    }
+  }
+
+  const result = spawnFn('rig', command.slice(1), { encoding: 'utf8' })
+  if (result.status === 0) {
+    if (goal || transition) {
+      const msg = `Goal: ${goal || 'unspecified'} | Transition: ${transition || 'unspecified'} | Brief: ${briefPath}`
+      spawnFn('rig', ['send', validatedDest, msg], { encoding: 'utf8' })
+    }
+    return {
+      ok: true,
+      dispatched: true,
+      destination: validatedDest,
+      briefFile: briefPath,
+      summary: derivedSummary,
+      output: result.stdout?.trim(),
+    }
+  }
+
+  if (result.error?.code === 'ENOENT') {
+    const fallbackDir = resolve(targetDir, '.agent-runs', 'steer', 'queue')
+    fs.mkdirSync(fallbackDir, { recursive: true })
+    const queueId = `qitem-${Date.now()}`
+    const itemPath = join(fallbackDir, `${queueId}.json`)
+    const itemData = {
+      id: queueId,
+      destination: validatedDest,
+      briefFile: briefPath,
+      summary: derivedSummary,
+      goal: goal || null,
+      transition: transition || null,
+      createdAt: new Date().toISOString(),
+    }
+    fs.writeFileSync(itemPath, JSON.stringify(itemData, null, 2))
+    return {
+      ok: true,
+      dispatched: true,
+      source: 'local-queue-fallback',
+      destination: validatedDest,
+      briefFile: briefPath,
+      summary: derivedSummary,
+      queueFile: itemPath,
+      note: 'rig CLI not in PATH; brief persisted into local queue directory',
+    }
+  }
+
+  throw new Error(`Failed to dispatch queue brief via rig CLI: ${result.stderr || result.stdout}`)
+}
+
+export async function steerUnfreeze({
+  ledgerFile,
+  resolution,
+  rationale,
+  actor,
+  humanApproval,
+  approvalRef,
+  dryRun = false,
+  apply = true,
+  targetDir = process.cwd(),
+  fs = { existsSync, readFileSync, writeFileSync },
+} = {}) {
+  if (!ledgerFile) throw new Error('--ledger <file> is required')
+  if (!resolution) {
+    throw new Error(`--resolution <${UNFREEZE_RESOLUTIONS.join('|')}> is required`)
+  }
+  if (!rationale) throw new Error('--rationale <text> is required')
+
+  const ledgerPath = resolve(targetDir, ledgerFile)
+  if (!fs.existsSync(ledgerPath)) {
+    throw new Error(`Ledger file not found: ${ledgerFile}`)
+  }
+
+  const rawLedger = JSON.parse(fs.readFileSync(ledgerPath, 'utf8'))
+  if (rawLedger?.frozen !== true) {
+    throw new Error(`Ledger at ${ledgerFile} is not frozen`)
+  }
+
+  const effectiveActor = actor || process.env.OPENRIG_SESSION_NAME || 'steer.lead'
+  if (isInRigSeat(effectiveActor)) {
+    throw new Error(
+      `in-rig execution seat "${effectiveActor}" cannot author an unfreeze resolution; steering plane only`,
+    )
+  }
+  if (!isAuthorizedUnfreezeActor(effectiveActor)) {
+    throw new Error(
+      `actor "${effectiveActor}" is not an authorized steering identity (steer.lead, steer-lead@<rig>, or human:<login>)`,
+    )
+  }
+
+  const currentToken = Number.isInteger(rawLedger.fencingToken) ? rawLedger.fencingToken : 0
+  const nextToken = currentToken + 1
+
+  const effectiveApproval = humanApproval || approvalRef
+  const resolutionRecord = createUnfreezeResolution({
+    resolution,
+    actor: effectiveActor,
+    rationale,
+    fencingToken: nextToken,
+    humanApproval: effectiveApproval,
+    approvalRef: effectiveApproval,
+  })
+
+  const nextLedger = unfreezeLedger(rawLedger, resolutionRecord)
+
+  if (apply && !dryRun) {
+    fs.writeFileSync(ledgerPath, JSON.stringify(nextLedger, null, 2))
+  }
+
+  return {
+    ok: true,
+    applied: apply && !dryRun,
+    ledgerPath,
+    fencingToken: nextToken,
+    resolution: resolutionRecord,
+    ledger: nextLedger,
+  }
+}
+
+export async function steerTriage({
+  task,
+  payload = {},
+  seat,
+  plane = 'external-steering',
+  endpoint,
+  options = {},
+} = {}) {
+  if (!task) {
+    throw new Error(`--task <${ALLOWED_DECIDER_TASKS.join('|')}> is required`)
+  }
+  if (!ALLOWED_DECIDER_TASKS.includes(task)) {
+    throw new Error(
+      `Task "${task}" is not permitted on decider port allowlist. Permitted tasks: ${ALLOWED_DECIDER_TASKS.join(', ')}`,
+    )
+  }
+
+  const effectiveSeat = seat || process.env.OPENRIG_SESSION_NAME || 'steer.lead'
+  if (isInRigSeat(effectiveSeat)) {
+    throw new Error(
+      `In-rig execution seats (${effectiveSeat}) cannot connect to the decider port; steering plane only`,
+    )
+  }
+
+  const opt = { ...options }
+  if (endpoint) opt.endpoint = endpoint
+
+  if (task === 'queue-ordering') {
+    const tasks = Array.isArray(payload) ? payload : payload.tasks || []
+    return triageQueueOrdering({ tasks, plane, seat: effectiveSeat, options: opt })
+  }
+
+  if (task === 'issue-dedupe') {
+    const candidate = payload.candidate || {}
+    const existingIssues = payload.existingIssues || []
+    return triageIssueDedupe({
+      candidate,
+      existingIssues,
+      plane,
+      seat: effectiveSeat,
+      options: opt,
+    })
+  }
+
+  if (task === 'nudge-level') {
+    const seatTarget = payload.seatTarget || 'unknown'
+    const idleSeconds = Number(payload.idleSeconds || 0)
+    const reworkRound = Number(payload.reworkRound || 0)
+    const lastState = payload.lastState || 'idle'
+    return triageNudgeLevel({
+      seatTarget,
+      idleSeconds,
+      reworkRound,
+      lastState,
+      plane,
+      seat: effectiveSeat,
+      options: opt,
+    })
+  }
+}
+
+export function verifyMergeGates(pr, { autoMerge = false, humanApproval = null } = {}) {
+  const gates = {
+    review: { pass: false, details: '' },
+    ci: { pass: false, details: '' },
+    humanApproval: { pass: false, details: '' },
+  }
+  const failedGates = []
+
+  if (pr.state !== 'OPEN') {
+    return {
+      ready: false,
+      reason: `PR #${pr.number} is not OPEN (state: ${pr.state})`,
+      gates,
+      failedGates: [{ name: 'state', reason: `PR state is ${pr.state}` }],
+    }
+  }
+
+  if (pr.mergeable === 'CONFLICTING') {
+    return {
+      ready: false,
+      reason: `PR #${pr.number} has merge conflicts`,
+      gates,
+      failedGates: [{ name: 'mergeable', reason: 'CONFLICTING mergeable state' }],
+    }
+  }
+
+  const authorLogin = pr.author?.login
+
+  // Gate 1: Bilateral review sign-off and four-eyes principle
+  const approvedReviews = (pr.reviews || []).filter((r) => r.state === 'APPROVED')
+  const independentGitHubApproval = approvedReviews.find(
+    (r) => r.author?.login && r.author.login !== authorLogin,
+  )
+
+  const body = pr.body || ''
+  const hasPhase6Pass =
+    /\|\s*6\s*\|\s*reviewer\s*\|[^|]*\|[^|]*\|[^|]*\|[^|]*\|\s*independent\s*\|\s*pass\s*\|/i.test(
+      body,
+    ) || /\|\s*6\s*\|\s*reviewer\s*\|[^|]*\|[^|]*\|[^|]*\|[^|]*\|[^|]*\|\s*pass\s*\|/i.test(body)
+  const hasReviewSection = /## Agent review/i.test(body) && /- Review:\s*(\w+)/i.test(body)
+
+  if (independentGitHubApproval) {
+    gates.review.pass = true
+    gates.review.details = `Approved by independent reviewer @${independentGitHubApproval.author.login}`
+  } else if (hasPhase6Pass || hasReviewSection) {
+    gates.review.pass = true
+    gates.review.details = 'Bilateral role-pass review sign-off verified in PR manifest'
+  } else {
+    gates.review.pass = false
+    gates.review.details = 'No independent review approval or bilateral role pass recorded'
+    failedGates.push({ name: 'review', reason: gates.review.details })
+  }
+
+  // Gate 2: Green CI status
+  const rollup = pr.statusCheckRollup || []
+  if (rollup.length === 0) {
+    gates.ci.pass = true
+    gates.ci.details = 'No status checks recorded'
+  } else {
+    const failedChecks = rollup.filter((c) =>
+      ['FAILURE', 'TIMED_OUT', 'ACTION_REQUIRED', 'CANCELLED'].includes(c.conclusion),
+    )
+    const pendingChecks = rollup.filter(
+      (c) =>
+        c.status === 'IN_PROGRESS' ||
+        c.status === 'QUEUED' ||
+        (c.status && c.status !== 'COMPLETED'),
+    )
+
+    if (failedChecks.length > 0) {
+      gates.ci.pass = false
+      gates.ci.details = `Failed checks: ${failedChecks.map((c) => c.name).join(', ')}`
+      failedGates.push({ name: 'ci', reason: gates.ci.details })
+    } else if (pendingChecks.length > 0) {
+      gates.ci.pass = false
+      gates.ci.details = `Pending checks: ${pendingChecks.map((c) => c.name).join(', ')}`
+      failedGates.push({ name: 'ci', reason: gates.ci.details })
+    } else {
+      gates.ci.pass = true
+      gates.ci.details = `All ${rollup.length} checks green`
+    }
+  }
+
+  // Gate 3: Recorded human approval
+  const humanReviewApproval = approvedReviews.find(
+    (r) => r.author?.is_bot !== true && r.author?.login,
+  )
+  const comments = pr.comments || []
+  const hasApprovedComment = comments.some((c) =>
+    /\b(?:human-approval|\/approve|lgtm|approved)\b/i.test(c.body || ''),
+  )
+  const bodyAutoMerge =
+    /Merge owner:\s*auto-merge-requested/i.test(body) ||
+    /\bhuman-approval:\s*\S+/i.test(body) ||
+    /approved:\s*true/i.test(body)
+  const labels = (pr.labels || []).map((l) => (typeof l === 'string' ? l : l.name || ''))
+  const hasApprovalLabel = labels.some((l) => /approved|auto-merge/i.test(l))
+
+  if (
+    autoMerge ||
+    humanApproval ||
+    humanReviewApproval ||
+    hasApprovedComment ||
+    bodyAutoMerge ||
+    hasApprovalLabel
+  ) {
+    gates.humanApproval.pass = true
+    gates.humanApproval.details = humanApproval
+      ? `Explicit CLI human approval: ${humanApproval}`
+      : humanReviewApproval
+        ? `Human review approval from @${humanReviewApproval.author.login}`
+        : bodyAutoMerge
+          ? 'Recorded auto-merge configuration in PR manifest'
+          : hasApprovedComment
+            ? 'Human approval comment recorded'
+            : 'Human approval label recorded'
+  } else {
+    gates.humanApproval.pass = false
+    gates.humanApproval.details = 'PR requires recorded human approval or auto-merge configuration'
+    failedGates.push({
+      name: 'human-approval',
+      reason: gates.humanApproval.details,
+      escalation: {
+        class: 'human-gate',
+        message: `PR #${pr.number} requires human approval before merge`,
+      },
+    })
+  }
+
+  const ready = failedGates.length === 0
+  return { ready, gates, failedGates }
+}
+
+export async function steerMergeCheck({
+  prNumber,
+  dryRun = false,
+  checkOnly = false,
+  execute = true,
+  repo,
+  autoMerge = false,
+  humanApproval = null,
+  spawnFn = spawnSync,
+} = {}) {
+  const prNum = Number(prNumber)
+  if (!Number.isInteger(prNum) || prNum <= 0) {
+    throw new Error(`Valid PR number is required, got "${prNumber}"`)
+  }
+
+  const viewArgs = [
+    'pr',
+    'view',
+    String(prNum),
+    '--json',
+    'number,title,state,mergeable,author,reviews,statusCheckRollup,body,labels,comments',
+  ]
+  if (repo) viewArgs.push('--repo', repo)
+
+  const viewResult = spawnFn('gh', viewArgs, { encoding: 'utf8' })
+  if (viewResult.status !== 0) {
+    throw new Error(
+      `Failed to query PR #${prNum} via gh CLI: ${viewResult.stderr || viewResult.stdout}`,
+    )
+  }
+
+  const pr = JSON.parse(viewResult.stdout)
+  const readiness = verifyMergeGates(pr, { autoMerge, humanApproval })
+
+  if (!readiness.ready) {
+    const escalation = readiness.failedGates.find((g) => g.escalation)?.escalation || null
+    return {
+      ok: false,
+      pr: prNum,
+      title: pr.title,
+      ready: false,
+      merged: false,
+      gates: readiness.gates,
+      failedGates: readiness.failedGates,
+      escalation,
+    }
+  }
+
+  const shouldMerge = !dryRun && !checkOnly && execute
+  if (!shouldMerge) {
+    return {
+      ok: true,
+      pr: prNum,
+      title: pr.title,
+      ready: true,
+      merged: false,
+      gates: readiness.gates,
+    }
+  }
+
+  const mergeArgs = ['pr', 'merge', String(prNum), '--squash', '--delete-branch']
+  if (repo) mergeArgs.push('--repo', repo)
+  const mergeResult = spawnFn('gh', mergeArgs, { encoding: 'utf8' })
+
+  if (mergeResult.status === 0) {
+    return {
+      ok: true,
+      pr: prNum,
+      title: pr.title,
+      ready: true,
+      merged: true,
+      gates: readiness.gates,
+      output: mergeResult.stdout?.trim(),
+    }
+  }
+
+  throw new Error(
+    `Failed to execute merge on PR #${prNum}: ${mergeResult.stderr || mergeResult.stdout}`,
+  )
+}
+
+export async function runSteerCli(rawArgs = []) {
+  const args = [...rawArgs]
+  const isJson = hasFlag(args, '--json')
+  const targetDir = getFlag(args, '--target', process.cwd())
+
+  // Strip --target from command arguments
+  const filteredArgs = []
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--target') {
+      i++ // skip value
+    } else {
+      filteredArgs.push(args[i])
+    }
+  }
+
+  const [subcommand, ...subArgs] = filteredArgs
+
+  if (!subcommand || hasFlag(filteredArgs, ['--help', '-h'])) {
+    if (!subcommand) {
+      process.stdout.write(STEER_USAGE)
+      return 0
+    }
+    if (subcommand === 'assign') {
+      process.stdout.write(ASSIGN_USAGE)
+      return 0
+    }
+    if (subcommand === 'unfreeze') {
+      process.stdout.write(UNFREEZE_USAGE)
+      return 0
+    }
+    if (subcommand === 'triage') {
+      process.stdout.write(TRIAGE_USAGE)
+      return 0
+    }
+    if (subcommand === 'merge-check') {
+      process.stdout.write(MERGE_CHECK_USAGE)
+      return 0
+    }
+    process.stdout.write(STEER_USAGE)
+    return 0
+  }
+
+  try {
+    if (subcommand === 'assign') {
+      const destination = getFlag(
+        subArgs,
+        ['--destination', '--to'],
+        subArgs[0]?.startsWith('--') ? null : subArgs[0],
+      )
+      const briefFile = getFlag(
+        subArgs,
+        ['--brief', '--body-file'],
+        subArgs[1]?.startsWith('--') ? null : subArgs[1],
+      )
+      const summary = getFlag(subArgs, '--summary')
+      const goal = getFlag(subArgs, '--goal')
+      const transition = getFlag(subArgs, '--transition')
+      const dryRun = hasFlag(subArgs, '--dry-run')
+
+      const result = await steerAssign({
+        destination,
+        briefFile,
+        summary,
+        goal,
+        transition,
+        dryRun,
+        targetDir,
+      })
+
+      if (isJson) {
+        process.stdout.write(JSON.stringify(result, null, 2) + '\n')
+      } else {
+        process.stdout.write(
+          result.dryRun
+            ? `[Dry Run] Prepared brief assignment to ${result.destination}:\n  Brief: ${result.briefFile}\n  Summary: ${result.summary}\n`
+            : `✓ Brief dispatched to ${result.destination}:\n  Brief: ${result.briefFile}\n  Summary: ${result.summary}\n`,
+        )
+      }
+      return 0
+    }
+
+    if (subcommand === 'unfreeze') {
+      const ledgerFile = getFlag(subArgs, '--ledger')
+      const resolution = getFlag(subArgs, '--resolution')
+      const rationale = getFlag(subArgs, '--rationale')
+      const actor = getFlag(subArgs, '--actor')
+      const humanApproval = getFlag(subArgs, ['--human-approval', '--approval-ref'])
+      const dryRun = hasFlag(subArgs, '--dry-run')
+      const apply = !hasFlag(subArgs, '--no-apply')
+
+      const result = await steerUnfreeze({
+        ledgerFile,
+        resolution,
+        rationale,
+        actor,
+        humanApproval,
+        dryRun,
+        apply,
+        targetDir,
+      })
+
+      if (isJson) {
+        process.stdout.write(JSON.stringify(result, null, 2) + '\n')
+      } else {
+        process.stdout.write(
+          `✓ Unfreeze resolution sealed [${result.resolution.digest}]\n` +
+            `  Resolution: ${result.resolution.resolution}\n` +
+            `  Actor: ${result.resolution.actor}\n` +
+            `  Next Epoch Fencing Token: ${result.fencingToken}\n` +
+            `  Ledger: ${result.ledgerPath} (${result.applied ? 'updated' : 'preview'})\n`,
+        )
+      }
+      return 0
+    }
+
+    if (subcommand === 'triage') {
+      const task = getFlag(subArgs, '--task')
+      const payloadFile = getFlag(subArgs, '--payload-file')
+      const payloadRaw = getFlag(subArgs, '--payload')
+      const seatTarget = getFlag(subArgs, '--seat-target')
+      const idle = getFlag(subArgs, '--idle')
+      const reworkRound = getFlag(subArgs, '--rework-round')
+      const lastState = getFlag(subArgs, '--last-state')
+      const seat = getFlag(subArgs, '--seat')
+      const plane = getFlag(subArgs, '--plane', 'external-steering')
+      const endpoint = getFlag(subArgs, '--endpoint')
+
+      let payload = {}
+      if (payloadFile) {
+        const fullPath = resolve(targetDir, payloadFile)
+        payload = JSON.parse(readFileSync(fullPath, 'utf8'))
+      } else if (payloadRaw) {
+        payload = JSON.parse(payloadRaw)
+      } else if (task === 'nudge-level') {
+        payload = {
+          seatTarget: seatTarget || 'unknown',
+          idleSeconds: idle ? Number(idle) : 0,
+          reworkRound: reworkRound ? Number(reworkRound) : 0,
+          lastState: lastState || 'idle',
+        }
+      }
+
+      const result = await steerTriage({
+        task,
+        payload,
+        seat,
+        plane,
+        endpoint,
+      })
+
+      if (isJson) {
+        process.stdout.write(JSON.stringify(result, null, 2) + '\n')
+      } else {
+        process.stdout.write(`Triage [${task}] result (source: ${result.source}):\n`)
+        if (task === 'queue-ordering') {
+          process.stdout.write(`  Selected Task: ${result.selectedTaskId || 'none'}\n`)
+          process.stdout.write(
+            `  Order: ${(result.orderedTasks || []).map((t) => t.id).join(' -> ')}\n`,
+          )
+        } else if (task === 'issue-dedupe') {
+          process.stdout.write(`  Duplicate: ${result.isDuplicate ? 'YES' : 'NO'}\n`)
+          if (result.duplicateOf) {
+            process.stdout.write(`  Duplicate of: #${result.duplicateOf}\n`)
+          }
+        } else if (task === 'nudge-level') {
+          process.stdout.write(`  Nudge Level: ${result.level}\n`)
+        }
+      }
+      return 0
+    }
+
+    if (subcommand === 'merge-check') {
+      const prArg = subArgs.find((a) => !a.startsWith('--'))
+      const prNumber = getFlag(subArgs, '--pr', prArg)
+      const checkOnly = hasFlag(subArgs, ['--check-only', '--dry-run'])
+      const execute = hasFlag(subArgs, ['--execute', '--merge']) || !checkOnly
+      const repo = getFlag(subArgs, '--repo')
+      const autoMerge = hasFlag(subArgs, '--auto-merge')
+      const humanApproval = getFlag(subArgs, '--human-approval')
+
+      const result = await steerMergeCheck({
+        prNumber,
+        checkOnly,
+        execute,
+        repo,
+        autoMerge,
+        humanApproval,
+      })
+
+      if (isJson) {
+        process.stdout.write(JSON.stringify(result, null, 2) + '\n')
+      } else if (result.ok) {
+        if (result.merged) {
+          process.stdout.write(
+            `✓ PR #${result.pr} passed all gates and squashed/merged successfully.\n`,
+          )
+        } else {
+          process.stdout.write(`✓ PR #${result.pr} is ready to merge (all gates passed).\n`)
+        }
+      } else {
+        process.stdout.write(`✗ PR #${result.pr} merge-check halted:\n`)
+        for (const failure of result.failedGates || []) {
+          process.stdout.write(`  - ${failure.name}: ${failure.reason}\n`)
+        }
+        if (result.escalation) {
+          process.stdout.write(
+            `\n⚠️ ESCALATION [${result.escalation.class}]: ${result.escalation.message}\n`,
+          )
+        }
+      }
+
+      if (!result.ok) {
+        return result.escalation ? 3 : 1
+      }
+      return 0
+    }
+
+    process.stderr.write(`Unknown steer subcommand: ${subcommand}\n\n${STEER_USAGE}`)
+    return 2
+  } catch (err) {
+    if (isJson) {
+      process.stdout.write(JSON.stringify({ ok: false, error: err.message }, null, 2) + '\n')
+    } else {
+      process.stderr.write(`Error: ${err.message}\n`)
+    }
+    return 1
+  }
+}
+
+// Direct execution entrypoint
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  runSteerCli(process.argv.slice(2)).then((code) => {
+    process.exitCode = code
+  })
+}

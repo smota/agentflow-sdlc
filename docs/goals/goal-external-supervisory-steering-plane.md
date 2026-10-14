@@ -66,8 +66,8 @@ This goal breaks down into six sequenced, independently verifiable capabilities:
 
 ## Child Work & History
 
-> **Status:** Slices in progress — 5 capabilities delivered
-> **Progress:** 5/6 capabilities delivered (83.3%)
+> **Status:** All capabilities delivered — ready for integration
+> **Progress:** 6/6 capabilities delivered (100.0%)
 
 | Part | Kind       | Title                                                                      | Status    | Replacement | Delivery PR | Commit    | Date       |
 | :--- | :--------- | :------------------------------------------------------------------------- | :-------- | :---------- | :---------- | :-------- | :--------- |
@@ -75,5 +75,5 @@ This goal breaks down into six sequenced, independently verifiable capabilities:
 | #479 | capability | capability: skill de-contamination and seam rules decoupling               | Delivered | —           | #492        | `5c3926a` | 2026-10-14 |
 | #480 | capability | capability: path-ownership steer write guard and seat renaming             | Delivered | —           | #493        | `d4c0fcf` | 2026-10-14 |
 | #481 | capability | capability: agentflow-steer base rig and session guard                     | Delivered | —           | #494        | `bd22c52` | 2026-10-14 |
-| #482 | capability | capability: openrig lifecycle three-rig provisioning and sibling binding   | Delivered | —           | TBD         | TBD       | 2026-10-14 |
-| #483 | capability | capability: first-class steering cli verbs and merge-check                 | Backlog   | —           | —           | —         | —          |
+| #482 | capability | capability: openrig lifecycle three-rig provisioning and sibling binding   | Delivered | —           | #495        | `7c08754` | 2026-10-14 |
+| #483 | capability | capability: first-class steering cli verbs and merge-check                 | Delivered | —           | TBD         | TBD       | 2026-10-14 |
