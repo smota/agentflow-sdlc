@@ -6,8 +6,8 @@ import {
   DEFAULT_REFINEMENTS_DIR,
   saveRefinementArtifacts,
   synthesizeRefinementProposals,
-} from '../../lib/core/refinement-engine.mjs'
-import { loadLocalFindings } from '../../lib/core/intake-emitter.mjs'
+} from '../../lib/refinement-engine.mjs'
+import { loadLocalFindings } from '../../lib/intake-emitter.mjs'
 
 export const SYNTHESIZE_REFINEMENTS_USAGE = `Usage: node scripts/telemetry/synthesize-refinements.mjs [options]
 

@@ -2,8 +2,8 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { auditTraceRecords } from '../../lib/core/trace-auditor.mjs'
-import { parseJsonLines } from '../../lib/core/session-telemetry.mjs'
+import { auditTraceRecords } from '../../lib/trace-auditor.mjs'
+import { parseJsonLines } from '../../lib/session-telemetry.mjs'
 
 export const AUDIT_TRACES_USAGE = `Usage: node scripts/telemetry/audit-traces.mjs [options]
 

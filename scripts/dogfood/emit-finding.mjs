@@ -10,7 +10,7 @@ import {
   connectToBacklogQueue,
   createFinding,
   saveFindingLocally,
-} from '../../lib/core/intake-emitter.mjs'
+} from '../../lib/intake-emitter.mjs'
 
 export const EMIT_FINDING_USAGE = `Usage: node scripts/dogfood/emit-finding.mjs [options]
 

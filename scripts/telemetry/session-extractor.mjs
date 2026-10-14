@@ -5,7 +5,7 @@ import {
   DEFAULT_TELEMETRY_DIR,
   extractSessionTelemetry,
   saveTelemetryDigest,
-} from '../../lib/core/session-telemetry.mjs'
+} from '../../lib/session-telemetry.mjs'
 
 export const SESSION_EXTRACTOR_USAGE = `Usage: node scripts/telemetry/session-extractor.mjs [options]
 
