@@ -12,13 +12,14 @@ This adapter integrates AgentFlow SDLC with [OpenRig](https://openrig.dev/), pro
   - `CULTURE.md`: AgentFlow SDLC laws (mandatory Git Worktrees, Four-Eyes Principle, proof contracts before code).
   - `agents/agentflow/`: Agent manifests, 12 profiles, guidance, and vendored skills.
 - **`agentflow-product/`**: Generic product squad base (`pm.manager`, `pm.analyst`).
-- **`lifecycle.mjs`**: Install, update, and squad operations, run through `agentflow-sdlc adapters ... openrig` on macOS, Linux, and Windows. It syncs both bases to `~/.openrig/specs`, sets up Pi state bridges for the preset's Pi seats, adds the grok-cli marker, and applies Git hygiene.
+- **`agentflow-steer/`**: Generic supervisory steering squad base (`steer.lead`), operating strictly out-of-rig without git worktrees or code-authoring permissions.
+- **`lifecycle.mjs`**: Install, update, and squad operations, run through `agentflow-sdlc adapters ... openrig` on macOS, Linux, and Windows. It syncs all three bases to `~/.openrig/specs`, sets up Pi state bridges for the preset's Pi seats, adds the grok-cli marker, manages steering state directories, and applies Git hygiene.
 
 ---
 
 ## Installation & Recovery
 
-To install or restore the delivery and product bases on any machine running OpenRig:
+To install or restore the delivery, product, and steer bases on any machine running OpenRig:
 
 ```bash
 agentflow-sdlc adapters install openrig [--preset <name>] [/path/to/project]
@@ -59,23 +60,24 @@ rig up agentflow --existing --cwd /path/to/project-b
 Best when running completely concurrent squads on separate projects at the same time. Each squad receives an isolated namespace, distinct tmux sessions (`<seat>@agentflow-<project>`), and dedicated Pi bridges.
 
 ```bash
-# 1. Provision a dedicated squad for a target project
+# 1. Provision all 3 squads (product, delivery, steer) atomically
+agentflow-sdlc adapters squads provision openrig --kind all my-project /path/to/my-project
+
+# Or provision squads individually
 agentflow-sdlc adapters squads provision openrig my-project /path/to/my-project
-agentflow-sdlc adapters squads provision openrig other-project /path/to/other-project
-
-# 2. Launch each squad in parallel
-rig up agentflow-my-project --cwd /path/to/my-project
-rig up agentflow-other-project --cwd /path/to/other-project
-
-# Product squad for the same project. This is not the delivery topology.
 agentflow-sdlc adapters squads provision openrig --kind product --sibling agentflow-my-project pm /path/to/my-project
-rig up agentflow-pm --cwd /path/to/my-project
+agentflow-sdlc adapters squads provision openrig --kind steer --product agentflow-my-project-pm --delivery agentflow-my-project-dev my-project-steer /path/to/my-project
 
-# 3. Monitor both squads concurrently
+# 2. Launch squads in parallel
+rig up agentflow-my-project-pm --cwd /path/to/my-project
+rig up agentflow-my-project-dev --cwd /path/to/my-project
+rig up agentflow-my-project-steer --cwd /path/to/my-project
+
+# 3. Monitor squads concurrently
 rig ps
 
-# 4. List, refresh, or remove squads
+# 4. List, refresh, or remove squads (preserves steering audit state unless --purge is passed)
 agentflow-sdlc adapters squads list openrig
 agentflow-sdlc adapters squads update openrig my-project
-agentflow-sdlc adapters squads remove openrig my-project
+agentflow-sdlc adapters squads remove openrig [--purge] my-project
 ```

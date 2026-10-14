@@ -219,12 +219,13 @@ describe('adapter lifecycle surface (AC1, AC2)', () => {
 })
 
 describe('adapters install openrig (AC3-AC6)', () => {
-  it('places both bases with the product copy content and names the recommended preset', () => {
+  it('places all three bases with the product copy content and names the recommended preset', () => {
     const home = tempDir('agentflow-home-')
     const result = install(home)
     expect(result.stdout).toContain('Preset: balanced-grok-lead')
     expect(tree(specs(home, 'agentflow'))).toEqual(tree(join(OPENRIG, 'agentflow')))
     expect(tree(specs(home, 'agentflow-product'))).toEqual(tree(join(OPENRIG, 'agentflow-product')))
+    expect(tree(specs(home, 'agentflow-steer'))).toEqual(tree(join(OPENRIG, 'agentflow-steer')))
   })
 
   it('refuses an unknown preset, lists the known ones, and writes nothing', () => {
@@ -500,7 +501,13 @@ describe('adapters squads openrig (AC8-AC11)', () => {
     const project = tempDir('agentflow-project-')
     provision(home, 'demo', project)
     provision(home, '--kind', 'product', 'pm', project)
-    const names = ['agentflow', 'agentflow-demo', 'agentflow-pm', 'agentflow-product']
+    const names = [
+      'agentflow',
+      'agentflow-demo',
+      'agentflow-pm',
+      'agentflow-product',
+      'agentflow-steer',
+    ]
 
     const json = JSON.parse(
       ok(cli(['adapters', 'squads', 'list', 'openrig', '--json'], { home })).stdout,
@@ -547,7 +554,7 @@ describe('adapters squads openrig (AC8-AC11)', () => {
     },
   )
 
-  it.each(['agentflow', 'agentflow-product', 'product'])(
+  it.each(['agentflow', 'agentflow-product', 'agentflow-steer', 'product', 'steer'])(
     'refuses to remove the base %s',
     (name) => {
       const home = tempDir('agentflow-home-')
@@ -559,6 +566,200 @@ describe('adapters squads openrig (AC8-AC11)', () => {
       expect(tree(home)).toEqual(before)
     },
   )
+})
+
+describe('three-rig topology and steering lifecycle (Issue 482)', () => {
+  function provision(home, ...args) {
+    return ok(cli(['adapters', 'squads', 'provision', 'openrig', ...args], { home }))
+  }
+
+  it('refuses --kind steer without both --product and --delivery', () => {
+    const home = tempDir('agentflow-home-')
+    const project = tempDir('agentflow-project-')
+    install(home)
+
+    const noArgs = cli(
+      ['adapters', 'squads', 'provision', 'openrig', '--kind', 'steer', 'lead', project],
+      { home },
+    )
+    expect(noArgs.status).toBe(1)
+    expect(noArgs.stderr).toContain('--kind steer requires --product <rig> and --delivery <rig>')
+
+    const noDelivery = cli(
+      [
+        'adapters',
+        'squads',
+        'provision',
+        'openrig',
+        '--kind',
+        'steer',
+        '--product',
+        'agentflow-pm',
+        'lead',
+        project,
+      ],
+      { home },
+    )
+    expect(noDelivery.status).toBe(1)
+    expect(noDelivery.stderr).toContain(
+      '--kind steer requires --product <rig> and --delivery <rig>',
+    )
+  })
+
+  it('provisions a steer squad with steering.md, allowlist routing, and external state dir mode 0700', () => {
+    const home = tempDir('agentflow-home-')
+    const project = tempDir('agentflow-project-')
+    install(home)
+
+    const result = provision(
+      home,
+      '--kind',
+      'steer',
+      '--product',
+      'agentflow-demo-pm',
+      '--delivery',
+      'agentflow-demo-dev',
+      'demo-steer',
+      project,
+    )
+    expect(result.stdout).toContain('rig up agentflow-demo-steer --cwd')
+
+    const rig = readFileSync(specs(home, 'agentflow-demo-steer/rig.yaml'), 'utf8')
+    expect(rig).toContain('name: agentflow-demo-steer')
+    expect(rig).toContain('id: lead')
+    expect(rig).toContain('path: steering.md')
+
+    const steering = readFileSync(specs(home, 'agentflow-demo-steer/steering.md'), 'utf8')
+    expect(steering).toContain('This copy is the steering squad `agentflow-demo-steer`.')
+    expect(steering).toContain('The product squad for this project is `agentflow-demo-pm`.')
+    expect(steering).toContain('The delivery squad for this project is `agentflow-demo-dev`.')
+    expect(steering).toContain('Target Routing Allowlist:')
+    expect(steering).toContain('- pm-manager@agentflow-demo-pm (goal intake, macro priority)')
+    expect(steering).toContain(
+      '- orch-arch@agentflow-demo-dev (unfreeze resolutions, delivery sync, defect triage)',
+    )
+    expect(steering).toContain('- human (gates, waivers, person escalations)')
+    expect(steering).toContain('Prohibited Targets:')
+    expect(steering).toContain('Never route directly to in-rig execution seats')
+
+    // Sibling record also written
+    expect(existsSync(specs(home, 'agentflow-demo-steer/sibling.md'))).toBe(true)
+
+    // External state directory ~/.openrig/steer/agentflow-demo-steer exists
+    const steerDir = join(home, '.openrig', 'steer', 'agentflow-demo-steer')
+    expect(existsSync(steerDir)).toBe(true)
+    expect(statSync(steerDir).isDirectory()).toBe(true)
+    if (!WINDOWS) {
+      expect(statSync(steerDir).mode & 0o777).toBe(0o700)
+    }
+  })
+
+  it('provisions all three squads atomically with --kind all', () => {
+    const home = tempDir('agentflow-home-')
+    const project = tempDir('agentflow-project-')
+    install(home)
+
+    const result = provision(home, '--kind', 'all', 'portal', project)
+    expect(result.stdout).toContain("Three squads provisioned for 'portal'")
+    expect(result.stdout).toContain('rig up agentflow-portal-pm')
+    expect(result.stdout).toContain('rig up agentflow-portal-dev')
+    expect(result.stdout).toContain('rig up agentflow-portal-steer')
+
+    // 1. Product squad has delivery sibling and steer escalation target
+    const pmSibling = readFileSync(specs(home, 'agentflow-portal-pm/sibling.md'), 'utf8')
+    expect(pmSibling).toContain('The delivery squad for this project is `agentflow-portal-dev`.')
+    expect(pmSibling).toContain('Supervisory steering plane:')
+    expect(pmSibling).toContain(
+      'steer-lead@agentflow-portal-steer (supervisory steering plane; escalation only)',
+    )
+
+    // 2. Delivery squad has product sibling and steer escalation target
+    const devSibling = readFileSync(specs(home, 'agentflow-portal-dev/sibling.md'), 'utf8')
+    expect(devSibling).toContain('The product squad for this project is `agentflow-portal-pm`.')
+    expect(devSibling).toContain('Supervisory steering plane:')
+    expect(devSibling).toContain(
+      'steer-lead@agentflow-portal-steer (supervisory steering plane; escalation only',
+    )
+
+    // 3. Steer squad has allowlist routing to product and delivery
+    const steerTopology = readFileSync(specs(home, 'agentflow-portal-steer/steering.md'), 'utf8')
+    expect(steerTopology).toContain('The product squad for this project is `agentflow-portal-pm`.')
+    expect(steerTopology).toContain(
+      'The delivery squad for this project is `agentflow-portal-dev`.',
+    )
+    expect(steerTopology).toContain('pm-manager@agentflow-portal-pm')
+    expect(steerTopology).toContain('orch-arch@agentflow-portal-dev')
+
+    // Steer external state dir
+    const steerDir = join(home, '.openrig', 'steer', 'agentflow-portal-steer')
+    expect(existsSync(steerDir)).toBe(true)
+    if (!WINDOWS) {
+      expect(statSync(steerDir).mode & 0o777).toBe(0o700)
+    }
+  })
+
+  it('preserves steering state across squads remove unless --purge is passed', () => {
+    const home = tempDir('agentflow-home-')
+    const project = tempDir('agentflow-project-')
+    install(home)
+
+    provision(
+      home,
+      '--kind',
+      'steer',
+      '--product',
+      'agentflow-demo-pm',
+      '--delivery',
+      'agentflow-demo-dev',
+      'demo-steer',
+      project,
+    )
+    const steerDir = join(home, '.openrig', 'steer', 'agentflow-demo-steer')
+    writeFileSync(join(steerDir, 'audit.ledger.json'), '{"decisions":[]}')
+
+    // Regular remove: preserves steer state directory and audit file
+    const removeNormal = ok(
+      cli(['adapters', 'squads', 'remove', 'openrig', 'demo-steer'], { home }),
+    )
+    expect(removeNormal.stdout).toContain('Preserved steering audit directory')
+    expect(existsSync(specs(home, 'agentflow-demo-steer'))).toBe(false)
+    expect(existsSync(steerDir)).toBe(true)
+    expect(readFileSync(join(steerDir, 'audit.ledger.json'), 'utf8')).toBe('{"decisions":[]}')
+
+    // Purge remove: deletes steer state directory
+    const removePurge = ok(
+      cli(['adapters', 'squads', 'remove', 'openrig', '--purge', 'demo-steer'], { home }),
+    )
+    expect(removePurge.stdout).toContain('Purged steering audit directory')
+    expect(existsSync(steerDir)).toBe(false)
+  })
+
+  it('rolls back all provisioned squad directories if an error occurs during --kind all', () => {
+    const home = tempDir('agentflow-home-')
+    const project = tempDir('agentflow-project-')
+    install(home)
+
+    const result = cli(
+      [
+        'adapters',
+        'squads',
+        'provision',
+        'openrig',
+        '--kind',
+        'all',
+        '--preset',
+        'no-such-preset',
+        'portal',
+        project,
+      ],
+      { home },
+    )
+    expect(result.status).toBe(1)
+    expect(existsSync(specs(home, 'agentflow-portal-pm'))).toBe(false)
+    expect(existsSync(specs(home, 'agentflow-portal-dev'))).toBe(false)
+    expect(existsSync(specs(home, 'agentflow-portal-steer'))).toBe(false)
+    expect(existsSync(join(home, '.openrig', 'steer', 'agentflow-portal-steer'))).toBe(false)
+  })
 })
 
 // A fake `rig` on PATH, run with HOME as the temporary home, which is the only case where the
@@ -794,7 +995,7 @@ if (args[0] === 'down' && ${downStops}) fs.writeFileSync(stoppedFile, JSON.strin
       live(['adapters', 'squads', 'list', 'openrig', '--json'], home, fakeRig([], { ps: 'fail' }))
         .stdout,
     )
-    expect(rows.map((row) => row.status)).toEqual(['stopped', 'stopped', 'stopped'])
+    expect(rows.map((row) => row.status)).toEqual(['stopped', 'stopped', 'stopped', 'stopped'])
   })
 })
 

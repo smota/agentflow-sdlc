@@ -141,12 +141,12 @@ Peer rework between delivery roles is bounded deterministically:
 
 ## Reverse-seam unfreeze protocol
 
-Unfreezing a deadlocked worktree is an external steering responsibility under repository policy (`orch.steer` or human authority).
+Unfreezing a deadlocked worktree is an external steering responsibility under repository policy (`steer.lead` or human authority).
 
 1. The external steerer records a sealed `unfreeze-resolution` record (`createUnfreezeResolution`).
 2. The record must declare:
    - `resolution`: must be one of `re-scope`, `slice-split`, `person-waiver`, or `abandonment`.
-   - `actor`: declared authority string (policy restricts to `orch.steer` or human authority; validated structurally as a non-empty string).
+   - `actor`: declared authority string (policy restricts to `steer.lead` or human authority; validated structurally as a non-empty string).
    - `rationale`: substantive rationale explaining the intervention.
    - `fencingToken`: the next integer epoch token (`ledger.fencingToken + 1`).
 3. `unfreezeLedger` verifies the resolution record, clears `ledger.frozen = false`, advances `ledger.fencingToken = nextToken`, and records `unfreezeResolutionDigest`. The candidate branch resumes execution at the target phase under the new epoch.

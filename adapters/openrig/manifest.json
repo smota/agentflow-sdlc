@@ -5,7 +5,7 @@
   "harness": "openrig",
   "namespace": "agentflow",
   "entry": "agentflow",
-  "rigs": ["agentflow"],
+  "rigs": ["agentflow", "agentflow-product", "agentflow-steer", "agentflow-eval"],
   "skills": [
     "agentflow-orchestrator",
     "agentflow-collaborator",
@@ -14,14 +14,14 @@
     "agentflow-migrator",
     "agentflow-auditor"
   ],
-  "roles": ["architect", "developer", "developer-jr", "tester", "reviewer"],
+  "roles": ["architect", "developer", "developer-jr", "tester", "reviewer", "eval-tester"],
   "commands": [
     "agentflow-sdlc adapters install openrig [--preset <name>] [repo]",
     "agentflow-sdlc adapters update openrig",
-    "agentflow-sdlc adapters squads provision openrig [--kind delivery|product] [--sibling <rig>] <project> [path]",
+    "agentflow-sdlc adapters squads provision openrig [--kind delivery|product|steer|eval|all] [--sibling <rig>] [--product <rig>] [--delivery <rig>] [--steer <rig>] [--eval <rig>] <project> [path]",
     "agentflow-sdlc adapters squads update openrig <project>",
     "agentflow-sdlc adapters squads list openrig [--json]",
-    "agentflow-sdlc adapters squads remove openrig <project>",
+    "agentflow-sdlc adapters squads remove openrig [--purge] <project>",
     "rig up agentflow --cwd <project>",
     "rig down agentflow --snapshot",
     "rig up agentflow --existing",

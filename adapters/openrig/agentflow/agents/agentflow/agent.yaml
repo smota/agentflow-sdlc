@@ -16,7 +16,6 @@ resources:
     - { id: agentflow-migrator, path: skills/agentflow-migrator }
     - { id: agentflow-orchestrator, path: skills/agentflow-orchestrator }
     - { id: agentflow-scanner, path: skills/agentflow-scanner }
-    - { id: agentflow-steerer, path: skills/agentflow-steerer }
     - { id: applying-a-permission-policy, path: skills/applying-a-permission-policy }
     - { id: claude-compaction-restore, path: skills/claude-compaction-restore }
     - { id: delegating-work, path: skills/delegating-work }
@@ -358,6 +357,38 @@ profiles:
     startup:
       files:
         - path: guidance/reviewer.md
+          delivery_hint: send_text
+          required: true
+      actions: []
+
+  eval-tester:
+    summary: Autonomous exploratory dogfood tester validating shipped artifacts out-of-band and emitting backlog push forces.
+    preferences:
+      runtime: codex
+    uses:
+      skills:
+        - openrig-user
+        - messaging-the-human
+        - writing-for-agents
+    startup:
+      files:
+        - path: guidance/eval-tester.md
+          delivery_hint: send_text
+          required: true
+      actions: []
+
+  eval-tester-pi:
+    summary: Autonomous exploratory dogfood tester on Pi runtime.
+    preferences:
+      runtime: pi
+    uses:
+      skills:
+        - openrig-user
+        - messaging-the-human
+        - writing-for-agents
+    startup:
+      files:
+        - path: guidance/eval-tester.md
           delivery_hint: send_text
           required: true
       actions: []
