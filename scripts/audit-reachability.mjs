@@ -151,6 +151,16 @@ const OFF_PATH_EXEMPTIONS = new Map([
       'role-collaboration-smoke.mjs already exercises); the phase-advancement gate that reads ' +
       'openReworkRequests is enforced elsewhere in this file — this only builds the record',
   ],
+  [
+    'lib/core/role-collaboration.mjs#pinOracleDigest',
+    'constructor for a phase 3 oracle-pin record (tested by validate-path-ownership.test.mjs); ' +
+      'consumed by builders prior to starting implementation',
+  ],
+  [
+    'lib/core/role-collaboration.mjs#verifyOraclePin',
+    'verifier for builder oracle pinning before dev.build begins (tested by ' +
+      'validate-path-ownership.test.mjs); wired to builder execution start',
+  ],
   // lib/verification/{github-checks,lifecycle-observer}.mjs: explicitly documented in
   // docs/run-operations.md as functions a HOST calls from their own CI/deployment automation to
   // observe events (a GitHub check run, a merge/tag/release, a deployment, a rollback) that this
