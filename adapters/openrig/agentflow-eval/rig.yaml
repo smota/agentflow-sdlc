@@ -1,0 +1,45 @@
+version: '0.2'
+name: agentflow-eval
+summary: >
+  AgentFlow autonomous out-of-band exploratory dogfooding squad. The eval tester continuously
+  exercises shipped integration builds, CLI binaries, and live services against golden user journeys
+  and fuzzing scenarios, emitting empirical intake findings. Operates strictly out-of-band without
+  git worktrees, code-authoring permissions, or inner delivery routing.
+
+culture_file: CULTURE.md
+
+docs:
+  - path: README.md
+
+permission_policy: 'local:policies/eval.yaml'
+
+startup:
+  files:
+    - path: startup/context.md
+      delivery_hint: send_text
+      required: true
+  actions:
+    - type: startup_proof
+      value: authenticated
+      idempotent: true
+
+pods:
+  - id: eval
+    label: Evaluation & Dogfooding
+    summary: Out-of-band exploratory testing against shipped artifacts and live endpoints. Emits backlog findings; never implements or gates PRs.
+    members:
+      - id: tester
+        agent_ref: 'local:agents/agentflow-eval'
+        profile: eval-tester
+        runtime: codex
+        model: gpt-6.1-sol
+        effort: medium
+        cwd: '.'
+        startup:
+          files:
+            - path: startup/tester.md
+              delivery_hint: send_text
+              required: true
+    edges: []
+
+edges: []

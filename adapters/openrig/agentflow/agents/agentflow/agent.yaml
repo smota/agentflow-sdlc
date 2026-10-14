@@ -360,3 +360,35 @@ profiles:
           delivery_hint: send_text
           required: true
       actions: []
+
+  eval-tester:
+    summary: Autonomous exploratory dogfood tester validating shipped artifacts out-of-band and emitting backlog push forces.
+    preferences:
+      runtime: codex
+    uses:
+      skills:
+        - openrig-user
+        - messaging-the-human
+        - writing-for-agents
+    startup:
+      files:
+        - path: guidance/eval-tester.md
+          delivery_hint: send_text
+          required: true
+      actions: []
+
+  eval-tester-pi:
+    summary: Autonomous exploratory dogfood tester on Pi runtime.
+    preferences:
+      runtime: pi
+    uses:
+      skills:
+        - openrig-user
+        - messaging-the-human
+        - writing-for-agents
+    startup:
+      files:
+        - path: guidance/eval-tester.md
+          delivery_hint: send_text
+          required: true
+      actions: []

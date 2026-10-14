@@ -1,0 +1,19 @@
+schema: openrig.bundle-configurations/v1
+recommended: codex-gpt-6
+
+seats:
+  eval.tester:
+    runtimes:
+      codex: eval-tester
+      claude-code: eval-tester
+      pi: eval-tester-pi
+
+presets:
+  codex-gpt-6:
+    eval.tester: codex
+
+  claude-sonnet:
+    eval.tester: claude-code
+
+  pi-fast:
+    eval.tester: pi

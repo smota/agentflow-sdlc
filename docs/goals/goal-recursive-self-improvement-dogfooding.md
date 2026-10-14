@@ -37,7 +37,7 @@ This goal breaks down into two distinct phases comprising six sequenced, indepen
 
 #### Slice 1: Out-of-Band Git Delta & Backlog Surface Reader (Standard)
 
-- **Target**: `scripts/dogfood/surface-reader.mjs`, `lib/core/dogfood-surface.mjs`
+- **Target**: `scripts/dogfood/surface-reader.mjs`, `lib/dogfood-surface.mjs`
 - **Issue**: #485
 - **Contract**: Resolves commit delta between last dogfood run marker and current `HEAD` of integration line/trunk. Correlates commit messages and PR bodies with closed issues (`Closes #<id>`). Ingests issue bodies to extract Acceptance Criteria and explicit Anti-Goals / Out-of-Scope sections. Ingests PR comments and human review remarks to extract accepted limitations and deferred scope. Emits a structured `dogfood-surface.json` manifest specifying blast radius, changed modules, and exclusion filters.
 
@@ -77,14 +77,14 @@ This goal breaks down into two distinct phases comprising six sequenced, indepen
 
 ## Child Work & History
 
-> **Status:** Backlog admitted — ready for implementation planning
-> **Progress:** 0/6 capabilities delivered (0.0%)
+> **Status:** Active delivery underway
+> **Progress:** 2/6 capabilities delivered (33.3%)
 
-| Part | Kind       | Title                                                                 | Status  | Replacement | Delivery PR | Commit | Date |
-| :--- | :--------- | :-------------------------------------------------------------------- | :------ | :---------- | :---------- | :----- | :--- |
-| #485 | capability | capability: out-of-band git delta and backlog surface reader          | Backlog | —           | —           | —      | —    |
-| #486 | capability | capability: autonomous exploratory dogfood seat and execution profile | Backlog | —           | —           | —      | —    |
-| #487 | capability | capability: structured intake finding schema and push-force emitter   | Backlog | —           | —           | —      | —    |
-| #488 | capability | capability: session trace telemetry extractor and metrics analyzer    | Backlog | —           | —           | —      | —    |
-| #489 | capability | capability: prompt drift and boundary violation auditor               | Backlog | —           | —           | —      | —    |
-| #490 | capability | capability: closed-loop policy and prompt refinement synthesizer      | Backlog | —           | —           | —      | —    |
+| Part | Kind       | Title                                                                 | Status    | Replacement | Delivery PR | Commit    | Date       |
+| :--- | :--------- | :-------------------------------------------------------------------- | :-------- | :---------- | :---------- | :-------- | :--------- |
+| #485 | capability | capability: out-of-band git delta and backlog surface reader          | Delivered | —           | #497        | `56c6e55` | 2026-10-14 |
+| #486 | capability | capability: autonomous exploratory dogfood seat and execution profile | Delivered | —           | —           | —         | 2026-10-14 |
+| #487 | capability | capability: structured intake finding schema and push-force emitter   | Backlog   | —           | —           | —         | —          |
+| #488 | capability | capability: session trace telemetry extractor and metrics analyzer    | Backlog   | —           | —           | —         | —          |
+| #489 | capability | capability: prompt drift and boundary violation auditor               | Backlog   | —           | —           | —         | —          |
+| #490 | capability | capability: closed-loop policy and prompt refinement synthesizer      | Backlog   | —           | —           | —         | —          |
