@@ -77,10 +77,10 @@ pods:
         cwd: '.'
       - id: test-eng
         agent_ref: 'local:agents/agentflow'
-        profile: qa-pi
+        profile: test-eng-pi
         runtime: pi
-        model: grok-cli/grok-4.7
-        effort: medium
+        model: antigravity/gemini-3.1-pro
+        effort: high
         cwd: '.'
     edges:
       - kind: delegates_to

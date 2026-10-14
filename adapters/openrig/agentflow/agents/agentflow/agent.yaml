@@ -263,6 +263,33 @@ profiles:
           required: true
       actions: []
 
+  test-eng:
+    summary: Test Engineer authoring tests and test oracles in Phase 3/4 before code implementation.
+    preferences:
+      runtime: codex
+    uses:
+      skills: *builder-skills
+      runtime_resources: [claude-activity-hooks]
+    startup:
+      files:
+        - path: guidance/test-eng.md
+          delivery_hint: send_text
+          required: true
+      actions: []
+
+  test-eng-pi:
+    summary: Test Engineer on Pi authoring tests and test oracles in Phase 3/4 before code implementation.
+    preferences:
+      runtime: pi
+    uses:
+      skills: *builder-pi-skills
+    startup:
+      files:
+        - path: guidance/test-eng.md
+          delivery_hint: send_text
+          required: true
+      actions: []
+
   reviewer:
     summary: Independent Reviewer & Auditor enforcing Four-Eyes Principle and Council deliberation.
     preferences:

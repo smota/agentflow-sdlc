@@ -1,17 +1,17 @@
 #!/usr/bin/env node
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { posix, resolve } from 'node:path'
 
 const REQUIRED_RULES = ['pm-write-guard', 'builder-oracle-guard', 'test-eng-source-guard']
 
 export function matchOwnedPath(pattern, filePath) {
-  const path = String(filePath).replace(/^\.\//, '')
+  const normalized = posix.normalize(String(filePath).replace(/\\/g, '/')).replace(/^\.\//, '')
   if (pattern.endsWith('/**')) {
     const prefix = pattern.slice(0, -3)
-    return path === prefix || path.startsWith(`${prefix}/`)
+    return normalized === prefix || normalized.startsWith(`${prefix}/`)
   }
-  return path === pattern
+  return normalized === pattern
 }
 
 export function loadPathOwnership(packageRoot = process.cwd()) {
@@ -44,6 +44,23 @@ export function seatFromSession(sessionName) {
   return match[1].replace('-', '.')
 }
 
+export function resolveBaseCommit(packageRoot = process.cwd()) {
+  const branches = ['origin/development', 'development', 'origin/main', 'main']
+  for (const branch of branches) {
+    try {
+      const base = execFileSync('git', ['merge-base', 'HEAD', branch], {
+        cwd: packageRoot,
+        encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'ignore'],
+      }).trim()
+      if (base) return base
+    } catch {
+      // try next
+    }
+  }
+  return null
+}
+
 export function changedPaths(packageRoot = process.cwd()) {
   const git = (args) =>
     execFileSync('git', args, { cwd: packageRoot, encoding: 'utf8' })
@@ -51,18 +68,19 @@ export function changedPaths(packageRoot = process.cwd()) {
       .split('\n')
       .filter(Boolean)
   const names = new Set()
-  try {
-    const base = execFileSync('git', ['merge-base', 'HEAD', 'origin/development'], {
-      cwd: packageRoot,
-      encoding: 'utf8',
-    }).trim()
-    for (const path of git(['diff', '--name-only', `${base}...HEAD`])) names.add(path)
-  } catch {
-    // A missing base still checks the working tree below.
+  const base = resolveBaseCommit(packageRoot)
+  if (base) {
+    try {
+      for (const path of git(['diff', '--name-only', '--no-renames', `${base}...HEAD`])) {
+        names.add(path)
+      }
+    } catch {
+      // A missing base still checks the working tree below.
+    }
   }
   for (const args of [
-    ['diff', '--name-only'],
-    ['diff', '--name-only', '--cached'],
+    ['diff', '--name-only', '--no-renames'],
+    ['diff', '--name-only', '--cached', '--no-renames'],
   ]) {
     try {
       for (const path of git(args)) names.add(path)
@@ -104,29 +122,40 @@ export function checkPathOwnership({ seat, paths = [], manifest } = {}) {
 }
 
 export function seatFromCommit({ authorName = '', authorEmail = '', message = '' } = {}) {
-  const trailerMatch = message.match(/(?:^|\n)Seat:\s*([^\s\n]+)/i)
-  if (trailerMatch) return trailerMatch[1]
   const sessionSeat = seatFromSession(authorEmail)
+  const user = authorEmail.split('@')[0] ?? ''
+  let identitySeat = null
   if (
     sessionSeat &&
     (sessionSeat.startsWith('pm.') ||
       sessionSeat.startsWith('dev.') ||
       sessionSeat.startsWith('orch.'))
   ) {
-    return sessionSeat
-  }
-  const user = authorEmail.split('@')[0] ?? ''
-  for (const candidate of [authorName.trim(), user]) {
-    const normalized = candidate.replace('-', '.')
-    if (
-      normalized.startsWith('pm.') ||
-      normalized.startsWith('dev.') ||
-      normalized.startsWith('orch.')
-    ) {
-      return normalized
+    identitySeat = sessionSeat
+  } else {
+    for (const candidate of [authorName.trim(), user]) {
+      const normalized = candidate.replace('-', '.')
+      if (
+        normalized.startsWith('pm.') ||
+        normalized.startsWith('dev.') ||
+        normalized.startsWith('orch.')
+      ) {
+        identitySeat = normalized
+        break
+      }
     }
   }
-  return null
+
+  const trailerMatch = message.match(/(?:^|\n)Seat:\s*([^\s\n]+)/i)
+  const trailerSeat = trailerMatch ? trailerMatch[1].trim() : null
+
+  if (identitySeat && trailerSeat && identitySeat !== trailerSeat) {
+    throw new Error(
+      `commit seat mismatch: author identity is ${identitySeat} but Seat trailer claims ${trailerSeat}`,
+    )
+  }
+
+  return identitySeat || trailerSeat || null
 }
 
 export function checkBranchCommits({ packageRoot = process.cwd(), manifest } = {}) {
@@ -137,16 +166,16 @@ export function checkBranchCommits({ packageRoot = process.cwd(), manifest } = {
       return ''
     }
   }
-  let base = ''
-  try {
-    base = execFileSync('git', ['merge-base', 'HEAD', 'origin/development'], {
-      cwd: packageRoot,
-      encoding: 'utf8',
-    }).trim()
-  } catch {
+  const base = resolveBaseCommit(packageRoot)
+  if (!base) {
+    if (process.env.CI || process.env.GITHUB_ACTIONS) {
+      return {
+        ok: false,
+        errors: ['cannot resolve base commit (origin/development) to verify path ownership in CI'],
+      }
+    }
     return { ok: true, errors: [] }
   }
-  if (!base) return { ok: true, errors: [] }
 
   const logOutput = git(['log', '--format=%H%x09%an%x09%ae%x09%B%x1e', `${base}...HEAD`])
   if (!logOutput) return { ok: true, errors: [] }
@@ -162,9 +191,23 @@ export function checkBranchCommits({ packageRoot = process.cwd(), manifest } = {
     const authorName = bodyLines[0] ?? ''
     const authorEmail = bodyLines[1] ?? ''
     const message = bodyLines.slice(2).join('\t')
-    const seat = seatFromCommit({ authorName, authorEmail, message })
+    let seat = null
+    try {
+      seat = seatFromCommit({ authorName, authorEmail, message })
+    } catch (err) {
+      errors.push(`${err.message} (commit ${hash.slice(0, 7)})`)
+      continue
+    }
     if (seat) {
-      const paths = git(['diff-tree', '--no-commit-id', '--name-only', '-r', hash])
+      const paths = git([
+        'diff-tree',
+        '--no-commit-id',
+        '--name-only',
+        '--no-renames',
+        '-r',
+        '-m',
+        hash,
+      ])
         .split('\n')
         .map((p) => p.trim())
         .filter(Boolean)

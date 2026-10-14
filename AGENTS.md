@@ -64,3 +64,9 @@ Before issue work, architecture proposals, file writes, commits, or gate decisio
 - Run the relevant repository validators before PR readiness.
 - If a required policy document, validator, or setup file is missing, record the blocker in the workflow evidence and create or reference a follow-up issue.
 - Validate generated or delegated output before incorporating it into role passes, commits, issue comments, or PR narratives.
+
+## Path ownership boundaries
+
+- PM seats (`pm.manager`, `pm.analyst`) write only `.agentflow/` and `goals/**`. Commits modifying code, libraries, or test fixtures are mechanically rejected.
+- Builder seats (`dev.build*`) cannot edit `tests/oracles/**` and require a Phase 3 oracle digest pin before building starts.
+- Test engineering seats (`dev.test-eng`) own `tests/oracles/**` and cannot edit `src/**` or `lib/**`.
