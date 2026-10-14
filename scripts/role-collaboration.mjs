@@ -26,6 +26,7 @@ import {
   verifyRoleDelivery,
   verifyRoleAdvance,
 } from '../lib/core/role-collaboration.mjs'
+import { computeOracleDigest } from './validate-path-ownership.mjs'
 
 const args = process.argv.slice(2)
 const value = (name, fallback = null) => {
@@ -110,7 +111,23 @@ if (command === 'verify' || command === 'advance') {
   if (command === 'advance') {
     const decision = readJson('--decision')
     const openReworkRequests = value('--rework') ? readJson('--rework') : undefined
-    const result = verifyRoleAdvance({ ...sources, decision, openReworkRequests })
+    const seat = value('--seat')
+    const pin = value('--pin') ? readJson('--pin') : undefined
+    const oracleDigest = value('--oracle-digest')
+    const expectedDigest = computeOracleDigest({ packageRoot })
+    const options = {
+      seat,
+      pin,
+      oracleDigest,
+      expectedDigest,
+      packageRoot,
+    }
+    const result = verifyRoleAdvance({
+      ...sources,
+      decision,
+      openReworkRequests,
+      options,
+    })
     output(result)
     process.exit(result.ok ? 0 : 1)
   }
