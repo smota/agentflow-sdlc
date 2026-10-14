@@ -5,7 +5,7 @@
       "id": "pm-write-guard",
       "seats": ["pm.manager", "pm.analyst"],
       "seatPrefixes": ["pm."],
-      "allow": [".agentflow/**", "goals/**", "specs/**"],
+      "allow": [".agentflow/**", "goals/**"],
       "defaultDeny": true
     },
     {

@@ -4,6 +4,7 @@ import { pinOracleDigest, verifyOraclePin } from '../../lib/core/role-collaborat
 import {
   checkPathOwnership,
   loadPathOwnership,
+  resolveOwnershipCheck,
   validatePathOwnershipManifest,
 } from '../validate-path-ownership.mjs'
 
@@ -14,15 +15,16 @@ describe('path ownership', () => {
     expect(validatePathOwnershipManifest(manifest)).toEqual({ ok: true, errors: [] })
   })
 
-  it('lets a PM seat write only .agentflow, goals, and specs', () => {
+  it('lets a PM seat write only .agentflow and goals', () => {
     expect(
       checkPathOwnership({
         seat: 'pm.analyst',
-        paths: ['.agentflow/PRODUCT.md', 'goals/job.md', 'specs/cap.md'],
+        paths: ['.agentflow/PRODUCT.md', 'goals/job.md'],
         manifest,
       }).ok,
     ).toBe(true)
     for (const path of [
+      'specs/cap.md',
       'src/app.js',
       'lib/core/role-collaboration.mjs',
       'tests/oracles/pin.json',
@@ -30,6 +32,30 @@ describe('path ownership', () => {
     ]) {
       expect(checkPathOwnership({ seat: 'pm.manager', paths: [path], manifest }).ok).toBe(false)
     }
+  })
+
+  it('checks changed paths instead of skipping when the CLI seat and path flags are absent', () => {
+    expect(
+      resolveOwnershipCheck({
+        paths: ['src/app.js', 'tests/oracles/pin.json'],
+        manifest,
+        env: {},
+      }),
+    ).toMatchObject({ ok: false, errors: ['seat is required to check changed paths'] })
+    expect(
+      resolveOwnershipCheck({
+        paths: ['src/app.js'],
+        manifest,
+        env: { OPENRIG_SESSION_NAME: 'pm-analyst@agentflow-pm' },
+      }).ok,
+    ).toBe(false)
+    expect(
+      resolveOwnershipCheck({
+        paths: ['goals/job.md'],
+        manifest,
+        env: { AGENTFLOW_SEAT: 'pm.analyst' },
+      }).ok,
+    ).toBe(true)
   })
 
   it('rejects builder edits to oracles and test-eng edits to application source', () => {

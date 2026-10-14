@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
@@ -36,6 +37,57 @@ function rulesForSeat(manifest, seat) {
   )
 }
 
+export function seatFromSession(sessionName) {
+  if (typeof sessionName !== 'string') return null
+  const match = sessionName.trim().match(/^([^@\s]+)@([^@\s]+)$/)
+  if (!match) return null
+  return match[1].replace('-', '.')
+}
+
+export function changedPaths(packageRoot = process.cwd()) {
+  const git = (args) =>
+    execFileSync('git', args, { cwd: packageRoot, encoding: 'utf8' })
+      .trim()
+      .split('\n')
+      .filter(Boolean)
+  const names = new Set()
+  try {
+    const base = execFileSync('git', ['merge-base', 'HEAD', 'origin/development'], {
+      cwd: packageRoot,
+      encoding: 'utf8',
+    }).trim()
+    for (const path of git(['diff', '--name-only', `${base}...HEAD`])) names.add(path)
+  } catch {
+    // A missing base still checks the working tree below.
+  }
+  for (const args of [
+    ['diff', '--name-only'],
+    ['diff', '--name-only', '--cached'],
+  ]) {
+    try {
+      for (const path of git(args)) names.add(path)
+    } catch {
+      // Not a git checkout.
+    }
+  }
+  return [...names]
+}
+
+export function resolveOwnershipCheck({ seat, paths = [], manifest, env = process.env } = {}) {
+  const resolvedSeat = seat || env.AGENTFLOW_SEAT || seatFromSession(env.OPENRIG_SESSION_NAME)
+  if (!paths.length) return { ok: true, errors: [], seat: resolvedSeat, paths }
+  if (!resolvedSeat) {
+    return {
+      ok: false,
+      errors: ['seat is required to check changed paths'],
+      seat: null,
+      paths,
+    }
+  }
+  const checked = checkPathOwnership({ seat: resolvedSeat, paths, manifest })
+  return { ...checked, seat: resolvedSeat, paths }
+}
+
 export function checkPathOwnership({ seat, paths = [], manifest } = {}) {
   const errors = []
   if (!seat) errors.push('seat is required')
@@ -60,12 +112,21 @@ function main(argv) {
   const packageRoot = resolve(flag(argv, '--root') ?? process.cwd())
   const manifest = loadPathOwnership(packageRoot)
   const manifestCheck = validatePathOwnershipManifest(manifest)
-  const seat = flag(argv, '--seat')
-  const paths = (flag(argv, '--paths') ?? '')
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean)
-  const pathCheck = seat ? checkPathOwnership({ seat, paths, manifest }) : { ok: true, errors: [] }
+  const seatFlag = flag(argv, '--seat')
+  const pathsFlag = flag(argv, '--paths')
+  const paths =
+    pathsFlag === null
+      ? changedPaths(packageRoot)
+      : pathsFlag
+          .split(',')
+          .map((item) => item.trim())
+          .filter(Boolean)
+  const pathCheck = resolveOwnershipCheck({
+    seat: seatFlag,
+    paths,
+    manifest,
+    env: process.env,
+  })
   const errors = [...manifestCheck.errors, ...pathCheck.errors]
   const result = { ok: errors.length === 0, errors }
   if (argv.includes('--json')) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
