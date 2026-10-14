@@ -30,6 +30,7 @@
     },
     "targetIdentityDigest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
     "fencingToken": { "type": "integer", "minimum": 0 },
+    "frozen": { "type": "boolean" },
     "expectedLedgerRevision": { "type": ["string", "null"] },
     "currentRound": { "type": "integer", "minimum": 0 },
     "status": { "enum": ["open", "approved", "rejected"] },
