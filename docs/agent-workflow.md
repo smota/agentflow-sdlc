@@ -662,7 +662,7 @@ To eliminate autonomous deadlocks, rework loops, and metric-gaming across multi-
 
 The workflow is divided into two strictly isolated operating planes:
 
-1. **External Supervisory Steering Plane** (`orch.steer`):
+1. **External Supervisory Steering Plane** (`steer.lead`):
    - Operates outside worker execution rigs via CLI orchestration, direct session interaction, or external supervisory runtimes.
    - Owns high-level goal decomposition, workstream prioritization, unfreeze resolution, pragmatic defect triage (`accept_and_register`), and merge verbs.
    - Barred from writing production code, authoring test oracles, or fabricating self-approvals.
@@ -682,6 +682,7 @@ The workflow is divided into two strictly isolated operating planes:
 ### 13.3 Path Ownership Boundaries
 
 - **PM Allowlist**: Product management seats (`pm.manager`, `pm.analyst`, `pm.lead` / `pm.*`) write only to `.agentflow/**` and `goals/**` (`defaultDeny: true`). Commits touching code, libraries, or test fixtures (`src/**`, `lib/**`, `tests/**`) are rejected.
+- **Steering Write Guard**: Steering seats (`steer.lead` / `steer.*`) have no file write permissions (`allow: []`, `defaultDeny: true`). Commits authored under steering identities are rejected mechanically.
 - **Governance Protection**: All agent seats are barred from modifying governance files (`manifests/path-ownership.json`, `scripts/validate-path-ownership.mjs`).
 - **Enforcement**: Path ownership is validated deterministically in CI via `node scripts/validate-path-ownership.mjs` (and `pnpm validate:release`) on pull requests into integration branches (`development`, `staging`, `main`) for commits bearing seat attribution.
 
@@ -694,10 +695,10 @@ The workflow is divided into two strictly isolated operating planes:
 
 ### 13.5 Reverse-Seam Unfreeze Resolution Protocol
 
-- Unfreezing a deadlocked worktree is an external steering responsibility under repository policy (`orch.steer` or human authority).
+- Unfreezing a deadlocked worktree is an external steering responsibility under repository policy (`steer.lead` or human authority).
 - The supervisory authority records a sealed `unfreeze-resolution` record (`createUnfreezeResolution`) containing:
   - `resolution`: must be one of `re-scope`, `slice-split`, `person-waiver`, or `abandonment`.
-  - `actor`: declared authority string (policy restricts to `orch.steer` or human authority; validated structurally as a non-empty string).
+  - `actor`: declared authority string (policy restricts to `steer.lead` or human authority; validated structurally as a non-empty string).
   - `rationale`: substantive rationale explaining the intervention.
   - `fencingToken`: integer epoch token matching `ledger.fencingToken + 1`.
 - `unfreezeLedger` verifies the resolution record, clears `ledger.frozen = false`, advances `ledger.fencingToken`, and records `unfreezeResolutionDigest`. Worker squads resume execution under the incremented epoch without history rewriting.

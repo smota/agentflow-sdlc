@@ -580,12 +580,18 @@ describe('path ownership', () => {
   it('bars all agent seats from modifying governance files', () => {
     for (const seat of [
       'dev.build',
+      'dev.build-jr',
+      'dev.build-sr',
       'dev.test-eng',
+      'dev.qa',
       'pm.analyst',
+      'pm.manager',
+      'pm.lead',
       'arch.lead',
       'rev.gate',
+      'rev.review',
       'orch.lead',
-      'orch.steer',
+      'steer.lead',
       'orch.arch',
     ]) {
       expect(
@@ -603,6 +609,52 @@ describe('path ownership', () => {
         }).ok,
       ).toBe(false)
     }
+  })
+
+  it('bars steering seats from writing to any repository paths (steer-write-guard)', () => {
+    for (const seat of ['steer.lead', 'steer.po', 'steer.analyst']) {
+      for (const path of [
+        'src/app.js',
+        'lib/core/role-collaboration.mjs',
+        'README.md',
+        'docs/agent-workflow.md',
+        '.agentflow/PRODUCT.md',
+        'goals/job.md',
+        'tests/oracles/pin.json',
+      ]) {
+        const result = checkPathOwnership({ seat, paths: [path], manifest })
+        expect(result.ok).toBe(false)
+        expect(result.errors).toContain(`${seat} cannot write ${path} (steer-write-guard)`)
+      }
+    }
+  })
+
+  it('resolves steer.lead from commit author identity and Seat trailer', () => {
+    expect(
+      seatFromCommit({
+        authorEmail: 'steer-lead@agentflow-steer',
+        message: 'feat: attempt steer commit\n\nSeat: steer.lead',
+        manifest,
+      }),
+    ).toBe('steer.lead')
+  })
+
+  it('rejects commits authored by steer.lead across any touched files', () => {
+    const seat = seatFromCommit({
+      authorEmail: 'steer-lead@agentflow-steer',
+      message: 'feat: attempt commit\n\nSeat: steer.lead',
+      manifest,
+    })
+    const result = checkPathOwnership({
+      seat,
+      paths: ['src/app.js', 'docs/spec.md'],
+      manifest,
+    })
+    expect(result.ok).toBe(false)
+    expect(result.errors).toEqual([
+      'steer.lead cannot write src/app.js (steer-write-guard)',
+      'steer.lead cannot write docs/spec.md (steer-write-guard)',
+    ])
   })
 
   it('rejects caller pin when it contradicts contract oracle digest', () => {

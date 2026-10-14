@@ -66,13 +66,13 @@ This goal breaks down into six sequenced, independently verifiable capabilities:
 
 ## Child Work & History
 
-> **Status:** Slices in progress — 1 capability delivered
-> **Progress:** 1/6 capabilities delivered (16.7%)
+> **Status:** Slices in progress — 2 capabilities delivered
+> **Progress:** 2/6 capabilities delivered (33.3%)
 
 | Part | Kind       | Title                                                                      | Status    | Replacement | Delivery PR | Commit    | Date       |
 | :--- | :--------- | :------------------------------------------------------------------------- | :-------- | :---------- | :---------- | :-------- | :--------- |
 | #478 | capability | capability: unfreeze actor validation and decider port isolation hardening | Delivered | —           | #491        | `c56ef60` | 2026-10-14 |
-| #479 | capability | capability: skill de-contamination and seam rules decoupling               | Backlog   | —           | —           | —         | —          |
+| #479 | capability | capability: skill de-contamination and seam rules decoupling               | Delivered | —           | #492        | `5c3926a` | 2026-10-14 |
 | #480 | capability | capability: path-ownership steer write guard and seat renaming             | Backlog   | —           | —           | —         | —          |
 | #481 | capability | capability: agentflow-steer base rig and session guard                     | Backlog   | —           | —           | —         | —          |
 | #482 | capability | capability: openrig lifecycle three-rig provisioning and sibling binding   | Backlog   | —           | —           | —         | —          |

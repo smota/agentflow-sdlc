@@ -8,10 +8,12 @@
     "dev.build-jr",
     "dev.build-sr",
     "dev.test-eng",
+    "dev.qa",
     "arch.lead",
     "rev.gate",
+    "rev.review",
     "orch.lead",
-    "orch.steer",
+    "steer.lead",
     "orch.arch"
   ],
   "rules": [
@@ -25,10 +27,12 @@
         "dev.build-jr",
         "dev.build-sr",
         "dev.test-eng",
+        "dev.qa",
         "arch.lead",
         "rev.gate",
+        "rev.review",
         "orch.lead",
-        "orch.steer",
+        "steer.lead",
         "orch.arch"
       ],
       "deny": ["manifests/path-ownership.json", "scripts/validate-path-ownership.mjs"]
@@ -38,6 +42,13 @@
       "seats": ["pm.manager", "pm.analyst", "pm.lead"],
       "seatPrefixes": ["pm."],
       "allow": [".agentflow/**", "goals/**"],
+      "defaultDeny": true
+    },
+    {
+      "id": "steer-write-guard",
+      "seats": ["steer.lead"],
+      "seatPrefixes": ["steer."],
+      "allow": [],
       "defaultDeny": true
     },
     {

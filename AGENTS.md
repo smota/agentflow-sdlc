@@ -68,10 +68,11 @@ Before issue work, architecture proposals, file writes, commits, or gate decisio
 ## Path ownership boundaries
 
 - PM seats (`pm.manager`, `pm.analyst`, `pm.lead` / `pm.*`) write only `.agentflow/**` and `goals/**` (`defaultDeny: true`). Commits modifying code, libraries, or test fixtures are rejected.
+- Steering seats (`steer.lead` / `steer.*`) have no file write permissions (`allow: []`, `defaultDeny: true`). Commits authored under steering identities are rejected.
 - Builder seats (`dev.build`, `dev.build-jr`, `dev.build-sr`) cannot edit `tests/oracles/**` or `tests/**/oracles/**` and require a Phase 3 oracle digest pin before building starts.
 - Test engineering seat (`dev.test-eng`) is allowed `tests/**`, `lib/__tests__/**`, `scripts/__tests__/**`, and `guidance/**`, with `src/**` denied explicitly (`defaultDeny: true`).
 
 ## Two-Plane Separation
 
-- External Supervisory Steering Plane (`orch.steer`) operates out-of-rig via CLI/orchestration to govern goals, unfreeze resolutions, defect triage (`accept_and_register`), and merge verbs.
+- External Supervisory Steering Plane (`steer.lead`) operates out-of-rig via CLI/orchestration to govern goals, unfreeze resolutions, defect triage (`accept_and_register`), and merge verbs.
 - Worker Execution Rigs execute inside isolated git worktrees (`.worktrees/*`) and are barred from modifying steering controls or granting self-approvals.

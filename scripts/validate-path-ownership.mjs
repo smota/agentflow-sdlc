@@ -5,6 +5,7 @@ import { posix, resolve } from 'node:path'
 
 const REQUIRED_RULES = [
   'pm-write-guard',
+  'steer-write-guard',
   'builder-oracle-guard',
   'test-eng-source-guard',
   'governance-files-guard',
@@ -18,10 +19,12 @@ export const DEFAULT_KNOWN_SEATS = Object.freeze([
   'dev.build-jr',
   'dev.build-sr',
   'dev.test-eng',
+  'dev.qa',
   'arch.lead',
   'rev.gate',
+  'rev.review',
   'orch.lead',
-  'orch.steer',
+  'steer.lead',
   'orch.arch',
 ])
 
