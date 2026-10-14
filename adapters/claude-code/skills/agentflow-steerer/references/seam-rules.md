@@ -4,27 +4,42 @@ This document codifies the seam discipline, handoff contracts, and reverse seam 
 
 ## 1. Seam Architecture
 
-The seam establishes a clean, non-leaking boundary between product discovery and software engineering:
+The seam establishes a clean, non-leaking boundary between the out-of-rig supervisory steering plane, product shaping, and engineering delivery:
 
 ```
-┌─────────────────────────────────┐                 ┌─────────────────────────────────┐
-│         agentflow-pm            │                 │         agentflow-dev           │
-│                                 │                 │                                 │
-│  - Steering Product Owner (PO)  │                 │  - Orchestrator (orch.arch)     │
-│  - Analyst (pm.analyst)         │                 │  - Builders (dev.build / sr)    │
-│  - Sponsor / Human Supervisor   │                 │  - Tester (dev.qa)              │
-│                                 │                 │  - Reviewer (rev.review)        │
-│  Owns: What and Why             │                 │  Owns: How and Verification     │
-└──────────────┬──────────────────┘                 └─────────────────┬───────────────┘
-               │                                                      │
-               │─────── Forward Handoff: Immutable Spec ─────────────>│
-               │                                                      │
-               │<────── Reverse Seam: Technical Roadblock / Defect ───│
+                  ┌──────────────────────────────────────────────┐
+                  │    Supervisory Steering Plane (Out-of-Rig)   │
+                  │                                              │
+                  │   - External Steerer / Lead (steer.lead)     │
+                  │   - Sponsor / Human Supervisor               │
+                  │                                              │
+                  │   Owns: Goal framing, Macro DAG, Unfreeze,   │
+                  │         Triage, and Merge Checks             │
+                  └──────────────┬───────────────────────────────┘
+                                 │
+                   Goal framing  │  Merge checks & unfreeze
+                   & intake      │
+                                 ▼
+┌─────────────────────────────────────────┐          ┌─────────────────────────────────────────┐
+│      agentflow-pm (Product Squad)       │          │      agentflow-dev (Delivery Squad)     │
+│                                         │          │                                         │
+│  - Product Manager (pm.manager)         │          │  - Lead Architect (orch.arch)           │
+│  - Analyst (pm.analyst)                 │          │  - Builders (dev.build / sr / jr)       │
+│                                         │          │  - Test Engineer (dev.test-eng)         │
+│                                         │          │  - Tester / QA (dev.qa)                 │
+│                                         │          │  - Reviewer (rev.review)                │
+│  Owns: What and Why (JTBD, Spec, Acceptance)       │  Owns: How and Verification (Build, CI) │
+└────────────────────┬────────────────────┘          └────────────────────┬────────────────────┘
+                     │                                                    │
+                     │──────────── Forward Handoff: Immutable Spec ──────>│
+                     │                                                    │
+                     │<─────────── Reverse Seam: Roadblock / Defect ──────│
 ```
 
+- **Supervisory Steering Plane (`agentflow-steer`)** owns: Out-of-rig goal framing, cross-project portfolio sequencing, macro prerequisite ordering, unfreeze resolutions, and human merge-check verification.
 - **`agentflow-pm`** owns: Customer Jobs (JTBD), Four Forces, vertical capability mapping, topological prerequisite ordering, observable Given-When-Then criteria, anti-goals, autonomy envelopes, and person release gates.
 - **`agentflow-dev`** owns: Software architecture, worktree isolation, proof contracts, code authorship, unit/integration testing, independent peer review, and PR readiness.
-- **Seam Invariant**: Product framing never dictates internal code abstractions or file layouts; engineering delivery never unilaterally alters customer promises, anti-goals, or acceptance criteria.
+- **Seam Invariant**: Supervisory steering sets direction and unfreezes deadlocks but never manages internal squad handoffs; product framing never dictates internal code abstractions or file layouts; engineering delivery never unilaterally alters customer promises, anti-goals, or acceptance criteria.
 
 ---
 
@@ -85,9 +100,9 @@ The resolution record has `type: unfreeze-resolution`, a digest over its bytes, 
 
 To guarantee integrity and eliminate conflicts of interest, authority is strictly separated:
 
-1. **PO Code Approval Prohibition**:
-   - The Steering Product Owner seat and PM seats MUST NEVER approve code, self-certify verification, or merge pull requests on their own authority.
-   - A PO "accepting" a capability verifies that customer criteria are met, not that the code is architecturally sound or free of security flaws.
+1. **Steering and PM Code Approval Prohibition**:
+   - The Steering Lead (`steer.lead`) and PM seats MUST NEVER approve code, self-certify verification, or merge pull requests on their own authority.
+   - A PM "accepting" a capability verifies that customer criteria are met, not that the code is architecturally sound or free of security flaws.
 2. **Mandatory Four-Eyes Baseline**:
    - No builder approves their own pull request or self-certifies verification.
    - Every merge into `development` requires bilateral sign-off: Builder (`dev.build`) + Independent Reviewer (`rev.review` or `agentflow-auditor`).
