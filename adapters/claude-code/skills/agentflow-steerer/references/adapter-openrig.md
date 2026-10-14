@@ -28,6 +28,7 @@ Dispatches an admitted task brief to a designated squad seat.
   rig send <seat> "Goal: <goal_uri> | Transition: <transition_uri> | Brief: <brief_ref>"
   ```
 - **Postconditions**: Task is durable in the seat's queue; target terminal is nudged.
+- **Heuristic Acceleration (Decider Port)**: When multiple candidate tasks await assignment, the external steerer may triage queue priority using `triageQueueOrdering` via the local decider port (`http://127.0.0.1:8002/v1/decide` with Jev auth and deterministic fallback).
 
 ### 2. `observe(seat)`
 
@@ -69,6 +70,7 @@ Sends a prompt, wake, or interrupt signal to an executing seat.
     rig send <seat> "^C"
     rig send <seat> "Recovering turn: check last error and resume or yield"
     ```
+- **Heuristic Acceleration (Decider Port)**: The external steerer may resolve calibrated nudge urgency (`gentle` | `standard` | `interrupt`) using `triageNudgeLevel` via the decider port, with deterministic threshold fallbacks (`idle >= 300s` or `round >= 2` -> `interrupt`).
 
 ### 4. `read(artifact)`
 
