@@ -110,6 +110,16 @@ const OFF_PATH_EXEMPTIONS = new Map([
       'records nothing — exercised by lib/__tests__/decision-card.test.mjs',
   ],
   [
+    'lib/core/decision-policy.mjs#evaluateDecisionPolicy',
+    'pure rule table for autonomous model escalation and oracle defect routing (#463); ' +
+      'consumed by external steering plane and decider port (lib/providers/decider-port.mjs)',
+  ],
+  [
+    'lib/core/decision-policy.mjs#isSensitivePath',
+    'pure predicate for detecting sensitive and governance path modifications (#463); ' +
+      'used by evaluateDecisionPolicy to enforce direct human escalation',
+  ],
+  [
     'lib/core/delivery-policy.mjs#normalizeUsage',
     'usage-measurement normalizer for the budget contract; the enforcement it would feed, ' +
       "budgetAdmission, already fails closed when usage is unknown (see budgetAdmission's `known` " +
