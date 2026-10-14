@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "id": "pm-write-guard",
+      "seats": ["pm.manager", "pm.analyst"],
+      "seatPrefixes": ["pm."],
+      "allow": [".agentflow/**", "goals/**", "specs/**"],
+      "defaultDeny": true
+    },
+    {
+      "id": "builder-oracle-guard",
+      "seats": ["dev.build", "dev.build-jr", "dev.build-sr"],
+      "deny": ["tests/oracles/**"]
+    },
+    {
+      "id": "test-eng-source-guard",
+      "seats": ["dev.test-eng"],
+      "deny": ["src/**", "lib/**"]
+    }
+  ]
+}
