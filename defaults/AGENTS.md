@@ -30,3 +30,14 @@ Governed delivery and lifecycle contracts are defined in the shared framework do
 - **Branch discipline**: Work on issue-scoped feature/work branches. Never make implementation edits directly on protected branches.
 - **Review and safety**: Bounded and standard work may use explicit, evidence-backed self-review. High-assurance work requires human security and acceptance review on the open PR before merge. Review roles are read-only unless returned to implementation.
 - **Tooling and validation**: Run repository validators before PR readiness. Preserve integrity of policy files and validate generated output.
+
+## Path ownership boundaries
+
+- PM seats (`pm.manager`, `pm.analyst`, `pm.lead` / `pm.*`) write only `.agentflow/**` and `goals/**` (`defaultDeny: true`). Commits modifying code, libraries, or test fixtures are rejected.
+- Builder seats (`dev.build`, `dev.build-jr`, `dev.build-sr`) cannot edit `tests/oracles/**` or `tests/**/oracles/**` and require a Phase 3 oracle digest pin before building starts.
+- Test engineering seat (`dev.test-eng`) is allowed `tests/**`, `lib/__tests__/**`, `scripts/__tests__/**`, and `guidance/**`, with `src/**` denied explicitly (`defaultDeny: true`).
+
+## Two-Plane Separation
+
+- External Supervisory Steering Plane (`orch.steer`) operates out-of-rig via CLI/orchestration to govern goals, unfreeze resolutions, defect triage (`accept_and_register`), and merge verbs.
+- Worker Execution Rigs execute inside isolated git worktrees (`.worktrees/*`) and are barred from modifying steering controls or granting self-approvals.
