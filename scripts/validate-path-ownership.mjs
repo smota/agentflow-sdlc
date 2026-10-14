@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 import { execFileSync } from 'node:child_process'
-import { createHash } from 'node:crypto'
-import { readdirSync, readFileSync, statSync } from 'node:fs'
-import { join, posix, resolve } from 'node:path'
+import { readFileSync } from 'node:fs'
+import { posix, resolve } from 'node:path'
 
 const REQUIRED_RULES = [
   'pm-write-guard',
@@ -211,36 +210,7 @@ export function isAgentCommit({ authorName = '', authorEmail = '', message = '' 
   return false
 }
 
-export function computeOracleDigest({ dir = 'tests/oracles', packageRoot = process.cwd() } = {}) {
-  const targetDir = resolve(packageRoot, dir)
-  try {
-    const stat = statSync(targetDir)
-    if (!stat.isDirectory()) return null
-  } catch {
-    return null
-  }
-  const files = []
-  function walk(current) {
-    for (const entry of readdirSync(current, { withFileTypes: true })) {
-      const full = join(current, entry.name)
-      if (entry.isDirectory()) {
-        walk(full)
-      } else if (entry.isFile()) {
-        files.push(full)
-      }
-    }
-  }
-  walk(targetDir)
-  if (!files.length) return null
-  files.sort()
-  const hash = createHash('sha256')
-  for (const file of files) {
-    const rel = posix.normalize(file.slice(targetDir.length + 1).replace(/\\/g, '/'))
-    hash.update(`${rel}\n`)
-    hash.update(readFileSync(file))
-  }
-  return hash.digest('hex')
-}
+export { computeOracleDigest } from '../lib/verification/workspace.mjs'
 
 export function checkBranchCommits({ packageRoot = process.cwd(), manifest } = {}) {
   const git = (args) => {

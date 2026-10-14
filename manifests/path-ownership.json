@@ -24,7 +24,12 @@
         "dev.build",
         "dev.build-jr",
         "dev.build-sr",
-        "dev.test-eng"
+        "dev.test-eng",
+        "arch.lead",
+        "rev.gate",
+        "orch.lead",
+        "orch.steer",
+        "orch.arch"
       ],
       "deny": ["manifests/path-ownership.json", "scripts/validate-path-ownership.mjs"]
     },

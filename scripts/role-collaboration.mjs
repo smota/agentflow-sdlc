@@ -113,12 +113,13 @@ if (command === 'verify' || command === 'advance') {
     const openReworkRequests = value('--rework') ? readJson('--rework') : undefined
     const seat = value('--seat')
     const pin = value('--pin') ? readJson('--pin') : undefined
-    const computedDigest = computeOracleDigest()
-    const oracleDigest = value('--oracle-digest') || computedDigest || undefined
+    const oracleDigest = value('--oracle-digest')
+    const expectedDigest = value('--expected-digest') || computeOracleDigest() || undefined
     const options = {
       seat,
       pin,
       oracleDigest,
+      expectedDigest,
     }
     const result = verifyRoleAdvance({
       ...sources,

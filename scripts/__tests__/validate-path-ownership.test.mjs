@@ -468,4 +468,109 @@ describe('path ownership', () => {
     expect(result.ok).toBe(false)
     expect(result.errors).toContain('phase 3 must pin an oracle digest before dev.build starts')
   })
+
+  it('rejects advancement when an oracle file has been tampered with after pinning', () => {
+    const fixtureDir = mkdtempSync(join(tmpdir(), 'oracle-tamper-'))
+    try {
+      const oracleDir = join(fixtureDir, 'tests/oracles')
+      mkdirSync(oracleDir, { recursive: true })
+      writeFileSync(join(oracleDir, 'spec.json'), '{"expected": 1}\n')
+
+      const pinnedDigest = computeOracleDigest({ packageRoot: fixtureDir })
+      const decision = {
+        version: 1,
+        type: 'acceptance-decision',
+        state: 'accepted',
+        deterministicReport: { version: 1, digest: 'b'.repeat(64) },
+        digest: 'c'.repeat(64),
+      }
+      const contract = {
+        deliveryRole: 'agentflow:developer',
+        controls: [`oracle-digest:${pinnedDigest}`],
+      }
+
+      // Untampered: expectedDigest matches pinnedDigest
+      const untampered = verifyRoleAdvance({
+        decision,
+        contract,
+        handoff: { toRole: 'agentflow:developer' },
+        delivery: { role: 'agentflow:implementation-planner' },
+        openReworkRequests: [],
+        options: { expectedDigest: pinnedDigest },
+      })
+      expect(untampered.errors.some((e) => e.includes('does not match expected digest'))).toBe(
+        false,
+      )
+
+      // Tamper: oracle is modified
+      writeFileSync(join(oracleDir, 'spec.json'), '{"expected": 2}\n')
+      const tamperedDigest = computeOracleDigest({ packageRoot: fixtureDir })
+      expect(tamperedDigest).not.toBe(pinnedDigest)
+
+      const tampered = verifyRoleAdvance({
+        decision,
+        contract,
+        handoff: { toRole: 'agentflow:developer' },
+        delivery: { role: 'agentflow:implementation-planner' },
+        openReworkRequests: [],
+        options: { expectedDigest: tamperedDigest },
+      })
+      expect(tampered.ok).toBe(false)
+      expect(tampered.errors.some((e) => e.includes('does not match expected digest'))).toBe(true)
+    } finally {
+      rmSync(fixtureDir, { recursive: true, force: true })
+    }
+  })
+
+  it('rejects a non-builder seat when entering developer role to prevent bypassing pin checks', () => {
+    const decision = {
+      version: 1,
+      type: 'acceptance-decision',
+      state: 'accepted',
+      deterministicReport: { version: 1, digest: 'b'.repeat(64) },
+      digest: 'c'.repeat(64),
+    }
+    for (const invalidSeat of ['rev.gate', 'orch.lead', 'pm.analyst', 'arch.lead']) {
+      const result = verifyRoleAdvance({
+        decision,
+        openReworkRequests: [],
+        contract: { deliveryRole: 'agentflow:developer' },
+        handoff: { toRole: 'agentflow:developer' },
+        delivery: { role: 'agentflow:implementation-planner' },
+        options: { seat: invalidSeat },
+      })
+      expect(result.ok).toBe(false)
+      expect(result.errors).toContain(
+        `entering developer role requires a builder seat (got ${invalidSeat})`,
+      )
+    }
+  })
+
+  it('bars all agent seats from modifying governance files', () => {
+    for (const seat of [
+      'dev.build',
+      'dev.test-eng',
+      'pm.analyst',
+      'arch.lead',
+      'rev.gate',
+      'orch.lead',
+      'orch.steer',
+      'orch.arch',
+    ]) {
+      expect(
+        checkPathOwnership({
+          seat,
+          paths: ['manifests/path-ownership.json'],
+          manifest,
+        }).ok,
+      ).toBe(false)
+      expect(
+        checkPathOwnership({
+          seat,
+          paths: ['scripts/validate-path-ownership.mjs'],
+          manifest,
+        }).ok,
+      ).toBe(false)
+    }
+  })
 })
