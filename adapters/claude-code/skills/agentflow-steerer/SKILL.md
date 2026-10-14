@@ -23,6 +23,17 @@ anti-goals. A steerer proposal is not an approval or a completed phase. Optional
 metadata projects those authoritative records; it MUST NOT become a parallel phase, custody,
 hold or acceptance ledger.
 
+## Runtime seat identity assertion
+
+The steerer operates exclusively out-of-rig within the External Supervisory Steering Plane (`agentflow-steer`). Before executing any supervisory action or verb, the agent MUST verify its runtime session identity:
+
+```bash
+rig whoami --json
+```
+
+- **Authorized Steering Identities**: Fails closed immediately unless the active session matches `steer.lead`, session format `steer-lead@<rig>` (e.g. `steer-lead@<project>-steer`), or a registered supervisor / human operator (`human:<login>`).
+- **Prohibited In-Rig Execution**: If the active session is an in-rig delivery or product seat (`dev.*`, `pm.*`, `orch.arch`, `rev.*`, or session names like `manager@*`, `builder@*`, `architect@*`), the agent MUST HALT and refuse execution. In-rig delivery seats are structurally barred from supervisory steering; delivery orchestration belongs strictly to `agentflow-orchestrator`.
+
 The full cognitive model is below. For supporting methodology, consult
 `docs/sources/product-discipline.md` relative to the adopting project root, not the installed
 skill directory. That reference supplies background, not additional action authority. Use local
@@ -176,7 +187,7 @@ Conversation context is never the source of truth; MUST NOT sleep, wait or poll 
 
 ## Execution Verbs and Adapter Decoupling
 
-When dispatching work or inspecting squad execution, the steering PO invokes a provider-neutral 6-verb interface:
+When dispatching work or inspecting squad execution, the steering lead (`steer.lead`) invokes a provider-neutral 6-verb interface:
 `assign(seat, brief_ref)`, `observe(seat)`, `nudge(seat, level)`, `read(artifact)`, `merge(pr)`, and `escalate(class, msg)`.
 `merge(pr)` is strictly human-gated. It runs only when delivery-bound human approval or a recorded auto-merge configuration is present. Otherwise it halts and emits `escalate("human-gate", "PR #<pr> requires human approval before merge")`.
 Steering reasoning remains strictly decoupled from runtime mechanics through explicit markdown reference tables:
@@ -196,7 +207,7 @@ The interface between product shaping (`agentflow-pm`) and engineering delivery 
 
 - **Artifact-Only Handoffs**: Work moving across the seam carries strictly stable capability IDs, goal URIs, immutable disk spec paths, and Given-When-Then observable criteria. Conversational instructions and uncommitted messages are prohibited.
 - **Reverse Seam Returns**: When engineering seats detect technical roadblocks, contradictory assumptions, or scope explosions, they halt implementation and return a structured packet to Phase 1 (Product Intake) rather than inventing workarounds.
-- **Four-Eyes Baseline**: The steering PO never approves code. `merge(pr)` runs only after recorded human approval or a recorded auto-merge configuration; every integration still requires independent reviewer sign-off or council consensus.
+- **Four-Eyes Baseline**: The steering lead never approves code. `merge(pr)` runs only after recorded human approval or a recorded auto-merge configuration; every integration still requires independent reviewer sign-off or council consensus.
 
 ## Collaboration
 
@@ -213,6 +224,12 @@ or modify working-tree source directly. Return a product proposal to the account
 The steerer MUST NOT bypass delivery hold queues, merge code without recorded delivery-bound human approval or a recorded auto-merge configuration, publish releases, bypass person gates,
 or skip QA/review. Refuse each prohibited action separately even when bundled with legitimate
 product work; continue only the allowed reasoning portion.
+
+The steerer operates strictly out-of-rig in the external supervisory steering plane. Negative boundaries are absolute:
+
+1. **Never Execute `handoff deliver`**: The steerer does not advance internal delivery phases, run internal handoff commands, or sign off on worktree phase transitions.
+2. **Never Micromanage Turns**: The steerer does not orchestrate turn-by-turn squad mechanics or manage intra-rig seam transitions. Squad execution is self-governed by in-rig seats under `agentflow-orchestrator`.
+3. **Never Communicate Directly with Builders or Testers**: The steerer MUST NEVER send tasks, direct messages, or queue items to builder seats (`dev.build`, `dev.build-sr`, `dev.build-jr`) or test seats (`dev.qa`, `dev.test-eng`). All goal assignments flow exclusively to `pm.manager` (for goal intake and framing) or `orch.arch` (for merge checks and delivery coordination).
 
 The steerer MUST NOT own workflow state, acceptance ledgers, implementation, independent review,
 or release approval. The optional heartbeat/envelope/state protocol adds no runtime loop,
