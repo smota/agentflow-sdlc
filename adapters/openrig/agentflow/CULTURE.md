@@ -31,6 +31,25 @@ This team delivers production-grade software in the repository given as its work
    - **P2-P3** (`council`): structural or cross-cutting changes -> council of `orch.arch`, `rev.review`, `dev.build-sr`, `dev.qa`; builder `dev.build-sr`.
    - **P4** (`human-gated`): migrations, breaking contracts, security-critical changes -> the person confirms before `orch.arch` delegates.
 
+6. **Two-Plane Separation**:
+   - The external supervisory steering plane (`steering.steer`, `steering.lead`) operates out-of-rig via CLI orchestration, direct session interaction, or external supervisory runtimes.
+   - External steering owns high-level goal decomposition, unfreeze tokens, defect triage (`accept_and_register`), and merge verbs.
+   - Internal execution squads (`orch`, `dev`, `rev`) execute inside isolated git worktrees and cannot modify external steering state or grant self-approvals.
+
+7. **Path Ownership & Oracle Pinning**:
+   - PM seats (`pm.manager`, `pm.analyst`) write only `.agentflow/` and `goals/**`. Commits modifying code, libraries, or test fixtures are mechanically rejected.
+   - Builder seats (`dev.build*`) cannot edit `tests/oracles/**` and require a Phase 3 oracle digest pin before building starts.
+   - Test engineering seats (`dev.test-eng`) own `tests/oracles/**` and cannot edit `src/**` or `lib/**`.
+
+8. **Epoch Fencing & Circuit Breaker**:
+   - Rework iterations are counted monotonically from the transition ledger.
+   - Exceeding `maxReworkRounds` (default 2) triggers an epoch fencing token, freezing the branch against subsequent commits.
+   - Unfreezing requires a signed reverse-seam unfreeze resolution packet (`unfreeze_token`, `resolution: pivot | rearchitect | escalate`).
+
+9. **Pragmatic Defect Triage (`accept_and_register`)**:
+   - The external steerer may accept non-critical observations and auxiliary telemetry edge cases under `accepted-with-conditions` with mandatory, idempotent GitHub follow-up issue creation.
+   - Strictly prohibited from waiving initial blocker findings, sensitive surfaces (auth, crypto, billing, security), or broken core test suites.
+
 ---
 
 ## OpenRig Operational Principles

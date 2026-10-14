@@ -653,3 +653,64 @@ Do not leave TODO comments or silent omissions.
 ## Governed run coordination
 
 For the v2 delivery run interface, requirements remain in issues and current run transitions are acknowledged as immutable, digest-linked records on the isolated source coordination ref. Workflow-status comments are navigable projections; they do not advance state. Role phases, bilateral acceptance and human review remain required. Local `.agent-runs/` records report preview durability explicitly. See [reliable delivery](reliable-delivery.md) and [run operations](run-operations.md).
+
+## 13. Autonomous Decision Governance & Anti-Loop Engine
+
+To eliminate autonomous deadlocks, rework loops, and metric-gaming across multi-agent rigs (OpenRig, Pi, Claude, Codex, Grok), AgentFlow SDLC enforces seven core architectural laws:
+
+### 13.1 Two-Plane Separation
+
+The workflow is divided into two strictly isolated operating planes:
+
+1. **External Supervisory Steering Plane** (`steering.steer`, `steering.lead`):
+   - Operates outside execution rigs via CLI orchestration, direct session interaction, or external supervisory runtimes.
+   - Owns high-level goal decomposition, workstream prioritization, reverse-seam unfreeze resolution, pragmatic defect triage (`accept_and_register`), and merge verbs.
+   - Barred from writing code, authoring tests, or fabricating self-approvals.
+2. **Internal Execution Worker Squads** (`agentflow-dev`, `agentflow-pm`, execution seats):
+   - Execute strictly inside dedicated git worktrees (`.worktrees/<branch-name>`).
+   - Own Phase 0–8 delivery artifacts, code authoring, and test execution.
+   - Barred from granting merge verbs, modifying external steering state, or unfreezing deadlocked worktrees without external signed packets.
+
+### 13.2 Dedicated Test Engineering (`dev.test-eng`) & Oracle Pinning
+
+- **Phase 3 Oracle Pinning**: Before implementation starts (Phase 4), `dev.test-eng` authors verification oracles and test suites under `tests/oracles/**` from the Phase 1/2 specifications.
+- **Oracle Digest Pin**: The implementation plan in Phase 3 pins an immutable cryptographic digest of `tests/oracles/**`.
+- **Builder Bar**: Builder seats (`dev.build*`) are barred from editing `tests/oracles/**` to prevent metric-gaming or relaxing acceptance checks.
+- **Test Engineer Bar**: `dev.test-eng` is barred from editing production source code in `src/**` or `lib/**`.
+- **Phase 5 Verification**: Tester seats execute verification as read-only runners against the pinned oracles.
+
+### 13.3 Path Ownership Boundaries
+
+- **PM Allowlist**: Product management seats (`pm.manager`, `pm.analyst`) write only to `.agentflow/` and `goals/**`. Any commit modifying code, libraries, or test fixtures (`src/**`, `lib/**`, `tests/**`) is mechanically rejected in CI.
+- **Enforcement**: Path ownership is validated deterministically via `scripts/validate-path-ownership.mjs` on every commit and PR.
+
+### 13.4 Deterministic Ledger Circuit Breaker & Epoch Fencing
+
+- Rework iterations are counted monotonically from the transition ledger (keyed per criterion).
+- When `reworkRound > maxReworkRounds` (default 2), advancement is blocked with an explicit escalation requirement.
+- The ledger circuit breaker generates an epoch fencing token (`epoch_fencing_token`), freezing the candidate worktree.
+- Subsequent commits on a frozen branch are cryptographically orphaned and rejected until an unfreeze resolution is recorded.
+
+### 13.5 Reverse-Seam Unfreeze Resolution Protocol
+
+- Unfreezing a deadlocked worktree requires an external supervisory resolution packet conforming to `schemas/reverse-seam-packet.schema.json` and recorded in `schemas/resolution-ledger.schema.json`.
+- The resolution must include:
+  - `unfreeze_token`: cryptographically verifiable token matching the active epoch fence.
+  - `ledger_epoch`: incremented epoch counter.
+  - `resolution`: valid resolution action (`pivot`, `rearchitect`, `escalate`).
+  - `signature`: attestation by the authorized external steerer.
+- Worker squads resume execution under the incremented epoch without history rewriting.
+
+### 13.6 Pragmatic Defect Triage (`accept_and_register`)
+
+- To prevent minor or non-blocking exploratory observations from stalling delivery, the external steerer may apply `accept_and_register`.
+- This maps to `accepted-with-conditions` with mandatory, idempotent creation of a tracked GitHub follow-up issue.
+- **Strict Boundaries**:
+  - Only allowlisted non-critical surfaces (documentation, auxiliary telemetry, exploratory observations) may be accepted.
+  - Strictly prohibited from waiving initial blocker findings, broken core test suites, or sensitive surfaces (auth, crypto, billing, security, governance policies).
+
+### 13.7 Pure-Function Model Escalation Ladder & Decider Port
+
+- Model escalation from standard builders to frontier reasoning models (e.g. Codex GPT-6.1 Sol / Gemini Pro High) is governed by a pure, deterministic function (`evaluateDecisionPolicy`) based on distinct test failure categories and rework rounds, independent of self-reported agent confidence.
+- Fast heuristic triage (queue ordering, issue deduplication, nudge levels) connects via `lib/providers/decider-port.mjs` exclusively to loopback endpoints (`http://127.0.0.1:8002/v1/decide`) with Jev authentication.
+- All outbound decider payloads are strictly sanitized and redacted, eliminating raw source code, git diff hunks, and secrets, with pure deterministic fallbacks if the decider is unreachable.

@@ -126,6 +126,37 @@ Supply the council request, advice array, and synthesis flags above when require
 rework, stale evidence, or conditional acceptance blocks advancement. When open rework requests
 exceed `maxReworkRounds` (default 2, configurable in `agent-workflow.config.json#collaboration`),
 advancement is blocked with an explicit escalation requirement, preventing unbounded peer rework loops.
-Resolve conditions and issue a new unconditional `accepted` decision before continuing. The
-orchestrator owns obtaining the complete current ledger from the authoritative workflow source; a local
+Resolve conditions and issue a new unconditional `accepted` decision before continuing. The orchestrator owns obtaining the complete current ledger from the authoritative workflow source; a local
 file is only its input projection, not an independent source of truth.
+
+## Epoch fencing and circuit breaker
+
+Peer rework between delivery roles is bounded deterministically:
+
+1. Every rework request monotonically increments `reworkRound` for that criterion in the durable transition ledger (`open-rework.json` / `resolution-ledger.json`).
+2. When `reworkRound > maxReworkRounds` (default 2), the advancement gate fails closed with `circuit-breaker-exhausted`.
+3. An `epoch_fencing_token` is generated and recorded. The worktree is frozen: subsequent builder commits are rejected as orphaned until the epoch is officially resolved.
+
+## Reverse-seam unfreeze protocol
+
+Unfreezing a deadlocked worktree is an external steering action and cannot be executed by in-rig worker seats.
+
+1. The external steerer reviews the deadlocked ledger and issues a signed unfreeze resolution packet (`schemas/reverse-seam-packet.schema.json`).
+2. The packet must declare:
+   - `unfreeze_token`: cryptographically matching the active fence token.
+   - `target_issue`: the active issue number.
+   - `ledger_epoch`: incremented epoch counter.
+   - `resolution`: `pivot` (adjust requirement/scope), `rearchitect` (revise technical approach), or `escalate` (request human steering).
+   - `signature` / `attestation`: verified identity of the supervisory authority.
+3. Verification re-validates the resolution packet against `schemas/resolution-ledger.schema.json`. Upon successful verification, the candidate branch unfreezes and resumes at the specified phase under the new epoch.
+
+## Pragmatic defect triage (`accept_and_register`)
+
+When a delivery candidate exhibits minor, non-blocking discrepancies or auxiliary telemetry anomalies that do not compromise primary functionality:
+
+1. The external steerer may invoke `accept_and_register`.
+2. This transitions the decision to `accepted-with-conditions` and mandates the immediate, idempotent registration of a tracked GitHub follow-up issue referencing the observed defect.
+3. **Boundaries and Guardrails**:
+   - Permitted only for allowlisted non-critical surfaces (`docs`, auxiliary telemetry, non-blocking exploratory edge cases).
+   - Strictly prohibited for sensitive surfaces: authentication, cryptography, permissions, billing, release metadata, and core test suite failures.
+   - An initial blocker finding from Phase 6 independent review cannot be waived via `accept_and_register`.

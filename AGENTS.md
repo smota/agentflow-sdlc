@@ -70,3 +70,8 @@ Before issue work, architecture proposals, file writes, commits, or gate decisio
 - PM seats (`pm.manager`, `pm.analyst`) write only `.agentflow/` and `goals/**`. Commits modifying code, libraries, or test fixtures are mechanically rejected.
 - Builder seats (`dev.build*`) cannot edit `tests/oracles/**` and require a Phase 3 oracle digest pin before building starts.
 - Test engineering seats (`dev.test-eng`) own `tests/oracles/**` and cannot edit `src/**` or `lib/**`.
+
+## Two-Plane Separation
+
+- External Supervisory Steering Plane (`steering.steer`, `steering.lead`) operates out-of-rig via CLI/orchestration to govern goals, unfreeze tokens, defect triage (`accept_and_register`), and merge verbs.
+- Worker Execution Rigs execute inside isolated git worktrees (`.worktrees/*`) and are barred from modifying steering controls or granting self-approvals.
