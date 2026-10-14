@@ -12,6 +12,7 @@ import {
 import {
   checkBranchCommits,
   checkPathOwnership,
+  isAgentCommit,
   loadPathOwnership,
   matchOwnedPath,
   resolveOwnershipCheck,
@@ -246,6 +247,78 @@ describe('path ownership', () => {
       expect(result.errors.some((e) => e.includes('dev.test-eng cannot write src/app.js'))).toBe(
         true,
       )
+    } finally {
+      rmSync(fixtureDir, { recursive: true, force: true })
+    }
+  })
+
+  it('identifies agent commits and requires Seat attribution', () => {
+    expect(
+      isAgentCommit({
+        message: 'fix: something\n\nCo-Authored-By: Claude <noreply@anthropic.com>',
+      }),
+    ).toBe(true)
+    expect(isAgentCommit({ authorEmail: 'pm-analyst@agentflow.org' })).toBe(true)
+    expect(isAgentCommit({ message: 'feat: add feature\n\nPlatform: claude-code' })).toBe(true)
+    expect(
+      isAgentCommit({
+        authorName: 'Samuel Mota',
+        authorEmail: 'samuelmota@gmail.com',
+        message: 'chore: update',
+      }),
+    ).toBe(false)
+  })
+
+  it('rejects an agent-co-authored commit in fixture repo when Seat trailer is absent', () => {
+    const fixtureDir = mkdtempSync(join(tmpdir(), 'path-ownership-agent-'))
+    const git = (args) => execFileSync('git', args, { cwd: fixtureDir, encoding: 'utf8' })
+    try {
+      git(['init', '-b', 'development'])
+      git(['config', 'user.name', 'Framework Maintainer'])
+      git(['config', 'user.email', 'maintainer@example.com'])
+      writeFileSync(join(fixtureDir, 'README.md'), '# Fixture\n')
+      git(['add', 'README.md'])
+      git(['commit', '-m', 'chore: initial commit'])
+
+      git(['checkout', '-b', 'feat/agent-work'])
+      writeFileSync(join(fixtureDir, 'README.md'), '# Updated\n')
+      git(['add', 'README.md'])
+      git(['commit', '-m', 'docs: update readme\n\nCo-Authored-By: Claude <noreply@anthropic.com>'])
+
+      const result = checkBranchCommits({ packageRoot: fixtureDir, manifest })
+      expect(result.ok).toBe(false)
+      expect(
+        result.errors.some((e) => e.includes('agent commit missing required Seat attribution')),
+      ).toBe(true)
+    } finally {
+      rmSync(fixtureDir, { recursive: true, force: true })
+    }
+  })
+
+  it('accepts an agent-co-authored commit in fixture repo when valid Seat trailer is present', () => {
+    const fixtureDir = mkdtempSync(join(tmpdir(), 'path-ownership-valid-agent-'))
+    const git = (args) => execFileSync('git', args, { cwd: fixtureDir, encoding: 'utf8' })
+    try {
+      git(['init', '-b', 'development'])
+      git(['config', 'user.name', 'Framework Maintainer'])
+      git(['config', 'user.email', 'maintainer@example.com'])
+      writeFileSync(join(fixtureDir, 'README.md'), '# Fixture\n')
+      git(['add', 'README.md'])
+      git(['commit', '-m', 'chore: initial commit'])
+
+      git(['checkout', '-b', 'feat/valid-agent-work'])
+      mkdirSync(join(fixtureDir, '.agentflow'), { recursive: true })
+      writeFileSync(join(fixtureDir, '.agentflow/PRODUCT.md'), '# Product Job\n')
+      git(['add', '.agentflow/PRODUCT.md'])
+      git([
+        'commit',
+        '-m',
+        'docs: update product job\n\nSeat: pm.analyst\nCo-Authored-By: Claude <noreply@anthropic.com>',
+      ])
+
+      const result = checkBranchCommits({ packageRoot: fixtureDir, manifest })
+      expect(result.ok).toBe(true)
+      expect(result.errors).toEqual([])
     } finally {
       rmSync(fixtureDir, { recursive: true, force: true })
     }

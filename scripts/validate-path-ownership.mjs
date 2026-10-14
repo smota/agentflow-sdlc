@@ -158,6 +158,26 @@ export function seatFromCommit({ authorName = '', authorEmail = '', message = ''
   return identitySeat || trailerSeat || null
 }
 
+export function isAgentCommit({ authorName = '', authorEmail = '', message = '' } = {}) {
+  if (
+    /(?:Co-authored-by|Signed-off-by):\s*.*(?:claude|codex|gemini|pi|agy|grok|agent|bot|openrig)/i.test(
+      message,
+    )
+  ) {
+    return true
+  }
+  if (/(?:@agentflow|@openrig|\.agentflow|\.openrig)/i.test(authorEmail)) {
+    return true
+  }
+  if (/\b(?:agentflow|openrig)\b/i.test(authorName)) {
+    return true
+  }
+  if (/(?:^|\n)(?:Agent|Executor|Platform):\s*\S+/i.test(message)) {
+    return true
+  }
+  return false
+}
+
 export function checkBranchCommits({ packageRoot = process.cwd(), manifest } = {}) {
   const git = (args) => {
     try {
@@ -196,6 +216,10 @@ export function checkBranchCommits({ packageRoot = process.cwd(), manifest } = {
       seat = seatFromCommit({ authorName, authorEmail, message })
     } catch (err) {
       errors.push(`${err.message} (commit ${hash.slice(0, 7)})`)
+      continue
+    }
+    if (isAgentCommit({ authorName, authorEmail, message }) && !seat) {
+      errors.push(`agent commit missing required Seat attribution (commit ${hash.slice(0, 7)})`)
       continue
     }
     if (seat) {
