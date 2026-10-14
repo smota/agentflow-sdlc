@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentflow.dev/schemas/intake-finding.json",
+  "title": "AgentFlow Intake Finding",
+  "description": "Schema for empirical dogfood findings capturing defects, regressions, or frictions as actionable JTBD push forces",
+  "type": "object",
+  "required": [
+    "findingId",
+    "timestamp",
+    "commitSha",
+    "category",
+    "reproSteps",
+    "observedOutput",
+    "expectedProgress",
+    "severity",
+    "jtbdPushForce"
+  ],
+  "properties": {
+    "findingId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique identifier for this finding (e.g. finding-a1b2c3d4)"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 creation timestamp"
+    },
+    "commitSha": {
+      "type": "string",
+      "minLength": 7,
+      "description": "Git commit SHA against which the finding was observed"
+    },
+    "category": {
+      "type": "string",
+      "enum": ["crash", "ergonomics-friction", "edge-case", "performance-regression"],
+      "description": "Standardized category of the observed friction"
+    },
+    "reproSteps": {
+      "oneOf": [
+        {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        {
+          "type": "string",
+          "minLength": 1
+        }
+      ],
+      "description": "Deterministic step sequence or shell commands to reproduce"
+    },
+    "observedOutput": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Actual behavior, error message, or shell output"
+    },
+    "expectedProgress": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Expected capability, progress, or behavior"
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["critical", "high", "medium", "low"],
+      "description": "Severity assessment"
+    },
+    "jtbdPushForce": {
+      "oneOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "object",
+          "required": ["struggle", "desiredProgress"],
+          "properties": {
+            "struggle": { "type": "string", "minLength": 1 },
+            "desiredProgress": { "type": "string", "minLength": 1 },
+            "pushDimension": { "type": "string" }
+          },
+          "additionalProperties": true
+        }
+      ],
+      "description": "JTBD push force capturing the friction and the progress users are seeking"
+    },
+    "fingerprint": {
+      "type": "string",
+      "description": "Deterministic SHA-256 fingerprint for deduplication across dogfood runs"
+    },
+    "targetComponent": {
+      "type": "string",
+      "description": "Subsystem, CLI command, or component identifier"
+    },
+    "queueStatus": {
+      "type": "string",
+      "enum": ["intake", "triaged", "accepted", "rejected"],
+      "default": "intake"
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}
