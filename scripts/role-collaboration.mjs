@@ -114,12 +114,13 @@ if (command === 'verify' || command === 'advance') {
     const seat = value('--seat')
     const pin = value('--pin') ? readJson('--pin') : undefined
     const oracleDigest = value('--oracle-digest')
-    const expectedDigest = value('--expected-digest') || computeOracleDigest() || undefined
+    const expectedDigest = computeOracleDigest({ packageRoot })
     const options = {
       seat,
       pin,
       oracleDigest,
       expectedDigest,
+      packageRoot,
     }
     const result = verifyRoleAdvance({
       ...sources,

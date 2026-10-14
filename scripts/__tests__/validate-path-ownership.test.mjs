@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -469,7 +469,7 @@ describe('path ownership', () => {
     expect(result.errors).toContain('phase 3 must pin an oracle digest before dev.build starts')
   })
 
-  it('rejects advancement when an oracle file has been tampered with after pinning', () => {
+  it('rejects advancement when an oracle file has been tampered with or deleted after pinning', () => {
     const fixtureDir = mkdtempSync(join(tmpdir(), 'oracle-tamper-'))
     try {
       const oracleDir = join(fixtureDir, 'tests/oracles')
@@ -489,34 +489,65 @@ describe('path ownership', () => {
         controls: [`oracle-digest:${pinnedDigest}`],
       }
 
-      // Untampered: expectedDigest matches pinnedDigest
+      // Untampered: computed from disk via packageRoot (no expectedDigest passed by caller)
       const untampered = verifyRoleAdvance({
         decision,
         contract,
         handoff: { toRole: 'agentflow:developer' },
         delivery: { role: 'agentflow:implementation-planner' },
         openReworkRequests: [],
-        options: { expectedDigest: pinnedDigest },
+        options: { packageRoot: fixtureDir },
       })
       expect(untampered.errors.some((e) => e.includes('does not match expected digest'))).toBe(
         false,
       )
 
-      // Tamper: oracle is modified
+      // Tamper: oracle is modified on disk
       writeFileSync(join(oracleDir, 'spec.json'), '{"expected": 2}\n')
-      const tamperedDigest = computeOracleDigest({ packageRoot: fixtureDir })
-      expect(tamperedDigest).not.toBe(pinnedDigest)
-
       const tampered = verifyRoleAdvance({
         decision,
         contract,
         handoff: { toRole: 'agentflow:developer' },
         delivery: { role: 'agentflow:implementation-planner' },
         openReworkRequests: [],
-        options: { expectedDigest: tamperedDigest },
+        options: { packageRoot: fixtureDir },
       })
       expect(tampered.ok).toBe(false)
       expect(tampered.errors.some((e) => e.includes('does not match expected digest'))).toBe(true)
+
+      // Deletion: oracle directory removed from disk
+      rmSync(oracleDir, { recursive: true, force: true })
+      const deleted = verifyRoleAdvance({
+        decision,
+        contract,
+        handoff: { toRole: 'agentflow:developer' },
+        delivery: { role: 'agentflow:implementation-planner' },
+        openReworkRequests: [],
+        options: { packageRoot: fixtureDir },
+      })
+      expect(deleted.ok).toBe(false)
+      expect(
+        deleted.errors.some((e) =>
+          e.includes('oracle directory tests/oracles is missing or empty'),
+        ),
+      ).toBe(true)
+    } finally {
+      rmSync(fixtureDir, { recursive: true, force: true })
+    }
+  })
+
+  it('rejects symlinks inside the oracle directory', () => {
+    const fixtureDir = mkdtempSync(join(tmpdir(), 'oracle-symlink-'))
+    try {
+      const oracleDir = join(fixtureDir, 'tests/oracles')
+      mkdirSync(oracleDir, { recursive: true })
+      const outsideFile = join(fixtureDir, 'outside.txt')
+      writeFileSync(outsideFile, 'secret\n')
+      symlinkSync(outsideFile, join(oracleDir, 'symlinked.json'))
+
+      expect(() => computeOracleDigest({ packageRoot: fixtureDir })).toThrow(
+        /Symlinks not permitted in oracle directory/,
+      )
     } finally {
       rmSync(fixtureDir, { recursive: true, force: true })
     }
