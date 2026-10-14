@@ -687,17 +687,17 @@ The workflow is divided into two strictly isolated operating planes:
 
 ### 13.4 Deterministic Ledger Circuit Breaker & Epoch Fencing
 
-- Rework iterations are counted monotonically from the transition ledger (keyed per criterion).
-- When `reworkRound > maxReworkRounds` (default 2), advancement fails closed with `circuit-breaker-exhausted`.
+- Rework iterations are counted monotonically from the transition ledger via `deriveReworkRound`.
+- When rework iterations reach the circuit breaker limit (`DEFAULT_MAX_REWORK_ROUNDS = 2`), advancement fails closed.
 - The ledger breaker trips via `tripLedgerBreaker`, setting `ledger.frozen = true`, incrementing integer `fencingToken`, and emitting a sealed `reverse-seam-packet` record (`{ triggerCondition: 'rework-exhausted', fencingToken, round, targetIdentityDigest }`).
 - Subsequent commits or transitions carrying an older fencing token (`authored.fencingToken < ledger.fencingToken`) are rejected on the frozen branch.
 
 ### 13.5 Reverse-Seam Unfreeze Resolution Protocol
 
-- Unfreezing a deadlocked worktree is an external steering action performed by `orch.steer`.
+- Unfreezing a deadlocked worktree is an external steering responsibility under repository policy (`orch.steer` or human authority).
 - The supervisory authority records a sealed `unfreeze-resolution` record (`createUnfreezeResolution`) containing:
   - `resolution`: must be one of `re-scope`, `slice-split`, `person-waiver`, or `abandonment`.
-  - `actor`: verified steering seat (`orch.steer`) or human authority.
+  - `actor`: declared authority string (policy restricts to `orch.steer` or human authority; validated structurally as a non-empty string).
   - `rationale`: substantive rationale explaining the intervention.
   - `fencingToken`: integer epoch token matching `ledger.fencingToken + 1`.
 - `unfreezeLedger` verifies the resolution record, clears `ledger.frozen = false`, advances `ledger.fencingToken`, and records `unfreezeResolutionDigest`. Worker squads resume execution under the incremented epoch without history rewriting.

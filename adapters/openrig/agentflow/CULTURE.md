@@ -43,8 +43,8 @@ This team delivers production-grade software in the repository given as its work
 
 8. **Epoch Fencing & Circuit Breaker**:
    - Rework iterations are counted monotonically from the transition ledger.
-   - Exceeding `maxReworkRounds` (default 2) trips the ledger breaker: sets `ledger.frozen = true`, increments integer `fencingToken`, and emits a sealed `reverse-seam-packet` record.
-   - Unfreezing requires a sealed `unfreeze-resolution` record from `orch.steer` (`resolution: re-scope | slice-split | person-waiver | abandonment`).
+   - Exceeding the circuit breaker limit (`DEFAULT_MAX_REWORK_ROUNDS = 2`) trips the ledger breaker: sets `ledger.frozen = true`, increments integer `fencingToken`, and emits a sealed `reverse-seam-packet` record.
+   - Unfreezing requires a sealed `unfreeze-resolution` record from `orch.steer` or human authority (`resolution: re-scope | slice-split | person-waiver | abandonment`).
 
 9. **Pragmatic Defect Triage (`accept_and_register`)**:
    - The external steerer may accept non-critical observations and auxiliary telemetry edge cases under `accepted-with-conditions` with mandatory, idempotent GitHub follow-up issue creation.
