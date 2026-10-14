@@ -20,6 +20,9 @@ import {
   validateCouncilRecord,
   validateDeliveryReceipt,
   validateReworkRequest,
+  validateUnfreezeResolution,
+  unfreezeLedger,
+  createUnfreezeResolution,
   verifyRoleDelivery,
   verifyRoleAdvance,
 } from '../lib/core/role-collaboration.mjs'
@@ -153,10 +156,20 @@ if (command === 'build') {
     case 'council-seats':
       built = selectCouncilSeats(input)
       break
+    case 'unfreeze-resolution':
+      built = createUnfreezeResolution(input)
+      break
     default:
       throw new Error(`unsupported role collaboration record type: ${type ?? ''}`)
   }
   output(built)
+  process.exit(0)
+}
+
+if (command === 'unfreeze') {
+  const ledger = readJson('--ledger')
+  const resolution = readJson('--resolution')
+  output(unfreezeLedger(ledger, resolution))
   process.exit(0)
 }
 
@@ -170,6 +183,7 @@ if (command === 'validate') {
     'council-advice': validateCouncilRecord,
     'council-synthesis': validateCouncilRecord,
     'rework-request': validateReworkRequest,
+    'unfreeze-resolution': validateUnfreezeResolution,
   }
   const validator = validators[record.type]
   if (!validator) throw new Error(`unsupported role collaboration record: ${record.type ?? ''}`)

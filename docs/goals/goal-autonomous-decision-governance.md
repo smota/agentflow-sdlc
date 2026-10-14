@@ -1,4 +1,5 @@
 <!-- agentflow-work:{"kind":"goal","parent":null,"changeClass":null,"admission":null} -->
+
 # Goal: Autonomous Decision Governance & Anti-Loop Engine
 
 **Kind:** goal
@@ -27,33 +28,41 @@ Ships across `agentflow-sdlc` core verification libraries (`lib/core/role-collab
 This goal breaks down into eight sequenced, independently verifiable capabilities:
 
 ### Slice 1: Ledger-Derived Rework Breaker & Epoch Fencing (High-Assurance)
+
 - **Target**: `lib/core/role-collaboration.mjs`, `schemas/resolution-ledger.schema.json`.
 - **Contract**: Rework rounds are derived strictly from ledger transition history (`currentRound + 1`). When `round > 2`, the breaker trips, marks the worktree `status: frozen`, increments an epoch fencing token, and emits a `rework-exhausted` reverse-seam packet. Any commit authored after the fencing token is rejected. Stops appending dead-end `"escalation required"` strings.
 
 ### Slice 2: Approval-Gated Steerer Merge & Authorization Hardening (Standard)
+
 - **Target**: `skills/agentflow-steerer/references/adapter-openrig.md`, adapter runtime mirror.
 - **Contract**: Fixes the open authorization leak by enforcing delivery-bound human approval (or recorded auto-merge policy) on the `merge` execution verb.
 
 ### Slice 3: Reverse-Seam Unfreeze Resolution Protocol (Standard)
+
 - **Target**: `skills/agentflow-steerer/references/seam-rules.md`, transition envelope.
 - **Contract**: Codifies the closed set of unfreezing resolutions: re-scope (back to Phase 1), slice split, person waiver, or abandonment. Requires signed resolution record.
 
 ### Slice 4: Pragmatic Defect Triage (`accept_and_register`) Guard (High-Assurance)
+
 - **Target**: `lib/core/role-collaboration.mjs` (`verifyRoleAdvance`), CLI commands.
 - **Contract**: Maps operator-facing `accept_and_register` to `accepted-with-conditions`. Mechanically rejected if any finding was initially logged as `[B] Blocker`, if breaker is tripped, if on a sensitive surface (auth, crypto, migration), or if missing an idempotent GitHub follow-up issue URL.
 
 ### Slice 5: Path-Ownership Manifest, PM Write Guard & `dev.test-eng` Seat (High-Assurance)
+
 - **Target**: `manifests/path-ownership.json`, CI workflow, `agentflow-dev/rig.yaml`, AGENTS.md culture block.
 - **Contract**: Mechanical default-deny CI check: PM seats can only write `.agentflow/` and `goals/**`. Introduces `dev.test-eng` (SDET) seat owning `tests/oracles/**`. Builder diffs to oracles and test-eng diffs to `src/**` are rejected. Phase 3 pins oracle digest before code is authored.
 
 ### Slice 6: Deterministic Decision Policy & Model Escalation Table (Standard)
+
 - **Target**: `lib/core/decision-policy.mjs`.
 - **Contract**: Pure-function rule table evaluating transition history: escalates builder to frontier models on distinct core test failures; routes oracle defects to test-eng; escalates timeouts/unknowns to human. Zero reliance on model self-confidence.
 
 ### Slice 7: Decider Provider Port (`d3-flash` & Jev Auth) (Standard)
+
 - **Target**: `lib/providers/decider-port.mjs`, external steering adapters.
 - **Contract**: Connects external steering plane to local `http://127.0.0.1:8002/v1/decide` (and Jev authenticated headers). Enforces payload sanitization (digests/stats only, no raw source code egress). Enforces model allowlist (advisory triage only; never gate sign-offs).
 
 ### Slice 8: Architecture & Governance Policy Synchronization (Bounded)
+
 - **Target**: `docs/agent-workflow.md`, `docs/role-collaboration.md`, `docs/guiding-principles.md`, `CULTURE.md`.
 - **Contract**: Documents the Two-Plane Separation, oracle pinning, epoch fencing, and defect triage laws across all repository authority files.
