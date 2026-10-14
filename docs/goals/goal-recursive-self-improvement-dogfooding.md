@@ -77,14 +77,14 @@ This goal breaks down into two distinct phases comprising six sequenced, indepen
 
 ## Child Work & History
 
-> **Status:** Active delivery underway
-> **Progress:** 2/6 capabilities delivered (33.3%)
+> **Status:** All capabilities delivered; closing workstream PR
+> **Progress:** 6/6 capabilities delivered (100%)
 
 | Part | Kind       | Title                                                                 | Status    | Replacement | Delivery PR | Commit    | Date       |
 | :--- | :--------- | :-------------------------------------------------------------------- | :-------- | :---------- | :---------- | :-------- | :--------- |
 | #485 | capability | capability: out-of-band git delta and backlog surface reader          | Delivered | —           | #497        | `56c6e55` | 2026-10-14 |
-| #486 | capability | capability: autonomous exploratory dogfood seat and execution profile | Delivered | —           | —           | —         | 2026-10-14 |
-| #487 | capability | capability: structured intake finding schema and push-force emitter   | Backlog   | —           | —           | —         | —          |
-| #488 | capability | capability: session trace telemetry extractor and metrics analyzer    | Backlog   | —           | —           | —         | —          |
-| #489 | capability | capability: prompt drift and boundary violation auditor               | Backlog   | —           | —           | —         | —          |
-| #490 | capability | capability: closed-loop policy and prompt refinement synthesizer      | Backlog   | —           | —           | —         | —          |
+| #486 | capability | capability: autonomous exploratory dogfood seat and execution profile | Delivered | —           | #498        | `d9df16c` | 2026-10-14 |
+| #487 | capability | capability: structured intake finding schema and push-force emitter   | Delivered | —           | pending     | `5424660` | 2026-10-14 |
+| #488 | capability | capability: session trace telemetry extractor and metrics analyzer    | Delivered | —           | pending     | `d6c0c5f` | 2026-10-14 |
+| #489 | capability | capability: prompt drift and boundary violation auditor               | Delivered | —           | pending     | `7258303` | 2026-10-14 |
+| #490 | capability | capability: closed-loop policy and prompt refinement synthesizer      | Delivered | —           | pending     | `a3ceb14` | 2026-10-14 |
