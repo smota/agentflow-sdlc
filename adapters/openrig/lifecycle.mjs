@@ -31,6 +31,7 @@ const DELIVERY_PI_SEATS = [
   'dev-build',
   'dev-build-sr',
   'dev-qa',
+  'dev-test-eng',
 ]
 const SHARED_DIRS = ['agents', 'startup']
 const SHARED_FILES = ['CULTURE.md', 'README.md', 'configurations.yaml']
