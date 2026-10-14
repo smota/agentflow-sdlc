@@ -68,6 +68,17 @@ When an engineering seat encounters a fundamental blocker that cannot be resolve
 3. **Route to Phase 1 (Product Intake)**: The return packet is submitted back across the seam to `agentflow-pm` (Analyst/PO).
 4. **Product Re-evaluation**: `agentflow-pm` re-analyzes the job, adjusts the capability mapping or acceptance criteria, secures sponsor/person re-admission if necessary, and dispatches a revised immutable spec.
 
+### Unfreeze resolution
+
+A ledger frozen by the rework circuit breaker stays frozen until a signed unfreeze resolution is carried in the transition envelope. The closed set is `re-scope`, `slice-split`, `person-waiver`, and `abandonment`.
+
+- `re-scope` returns the work to Phase 1.
+- `slice-split` divides the capability into separate slices.
+- `person-waiver` records a person waiver for this fence only.
+- `abandonment` stops the frozen work.
+
+The resolution record has `type: unfreeze-resolution`, a digest over its bytes, `resolution`, `actor`, `rationale`, and `fencingToken`. `unfreezeLedger` clears `frozen` only when that digest is current and `fencingToken` is exactly the ledger token plus one. The ledger then stores `unfreezeResolutionDigest` and adopts that next token. No other action clears the fence.
+
 ---
 
 ## 4. Four-Eyes Principle and Code Approval Prohibition
