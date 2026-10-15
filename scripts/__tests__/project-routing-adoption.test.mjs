@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import {
   loadProjectConfig,
   resolveRoleRoute,
@@ -61,5 +63,15 @@ describe('AgentFlow source routing adoption (#527)', () => {
     ])
     expect(config.delivery.delegation.policy.issuers[0].allowThroughMerge).toBe(false)
     expect(validateRoutingConfig(config).ok).toBe(true)
+  })
+})
+
+it('keeps this project desired fleet activation held while preserving its native role routing', () => {
+  const config = JSON.parse(readFileSync(join(process.cwd(), 'agent-workflow.config.json'), 'utf8'))
+  expect(config.adapters.openrig.executionPolicy.activation).toBe('held')
+  expect(config.adapters.openrig.executionPolicy.seats['dev.build']).toMatchObject({
+    runtime: 'pi',
+    providerRoute: 'munito',
+    model: 'qwen/qwen3.8-27b',
   })
 })
