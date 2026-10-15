@@ -74,7 +74,16 @@
           "minItems": 1,
           "uniqueItems": true,
           "items": {
-            "enum": ["edit", "commit", "push", "pr:create", "pr:update", "merge", "rig:mutate"]
+            "enum": [
+              "edit",
+              "commit",
+              "push",
+              "pr:create",
+              "pr:update",
+              "merge",
+              "rig:mutate",
+              "queue:create"
+            ]
           }
         },
         "capabilities": {
