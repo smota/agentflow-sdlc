@@ -23,8 +23,10 @@ tuple explicitly at invocation; record actual model/effort as unknown when unobs
 
 The global model catalog is retained as inventory/recommendation history. Its preferred-model
 metadata is not promoted into an actual route, especially for the unqualified Qwen builder.
-The [desired execution preview](desired-execution.preview.json) is held and separate from that
-active source routing. Claude's native Sonnet5.5 review route was observed in bounded delivery
+The [desired execution preview](desired-execution.preview.json) is now represented explicitly in
+the source adapter policy with `executionPolicy.activation: held`, separate from active logical
+role routing. This machine-enforced hold keeps planning available but rejects installed squad
+materialization, including the proposed Pi/Munito Qwen builder. Claude's native Sonnet5.5 review route was observed in bounded delivery
 review records; the current main Codex model/effort is not independently attested here.
 
 Source delivery configuration, coordination branch, candidate/check definitions and existing
@@ -65,3 +67,11 @@ Installed rollback restores exact saved before bytes only while after hashes sti
 reconciles external effects before compensation. Neither operation resets history or touches
 unrelated original modifications. The original repository's dirty product skill files and all
 Dendro modifications remain outside this source preparation.
+
+The held adapter policy applies the same safeguards as Dendro: fresh provision rejects an existing
+spec, orphan Pi bridge or steering state before any setup write; existing-squad update requires a
+source-bound mutation host and otherwise holds. Public mutation previews expose hashes and selected
+contract deltas rather than arbitrary installed YAML. The new source policy does not deploy the
+installed tuples above or waive coding calibration, actual-route observation, custody or review.
+Generic base template install/update remains a separate explicit maintenance operation whose live
+effects require its own setup authority; it is not automatically protected by project activation.
