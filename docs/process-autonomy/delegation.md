@@ -71,7 +71,7 @@ An operation contains `id`, `planDigest`, `policyDigest`, `repository`, `base`,
 `checks`, `review`, and `arguments`. Its digest includes the complete object,
 including arguments and candidate/workspace identity; unknown fields and nonfinite
 JSON fail closed. Actions/capabilities currently share vocabulary: `edit`, `commit`,
-`push`, `pr:create`, `pr:update`, `merge`. The core classifies external effects;
+`push`, `pr:create`, `pr:update`, `merge`, `rig:mutate`. The core classifies external effects;
 a caller cannot mark a push as local. Checks are `{ name, outcome, candidateDigest }`;
 review is `{ policy: 'automated' | 'human', outcome, candidateDigest }`. Every required
 check and review must pass for the exact current candidate. Host approval remains
@@ -124,3 +124,5 @@ provider identity service, symlink verifier or crash-persistent pending journal.
 must wire durable local pending recovery, exact provider outcome lookup/idempotency,
 process advancement and technical acceptance. There is no universal exactly-once
 claim. The original issuance spike remains historical and unmodified.
+
+Rig mutation is an external effect requiring the `external-action` boundary and an explicit `rig:mutate` issuer policy, typed grant and operation. Existing `edit` grants never authorize runtime changes. A command exit does not confirm the effect; current runtime observation and source reconciliation are required. Human security and acceptance gates for high-assurance changes remain in force. No default issuer grants this capability.
