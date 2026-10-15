@@ -3,6 +3,9 @@
 For classified quota recovery and its trusted host integration limits, see
 [Classified OpenRig recovery](../../docs/openrig-recovery.md).
 
+For current-head review and publication authority, see
+[Steering merge authority](../../docs/steering-merge-authority.md).
+
 This adapter integrates AgentFlow SDLC with [OpenRig](https://openrig.dev/), providing a fully autonomous, full-lifecycle engineering squad for parallel, independent software development in the repository each squad is launched against.
 
 ---

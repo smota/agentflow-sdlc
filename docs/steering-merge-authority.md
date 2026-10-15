@@ -1,0 +1,44 @@
+# Steering merge authority
+
+`lib/core/steering-merge-policy.mjs` evaluates readiness from an authoritative current pull
+request snapshot. It never executes publication or treats authored PR text as authority.
+
+The default policy requires an open, explicitly nondraft PR, known current head SHA, known
+mergeability, nonempty CI with only successful completed check runs or successful status
+contexts, independent current-head review, and independent current-head human approval.
+Unknown identity, missing checks, unknown conclusions, stale reviews, dismissed approvals,
+or current changes requested keep readiness held. Review selection uses the latest timestamp
+per reviewer, regardless of array ordering. Ambiguous or malformed review history remains
+unverified. A human requires an explicit source identity (`is_bot: false` or GraphQL
+`__typename: User`), never the absence of a bot flag.
+
+PR body text, labels, comments, arbitrary approval references, and auto-merge flags cannot
+satisfy these gates. Explicit standard self-review remains possible only through a trusted
+source resolver and a policy that selects `allowSelfReview: true` and
+`requireHumanApproval: false`. The default human requirement is not weakened. No CLI text
+option should turn a caller declaration into a verified source receipt.
+
+The optional synchronous `resolveReviewEvidence({pr, headOid})` host port returns a source
+receipt with `verified`, `headOid`, `decision: approved`, `reviewerId`, `independent`, `human`,
+and `sourceRef`. It must resolve existing authoritative evidence; it is not an authentication
+mechanism for arbitrary JSON. Exceptions, promises, stale heads and malformed receipts hold.
+
+Actual publication requires a separate authenticated decision. The host should bind a
+steering request to the exact repository, PR number, current head SHA, merge strategy and
+deletion policy. A suitable subject is `recordDigest({repository, prNumber, headOid})`; a
+suitable action is `recordDigest({action: 'merge', repository, prNumber, headOid,
+strategy: 'squash', deleteBranch: true})`. The endpoint verifier must authenticate the authority,
+reply route, goal/task, challenge, power, both digests and expiry. The host must consume its
+approved decision through existing operation admission/reconciliation so replay cannot
+publish twice. Readiness alone supplies no merge grant.
+
+Readiness checks should remain the default CLI behavior. Explicit execution must still use
+trusted host authority and current evidence. Pass the exact inspected head to GitHub's
+`gh pr merge --match-head-commit <headOid>` guard. A head change must require new readiness
+and authorization; do not silently refresh the SHA and reuse the old decision.
+
+Source inspection must obtain author identity and review commit metadata explicitly. If a
+CLI projection omits them, report unknown or use supported source enrichment. Tests with
+trusted fixture callbacks establish policy behavior, not deployed human authentication or
+permission to merge the implementation PR. High-assurance human security and acceptance
+review remains required before that merge.
