@@ -50,10 +50,7 @@ export function resolveTwoLevelFallback({
     return { ok: false, status: 'NO_HEALTHY_PLATFORM', seat, capabilityTier: tier }
   }
 
-  const isHealthy = (p) =>
-    healthyPlatforms === null || healthyPlatforms === undefined
-      ? true
-      : healthyPlatforms.includes(p)
+  const isHealthy = (p) => Array.isArray(healthyPlatforms) && healthyPlatforms.includes(p)
 
   const selectedPlatform = candidateList.find(
     (platform) => isHealthy(platform) && Boolean(tierEntry[platform]),
@@ -97,10 +94,7 @@ export function resolveFourEyesReviewerTarget({
     'codex:openai-codex',
   ]
 
-  const isHealthy = (p) =>
-    healthyPlatforms === null || healthyPlatforms === undefined
-      ? true
-      : healthyPlatforms.includes(p)
+  const isHealthy = (p) => Array.isArray(healthyPlatforms) && healthyPlatforms.includes(p)
 
   const candidatePlatforms = chain.filter((p) => isHealthy(p))
 
@@ -114,6 +108,7 @@ export function resolveFourEyesReviewerTarget({
         actual: {
           platform: entry.providerFamily,
           model: entry.model,
+          providerFamily: entry.providerFamily,
         },
         metadata: {
           capabilityTier: effectiveReviewerTier,
