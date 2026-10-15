@@ -24,6 +24,12 @@ import { delimiter, dirname, join, relative, resolve } from 'node:path'
 import { loadAuthoritativeConfigs, validateConfigAuthority } from '../../lib/config/authority.mjs'
 import { parseExecutionYaml, planRigExecution } from './execution-plan.mjs'
 
+import {
+  COMPACT_NODE_FIELDS,
+  evaluateOperationalPreflight,
+  parseCompactObservation,
+} from './operational-preflight.mjs'
+
 const ADAPTER_ID = 'openrig'
 const BASES = { delivery: 'agentflow', product: 'agentflow-product', steer: 'agentflow-steer' }
 const BASE_NAMES = Object.values(BASES)
@@ -1046,6 +1052,105 @@ export function squadPlan(ctx) {
         ctx.out(`  ${item.severity}: ${item.message} (${item.seat ?? 'topology'})`)
     }
   return 0
+}
+
+// Strict read-only operational admission. Compact ps cannot attest actual model or custody;
+// all those dimensions remain unknown, even when a process happens to report READY.
+export function squadPreflight(ctx) {
+  const kind = ctx.options.kind ?? 'all'
+  if (kind !== 'all' && !BASES[kind]) fail(`Unknown squad kind ${kind}`)
+  const project = ctx.operands[0]
+  squadRigName(project)
+  const projectCwd = resolve(ctx.cwd, ctx.operands[1] ?? '.')
+  if (!isDirectory(projectCwd)) fail('Project directory does not exist')
+  const kinds = kind === 'all' ? Object.keys(BASES) : [kind]
+  const plans = kinds.map((item) => ({
+    kind: item,
+    ...prepareSquadExecution(ctx, item, projectCwd),
+  }))
+  if (kind === 'all') validateTopologySeats(plans)
+  const reports = plans.map((plan) => {
+    const suffix = { delivery: 'dev', product: 'pm', steer: 'steer' }[plan.kind]
+    const rigName = squadRigName(kind === 'all' ? `${project}-${suffix}` : project)
+    const installedPath = join(locations(ctx.home).specs, rigName, 'rig.yaml')
+    let installedContracts = []
+    if (isFile(installedPath)) {
+      try {
+        const installed = parseExecutionYaml(readFileSync(installedPath, 'utf8'), 'installed rig')
+        installedContracts = (installed.pods ?? []).flatMap((pod) =>
+          (pod.members ?? []).map((member) => {
+            const seat = `${pod.id}.${member.id}`
+            const desired = plan.contracts.find((item) => item.seat === seat)
+            return {
+              seat,
+              runtime: member.runtime,
+              providerRoute:
+                desired?.runnerModel === member.model ? desired.providerRoute : undefined,
+              model: desired?.runnerModel === member.model ? desired.model : member.model,
+              effort: member.effort,
+              profile: member.profile,
+            }
+          }),
+        )
+      } catch {
+        /* Malformed installed configuration is unverified, never repaired here. */
+      }
+    }
+    let observations = { rigName, complete: false, entries: [] }
+    let collection = 'not-contacted'
+    if (contactsOpenRig(ctx)) {
+      const result = spawnSync(
+        'rig',
+        [
+          'ps',
+          '--nodes',
+          '--rig',
+          rigName,
+          '--json',
+          '--no-cleanup',
+          '--limit',
+          '200',
+          '--fields',
+          COMPACT_NODE_FIELDS,
+        ],
+        { encoding: 'utf8', env: ctx.env, shell: false, timeout: 10000, maxBuffer: 1024 * 1024 },
+      )
+      if (!result.error && result.status === 0) {
+        observations = parseCompactObservation(result.stdout, rigName)
+        collection = observations.complete ? 'inventory-only' : 'incomplete'
+      } else collection = 'unavailable'
+    }
+    const report = evaluateOperationalPreflight({
+      contracts: plan.contracts,
+      installedContracts,
+      daemon: { state: 'unknown' },
+      observations,
+      task: {
+        rigName,
+        owner: 'operator',
+        requiredSeats: plan.contracts.map((item) => item.seat),
+        bindings: {},
+      },
+      now: new Date().toISOString(),
+    })
+    return { rigName, kind: plan.kind, collection, ...report }
+  })
+  const result = {
+    operation: 'preflight',
+    admitted: reports.length > 0 && reports.every((report) => report.admitted),
+    effects: [],
+    reports,
+  }
+  if (ctx.options.json) ctx.out(JSON.stringify(result, null, 2))
+  else
+    for (const report of reports) {
+      ctx.out(
+        `${report.rigName}: held; ${report.collection}; actual execution and task authority require a verified reader`,
+      )
+      for (const seat of report.seats)
+        ctx.out(`  ${seat.seat}: ${seat.status}; ${seat.reasons.join(', ')}`)
+    }
+  return result.admitted ? 0 : 3
 }
 
 export function listSquads(ctx) {

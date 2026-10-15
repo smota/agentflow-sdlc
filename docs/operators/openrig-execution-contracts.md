@@ -76,3 +76,29 @@ Pi state bridges follow actual materialized Pi seats, rather than an obsolete fi
 or updating template source is distinct from updating a project copy, and neither proves that a live
 seat has adopted the configuration. Preserve current sessions and inspect the consumer's actual effect
 before reporting runtime recovery.
+
+## Operational admission
+
+```sh
+agentflow-sdlc adapters squads preflight openrig --kind all example /path/to/project --json
+```
+
+Preflight compares desired contracts with the actual installed rig fields. It reads bounded compact
+OpenRig inventory with `ps --nodes --no-cleanup`, a ten-second timeout and a one-MiB output limit.
+A staging `--home` never contacts the live harness. It never starts a daemon, cleans stale state,
+reads sign-in material, probes a provider or changes a seat. Exit code `3` means admission is held;
+exit code `0` requires verified admission. Invalid configuration remains an error.
+
+Configured, observed, usable and authorized are separate fields. A pinned model is configuration;
+READY is process evidence. Verified admission also requires current source-authenticated execution,
+matching session/generation and task bindings, fresh event evidence, successful history catch-up,
+a running daemon and task-specific role authority. Collection time cannot refresh an old event.
+Missing task scope, duplicated identities, incomplete inventory and unknown evidence never admit work.
+Reports expose fixed reason codes and a named next owner/check interval, excluding raw runtime output.
+
+OpenRig 0.6.10's supported compact inventory cannot supply all those attestations. The bundled
+collector therefore reports inventory only and preserves unknown actual model, effort, restore,
+occupant and authorization evidence. It does not infer daemon health from inventory or READY.
+A stopped or unavailable daemon leaves admission held without a service start. Positive evaluator
+fixtures specify a trusted host reader contract; they do not claim that such a reader is deployed.
+The upstream Pi reader/catch-up integration remains tracked in #524.

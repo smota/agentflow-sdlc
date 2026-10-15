@@ -173,12 +173,15 @@
         "adapters/openrig/README.md",
         "adapters/openrig/__tests__/execution-plan.test.mjs",
         "adapters/openrig/__tests__/execution-route-roundtrip.test.mjs",
+        "adapters/openrig/__tests__/operational-preflight-review.test.mjs",
+        "adapters/openrig/__tests__/operational-preflight.test.mjs",
         "adapters/openrig/agentflow-product/configurations.yaml",
         "adapters/openrig/agentflow-steer/configurations.yaml",
         "adapters/openrig/agentflow/configurations.yaml",
         "adapters/openrig/execution-plan.mjs",
         "adapters/openrig/lifecycle.mjs",
         "adapters/openrig/manifest.json",
+        "adapters/openrig/operational-preflight.mjs",
         "adapters/openrig/platform-fallback.mjs",
         "agent-workflow.config.json",
         "docs/operators/index.md",
@@ -198,11 +201,12 @@
         "pnpm-lock.yaml",
         "schemas/agentflow-config.schema.json",
         "scripts/__tests__/adapter-lifecycle.test.mjs",
-        "scripts/__tests__/execution-plan-cli.test.mjs"
+        "scripts/__tests__/execution-plan-cli.test.mjs",
+        "scripts/__tests__/operational-preflight-cli.test.mjs"
       ],
       "context": {
         "workstream": "goal-516",
-        "scope": "Issue 517 execution contracts; refresh before the next candidate"
+        "scope": "Issues 517 and 518; source candidate checkpoint"
       }
     },
     "checks": {
@@ -264,6 +268,23 @@
           "scripts/__tests__/adapter-lifecycle.test.mjs"
         ],
         "assertions": ["execution-contract-regressions-pass"],
+        "format": "exit-code",
+        "timeoutMs": 120000,
+        "inheritEnv": ["HOME", "USERPROFILE"]
+      },
+      "openrig-preflight": {
+        "id": "openrig-preflight",
+        "criterionId": "operational-preflight-regression",
+        "executable": "node",
+        "args": [
+          "node_modules/vitest/vitest.mjs",
+          "run",
+          "adapters/openrig/__tests__/operational-preflight.test.mjs",
+          "adapters/openrig/__tests__/operational-preflight-review.test.mjs",
+          "scripts/__tests__/operational-preflight-cli.test.mjs",
+          "scripts/__tests__/adapter-lifecycle.test.mjs"
+        ],
+        "assertions": ["operational-preflight-regressions-pass"],
         "format": "exit-code",
         "timeoutMs": 120000,
         "inheritEnv": ["HOME", "USERPROFILE"]
