@@ -47,6 +47,9 @@ export function requiresOracleWriter(task = {}) {
           .replaceAll('\\', '/')
           .replace(/^(?:\.\/)+/, '')
           .replace(/\/+$/, '')
+          // Classification must remain conservative on case-insensitive hosts;
+          // retain the original path for exact source/assignment validation.
+          .toLowerCase()
         // Unbounded/ambiguous glob languages are not proof of disjointness from
         // protected paths. A source owner must narrow them or assign a writer.
         return (
