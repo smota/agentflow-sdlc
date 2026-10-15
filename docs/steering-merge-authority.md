@@ -58,3 +58,8 @@ the head in the merge command, and verifies the exact head's merged state and me
 source afterward. A command acknowledgement with missing readback remains `MERGE_SUBMITTED`,
 with `merged: false`, `publicationVerified: false` and a reconciliation obligation. Unknown command
 outcomes are never replayed blindly. No host endpoint is installed by these source changes.
+
+The bounded CLI projection holds at 100 review or check entries rather than assuming that a
+full projection proves complete history. Larger histories need an authoritative paginated reader.
+A GitHub User account is account-type evidence; it does not prove a physical person's presence.
+Actual publication still requires the authenticated human decision from the trusted host endpoint.
