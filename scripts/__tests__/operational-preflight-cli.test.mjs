@@ -1,6 +1,7 @@
-import { execFileSync, spawnSync } from 'node:child_process'
+import { spawnSync } from 'node:child_process'
 import {
   existsSync,
+  copyFileSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
@@ -11,7 +12,8 @@ import {
   writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join, resolve } from 'node:path'
+import { join, resolve, dirname, delimiter } from 'node:path'
+import { resolveExecutable } from '../../lib/environment.mjs'
 import { afterEach, describe, expect, it } from 'vitest'
 import { parse, stringify } from 'yaml'
 
@@ -24,15 +26,23 @@ function setup() {
     bin = join(root, 'bin'),
     log = join(root, 'calls.jsonl')
   for (const path of [home, project, bin]) mkdirSync(path)
-  symlinkSync(process.execPath, join(bin, 'node'))
-  symlinkSync(execFileSync('which', ['git'], { encoding: 'utf8' }).trim(), join(bin, 'git'))
+  const nodePath = join(bin, process.platform === 'win32' ? 'node.exe' : 'node')
+  try {
+    symlinkSync(process.execPath, nodePath)
+  } catch {
+    copyFileSync(process.execPath, nodePath)
+  }
+  const git = resolveExecutable('git')
+  if (!git) throw new Error('Fixture requires native Git')
   writeFileSync(join(bin, 'package.json'), '{"type":"commonjs"}')
   writeFileSync(
     join(bin, 'rig'),
     `#!/usr/bin/env node\nconst fs=require('node:fs');const a=process.argv.slice(2);fs.appendFileSync(${JSON.stringify(log)},JSON.stringify(a)+'\\n');const rig=a[a.indexOf('--rig')+1];if(process.env.FIXTURE_BAD){console.log('PRIVATE_FIXTURE_RAW_ERROR');process.exit(2)}console.log(JSON.stringify({entries:[{rigName:rig,logicalId:'dev.build',runtime:'pi',model:'PRIVATE_FIXTURE_RAW_MODEL',startupStatus:'READY',resumeToken:'PRIVATE_FIXTURE_TOKEN'}],totalNodes:1,truncated:false}));\n`,
     { mode: 0o755 },
   )
-  return { root, home, project, bin, log }
+  if (process.platform === 'win32')
+    writeFileSync(join(bin, 'rig.cmd'), '@echo PRIVATE_FIXTURE_SHIM_MUST_NOT_RUN\r\n')
+  return { root, home, project, bin, log, git }
 }
 function run(f, operation, { live = false, bad = false } = {}) {
   return spawnSync(
@@ -57,7 +67,10 @@ function run(f, operation, { live = false, bad = false } = {}) {
       encoding: 'utf8',
       timeout: 30000,
       env: {
-        PATH: f.bin,
+        PATH: [f.bin, dirname(f.git)].join(delimiter),
+        ...(process.platform === 'win32'
+          ? { SystemRoot: process.env.SystemRoot, PATHEXT: process.env.PATHEXT }
+          : {}),
         HOME: live ? f.home : join(f.root, 'user'),
         USERPROFILE: live ? f.home : join(f.root, 'user'),
         GIT_CEILING_DIRECTORIES: tmpdir(),
@@ -90,18 +103,25 @@ describe('public operational preflight CLI (#518)', () => {
     const report = JSON.parse(result.stdout)
     expect(report).toMatchObject({ admitted: false, effects: [] })
     expect(report.reports).toHaveLength(3)
-    expect(report.reports.every((item) => item.collection === 'inventory-only')).toBe(true)
+    expect(
+      report.reports.every(
+        (item) =>
+          item.collection === (process.platform === 'win32' ? 'unavailable' : 'inventory-only'),
+      ),
+    ).toBe(true)
     for (const item of report.reports)
       for (const seat of item.seats) {
         expect(seat.observed).toBe(false)
         expect(seat.usable).toBe(false)
       }
     expect(result.stdout + result.stderr).not.toContain('PRIVATE_FIXTURE')
-    const calls = readFileSync(f.log, 'utf8')
-      .trim()
-      .split('\n')
-      .map((line) => JSON.parse(line))
-    expect(calls).toHaveLength(3)
+    const calls = existsSync(f.log)
+      ? readFileSync(f.log, 'utf8')
+          .trim()
+          .split('\n')
+          .map((line) => JSON.parse(line))
+      : []
+    expect(calls).toHaveLength(process.platform === 'win32' ? 0 : 3)
     for (const args of calls) {
       expect(args.slice(0, 3)).toEqual(['ps', '--nodes', '--rig'])
       expect(args).toEqual(
