@@ -33,7 +33,6 @@
     "validate:release": "pnpm format:check && pnpm test && pnpm test:hooks && pnpm test:workflow && pnpm validate:authority && pnpm validate:extensions && pnpm validate:skills && pnpm validate:roles && pnpm validate:paths && pnpm validate:docs && pnpm validate:reachability && pnpm test:evals && pnpm test:collaboration && pnpm test:package && node scripts/sdlc-sandbox-smoke.mjs && node scripts/cockpit-smoke.mjs && node scripts/validate-npm-package.mjs"
   },
   "devDependencies": {
-    "ajv": "^8.20.0",
     "prettier": "^3.3.3",
     "vitest": "^2.0.4"
   },
@@ -89,6 +88,7 @@
     "@opentelemetry/sdk-metrics": "1.26.0",
     "@opentelemetry/sdk-trace-base": "1.26.0",
     "@opentelemetry/semantic-conventions": "1.27.0",
+    "ajv": "8.20.0",
     "yaml": "2.9.1"
   }
 }

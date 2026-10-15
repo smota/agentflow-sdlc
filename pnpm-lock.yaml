@@ -29,13 +29,13 @@ importers:
       '@opentelemetry/semantic-conventions':
         specifier: 1.27.0
         version: 1.27.0
+      ajv:
+        specifier: 8.20.0
+        version: 8.20.0
       yaml:
         specifier: 2.9.1
         version: 2.9.1
     devDependencies:
-      ajv:
-        specifier: ^8.20.0
-        version: 8.20.0
       prettier:
         specifier: ^3.3.3
         version: 3.9.4
