@@ -134,3 +134,5 @@ normalizes output timestamps, and requires externally resolved acceptance observ
 Other findings depended on incorrect assumptions about existing validators or already-working
 stage mapping; those validators check canonical seals, conflicting source event IDs, and
 timestamps. No independent approval is inferred from fixing advisory findings.
+
+The public read-only command is `agentflow-sdlc run incidents <run-id> --target <project> --json`. It reads the configured run source; it does not start or repair runs. Without a trusted evidence reader, proof remains unknown even when a source claim exists.

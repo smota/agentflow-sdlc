@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { oraclePackageCandidate } from '../lib/core/oracle-package.mjs'
+import { summarizeConfiguredIncidents } from '../adapters/openrig/incident-evidence.mjs'
 import { resolveOraclePackage as resolvePackageProofs } from '../lib/verification/oracle-package-resolver.mjs'
 import { readFileSync, existsSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -63,7 +64,7 @@ export const RUN_EXIT_CODES = {
   unknown: 6,
 }
 const help =
-  'Usage: agentflow-sdlc run <source-plan|start|status|context|next|freeze|oracle-pin|oracle-verify|verify|intent-plan|advance|checkpoint|pause|handoff|resume|grant-plan|grant-issue|grant-status|grant-revoke|act|reconcile|journal-reconcile|migrate|resolve-escalation|publish> <id> [--target <dir>] [--execute] [--plan <file> --confirm <digest>] [--json]'
+  'Usage: agentflow-sdlc run <source-plan|start|status|incidents|context|next|freeze|oracle-pin|oracle-verify|verify|intent-plan|advance|checkpoint|pause|handoff|resume|grant-plan|grant-issue|grant-status|grant-revoke|act|reconcile|journal-reconcile|migrate|resolve-escalation|publish> <id> [--target <dir>] [--execute] [--plan <file> --confirm <digest>] [--json]'
 
 // W8e / D3 — replaces message-regex classification. A GovernedBlockError carries its exit code as a
 // fact about the error (RUN_EXIT_CODES.blocked, documented and distinct from a genuine error), so
@@ -632,7 +633,9 @@ export async function runDelivery(
         },
         authority,
       })
-    } else if (command === 'status') result = await service.status()
+    } else if (command === 'incidents')
+      result = await summarizeConfiguredIncidents({ root, runId: id, client })
+    else if (command === 'status') result = await service.status()
     else if (command === 'context') {
       const state = (await service.read()).state
       if (args.includes('--compact')) {
