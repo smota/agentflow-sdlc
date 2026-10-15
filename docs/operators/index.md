@@ -20,3 +20,5 @@ optional; source and core validation remain usable when it is stopped or absent.
 
 For the dated Dendro and AgentFlow incident adoption preparation, see
 [the held Dendro preview](adoption-516/dendro-preview.md).
+
+AgentFlow uses the same [source and installed adoption boundary](adoption-516/agentflow-preview.md).

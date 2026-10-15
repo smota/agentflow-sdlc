@@ -28,7 +28,7 @@
     "defaultMode": "optional-multi-agent",
     "agents": {
       "grok": {
-        "enabled": true,
+        "enabled": false,
         "availabilityProbe": {
           "executable": "grok",
           "args": ["--version"]
@@ -62,44 +62,53 @@
         },
         "defaultExecutionTarget": "agy-cli",
         "callWorkflowDoc": "docs/agents/agy-routing.md"
+      },
+      "pi": {
+        "enabled": false,
+        "availabilityProbe": {
+          "executable": "pi",
+          "args": ["--version"]
+        },
+        "defaultExecutionTarget": "pi-parent",
+        "callWorkflowDoc": "docs/agents/pi-routing.md"
       }
     },
     "roles": {
       "product-manager": {
-        "owner": "grok",
-        "fallbacks": ["claude", "codex"]
+        "owner": "codex",
+        "fallbacks": ["claude"]
       },
       "analyst": {
-        "owner": "grok",
-        "fallbacks": ["claude", "codex"]
+        "owner": "codex",
+        "fallbacks": ["claude"]
       },
       "architect": {
-        "owner": "grok",
-        "fallbacks": ["claude", "codex"]
+        "owner": "codex",
+        "fallbacks": ["claude"]
       },
       "implementation-planner": {
-        "owner": "grok",
-        "fallbacks": ["claude", "codex"]
+        "owner": "codex",
+        "fallbacks": ["claude"]
       },
       "developer": {
-        "owner": "claude",
-        "fallbacks": ["grok", "codex"]
+        "owner": "codex",
+        "fallbacks": ["claude"]
       },
       "tester": {
         "owner": "codex",
-        "fallbacks": ["claude", "grok"]
+        "fallbacks": ["claude"]
       },
       "reviewer": {
-        "owner": "grok",
-        "fallbacks": ["codex", "claude"]
+        "owner": "claude",
+        "fallbacks": ["codex"]
       },
       "technical-writer": {
         "owner": "claude",
-        "fallbacks": ["grok", "codex"]
+        "fallbacks": ["codex"]
       },
       "pr-readiness": {
-        "owner": "grok",
-        "fallbacks": ["codex", "claude"]
+        "owner": "codex",
+        "fallbacks": ["claude"]
       }
     }
   },
