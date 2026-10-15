@@ -42,12 +42,21 @@ export function requiresOracleWriter(task = {}) {
       task.requiredCapabilities.includes('oracle-writer')) ||
     task.touchesOracles === true ||
     (Array.isArray(task.touchSurface) &&
-      task.touchSurface.some(
-        (path) =>
-          ['**', '*', '.', 'tests'].includes(String(path).replaceAll('\\', '/')) ||
-          /(^|\/)tests\/(?:.*\/)?oracles(?:\/|$)/.test(String(path).replaceAll('\\', '/')) ||
-          /(^|\/)tests\/(?:\*\*|\*)$/.test(String(path).replaceAll('\\', '/')),
-      ))
+      task.touchSurface.some((value) => {
+        const path = String(value)
+          .replaceAll('\\', '/')
+          .replace(/^(?:\.\/)+/, '')
+          .replace(/\/+$/, '')
+        // Unbounded/ambiguous glob languages are not proof of disjointness from
+        // protected paths. A source owner must narrow them or assign a writer.
+        return (
+          (/[*?\[\]{}]/.test(path) &&
+            (/[*?\[\]{}]/.test(path.split('/')[0]) ||
+              /(^|\/)(?:tests|oracles)(?:\/|$)/.test(path))) ||
+          ['.', '', 'tests'].includes(path) ||
+          /(^|\/)tests\/(?:.*\/)?oracles(?:\/|$)/.test(path)
+        )
+      }))
   )
 }
 function hold(status, reason, task = {}) {
@@ -331,6 +340,13 @@ export function resolveOracleDispatch({
       sourceRef: resolved.sourceRef,
       sourceRevision: resolved.sourceRevision,
       taskDigest: digest(task),
+      scope: structuredClone({
+        protocol: task.protocol ?? 'legacy',
+        goal: task.goal,
+        runId: task.runId,
+        epoch: task.epoch,
+        fence: task.fence,
+      }),
     },
   }
 }
