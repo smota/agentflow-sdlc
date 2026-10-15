@@ -104,3 +104,16 @@ Recheck the exact before hash and review the patch before any installed write. B
 repair is a separate setup action; repairing parsing does not establish runtime readiness, mutate
 existing squad authority, qualify Munito, recover custody or resume work. No installed file was
 changed during this diagnosis.
+
+## Reviewed parse repair applied
+
+The person confirmed pending setup authorizations with GO. After exact before-hash and regular-file
+checks, the three-line identical duplicate preset was removed from the installed product base.
+The after hash is `b183c4f221e10df723ed9701c5cd3258465a0eea82a0b57cdcdc6e13fb258018`;
+strict parsing and effective-configuration equality passed, and readback matched. A private local
+rollback copy preserves the original bytes. No profile, hook, model choice, service or live seat
+changed. This supersedes the earlier dated statement that this parse-only repair was unapplied.
+
+The actual public planning command using the real installed bases now succeeds with eight held
+contracts and `effects: []`. Installed project rigs, runtime observation, historical custody and
+human acceptance remain separate obligations. Repairing YAML syntax does not establish readiness.
