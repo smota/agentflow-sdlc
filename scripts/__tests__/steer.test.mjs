@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { execFileSync, spawnSync } from 'node:child_process'
@@ -162,81 +162,49 @@ describe('scripts/steer.mjs - supervisory steering verbs', () => {
       }
     })
 
-    it('dispatches queue brief via rig CLI mock', async () => {
-      const tempDir = mkdtempSync(join(tmpdir(), 'steer-assign-'))
+    it('holds dispatches queue brief via rig CLI mock without a trusted source authorization', async () => {
+      const tempDir = mkdtempSync(join(tmpdir(), 'steer-assign-held-'))
       try {
-        const briefPath = join(tempDir, 'brief.md')
-        writeFileSync(briefPath, 'Raw description without header.')
-
-        const mockSpawn = vi.fn().mockReturnValue({ status: 0, stdout: 'qitem-123\n' })
-
+        writeFileSync(join(tempDir, 'brief.md'), '# Bounded task\nDetails.')
+        const mockSpawn = vi.fn()
         const result = await steerAssign({
-          destination: 'pm-manager@project-product',
+          destination: 'pm.manager',
           briefFile: 'brief.md',
-          summary: 'Explicit summary',
-          goal: 'goal://477',
-          transition: 'trans://0-1',
           targetDir: tempDir,
           spawnFn: mockSpawn,
         })
-
-        expect(result.ok).toBe(true)
-        expect(result.dispatched).toBe(true)
-        expect(mockSpawn).toHaveBeenCalledTimes(2)
-        expect(mockSpawn).toHaveBeenNthCalledWith(
-          1,
-          'rig',
-          [
-            'queue',
-            'create',
-            '--destination',
-            'pm-manager@project-product',
-            '--body-file',
-            briefPath,
-            '--summary',
-            'Explicit summary',
-          ],
-          { encoding: 'utf8' },
-        )
-        expect(mockSpawn).toHaveBeenNthCalledWith(
-          2,
-          'rig',
-          [
-            'send',
-            'pm-manager@project-product',
-            `Goal: goal://477 | Transition: trans://0-1 | Brief: ${briefPath}`,
-          ],
-          { encoding: 'utf8' },
-        )
+        expect(result).toMatchObject({
+          ok: false,
+          authorized: false,
+          dispatched: false,
+          accepted: false,
+        })
+        expect(mockSpawn).not.toHaveBeenCalled()
+        expect(existsSync(join(tempDir, '.agent-runs'))).toBe(false)
       } finally {
         rmSync(tempDir, { recursive: true, force: true })
       }
     })
 
-    it('falls back to local queue storage when rig CLI is not installed', async () => {
-      const tempDir = mkdtempSync(join(tmpdir(), 'steer-assign-'))
+    it('holds falls back to local queue storage when rig CLI is not installed without a trusted source authorization', async () => {
+      const tempDir = mkdtempSync(join(tmpdir(), 'steer-assign-held-'))
       try {
-        const briefPath = join(tempDir, 'brief.md')
-        writeFileSync(briefPath, '# Another Task\nDetails.')
-
-        const mockSpawn = vi.fn().mockReturnValue({
-          error: { code: 'ENOENT' },
-          status: null,
-        })
-
+        writeFileSync(join(tempDir, 'brief.md'), '# Bounded task\nDetails.')
+        const mockSpawn = vi.fn()
         const result = await steerAssign({
-          destination: 'orch.arch',
+          destination: 'pm.manager',
           briefFile: 'brief.md',
           targetDir: tempDir,
           spawnFn: mockSpawn,
         })
-
-        expect(result.ok).toBe(true)
-        expect(result.source).toBe('local-queue-fallback')
-        expect(result.queueFile).toBeDefined()
-        const saved = JSON.parse(readFileSync(result.queueFile, 'utf8'))
-        expect(saved.destination).toBe('orch.arch')
-        expect(saved.summary).toBe('Task brief: Another Task')
+        expect(result).toMatchObject({
+          ok: false,
+          authorized: false,
+          dispatched: false,
+          accepted: false,
+        })
+        expect(mockSpawn).not.toHaveBeenCalled()
+        expect(existsSync(join(tempDir, '.agent-runs'))).toBe(false)
       } finally {
         rmSync(tempDir, { recursive: true, force: true })
       }
@@ -265,61 +233,36 @@ describe('scripts/steer.mjs - supervisory steering verbs', () => {
       }
     })
 
-    it('dispatches queue brief with --no-nudge suppressing mid-phase notification (AC-8)', async () => {
-      const tempDir = mkdtempSync(join(tmpdir(), 'steer-assign-nonudge-'))
+    it('holds dispatches queue brief with --no-nudge suppressing mid-phase notification (AC-8) without a trusted source authorization', async () => {
+      const tempDir = mkdtempSync(join(tmpdir(), 'steer-assign-held-'))
       try {
-        const briefPath = join(tempDir, 'brief.md')
-        writeFileSync(briefPath, '# Background Task\nEnqueued for next boundary.')
-
-        const mockSpawn = vi.fn().mockReturnValue({ status: 0, stdout: 'qitem-456\n' })
-
+        writeFileSync(join(tempDir, 'brief.md'), '# Bounded task\nDetails.')
+        const mockSpawn = vi.fn()
         const result = await steerAssign({
           destination: 'pm.manager',
           briefFile: 'brief.md',
-          goal: 'goal://477',
-          transition: 'trans://0-1',
           noNudge: true,
           targetDir: tempDir,
           spawnFn: mockSpawn,
         })
-
-        expect(result.ok).toBe(true)
-        expect(result.dispatched).toBe(true)
-        expect(result.noNudge).toBe(true)
-        // Only 1 call to rig queue create with --no-nudge; rig send notification is suppressed!
-        expect(mockSpawn).toHaveBeenCalledTimes(1)
-        expect(mockSpawn).toHaveBeenNthCalledWith(
-          1,
-          'rig',
-          [
-            'queue',
-            'create',
-            '--destination',
-            'pm.manager',
-            '--body-file',
-            briefPath,
-            '--summary',
-            'Task brief: Background Task',
-            '--no-nudge',
-          ],
-          { encoding: 'utf8' },
-        )
+        expect(result).toMatchObject({
+          ok: false,
+          authorized: false,
+          dispatched: false,
+          accepted: false,
+        })
+        expect(mockSpawn).not.toHaveBeenCalled()
+        expect(existsSync(join(tempDir, '.agent-runs'))).toBe(false)
       } finally {
         rmSync(tempDir, { recursive: true, force: true })
       }
     })
 
-    it('persists noNudge flag in local queue fallback when rig CLI is not installed', async () => {
-      const tempDir = mkdtempSync(join(tmpdir(), 'steer-assign-fallback-nonudge-'))
+    it('holds persists noNudge flag in local queue fallback when rig CLI is not installed without a trusted source authorization', async () => {
+      const tempDir = mkdtempSync(join(tmpdir(), 'steer-assign-held-'))
       try {
-        const briefPath = join(tempDir, 'brief.md')
-        writeFileSync(briefPath, '# Groomed Task\nDetails.')
-
-        const mockSpawn = vi.fn().mockReturnValue({
-          error: { code: 'ENOENT' },
-          status: null,
-        })
-
+        writeFileSync(join(tempDir, 'brief.md'), '# Bounded task\nDetails.')
+        const mockSpawn = vi.fn()
         const result = await steerAssign({
           destination: 'pm.manager',
           briefFile: 'brief.md',
@@ -327,12 +270,14 @@ describe('scripts/steer.mjs - supervisory steering verbs', () => {
           targetDir: tempDir,
           spawnFn: mockSpawn,
         })
-
-        expect(result.ok).toBe(true)
-        expect(result.source).toBe('local-queue-fallback')
-        expect(result.noNudge).toBe(true)
-        const saved = JSON.parse(readFileSync(result.queueFile, 'utf8'))
-        expect(saved.noNudge).toBe(true)
+        expect(result).toMatchObject({
+          ok: false,
+          authorized: false,
+          dispatched: false,
+          accepted: false,
+        })
+        expect(mockSpawn).not.toHaveBeenCalled()
+        expect(existsSync(join(tempDir, '.agent-runs'))).toBe(false)
       } finally {
         rmSync(tempDir, { recursive: true, force: true })
       }

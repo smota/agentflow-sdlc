@@ -196,6 +196,13 @@ export async function steerAssign({
   summary,
   goal,
   transition,
+  actor,
+  steeringBinding,
+  steeringRequest,
+  verifySteeringEndpoint,
+  resolveSteeringAssignment,
+  nowMs = Date.now(),
+  clock = Date.now,
   dryRun = false,
   noNudge = false,
   targetDir = process.cwd(),
@@ -254,53 +261,135 @@ export async function steerAssign({
     }
   }
 
-  const result = spawnFn('rig', command.slice(1), { encoding: 'utf8' })
-  if (result.status === 0) {
-    if (!noNudge && (goal || transition)) {
-      const msg = `Goal: ${goal || 'unspecified'} | Transition: ${transition || 'unspecified'} | Brief: ${briefPath}`
-      spawnFn('rig', ['send', validatedDest, msg], { encoding: 'utf8' })
-    }
-    return {
-      ok: true,
-      dispatched: true,
-      destination: validatedDest,
-      briefFile: briefPath,
-      summary: derivedSummary,
-      ...(noNudge ? { noNudge: true } : {}),
-      output: result.stdout?.trim(),
-    }
-  }
-
-  if (result.error?.code === 'ENOENT') {
-    const fallbackDir = resolve(targetDir, '.agent-runs', 'steer', 'queue')
-    fs.mkdirSync(fallbackDir, { recursive: true })
-    const queueId = `qitem-${Date.now()}`
-    const itemPath = join(fallbackDir, `${queueId}.json`)
-    const itemData = {
-      id: queueId,
-      destination: validatedDest,
-      briefFile: briefPath,
-      summary: derivedSummary,
-      goal: goal || null,
-      transition: transition || null,
-      ...(noNudge ? { noNudge: true } : {}),
-      createdAt: new Date().toISOString(),
-    }
-    fs.writeFileSync(itemPath, JSON.stringify(itemData, null, 2))
-    return {
-      ok: true,
-      dispatched: true,
-      source: 'local-queue-fallback',
-      destination: validatedDest,
-      briefFile: briefPath,
-      summary: derivedSummary,
-      ...(noNudge ? { noNudge: true } : {}),
-      queueFile: itemPath,
-      note: 'rig CLI not in PATH; brief persisted into local queue directory',
+  const hold = (status, extra = {}) => ({
+    ok: false,
+    authorized: false,
+    dispatched: false,
+    accepted: false,
+    status,
+    obligation: {
+      owner: 'human/operator',
+      action: 'verify-steering-authority',
+      deadlineAt: Number.isFinite(nowMs) ? nowMs + 900000 : null,
+    },
+    ...extra,
+  })
+  const binding = structuredClone(steeringBinding ?? {})
+  const request = structuredClone(steeringRequest ?? {})
+  if (
+    !actor ||
+    isInRigSeat(actor) ||
+    !isAuthorizedUnfreezeActor(actor) ||
+    binding.authorityId !== actor
+  )
+    return hold('STEERING_ASSIGNMENT_UNAUTHORIZED')
+  const briefDigest = recordDigest({ brief: briefContent })
+  const readSource = () => {
+    try {
+      const source =
+        typeof resolveSteeringAssignment === 'function'
+          ? resolveSteeringAssignment({ briefDigest, destination: validatedDest, goal, transition })
+          : null
+      if (!source || source.then || source.verified !== true) return null
+      return structuredClone(source)
+    } catch {
+      return null
     }
   }
-
-  throw new Error(`Failed to dispatch queue brief via rig CLI: ${result.stderr || result.stdout}`)
+  const source = readSource()
+  if (
+    !source ||
+    !source.sourceRevision ||
+    !source.returnRoute ||
+    !source.goal ||
+    !source.task ||
+    source.subjectId !== request.subjectId ||
+    source.subjectDigest !== request.subjectDigest ||
+    source.goal !== goal ||
+    source.goal !== request.goal ||
+    source.task !== request.task ||
+    source.destination !== validatedDest ||
+    source.briefDigest !== briefDigest ||
+    source.returnRoute !== binding.replyRoute
+  )
+    return hold('STEERING_ASSIGNMENT_SOURCE_UNVERIFIED')
+  const actionDigest = recordDigest({
+    action: 'assign',
+    actor,
+    destination: validatedDest,
+    briefDigest,
+    summary: derivedSummary,
+    goal: source.goal,
+    task: source.task,
+    transition,
+    noNudge,
+    sourceRevision: source.sourceRevision,
+    returnRoute: source.returnRoute,
+  })
+  if (request.power !== 'assign' || request.actionDigest !== actionDigest)
+    return hold('STEERING_ASSIGNMENT_ACTION_UNVERIFIED')
+  const authority = evaluateSteeringBinding({
+    binding,
+    request,
+    nowMs,
+    verifyEndpoint: verifySteeringEndpoint,
+  })
+  if (!authority.authorized) return hold(authority.status)
+  let currentBrief, currentTime
+  try {
+    currentBrief = fs.readFileSync(briefPath, 'utf8')
+    currentTime = clock()
+  } catch {
+    return hold('STEERING_ASSIGNMENT_SOURCE_CHANGED')
+  }
+  if (
+    currentBrief !== briefContent ||
+    recordDigest(readSource()) !== recordDigest(source) ||
+    !Number.isFinite(currentTime) ||
+    currentTime < nowMs ||
+    currentTime >= authority.validUntil
+  )
+    return hold('STEERING_ASSIGNMENT_SOURCE_CHANGED')
+  const qitemId = `qitem-${recordDigest({ challenge: request.challenge, actionDigest }).slice(0, 32)}`
+  command[command.indexOf('--body-file') + 1] = '-'
+  command.push('--id', qitemId, '--json')
+  let result
+  try {
+    result = spawnFn('rig', command.slice(1), {
+      encoding: 'utf8',
+      input: briefContent,
+      timeout: 30000,
+      maxBuffer: 65536,
+    })
+  } catch {
+    return hold('STEERING_ASSIGNMENT_OUTCOME_UNKNOWN', { dispatchAttempted: true })
+  }
+  if (result?.error?.code === 'ENOENT') return hold('STEERING_ASSIGNMENT_TRANSPORT_UNAVAILABLE')
+  let acknowledgement
+  try {
+    acknowledgement = JSON.parse(result?.stdout)
+  } catch {
+    /* Uncertain outcome requires reconciliation. */
+  }
+  if (
+    result?.status !== 0 ||
+    result?.error ||
+    acknowledgement?.qitemId !== qitemId ||
+    acknowledgement?.destinationSession !== validatedDest
+  )
+    return hold('STEERING_ASSIGNMENT_OUTCOME_UNKNOWN', { dispatchAttempted: true, qitemId })
+  return {
+    ok: true,
+    authorized: true,
+    dispatched: true,
+    accepted: false,
+    status: 'STEERING_ASSIGNMENT_SUBMITTED',
+    destination: validatedDest,
+    briefFile: briefPath,
+    summary: derivedSummary,
+    qitemId,
+    ...(noNudge ? { noNudge: true } : {}),
+  }
 }
 
 export async function steerUnfreeze({
@@ -976,10 +1065,12 @@ export async function runSteerCli(rawArgs = []) {
         process.stdout.write(
           result.dryRun
             ? `[Dry Run] Prepared brief assignment to ${result.destination}:\n  Brief: ${result.briefFile}\n  Summary: ${result.summary}\n`
-            : `✓ Brief dispatched to ${result.destination}:\n  Brief: ${result.briefFile}\n  Summary: ${result.summary}\n`,
+            : !result.ok
+              ? `Assignment held: ${result.status}; authenticated steering endpoint required\n`
+              : `✓ Brief submitted to ${result.destination}:\n  Brief: ${result.briefFile}\n  Summary: ${result.summary}\n`,
         )
       }
-      return 0
+      return result.ok ? 0 : 3
     }
 
     if (subcommand === 'unfreeze') {
