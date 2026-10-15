@@ -7,7 +7,7 @@ The default policy requires an open, explicitly nondraft PR, known current head 
 mergeability, nonempty CI with only successful completed check runs or successful status
 contexts, independent current-head review, and independent current-head human approval.
 Unknown identity, missing checks, unknown conclusions, stale reviews, dismissed approvals,
-or current changes requested keep readiness held. Review selection uses the latest timestamp
+or current changes requested keep readiness held. Review selection uses the latest decisive review timestamp
 per reviewer, regardless of array ordering. Ambiguous or malformed review history remains
 unverified. A human requires an explicit source identity (`is_bot: false` or GraphQL
 `__typename: User`), never the absence of a bot flag.
@@ -18,9 +18,11 @@ source resolver and a policy that selects `allowSelfReview: true` and
 `requireHumanApproval: false`. The default human requirement is not weakened. No CLI text
 option should turn a caller declaration into a verified source receipt.
 
-The optional synchronous `resolveReviewEvidence({pr, headOid})` host port returns a source
-receipt with `verified`, `headOid`, `decision: approved`, `reviewerId`, `independent`, `human`,
-and `sourceRef`. It must resolve existing authoritative evidence; it is not an authentication
+The optional synchronous `resolveReviewEvidence({pr, headOid, repository, prNumber, baseRefName})` host port returns a source
+receipt with `verified`, `repository`, `prNumber`, `baseRefName`, `headOid`, `decision: approved`,
+`reviewerId`, `reviewerPermission`, `independent`, `human`, and `sourceRef`. Repository, PR, base and
+head must all match; a shared head digest alone does not identify an approval subject. Reviewer
+identity comparisons ignore case. Comment-only and pending reviews cannot dismiss a change request. It must resolve existing authoritative evidence; it is not an authentication
 mechanism for arbitrary JSON. Exceptions, promises, stale heads and malformed receipts hold.
 
 Actual publication requires a separate authenticated decision. The host should bind a
