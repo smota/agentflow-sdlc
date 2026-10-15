@@ -43,3 +43,10 @@ Operations use a cooperative exclusive lock with owner PID, host and start time.
 of age; establish that the owner stopped before recovery. Pre-upgrade outbox records are preserved
 and require explicit source/custody reconciliation; the bridge does not silently migrate their
 missing identity or fabricate epoch one.
+
+`loadConfiguredRunSource({ root, runId, client })` in
+`lib/application/configured-run-source.mjs` provides read-only source observation for integration.
+It shares canonical configuration and existing store selection with `run` commands, requires an
+injected GitHub client, and never initializes a missing run. It returns native generation and
+revocation counters unchanged, plus explicit gaps for unbound bridge authority and oracle custody.
+These observations do not themselves authorize dispatch or provide a fenced phase append adapter.

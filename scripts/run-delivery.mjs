@@ -4,8 +4,11 @@ import { resolve } from 'node:path'
 import { hostname, userInfo } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
-import { createFileRunStore } from '../lib/sources/run-store.mjs'
-import { createGitHubRunStore, planGitHubCoordination } from '../lib/sources/github-run-store.mjs'
+import {
+  readRunConfiguration,
+  createConfiguredRunStore,
+} from '../lib/application/configured-run-source.mjs'
+import { planGitHubCoordination } from '../lib/sources/github-run-store.mjs'
 import { createGitHubApiCli } from '../lib/sources/github-api-cli.mjs'
 import { createRunService, GovernedBlockError } from '../lib/application/run-service.mjs'
 import { loadSdlcConfig } from '../lib/sdlc-state.mjs'
@@ -37,11 +40,7 @@ import {
   createContinuationBundle,
   reconstructContinuation,
 } from '../lib/application/continuation-service.mjs'
-import {
-  createSegmentedRunStore,
-  previewMigration,
-  migrateRunStore,
-} from '../lib/sources/segmented-run-store.mjs'
+import { previewMigration, migrateRunStore } from '../lib/sources/segmented-run-store.mjs'
 import { buildRunContext } from '../lib/application/context-service.mjs'
 import {
   assertEngineeringEvidenceDisclosure,
@@ -169,23 +168,8 @@ export async function runDelivery(
     })
     return JSON.parse(bytes.toString('utf8'))
   }
-  const readExecutionAdapter = () => {
-    try {
-      return readJson('agent-workflow.config.json')
-    } catch (error) {
-      if (error.code === 'ENOENT')
-        throw new Error(
-          'Execution adapter unavailable: agent-workflow.config.json not found at the project root. Run `agentflow-sdlc adopt apply` to create it.',
-        )
-      throw new Error(`Execution adapter agent-workflow.config.json is invalid: ${error.message}`)
-    }
-  }
-  const executionAdapter = readExecutionAdapter()
-  const config = executionAdapter.delivery
-  if (!config?.source || !config.candidate)
-    throw new Error('Configure delivery.source and delivery.candidate first')
+  const { executionAdapter, config } = readRunConfiguration(root)
   const external = config.source.kind === 'github'
-  if (!external && config.source.kind !== 'local-preview') throw new Error('Unsupported run source')
   const execute = args.includes('--execute')
   const sdlcConfig = loadSdlcConfig(root)
   const profile = flag('--profile', 'standard')
@@ -251,20 +235,14 @@ export async function runDelivery(
   try {
     emitObservation(observer, { kind: 'session', state: 'started' })
     const client = external ? createGitHubApiCli({ observer }) : null
-    if (
-      config.source.format !== undefined &&
-      !['v1', 'segmented-v2'].includes(config.source.format)
-    )
-      throw new Error('Unsupported source format')
-    const sourceStore = external
-      ? (config.source.format === 'segmented-v2' ? createSegmentedRunStore : createGitHubRunStore)({
-          ...config.source,
-          runId: id,
-          client,
-          boundary: coordinationBoundary,
-          setupConfirm: flag('--setup-confirm'),
-        })
-      : createFileRunStore({ root, runId: id })
+    const sourceStore = createConfiguredRunStore({
+      root,
+      runId: id,
+      source: config.source,
+      client,
+      boundary: coordinationBoundary,
+      setupConfirm: flag('--setup-confirm'),
+    })
     const store = config.delegation
       ? createJournaledRunStore({
           store: sourceStore,
