@@ -118,3 +118,143 @@ presets:
     dev.build-sr: codex
     dev.qa: codex
     rev.review: codex
+
+capability_tiers:
+  lightweight:
+    description: Fast low-cost tier for routine tasks, triage, and junior building
+    effort: low
+    models:
+      pi:grok:
+        runtime: pi
+        providerFamily: xai
+        model: grok-cli/grok-4-fast
+        effort: low
+      pi:antigravity:
+        runtime: pi
+        providerFamily: google
+        model: antigravity/gemini-3.8-flash
+        effort: low
+      codex:openai-codex:
+        runtime: codex
+        providerFamily: openai
+        model: gpt-5.3-codex-spark
+        effort: low
+      claude-code:anthropic:
+        runtime: claude-code
+        providerFamily: anthropic
+        model: claude-haiku-4-5
+        effort: low
+
+  balanced:
+    description: Standard production tier for core building and verification
+    effort: medium
+    models:
+      pi:grok:
+        runtime: pi
+        providerFamily: xai
+        model: grok-cli/grok-code-fast-1
+        effort: medium
+      pi:antigravity:
+        runtime: pi
+        providerFamily: google
+        model: antigravity/gemini-3.8-flash
+        effort: medium
+      codex:openai-codex:
+        runtime: codex
+        providerFamily: openai
+        model: gpt-6-astra
+        effort: medium
+      claude-code:anthropic:
+        runtime: claude-code
+        providerFamily: anthropic
+        model: claude-sonnet-4-6
+        effort: medium
+
+  deep-reasoning:
+    description: High reasoning tier for thorough review and complex debugging
+    effort: high
+    models:
+      pi:grok:
+        runtime: pi
+        providerFamily: xai
+        model: grok-cli/grok-4.7
+        effort: high
+      pi:antigravity:
+        runtime: pi
+        providerFamily: google
+        model: antigravity/gemini-3.1-pro
+        effort: high
+      codex:openai-codex:
+        runtime: codex
+        providerFamily: openai
+        model: gpt-6.1-sol
+        effort: high
+      claude-code:anthropic:
+        runtime: claude-code
+        providerFamily: anthropic
+        model: claude-opus-4-6
+        effort: high
+
+  architect-lead:
+    description: Apex reasoning tier for architecture and senior builder
+    effort: high
+    models:
+      codex:openai-codex:
+        runtime: codex
+        providerFamily: openai
+        model: gpt-6.1-sol
+        effort: high
+      claude-code:anthropic:
+        runtime: claude-code
+        providerFamily: anthropic
+        model: claude-opus-4-6
+        effort: high
+      pi:antigravity:
+        runtime: pi
+        providerFamily: google
+        model: antigravity/gemini-3.1-pro
+        effort: high
+      pi:grok:
+        runtime: pi
+        providerFamily: xai
+        model: grok-cli/grok-4.7
+        effort: high
+
+fallback_chains:
+  pm.manager:
+    - pi:grok
+    - pi:antigravity
+    - codex:openai-codex
+    - claude-code:anthropic
+  pm.analyst:
+    - pi:grok
+    - pi:antigravity
+    - codex:openai-codex
+    - claude-code:anthropic
+  orch.arch:
+    - codex:openai-codex
+    - claude-code:anthropic
+    - pi:antigravity
+  dev.build-jr:
+    - pi:grok
+    - pi:antigravity
+    - codex:openai-codex
+    - claude-code:anthropic
+  dev.build:
+    - pi:antigravity
+    - pi:grok
+    - codex:openai-codex
+    - claude-code:anthropic
+  dev.build-sr:
+    - pi:antigravity
+    - codex:openai-codex
+    - claude-code:anthropic
+  dev.qa:
+    - pi:grok
+    - pi:antigravity
+    - codex:openai-codex
+    - claude-code:anthropic
+  rev.review:
+    - pi:antigravity
+    - claude-code:anthropic
+    - codex:openai-codex
