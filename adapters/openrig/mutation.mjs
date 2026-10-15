@@ -1,7 +1,7 @@
 // Bounded rig mutation adapter. Durable operation state remains exclusively in
 // the existing run service; host readers/dispatchers must bind real source data.
 import { createHash } from 'node:crypto'
-import { planRigExecution } from './execution-plan.mjs'
+import { planRigExecution, parseExecutionYaml } from './execution-plan.mjs'
 import {
   requireDeliveryRecord,
   sealDeliveryRecord,
@@ -44,6 +44,22 @@ function frozen(value) {
 }
 function tuple(contract) {
   return Object.fromEntries(FIELDS.map((field) => [field, contract?.[field] ?? null]))
+}
+// Tuple-only deltas do not describe startup/cwd/env or rig-level behavior. Compare
+// parsed YAML after removing the canonical tuple fields; comments/formatting have
+// no runtime effect. Any remaining change conservatively affects every seat.
+function structuralDigest(rigText) {
+  const rig = parseExecutionYaml(rigText, 'mutation rig')
+  if (!Array.isArray(rig.pods)) throw new Error('Mutation rig pods must be an array')
+  for (const pod of rig.pods) {
+    if (!Array.isArray(pod?.members)) throw new Error('Mutation rig members must be an array')
+    for (const member of pod.members) {
+      if (!member || typeof member !== 'object' || Array.isArray(member))
+        throw new Error('Mutation rig member must be a mapping')
+      for (const field of FIELDS) delete member[field]
+    }
+  }
+  return recordDigest({ rig })
 }
 function preservation(workflow) {
   if (workflow?.protocol !== 'run-v1')
@@ -114,6 +130,7 @@ function makePlan({
   executorIdentity = null,
   mode = 'apply',
   originalPlanDigest = null,
+  activation = 'active',
 }) {
   if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(rigName ?? ''))
     throw new Error('Stable rig name required')
@@ -131,7 +148,17 @@ function makePlan({
   if (previous.size !== installed.contracts.length || next.size !== afterContracts.length)
     throw new Error('Duplicate contract seat')
   const changes = []
+  if (!['active', 'held'].includes(activation))
+    throw new Error('Invalid execution policy activation')
+  const structuralBeforeDigest = structuralDigest(installed.rigText)
+  const structuralAfterDigest = structuralDigest(afterRigText)
+  const structuralConfigurationChanged = structuralBeforeDigest !== structuralAfterDigest
   const admissionHolds = []
+  if (activation === 'held')
+    admissionHolds.push({
+      code: 'EXECUTION_POLICY_HELD',
+      reason: 'Project execution policy activation is held; preview only',
+    })
   let preserved = null
   try {
     preserved = preservation(workflow)
@@ -150,10 +177,11 @@ function makePlan({
     for (const field of FIELDS)
       if ((before?.[field] ?? null) !== (after?.[field] ?? null))
         fields[field] = { before: before?.[field] ?? null, after: after?.[field] ?? null }
-    if (Object.keys(fields).length || !before || !after)
+    if (Object.keys(fields).length || !before || !after || structuralConfigurationChanged)
       changes.push({
         seat,
         fields,
+        structuralConfigurationChanged,
         before: before ? tuple(before) : null,
         after: after ? tuple(after) : null,
         previousOccupant: structuredClone(installed.occupants?.[seat] ?? null),
@@ -164,6 +192,10 @@ function makePlan({
       rigName,
       mode,
       originalPlanDigest,
+      activation,
+      structuralConfigurationChanged,
+      structuralBeforeDigest,
+      structuralAfterDigest,
       specPath: `.openrig/specs/${rigName}/rig.yaml`,
       sourceRevision: installed.sourceRevision,
       workflowAnchor: workflow
@@ -214,6 +246,11 @@ export function planRigMutation({
     installed,
     afterRigText: resolved.rigText,
     afterContracts: resolved.contracts,
+    activation: Object.hasOwn(resolved, 'activation')
+      ? resolved.activation
+      : desired.config?.adapters?.openrig?.executionPolicy?.activation === undefined
+        ? 'active'
+        : desired.config.adapters.openrig.executionPolicy.activation,
     workflow,
     executorIdentity,
   })
@@ -229,6 +266,7 @@ export function planRigRollback({ originalPlan, installed, workflow, executorIde
     executorIdentity,
     mode: 'rollback',
     originalPlanDigest: originalPlan.digest,
+    activation: originalPlan.activation ?? 'active',
   })
 }
 function mutationArguments(plan) {
