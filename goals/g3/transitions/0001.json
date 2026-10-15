@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "phase": 0,
+  "role": "product-manager",
+  "seat": "pm.manager",
+  "status": "pass",
+  "reason": null,
+  "seatVerified": false,
+  "seatRig": null,
+  "body": "Framed in docs/goals/goal-autonomous-decision-governance.md",
+  "idempotencyKey": "g3-autonomous-governance",
+  "uri": "transitions/0001.json"
+}

@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "phase": 1,
+  "role": "analyst",
+  "seat": "pm.analyst",
+  "status": "pass",
+  "reason": null,
+  "seatVerified": false,
+  "seatRig": null,
+  "body": "Slice 1: Ledger Breaker & Epoch Fencing",
+  "idempotencyKey": "g3-phase1-spec",
+  "uri": "transitions/0002.json"
+}
