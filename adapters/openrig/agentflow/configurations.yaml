@@ -119,6 +119,25 @@ presets:
     dev.qa: codex
     rev.review: codex
 
+  frontline:
+    orch.arch: codex
+    dev.build: pi
+    dev.qa: pi
+    rev.review: codex
+
+  all-antigravity:
+    orch.arch: pi
+    dev.build: pi
+    dev.qa: pi
+    rev.review: pi
+
+effort_policy:
+  default_loop_effort: medium
+  subagent_search_effort: low
+  high_effort_max_context_tokens: 40000
+  enforce_clean_subagent_for_high_effort: true
+  composite_builder_max_rung: P1
+
 capability_tiers:
   lightweight:
     description: Fast low-cost tier for routine tasks, triage, and junior building
@@ -146,7 +165,7 @@ capability_tiers:
         effort: low
 
   balanced:
-    description: Standard production tier for core building and verification
+    description: Standard production tier for core building and verification (Gemini 4 Argon / GPT-6 Astra)
     effort: medium
     models:
       pi:grok:
@@ -158,6 +177,7 @@ capability_tiers:
         runtime: pi
         providerFamily: google
         model: antigravity/gemini-3.8-flash
+        recommended2026Model: antigravity/gemini-4-argon
         effort: medium
       codex:openai-codex:
         runtime: codex
@@ -171,7 +191,7 @@ capability_tiers:
         effort: medium
 
   deep-reasoning:
-    description: High reasoning tier for thorough review and complex debugging
+    description: High reasoning tier for thorough review and complex debugging (clean <35k context subagent for high effort)
     effort: high
     models:
       pi:grok:

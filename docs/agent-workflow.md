@@ -64,6 +64,7 @@ that skip is recorded with a reason.
 
 - `0 -> 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8`
 - `1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8` for chores/bugs that do not need JTBD framing
+- **Composite Builder Pass (`3 -> 4 -> 5` in one turn for `P0` and `P1`):** Once the Phase 2/3 oracle digest is pinned, a Builder executing a `P0` (bounded) or `P1` (standard) slice may complete Phase 3 (`implementation-planner`), Phase 4 (`developer`), and Phase 5 (`tester`, delegated to an `effort: low` L2 verification subagent) in a single continuous turn before handing off to Phase 6 (`review`). Each phase transition (`3`, `4`, `5`) is still recorded in the durable evidence envelope, eliminating inter-seat queue round-trips without skipping verification. Slices rated `P2`–`P4` (or touching high-consequence paths) require a separate-seat Phase 5 (`tester` / `dev.qa`) handoff.
 - `4 -> 3` only when implementation reveals a planning defect
 - `6 -> 4` only when review returns findings
 - `7 -> 4` only when documentation changes require remediation

@@ -279,3 +279,62 @@ export function resolveFourEyesReviewerTarget({
     reason: 'No healthy independent provider family meets the builder tier floor',
   }
 }
+
+export const FRONTIER_2026_MODELS = Object.freeze({
+  google: Object.freeze({
+    flagship: 'antigravity/gemini-4-argon',
+    deep: 'antigravity/gemini-3.1-pro',
+    fast: 'antigravity/gemini-3.8-flash',
+  }),
+  openai: Object.freeze({
+    flagship: 'gpt-6.1-sol',
+    balanced: 'gpt-6-astra',
+    fast: 'gpt-5.3-codex-spark',
+  }),
+  anthropic: Object.freeze({
+    flagship: 'claude-opus-4-6',
+    balanced: 'claude-sonnet-4-6',
+    fast: 'claude-haiku-4-5',
+  }),
+  xai: Object.freeze({
+    flagship: 'grok-cli/grok-4.7',
+    balanced: 'grok-cli/grok-code-fast-1',
+    fast: 'grok-cli/grok-4-fast',
+  }),
+  deepseek: Object.freeze({
+    fast: 'd3-flash',
+  }),
+})
+
+export function enforceEffortDegradationGuard({
+  seat = 'dev.build',
+  requestedEffort = 'medium',
+  phase = 4,
+  rung = 'P1',
+  isPersistentLoop = true,
+  isOneShotBurst = false,
+} = {}) {
+  const highAllowedByPhase =
+    isOneShotBurst ||
+    rung === 'P3' ||
+    rung === 'P4' ||
+    ((phase === 2 || phase === 6) && rung !== 'P0' && !isPersistentLoop)
+
+  if (requestedEffort === 'high' && isPersistentLoop && !highAllowedByPhase) {
+    return {
+      seat,
+      requestedEffort,
+      effectiveEffort: seat === 'dev.qa' || seat === 'eval.tester' ? 'low' : 'medium',
+      clamped: true,
+      reason: 'effort-degradation-guard: high effort clamped on persistent execution loops',
+    }
+  }
+
+  return {
+    seat,
+    requestedEffort,
+    effectiveEffort: requestedEffort,
+    clamped: false,
+    reason: 'within-effort-envelope',
+  }
+}

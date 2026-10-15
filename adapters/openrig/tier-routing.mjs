@@ -9,6 +9,14 @@ export const BUILDER_RUNGS = Object.freeze({
   P4: 'dev.build-sr',
 })
 
+export const LEAN_BUILDER_RUNGS = Object.freeze({
+  P0: 'dev.build',
+  P1: 'dev.build',
+  P2: 'dev.build',
+  P3: 'dev.build',
+  P4: 'dev.build',
+})
+
 export const CONSEQUENCE_FLOOR_RE =
   /(?:storage|lock|locking|alias|aliasing|security|auth|crypto|migration|schema|persistence|toctou)/i
 
@@ -20,6 +28,7 @@ export function resolveBuilderRung({
   touchSurface = [],
   fileCount = null,
   touchesOracles = false,
+  squadPreset = 'classic-6-seat',
 } = {}) {
   if (
     touchesOracles === true ||
@@ -29,6 +38,9 @@ export function resolveBuilderRung({
     throw new Error('Builders (P0-P4) are barred from modifying tests/oracles/**')
   }
 
+  const isLeanSquad = squadPreset === 'lean-4-seat'
+  const rungMap = isLeanSquad ? LEAN_BUILDER_RUNGS : BUILDER_RUNGS
+
   const highConsequence =
     consequenceFloor === 'high-consequence' ||
     consequenceFloor === 'standard-high' ||
@@ -36,7 +48,12 @@ export function resolveBuilderRung({
     (Array.isArray(touchSurface) && touchSurface.some((p) => CONSEQUENCE_FLOOR_RE.test(String(p))))
 
   if (workflowProfile === 'high-assurance' || collaborationClass === 'human-gated') {
-    return { rung: 'P4', seat: 'dev.build-sr', reason: 'high-assurance / human-gated' }
+    return {
+      rung: 'P4',
+      seat: rungMap.P4,
+      reason: 'high-assurance / human-gated',
+      ...(isLeanSquad ? { subagentDelegation: true, recommendedEffort: 'high' } : {}),
+    }
   }
 
   if (
@@ -47,8 +64,9 @@ export function resolveBuilderRung({
   ) {
     return {
       rung: 'P2',
-      seat: 'dev.build-sr',
+      seat: rungMap.P2,
       reason: highConsequence ? 'consequence-floor' : 'council/deep-reasoning',
+      ...(isLeanSquad ? { subagentDelegation: true, recommendedEffort: 'medium' } : {}),
     }
   }
 
@@ -65,14 +83,58 @@ export function resolveBuilderRung({
     capabilityTier === 'lightweight' &&
     (effectiveFileCount === null || effectiveFileCount <= 2)
   ) {
-    return { rung: 'P0', seat: 'dev.build-jr', reason: 'bounded-lightweight' }
+    return {
+      rung: 'P0',
+      seat: rungMap.P0,
+      reason: 'bounded-lightweight',
+      ...(isLeanSquad ? { subagentDelegation: true, recommendedEffort: 'low' } : {}),
+    }
   }
 
-  return { rung: 'P1', seat: 'dev.build', reason: 'standard-balanced' }
+  return {
+    rung: 'P1',
+    seat: rungMap.P1,
+    reason: 'standard-balanced',
+    ...(isLeanSquad ? { subagentDelegation: true, recommendedEffort: 'medium' } : {}),
+  }
 }
 
 export function resolveBuilderSeat(options = {}) {
   return resolveBuilderRung(options).seat
+}
+
+export function resolvePhaseCompression({
+  rung = 'P1',
+  squadPreset = 'lean-4-seat',
+  touchesOracles = false,
+} = {}) {
+  if (touchesOracles) {
+    return {
+      compositePass: false,
+      phases: [3],
+      externalGatePhases: [4, 5, 6, 7, 8],
+      reason: 'oracle-boundary-requires-explicit-phase-separation',
+    }
+  }
+
+  if (rung === 'P0' || rung === 'P1') {
+    return {
+      compositePass: true,
+      phases: [3, 4, 5],
+      externalGatePhases: [6, 7, 8],
+      squadPreset,
+      reason:
+        rung === 'P0' ? 'bounded-composite-builder-pass' : 'standard-bilateral-composite-pass',
+    }
+  }
+
+  return {
+    compositePass: false,
+    phases: [3],
+    externalGatePhases: [4, 5, 6, 7, 8],
+    squadPreset,
+    reason: 'high-consequence-requires-explicit-phase-separation',
+  }
 }
 
 export function resolveStickyBuilderOnReturn({

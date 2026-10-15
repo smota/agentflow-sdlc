@@ -145,6 +145,17 @@
     "maxDepth": 1,
     "maxIterations": 3
   },
+  "executionTopology": {
+    "substrateTier": "auto",
+    "openrigSquadPreset": "lean-4-seat",
+    "compositeBuilderMaxRung": "P1"
+  },
+  "effortPolicy": {
+    "defaultLoopEffort": "medium",
+    "subagentSearchEffort": "low",
+    "highEffortMaxContextTokens": 40000,
+    "enforceCleanSubagentForHighEffort": true
+  },
   "extensions": {
     "enabledPacks": [
       "extensions/evidence-driven-engineering",

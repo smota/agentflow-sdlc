@@ -24,11 +24,11 @@ This team delivers production-grade software in the repository given as its work
    - Intent must be translated into testable, verifiable proof contracts before code is authored.
    - A task is not done when code is written; it is done when evidence proves the contracts were satisfied.
 
-5. **Seat Ladder** (optional):
-   Copy of the seat ladder in this adapter's `README.md`, which is its one home. The rung chooses only the collaboration class and builder seat; phases, workflow profile, and person gates come from AgentFlow.
-   - **P0** (`linear`): bounded fixes, single-file or docs edits -> `dev.build-jr`.
-   - **P1** (`bilateral`): standard features and routine refactors -> `dev.build`.
-   - **P2-P3** (`council`): structural or cross-cutting changes -> council of `orch.arch`, `rev.review`, `dev.build-sr`, `dev.qa`; builder `dev.build-sr`.
+5. **Seat Ladder & Lean 4-Seat Default**:
+   Copy of the seat ladder in this adapter's `README.md`, which is its one home. The default delivery squad is the **Lean 4-Seat Squad** (`orch.arch`, `dev.build`, `dev.qa`, `rev.review` + `eval.tester` daemon). The rung chooses the collaboration class, effort envelope, and L2 subagent delegation strategy; phases, workflow profile, and person gates come from AgentFlow.
+   - **P0** (`linear`): bounded fixes, single-file or docs edits -> `dev.build` (`effort: low` / L2 subagent; `dev.build-jr` in classic 6-seat). Eligible for Composite Phase 3-5 Builder Pass.
+   - **P1** (`bilateral`): standard features and routine refactors -> `dev.build` (`effort: medium` + internal L2 subagents). Eligible for Composite Phase 3-5 Builder Pass before independent Phase 6 review (`rev.review`).
+   - **P2-P3** (`council`): structural or cross-cutting changes -> council of `orch.arch`, `rev.review`, `dev.build` (`dev.build-sr` in classic 6-seat), `dev.qa`; explicit Phase 3 -> 4 -> 5 -> 6 separation required.
    - **P4** (`human-gated`): migrations, breaking contracts, security-critical changes -> the person confirms before `orch.arch` delegates.
 
 6. **Two-Plane Separation**:
@@ -50,6 +50,10 @@ This team delivers production-grade software in the repository given as its work
 9. **Pragmatic Defect Triage (`accept_and_register`)**:
    - The external steerer may accept non-critical observations and auxiliary telemetry edge cases under `accepted-with-conditions` with mandatory, idempotent GitHub follow-up issue creation.
    - Strictly prohibited while breaker is tripped, when findings were initially `[B] Blocker`, or on sensitive surfaces (`auth`, `crypto`, `migration`, `billing`).
+
+10. **Effort-Degradation Law**:
+    - Persistent L1 OpenRig seats (`orch.arch`, `dev.build`, `rev.review`) run at `effort: medium` and verification/tester loops (`dev.qa`, `eval.tester`) run at `effort: low`.
+    - Never pin `effort: high` on long-running interactive or edit-test-fix loops; reserve `effort: high` strictly for stateless one-shot Phase 2 architecture synthesis (`P3`/`P4`) or Phase 6 adversarial audits.
 
 ---
 

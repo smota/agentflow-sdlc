@@ -3,6 +3,8 @@ node_modules/
 .claude/skills/
 .codex/skills/
 .agy/skills/
+.gemini/skills/
+.grok/skills/
 skills-lock.json
 SPEC.md
 *.log

@@ -4,31 +4,38 @@ AgentFlow SDLC provides first-class support for [OpenRig](https://openrig.dev/),
 
 ---
 
-## Rig Topology (`agentflow`)
+## Default Rig Topology: Lean 4-Seat Squad (`agentflow`)
 
-| Pod    | Seat       | Role                | Default Runtime    | Default Model       | Responsibility                                                                                |
-| ------ | ---------- | ------------------- | ------------------ | ------------------- | --------------------------------------------------------------------------------------------- |
-| `orch` | `arch`     | Architect Lead      | `pi` (Grok bridge) | `grok-cli/grok-4.7` | Goal intake, task decomposition, complexity rating (P0-P4), proof contracts, Council convener |
-| `dev`  | `build-jr` | Junior Builder      | `claude-code`      | Claude              | Linear bug fixes, minor tasks, single-file edits (P0)                                         |
-| `dev`  | `build`    | Standard Builder    | `claude-code`      | Claude              | Feature delivery, subsystem extensions, bilateral workflows (P1)                              |
-| `dev`  | `build-sr` | Senior Builder      | `claude-code`      | Claude              | Core refactorings, multi-module architecture, Council participant (P2-P3)                     |
-| `dev`  | `qa`       | QA & Verification   | `codex`            | Codex               | Test matrix execution, regression proof verification, edge cases                              |
-| `rev`  | `review`   | Independent Auditor | `pi` (Grok bridge) | `grok-cli/grok-4.7` | Four-Eyes review, digest-bound verdicts, risk audits, Council peer                            |
+AgentFlow's default OpenRig delivery topology (**Substrate `S2`**) is the **Lean 4-Seat Squad** (plus optional out-of-band `eval.tester`). Instead of paying inter-seat queue serialization tax across static `build-jr` / `build` / `build-sr` / `test-eng` panes, `dev.build` orchestrates native L2 subagents inside `.worktrees/<branch>` and executes a **Composite Phase 3–5 Pass** for `P0` and `P1` slices once the oracle digest is pinned:
+
+| Pod    | Seat     | Role                    | Default Runtime    | Default 2026 Model                           | Effort   | Responsibility                                                                                                          |
+| ------ | -------- | ----------------------- | ------------------ | -------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `orch` | `arch`   | Architect Lead          | `codex` / `pi`     | `gpt-6.1-sol` / `antigravity/gemini-4-argon` | `medium` | Goal intake, task decomposition, complexity rating (`P0`–`P4`), oracle digest pinning, L2 Council convener (`<30k` ctx) |
+| `dev`  | `build`  | Primary Builder (+L2)   | `pi` (Antigravity) | `antigravity/gemini-4-argon`                 | `medium` | Isolated `.worktrees/<branch>` implementation; composite Phase `3 -> 4 -> 5` for `P0`/`P1`; spawns `low`-effort scouts  |
+| `dev`  | `qa`     | Verification & Gate     | `pi` (Grok/Flash)  | `grok-cli/grok-4.7` / `gemini-3.8-flash`     | `low`    | Independent Phase 5 test matrix & oracle execution for `P2`–`P4` and high-consequence slices                            |
+| `rev`  | `review` | Independent Auditor     | `codex` / `pi`     | `gpt-6-astra` / `antigravity/gemini-3.1-pro` | `medium` | Orthogonal Four-Eyes review, digest-bound verdicts, risk audits (`effort: high` via clean `<30k` L2 subagent on `P2+`)  |
+| `eval` | `tester` | Adversarial Eval (Opt.) | `pi` (Antigravity) | `antigravity/gemini-3.8-flash`               | `low`    | Out-of-band synthetic user verification and clean-room acceptance checks                                                |
+
+> **Scale-Out Mode (`multi-tier-7-seat` / `rig grow`):** When a project runs multiple concurrent `P0`–`P4` slices across separate branches, `rig grow` (or the `multi-tier-7-seat` topology mode in `adapters/openrig/tier-routing.mjs`) adds dedicated `dev.build-jr`, `dev.build-sr`, and `dev.test-eng` seats on demand.
+
+---
+
+## OpenRig Kernel (`launch.kernel`) vs. `agentflow-steer`
+
+- **OpenRig Kernel (`launch.kernel`):** System-level bootstrap, cross-rig topology advisor (`advisor.lead`), and recovery utility (`operator.agent`). Keep it stopped during normal delivery (`rig stop launch.kernel` or `agentflow-sdlc steer kernel-silence`) so it consumes zero background tokens; wake on demand for squad provisioning or `rig doctor` repair.
+- **Supervisory Steer Plane (`agentflow-steer`):** Domain-specific SDLC governor (`steer.lead`) operating out-of-rig via CLI/envelopes (`scripts/steer.mjs`) paired with the `<15ms` local `d3-flash` fast-path decider for routine phase transitions.
 
 ---
 
 ## Configuration Presets
 
-OpenRig bundle configuration schema: `openrig.bundle-configurations/v1`:
+OpenRig bundle configuration schema: `openrig.bundle-configurations/v1` (in [`adapters/openrig/agentflow/configurations.yaml`](adapters/openrig/agentflow/configurations.yaml)):
 
-- `balanced-grok-lead` _(Recommended)_: Grok 4.7 Lead/Review + Claude Builders + Codex QA
-- `inverted-codex-lead`: Codex Lead/Builders + Claude QA + Grok 4.7 Review
-- `grok-heavy`: Grok 4.7 Lead/Review/Builders + Codex QA
-- `claude-heavy`: Claude Lead/Review/Builders + Codex QA
-- `codex-heavy`: Codex Lead/Review/Builders/QA
-- `all-grok`: All 6 seats on Grok 4.7 via Pi
-- `all-claude`: All 6 seats on Claude Code
-- `all-codex`: All 6 seats on Codex
+- `frontline` _(Recommended Default)_: `gpt-6.1-sol` Arch (`medium`) + `antigravity/gemini-4-argon` Builder (`medium`) + `grok-cli/grok-4.7` QA (`low`) + `gpt-6-astra` Review (`medium`)
+- `all-antigravity`: `gemini-4-argon` Arch/Builder + `gemini-3.8-flash` QA + `gemini-3.1-pro` Review
+- `all-codex`: `gpt-6.1-sol` Arch + `gpt-6-astra` Builder/Review + `gpt-5.3-codex-spark` QA
+- `all-claude`: `claude-opus-4-6` Arch/Review + `claude-sonnet-4-6` Builder + `claude-haiku-4-5` QA
+- `all-grok`: `grok-cli/grok-4.7` Arch/Review + `grok-cli/grok-code-fast-1` Builder + `grok-cli/grok-4-fast` QA
 
 ---
 

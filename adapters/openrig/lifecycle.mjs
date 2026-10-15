@@ -1136,9 +1136,11 @@ export function squadRemove(ctx) {
 
 export {
   BUILDER_RUNGS,
+  LEAN_BUILDER_RUNGS,
   CONSEQUENCE_FLOOR_RE,
   resolveBuilderRung,
   resolveBuilderSeat,
+  resolvePhaseCompression,
   resolveStickyBuilderOnReturn,
   countUnmergedAccepted,
   canAdmitNextSlice,
