@@ -2,6 +2,7 @@
 // this product, and provision, update, list, or remove per-project squads. Called through
 // `agentflow-sdlc adapters ...`; core dispatches here by adapter id and knows nothing below.
 // It calls `rig` only for status, stop, and spec sync, as an argument array without a shell.
+import { createHash } from 'node:crypto'
 import { spawnSync } from 'node:child_process'
 import {
   chmodSync,
@@ -22,7 +23,9 @@ import {
 import { homedir } from 'node:os'
 import { delimiter, dirname, join, relative, resolve } from 'node:path'
 import { loadAuthoritativeConfigs, validateConfigAuthority } from '../../lib/config/authority.mjs'
-import { parseExecutionYaml, planRigExecution } from './execution-plan.mjs'
+import { executionDocument, parseExecutionYaml, planRigExecution } from './execution-plan.mjs'
+import { normalizeContractModel } from '../../lib/config/execution-contract.mjs'
+import { planRigMutation } from './mutation.mjs'
 
 import {
   COMPACT_NODE_FIELDS,
@@ -696,12 +699,13 @@ function prepareSquadExecution(ctx, kind, projectCwd) {
   const config = loaded.isUnified
     ? loaded.unified
     : { models: loaded.models, adapters: loaded.adapters }
-  const plan = planRigExecution({
+  const desired = {
     rigText: readFileSync(join(baseDir, 'rig.yaml'), 'utf8'),
     configText: readFileSync(join(baseDir, 'configurations.yaml'), 'utf8'),
     preset: ctx.options.preset ?? config.adapters?.openrig?.executionPolicy?.preset,
     config,
-  })
+  }
+  const plan = planRigExecution(desired)
   if (!plan.ok)
     fail(
       plan.diagnostics
@@ -712,6 +716,7 @@ function prepareSquadExecution(ctx, kind, projectCwd) {
   return Object.freeze({
     ...plan,
     baseDir,
+    desired,
     configuredSeats: Object.keys(config.adapters?.openrig?.executionPolicy?.seats ?? {}),
   })
 }
@@ -1051,6 +1056,100 @@ export function squadPlan(ctx) {
       for (const item of plan.diagnostics)
         ctx.out(`  ${item.severity}: ${item.message} (${item.seat ?? 'topology'})`)
     }
+  return 0
+}
+
+// Installed YAML is observation of configuration only, not runtime or inventory support.
+// Missing fields stay unknown; no project policy or desired tuple supplies observed values.
+function observedMutationContracts(rigText) {
+  const rig = parseExecutionYaml(rigText, 'installed rig')
+  if (!Array.isArray(rig.pods)) fail('Installed rig pods are missing or malformed')
+  return rig.pods.flatMap((pod) => {
+    if (typeof pod.id !== 'string' || !Array.isArray(pod.members))
+      fail('Installed rig pod/member IDs are missing or malformed')
+    return pod.members.map((member) => {
+      if (typeof member.id !== 'string') fail('Installed rig member ID is missing')
+      const locatorRoutes = {
+        munito: 'munito',
+        antigravity: 'antigravity',
+        'grok-cli': 'grok',
+        'openai-codex': 'openai-codex',
+        anthropic: 'anthropic',
+      }
+      const locator = typeof member.model === 'string' ? member.model.split('/')[0] : null
+      const providerRoute =
+        member.providerRoute ?? (member.runtime === 'pi' ? (locatorRoutes[locator] ?? null) : null)
+      return {
+        seat: `${pod.id}.${member.id}`,
+        runtime: member.runtime ?? null,
+        executionTarget: member.executionTarget ?? null,
+        providerRoute,
+        providerFamily: member.providerFamily ?? null,
+        model: normalizeContractModel({
+          runtime: member.runtime,
+          providerRoute,
+          model: member.model ?? null,
+        }),
+        runnerModel: member.model ?? null,
+        effort: member.effort ?? null,
+        profile: member.profile ?? null,
+        capabilityTier: member.capabilityTier ?? null,
+      }
+    })
+  })
+}
+
+export function squadMutationPlan(ctx) {
+  const kind = ctx.options.kind ?? 'all'
+  if (kind !== 'all' && !BASES[kind]) fail(`Unknown squad kind ${kind}`)
+  if (kind === 'all' && ctx.options.rig) fail('--rig requires one explicit squad kind')
+  const project = ctx.operands[0]
+  squadRigName(project)
+  const projectCwd = resolve(ctx.cwd, ctx.operands[1] ?? '.')
+  if (!isDirectory(projectCwd)) fail('Project directory does not exist')
+  const kinds = kind === 'all' ? Object.keys(BASES) : [kind]
+  const prepared = kinds.map((item) => ({
+    kind: item,
+    ...prepareSquadExecution(ctx, item, projectCwd),
+  }))
+  if (kind === 'all') validateTopologySeats(prepared)
+  const plans = prepared.map((item) => {
+    const suffix = { delivery: 'dev', product: 'pm', steer: 'steer' }[item.kind]
+    const rigName =
+      ctx.options.rig ?? squadRigName(kind === 'all' ? `${project}-${suffix}` : project)
+    if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(rigName)) fail('Stable installed rig ID required')
+    const installedPath = join(locations(ctx.home).specs, rigName, 'rig.yaml')
+    if (!isFile(installedPath)) fail(`Installed rig specification not found: ${rigName}`)
+    const rigText = readFileSync(installedPath, 'utf8')
+    const document = executionDocument(item.desired.rigText, 'desired rig')
+    document.set('name', rigName)
+    const plan = planRigMutation({
+      rigName,
+      desired: { ...item.desired, rigText: document.toString() },
+      installed: {
+        rigText,
+        contracts: observedMutationContracts(rigText),
+        sourceRevision: createHash('sha256').update(rigText).digest('hex'),
+      },
+      workflow: null,
+      executorIdentity: null,
+    })
+    return { kind: item.kind, rigName, status: 'held', plan }
+  })
+  const result = {
+    ok: true,
+    operation: 'mutation-plan',
+    status: 'held',
+    effects: [],
+    observation: 'installed-configuration-only',
+    plans,
+  }
+  if (ctx.options.json) ctx.out(JSON.stringify(result, null, 2))
+  else
+    for (const item of plans)
+      ctx.out(
+        `${item.rigName}: held preview; ${item.plan.affectedSeats.length} affected seats; authoritative run and mutation executor remain unverified`,
+      )
   return 0
 }
 

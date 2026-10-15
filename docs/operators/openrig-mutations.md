@@ -21,3 +21,29 @@ The implementation is exercised with the real run service and GitHub source adap
 The mutation host must report supported atomic guards from a versioned source capability record: `source-revision-cas`, `occupant-cas` and `executor-digest`. The admitted operation carries the expected installed revision, incumbent identities and executable fingerprint. A production dispatcher must enforce those preconditions atomically with its effect; the run source's CAS alone cannot serialize an unrelated manual runtime writer. Missing supported guards holds application rather than treating a pre-dispatch check as atomic enforcement. No such runtime guard implementation is installed by this change.
 
 Current incumbents must still match preview identities before dispatch. Successful readback must contain the complete planned roster with no extra occupant. Compensating application requires the exact original source operation to be terminal and the target to match its recorded preimage. Native custody is compared with the canonical `state.oracleCustody` projection, whose source reducer validates the original request and receipt. Publication holds are source-resolved effective policy facts; they are not fabricated native run fields.
+
+## Public installed-spec preview
+
+Use the public lifecycle command to compare an existing installed spec with the desired source
+execution contracts without contacting OpenRig or changing files:
+
+```bash
+agentflow-sdlc adapters squads mutation-plan openrig --kind delivery --rig existing-rig-id PROJECT /path/to/project --json
+agentflow-sdlc adapters squads mutation-plan openrig --kind all PROJECT /path/to/project --json
+```
+
+A single kind accepts an explicit `--rig` to preserve an existing ID; without it the ordinary
+project squad naming convention applies. `--kind all` uses the existing delivery, product and
+steering project IDs and rejects `--rig`. All selected installed `rig.yaml` files must exist.
+A missing or malformed spec is reported rather than provisioned or silently reconstructed.
+
+The before text and source revision come from the actual installed YAML bytes. Before contracts
+contain literal installed fields; recognized Pi transport prefixes are normalized without guessing
+a gateway from a model namespace. Absent fields remain null, and a generated contracts sidecar is
+not treated as an observation. The desired side uses the shared canonical execution resolver.
+
+Every result is explicitly **held**, with `effects: []`, `workflowAnchor: null` and
+`executorIdentity: null`. This preview cannot attest live occupants, current run custody, executor
+identity or runtime compare-and-swap support. It writes no spec, bridge, home or service state and
+launches no child process. There is no public apply command: a future apply host must satisfy the
+existing source-authorized mutation contract, including fresh CAS checks and human gates.
