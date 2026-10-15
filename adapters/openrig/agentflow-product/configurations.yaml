@@ -26,10 +26,6 @@ presets:
     pm.manager: pi
     pm.analyst: pi
 
-  balanced-grok-lead:
-    pm.manager: pi
-    pm.analyst: claude-code
-
   inverted-codex-lead:
     pm.manager: codex
     pm.analyst: claude-code
@@ -47,8 +43,12 @@ presets:
     pm.analyst: codex
 
   all-grok:
-    pm.manager: pi
-    pm.analyst: pi
+    pm.manager:
+      runtime: pi
+      providerRoute: grok
+    pm.analyst:
+      runtime: pi
+      providerRoute: grok
 
   all-claude:
     pm.manager: claude-code
@@ -63,5 +63,9 @@ presets:
     pm.analyst: pi
 
   all-antigravity:
-    pm.manager: pi
-    pm.analyst: pi
+    pm.manager:
+      runtime: pi
+      providerRoute: antigravity
+    pm.analyst:
+      runtime: pi
+      providerRoute: antigravity

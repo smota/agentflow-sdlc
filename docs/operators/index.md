@@ -3,6 +3,8 @@
 Operators diagnose installed state, provider availability, source connectivity, evidence health,
 and optional Cockpit behavior.
 
+For OpenRig, preview [execution contracts](openrig-execution-contracts.md) before changing a squad.
+
 ```bash
 agentflow-sdlc onboarding verify --target /path/to/project --json
 agentflow-sdlc sdlc validate-authority --target /path/to/project --json

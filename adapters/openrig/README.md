@@ -81,6 +81,7 @@ rig up agentflow-my-project-steer --cwd /path/to/my-project
 rig ps
 
 # 4. List, refresh, or remove squads (preserves steering audit state unless --purge is passed)
+agentflow-sdlc adapters squads plan openrig --kind all my-project /path/to/my-project --json
 agentflow-sdlc adapters squads list openrig
 agentflow-sdlc adapters squads update openrig my-project
 agentflow-sdlc adapters squads remove openrig [--purge] my-project

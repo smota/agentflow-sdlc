@@ -17,6 +17,7 @@ import {
 import { tmpdir } from 'node:os'
 import { delimiter, dirname, join, relative, resolve } from 'node:path'
 import { afterAll, afterEach, describe, expect, it } from 'vitest'
+import { parse } from 'yaml'
 
 const CLI = resolve('bin/cli.mjs')
 const OPENRIG = resolve('adapters/openrig')
@@ -33,6 +34,7 @@ const EXCLUDES = [
   'gate-lane-verdict.json',
 ]
 const PI_SEATS_BALANCED = [
+  'eval-tester@agentflow',
   'orch-arch@agentflow',
   'pm-manager@agentflow-product',
   'rev-review@agentflow',
@@ -72,7 +74,13 @@ if (WINDOWS) {
 }
 
 function baseEnv(userHome, extra = {}) {
-  const env = { PATH, HOME: userHome, USERPROFILE: userHome, ...extra }
+  const env = {
+    PATH,
+    HOME: userHome,
+    USERPROFILE: userHome,
+    ...extra,
+    GIT_CEILING_DIRECTORIES: tmpdir(),
+  }
   for (const name of ['SystemRoot', 'SYSTEMROOT', 'TEMP', 'TMP', 'TMPDIR']) {
     if (process.env[name]) env[name] = process.env[name]
   }
@@ -98,6 +106,7 @@ function ok(result) {
 function runGit(args, cwd) {
   return execFileSync('git', args, {
     cwd,
+    env: { ...process.env, GIT_CEILING_DIRECTORIES: tmpdir() },
     encoding: 'utf8',
     stdio: ['pipe', 'pipe', 'pipe'],
   }).trim()
@@ -152,12 +161,16 @@ function install(home, ...args) {
 // A copy of the OpenRig adapter under another id, so a test can change "the product copy".
 function adapterCopy() {
   const root = tempDir('agentflow-adapters-')
-  const dir = join(root, 'openrig-copy')
+  const adapters = join(root, 'adapters')
+  mkdirSync(adapters)
+  symlinkSync(resolve('lib'), join(root, 'lib'), WINDOWS ? 'junction' : 'dir')
+  symlinkSync(resolve('node_modules'), join(root, 'node_modules'), WINDOWS ? 'junction' : 'dir')
+  const dir = join(adapters, 'openrig-copy')
   cpSync(OPENRIG, dir, { recursive: true })
   const manifestPath = join(dir, 'manifest.json')
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
   writeFileSync(manifestPath, JSON.stringify({ ...manifest, harness: 'openrig-copy' }))
-  return { root, dir, env: { AGENTFLOW_ADAPTER_PATH: root } }
+  return { root, dir, env: { AGENTFLOW_ADAPTER_PATH: adapters } }
 }
 
 afterEach(() => {
@@ -219,13 +232,30 @@ describe('adapter lifecycle surface (AC1, AC2)', () => {
 })
 
 describe('adapters install openrig (AC3-AC6)', () => {
-  it('places all three bases with the product copy content and names the recommended preset', () => {
+  it('preserves all base resources and materializes the selected execution preset', () => {
     const home = tempDir('agentflow-home-')
     const result = install(home)
     expect(result.stdout).toContain('Preset: balanced-grok-lead')
-    expect(tree(specs(home, 'agentflow'))).toEqual(tree(join(OPENRIG, 'agentflow')))
-    expect(tree(specs(home, 'agentflow-product'))).toEqual(tree(join(OPENRIG, 'agentflow-product')))
-    expect(tree(specs(home, 'agentflow-steer'))).toEqual(tree(join(OPENRIG, 'agentflow-steer')))
+    for (const name of ['agentflow', 'agentflow-product', 'agentflow-steer']) {
+      const installed = tree(specs(home, name))
+      const source = tree(join(OPENRIG, name))
+      delete installed['rig.yaml']
+      delete source['rig.yaml']
+      expect(installed).toEqual(source)
+    }
+    const rig = parse(readFileSync(specs(home, 'agentflow/rig.yaml'), 'utf8'))
+    const seats = Object.fromEntries(
+      rig.pods.flatMap((pod) =>
+        pod.members.map((member) => [`${pod.id}.${member.id}`, member.runtime]),
+      ),
+    )
+    expect(seats).toMatchObject({
+      'orch.arch': 'pi',
+      'dev.build': 'claude-code',
+      'dev.qa': 'codex',
+      'rev.review': 'pi',
+      'eval.tester': 'pi',
+    })
   })
 
   it('refuses an unknown preset, lists the known ones, and writes nothing', () => {
@@ -366,7 +396,14 @@ describe('adapters update openrig (AC7)', () => {
     expect(result.stdout).not.toContain('Left installed files')
     expect(existsSync(extra)).toBe(false)
     expect(existsSync(specs(home, 'agentflow/startup/review-lead.md'))).toBe(false)
-    expect(tree(specs(home, 'agentflow'))).toEqual(tree(join(copy.dir, 'agentflow')))
+    const installed = tree(specs(home, 'agentflow'))
+    const source = tree(join(copy.dir, 'agentflow'))
+    delete installed['rig.yaml']
+    delete source['rig.yaml']
+    expect(installed).toEqual(source)
+    expect(
+      parse(readFileSync(specs(home, 'agentflow/rig.yaml'), 'utf8')).pods[0].members[0].runtime,
+    ).toBe('pi')
   })
 
   it('tells the person to install first when nothing is installed', () => {
@@ -533,7 +570,7 @@ describe('adapters squads openrig (AC8-AC11)', () => {
     ok(cli(['adapters', 'squads', 'remove', 'openrig', 'demo'], { home }))
     expect(existsSync(specs(home, 'agentflow-demo'))).toBe(false)
     expect(piSeats(home).filter((seat) => seat.endsWith('@agentflow-demo'))).toEqual([])
-    expect(piSeats(home).filter((seat) => seat.endsWith('@agentflow-other'))).toHaveLength(7)
+    expect(piSeats(home).filter((seat) => seat.endsWith('@agentflow-other'))).toHaveLength(3)
     expect(tree(specs(home, 'agentflow-other'))).toEqual(other)
     expect(tree(specs(home, 'agentflow'))).toEqual(bases)
     expect(tree(join(home, '.pi'))).toEqual(pi)
@@ -772,6 +809,8 @@ describe.skipIf(WINDOWS)('adapters with a running OpenRig (fake rig)', () => {
     { downExit = 0, ps = 'json', mode = 0o755, downStops = true, afterDown = '[]' } = {},
   ) {
     const dir = tempDir('agentflow-fakerig-')
+    // An in-repository TMPDIR must not inherit the product's ESM package scope.
+    writeFileSync(join(dir, 'package.json'), JSON.stringify({ type: 'commonjs' }))
     const log = join(dir, 'calls.log')
     const script = join(dir, 'rig')
     writeFileSync(
@@ -805,7 +844,7 @@ if (args[0] === 'down' && ${downStops}) fs.writeFileSync(stoppedFile, JSON.strin
     return ok(
       spawnSync(process.execPath, [CLI, ...args], {
         encoding: 'utf8',
-        env: { PATH: rig.path, HOME: home },
+        env: { PATH: rig.path, HOME: home, GIT_CEILING_DIRECTORIES: tmpdir() },
       }),
     )
   }
@@ -855,14 +894,14 @@ if (args[0] === 'down' && ${downStops}) fs.writeFileSync(stoppedFile, JSON.strin
       [CLI, 'adapters', 'squads', 'remove', 'openrig', 'demo'],
       {
         encoding: 'utf8',
-        env: { PATH: rig.path, HOME: home },
+        env: { PATH: rig.path, HOME: home, GIT_CEILING_DIRECTORIES: tmpdir() },
       },
     )
     expect(result.status).toBe(1)
     expect(result.stderr).toContain('rig down agentflow-demo failed (exit 7): STOP REFUSED')
     expect(result.stderr).toContain('Nothing was removed')
     expect(tree(home)).toEqual(before)
-    expect(piSeats(home).filter((seat) => seat.endsWith('@agentflow-demo'))).toHaveLength(7)
+    expect(piSeats(home).filter((seat) => seat.endsWith('@agentflow-demo'))).toHaveLength(3)
   })
 
   it.each([
@@ -913,7 +952,7 @@ if (args[0] === 'down' && ${downStops}) fs.writeFileSync(stoppedFile, JSON.strin
       [CLI, 'adapters', 'squads', 'remove', 'openrig', 'demo'],
       {
         encoding: 'utf8',
-        env: { PATH: rig.path, HOME: home },
+        env: { PATH: rig.path, HOME: home, GIT_CEILING_DIRECTORIES: tmpdir() },
       },
     )
     expect(result.status).toBe(1)
@@ -957,7 +996,7 @@ if (args[0] === 'down' && ${downStops}) fs.writeFileSync(stoppedFile, JSON.strin
       [CLI, 'adapters', 'squads', 'remove', 'openrig', 'demo'],
       {
         encoding: 'utf8',
-        env: { PATH: rig.path, HOME: home },
+        env: { PATH: rig.path, HOME: home, GIT_CEILING_DIRECTORIES: tmpdir() },
       },
     )
     expect(result.status).toBe(1)
@@ -979,7 +1018,7 @@ if (args[0] === 'down' && ${downStops}) fs.writeFileSync(stoppedFile, JSON.strin
       [CLI, 'adapters', 'squads', 'remove', 'openrig', 'demo'],
       {
         encoding: 'utf8',
-        env: { PATH: rig.path, HOME: home },
+        env: { PATH: rig.path, HOME: home, GIT_CEILING_DIRECTORIES: tmpdir() },
       },
     )
     expect(result.status).toBe(1)

@@ -21,6 +21,8 @@ import {
 } from 'node:fs'
 import { homedir } from 'node:os'
 import { delimiter, dirname, join, relative, resolve } from 'node:path'
+import { loadAuthoritativeConfigs, validateConfigAuthority } from '../../lib/config/authority.mjs'
+import { parseExecutionYaml, planRigExecution } from './execution-plan.mjs'
 
 const ADAPTER_ID = 'openrig'
 const BASES = { delivery: 'agentflow', product: 'agentflow-product', steer: 'agentflow-steer' }
@@ -70,29 +72,9 @@ function locations(home) {
   }
 }
 
-// configurations.yaml is flat two-level YAML, so a line scan is enough; no YAML dependency.
 export function parsePresets(text) {
-  const presets = {}
-  let recommended = ''
-  let section = ''
-  let current = null
-  for (const line of text.split(/\r?\n/)) {
-    const top = line.match(/^(\S[^:]*):\s*(.*)$/)
-    if (top) {
-      section = top[1]
-      if (section === 'recommended') recommended = top[2].trim()
-      continue
-    }
-    if (section !== 'presets') continue
-    const name = line.match(/^ {2}(\S[^:]*):\s*$/)
-    if (name) {
-      current = presets[name[1]] = {}
-      continue
-    }
-    const seat = line.match(/^ {4}(\S+):\s*(\S+)\s*$/)
-    if (seat && current) current[seat[1]] = seat[2]
-  }
-  return { recommended, presets }
+  const value = parseExecutionYaml(text, 'bundle configurations')
+  return { recommended: value.recommended ?? '', presets: value.presets ?? {} }
 }
 
 function resolvePreset(configFile, requested) {
@@ -108,7 +90,7 @@ function resolvePreset(configFile, requested) {
 
 function piSeatsOf(preset, rigName) {
   return Object.entries(preset.seats)
-    .filter(([, runtime]) => runtime === 'pi')
+    .filter(([, value]) => (typeof value === 'string' ? value : value.runtime) === 'pi')
     .map(([seat]) => `${seat.replaceAll('.', '-')}@${rigName}`)
 }
 
@@ -124,33 +106,32 @@ function planInstall(adapterDir, requested) {
   if (delivery.name !== product.name) {
     fail(`Delivery preset "${delivery.name}" and product preset "${product.name}" differ.`)
   }
-  let steerPiSeats = []
-  const steerConfig = join(sources.steer, 'configurations.yaml')
-  if (isFile(steerConfig)) {
-    const { presets: steerPresets, recommended: steerRec } = parsePresets(
-      readFileSync(steerConfig, 'utf8'),
-    )
-    const steerPresetName =
-      requested && steerPresets[requested]
-        ? requested
-        : steerPresets[delivery.name]
-          ? delivery.name
-          : steerRec
-    if (steerPresets[steerPresetName]) {
-      steerPiSeats = piSeatsOf(
-        { name: steerPresetName, seats: steerPresets[steerPresetName] },
-        BASES.steer,
+  const steerPresetName = resolvePreset(join(sources.steer, 'configurations.yaml'), requested).name
+  const executionPlans = {}
+  for (const [kind, dir] of Object.entries(sources)) {
+    const plan = planRigExecution({
+      rigText: readFileSync(join(dir, 'rig.yaml'), 'utf8'),
+      configText: readFileSync(join(dir, 'configurations.yaml'), 'utf8'),
+      preset: kind === 'steer' ? steerPresetName : delivery.name,
+    })
+    if (!plan.ok)
+      fail(
+        plan.diagnostics
+          .filter((item) => item.severity === 'error')
+          .map((item) => `${item.seat}: ${item.message}`)
+          .join('; '),
       )
-    }
+    executionPlans[kind] = plan
   }
   return {
     sources,
+    executionPlans,
     preset: delivery.name,
-    piSeats: [
-      ...piSeatsOf(delivery, BASES.delivery),
-      ...piSeatsOf(product, BASES.product),
-      ...steerPiSeats,
-    ],
+    piSeats: Object.entries(executionPlans).flatMap(([kind, plan]) =>
+      plan.contracts
+        .filter((item) => item.runtime === 'pi')
+        .map((item) => `${item.seat.replaceAll('.', '-')}@${BASES[kind]}`),
+    ),
   }
 }
 
@@ -428,7 +409,10 @@ function refreshTree(source, target, { exact }) {
 function writeBases(home, plan, out) {
   const { specs } = locations(home)
   out('==> 1. Syncing AgentFlow delivery, product, and steer bases to the OpenRig user library...')
-  for (const [kind, name] of Object.entries(BASES)) mirror(plan.sources[kind], join(specs, name))
+  for (const [kind, name] of Object.entries(BASES)) {
+    mirror(plan.sources[kind], join(specs, name))
+    writeFileSync(join(specs, name, 'rig.yaml'), plan.executionPlans[kind].rigText)
+  }
 }
 
 function setupPiSeats(home, plan, out) {
@@ -494,10 +478,12 @@ export function update(ctx) {
     )
   }
   const exact = Boolean(ctx.options?.exact)
+  const plan = planInstall(adapterDir, null)
   out('==> 1. Refreshing AgentFlow delivery, product, and steer bases from this product...')
   const extras = []
   for (const [kind, name] of Object.entries(BASES)) {
     const kept = refreshTree(join(adapterDir, BASES[kind]), join(specs, name), { exact })
+    writeFileSync(join(specs, name, 'rig.yaml'), plan.executionPlans[kind].rigText)
     extras.push(...kept.map((file) => `${name}/${file}`))
   }
   if (extras.length > 0) {
@@ -562,54 +548,6 @@ function renameRig(rigText, rigName) {
   const index = lines.findIndex((line) => line.startsWith('name: '))
   if (index !== -1) lines[index] = `name: ${rigName}`
   return lines.join('\n')
-}
-
-// Set each product seat's runtime from the preset. A Pi seat gets the Grok model line.
-function applyProductPreset(rigText, preset) {
-  const lines = rigText.split('\n')
-  const out = []
-  let member = null
-  for (let index = 0; index < lines.length; index += 1) {
-    const id = lines[index].match(/^ +- id: (\S+)\s*$/)
-    if (id) member = id[1]
-    if (member && /^ +runtime: \S+\s*$/.test(lines[index])) {
-      const runtime = preset.seats[`pm.${member}`]
-      if (!runtime) fail(`Preset "${preset.name}" has no runtime for pm.${member}.`)
-      const indent = lines[index].match(/^ +/)[0]
-      out.push(`${indent}runtime: ${runtime}`)
-      const next = lines[index + 1] || ''
-      if (runtime === 'pi' && !/^ +model: /.test(next))
-        out.push(`${indent}model: grok-cli/grok-4.7`)
-      if (runtime !== 'pi' && /^ +model: /.test(next)) index += 1
-      continue
-    }
-    out.push(lines[index])
-  }
-  return out.join('\n')
-}
-
-// Set steer lead seat's runtime from the preset if declared.
-function applySteerPreset(rigText, preset) {
-  if (!preset?.seats?.['steer.lead']) return rigText
-  const runtime = preset.seats['steer.lead']
-  const lines = rigText.split('\n')
-  const out = []
-  let member = null
-  for (let index = 0; index < lines.length; index += 1) {
-    const id = lines[index].match(/^ +- id: (\S+)\s*$/)
-    if (id) member = id[1]
-    if (member === 'lead' && /^ +runtime: \S+\s*$/.test(lines[index])) {
-      const indent = lines[index].match(/^ +/)[0]
-      out.push(`${indent}runtime: ${runtime}`)
-      const next = lines[index + 1] || ''
-      if (runtime === 'pi' && !/^ +model: /.test(next))
-        out.push(`${indent}model: antigravity/gemini-3.1-pro`)
-      if (runtime !== 'pi' && /^ +model: /.test(next)) index += 1
-      continue
-    }
-    out.push(lines[index])
-  }
-  return out.join('\n')
 }
 
 // Add sibling or steering file to the startup files, after the startup/context.md entry.
@@ -733,25 +671,51 @@ function ensureSteerDir(home, rigName) {
 }
 
 function squadPiSeats(kind, rigName, rigText) {
-  if (kind === 'delivery') return DELIVERY_PI_SEATS.map((seat) => `${seat}@${rigName}`)
-  if (kind === 'steer') {
-    const seats = []
-    let id = ''
-    for (const line of rigText.split('\n')) {
-      const member = line.match(/^ +- id: (\S+)\s*$/)
-      if (member) id = member[1]
-      if (/^ +runtime: pi\s*$/.test(line) && id) seats.push(`steer-${id}@${rigName}`)
-    }
-    return seats
+  const rig = parseExecutionYaml(rigText, 'planned rig')
+  return rig.pods.flatMap((pod) =>
+    pod.members
+      .filter((member) => member.runtime === 'pi')
+      .map((member) => `${pod.id}-${member.id}@${rigName}`),
+  )
+}
+
+function prepareSquadExecution(ctx, kind, projectCwd) {
+  const installed = join(locations(ctx.home).specs, BASES[kind])
+  const baseDir = isFile(join(installed, 'rig.yaml'))
+    ? installed
+    : join(ctx.adapterDir, BASES[kind])
+  const loaded = loadAuthoritativeConfigs(projectCwd)
+  const validation = validateConfigAuthority(loaded)
+  if (!validation.ok) fail(validation.errors.join('; '))
+  const config = loaded.isUnified
+    ? loaded.unified
+    : { models: loaded.models, adapters: loaded.adapters }
+  const plan = planRigExecution({
+    rigText: readFileSync(join(baseDir, 'rig.yaml'), 'utf8'),
+    configText: readFileSync(join(baseDir, 'configurations.yaml'), 'utf8'),
+    preset: ctx.options.preset ?? config.adapters?.openrig?.executionPolicy?.preset,
+    config,
+  })
+  if (!plan.ok)
+    fail(
+      plan.diagnostics
+        .filter((item) => item.severity === 'error')
+        .map((item) => `${item.seat}: ${item.message}`)
+        .join('; '),
+    )
+  return Object.freeze({
+    ...plan,
+    baseDir,
+    configuredSeats: Object.keys(config.adapters?.openrig?.executionPolicy?.seats ?? {}),
+  })
+}
+
+function validateTopologySeats(plans) {
+  const seats = new Set(plans.flatMap((plan) => plan.contracts.map((item) => item.seat)))
+  for (const seat of new Set(plans.flatMap((plan) => plan.configuredSeats))) {
+    if (!seats.has(seat))
+      fail(`Explicit execution override names a seat absent from the planned topology: ${seat}`)
   }
-  const seats = []
-  let id = ''
-  for (const line of rigText.split('\n')) {
-    const member = line.match(/^ +- id: (\S+)\s*$/)
-    if (member) id = member[1]
-    if (/^ +runtime: pi\s*$/.test(line) && id) seats.push(`pm-${id}@${rigName}`)
-  }
-  return seats
 }
 
 function writeSquadSpec({
@@ -764,9 +728,12 @@ function writeSquadSpec({
   product,
   delivery,
   isUpdate,
+  executionPlan,
 }) {
   const { home, options, env, out } = ctx
   const { specs, piState } = locations(home)
+  // The complete desired contract is resolved before installation or any bridge/write.
+  const plan = executionPlan ?? prepareSquadExecution(ctx, kind, projectCwd)
   const baseDir = join(specs, BASES[kind])
   if (!isFile(join(baseDir, 'rig.yaml'))) {
     out(`==> Base spec not found in ${baseDir}. Installing the ${ADAPTER_ID} adapter first...`)
@@ -774,20 +741,7 @@ function writeSquadSpec({
   }
 
   const targetDir = join(specs, rigName)
-  let rigText = renameRig(readFileSync(join(baseDir, 'rig.yaml'), 'utf8'), rigName)
-  if (kind === 'product') {
-    rigText = applyProductPreset(
-      rigText,
-      resolvePreset(join(baseDir, 'configurations.yaml'), options.preset),
-    )
-  } else if (kind === 'steer') {
-    if (options.preset) {
-      rigText = applySteerPreset(
-        rigText,
-        resolvePreset(join(baseDir, 'configurations.yaml'), options.preset),
-      )
-    }
-  }
+  let rigText = renameRig(plan.rigText, rigName)
 
   const startupFile = kind === 'steer' ? 'steering.md' : 'sibling.md'
   rigText = addSiblingStartup(rigText, startupFile)
@@ -801,6 +755,10 @@ function writeSquadSpec({
     if (isFile(join(baseDir, name))) bridge(join(baseDir, name), join(targetDir, name), false)
   }
   writeFileSync(join(targetDir, 'rig.yaml'), rigText)
+  writeFileSync(
+    join(targetDir, 'execution-contracts.json'),
+    `${JSON.stringify({ preset: plan.preset, contracts: plan.contracts, diagnostics: plan.diagnostics }, null, 2)}\n`,
+  )
 
   const siblingContent = siblingRecord(kind, rigName, sibling, { steer, product, delivery })
   if (kind === 'steer') {
@@ -863,6 +821,11 @@ function provisionAll(ctx) {
     if (!isDirectory(projectCwd)) fail(`Project directory '${operands[1]}' does not exist.`)
   }
 
+  // Preflight all three desired rigs before installing even the first missing base.
+  const executionPlans = Object.fromEntries(
+    Object.keys(BASES).map((kind) => [kind, prepareSquadExecution(ctx, kind, projectCwd)]),
+  )
+  validateTopologySeats(Object.values(executionPlans))
   for (const base of Object.values(BASES)) {
     if (!isFile(join(specs, base, 'rig.yaml'))) {
       out(
@@ -896,6 +859,7 @@ function provisionAll(ctx) {
       sibling: devRig,
       steer: steerRig,
       isUpdate: false,
+      executionPlan: executionPlans.product,
     })
     createdTargetDirs.push(join(specs, pmRig))
 
@@ -907,6 +871,7 @@ function provisionAll(ctx) {
       sibling: pmRig,
       steer: steerRig,
       isUpdate: false,
+      executionPlan: executionPlans.delivery,
     })
     createdTargetDirs.push(join(specs, devRig))
 
@@ -918,6 +883,7 @@ function provisionAll(ctx) {
       product: pmRig,
       delivery: devRig,
       isUpdate: false,
+      executionPlan: executionPlans.steer,
     })
     createdTargetDirs.push(join(specs, steerRig))
     createdSteerDirs.push(join(steerState, steerRig))
@@ -1038,6 +1004,48 @@ export function squadProvision(ctx) {
 
 export function squadUpdate(ctx) {
   return writeSquad(ctx, true)
+}
+
+// Planning reads source and installed specifications only. It does not bridge auth, install
+// bases, contact the daemon, or equate inventory support with usable live execution.
+export function squadPlan(ctx) {
+  const kind = ctx.options.kind ?? 'all'
+  if (kind !== 'all' && !BASES[kind]) fail(`Unknown squad kind ${kind}`)
+  squadRigName(ctx.operands[0])
+  const projectCwd = resolve(ctx.cwd, ctx.operands[1] ?? '.')
+  if (!isDirectory(projectCwd)) fail('Project directory does not exist')
+  const kinds = kind === 'all' ? Object.keys(BASES) : [kind]
+  const plans = kinds.map((item) => ({
+    kind: item,
+    ...prepareSquadExecution(ctx, item, projectCwd),
+  }))
+  if (kind === 'all') validateTopologySeats(plans)
+  const result = {
+    ok: true,
+    operation: 'plan',
+    effects: [],
+    observation: 'not-performed',
+    plans: plans.map(({ kind: item, preset, contracts, diagnostics }) => ({
+      kind: item,
+      preset,
+      contracts,
+      diagnostics,
+    })),
+  }
+  if (ctx.options.json) ctx.out(JSON.stringify(result, null, 2))
+  else
+    for (const plan of result.plans) {
+      ctx.out(
+        `${plan.kind}: preset ${plan.preset}; ${plan.contracts.length} configured seats; live readiness not verified`,
+      )
+      for (const item of plan.contracts)
+        ctx.out(
+          `  ${item.seat}: ${item.runtime} / ${item.providerRoute} / ${item.model} / ${item.effort}; support ${item.support}`,
+        )
+      for (const item of plan.diagnostics)
+        ctx.out(`  ${item.severity}: ${item.message} (${item.seat ?? 'topology'})`)
+    }
+  return 0
 }
 
 export function listSquads(ctx) {
