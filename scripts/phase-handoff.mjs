@@ -17,8 +17,9 @@ function usage() {
     'Usage: agentflow-sdlc phase <append|read|integrate> --medium <filesystem|github> [options]',
     '  filesystem: --root <dir>',
     '  github: --repo <owner/repo> [--issue <n>]',
-    '  append: --phase <0-8> --status <pass|skipped> --seat <id> --key <idempotency>',
+    '  append: --phase <0-8> --status <pass|skipped> [--seat <id> | --role <role>] --key <idempotency>',
     '          [--title <text>] [--body <text> | --body-file <path>] [--reason <text>]',
+    '          [--expected-prev <key>] [--base-sha <sha>] [--candidate-sha <sha>] [--oracle-digest <sha>]',
     '          [--kind <goal|capability|spec> [--parent <dir|issue>] [--change-class <class>]',
     '           [--gate-file <path> --attestation-file <path>]]',
     '  integrate: filesystem only. --line <integration line or trunk> [--ref <commit>]',
@@ -141,12 +142,17 @@ async function main(argv) {
   const result = await medium.appendTransition({
     phase: Number(flag(args, '--phase')),
     status: flag(args, '--status'),
-    seat: flag(args, '--seat'),
+    seat: flag(args, '--seat') ?? flag(args, '--role'),
+    role: flag(args, '--role') ?? undefined,
     reason: flag(args, '--reason'),
     body,
     idempotencyKey: flag(args, '--key'),
     // The caller's own seat. A known seat cannot append as another seat.
     callerSession: process.env.OPENRIG_SESSION_NAME ?? null,
+    expectedPreviousTransitionId: flag(args, '--expected-prev') ?? undefined,
+    baseSha: flag(args, '--base-sha') ?? undefined,
+    candidateSha: flag(args, '--candidate-sha') ?? undefined,
+    oracleDigest: flag(args, '--oracle-digest') ?? undefined,
   })
   process.stdout.write(
     `${JSON.stringify({ ...result, queueBody: queueBody(result), ...deliveryRule(result) }, null, 2)}\n`,
