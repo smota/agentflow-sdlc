@@ -42,3 +42,17 @@ CLI projection omits them, report unknown or use supported source enrichment. Te
 trusted fixture callbacks establish policy behavior, not deployed human authentication or
 permission to merge the implementation PR. High-assurance human security and acceptance
 review remains required before that merge.
+
+The executable now defaults to check-only. Native approval facts require current repository
+`write`, `maintain` or `admin` permission, observed through GitHub's collaborator-permission
+endpoint when `--repo` is supplied. A host review receipt likewise carries `reviewerPermission`.
+Missing permission stays unknown. An unresolved latest change request continues to hold across
+head changes; a server `REVIEW_REQUIRED` decision cannot pass because one reviewer approved.
+
+Publication additionally requires an explicit human decision (`human` and `approverId`) from the
+trusted endpoint, bound to the consumed approval nonce and exact action. User GO for coding is
+not that approval. The executable rechecks readiness and permissions after authentication, pins
+the head in the merge command, and verifies the exact head's merged state and merge commit from
+source afterward. A command acknowledgement with missing readback remains `MERGE_SUBMITTED`,
+with `merged: false`, `publicationVerified: false` and a reconciliation obligation. Unknown command
+outcomes are never replayed blindly. No host endpoint is installed by these source changes.

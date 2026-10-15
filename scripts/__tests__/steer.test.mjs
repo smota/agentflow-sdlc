@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawnSync } from 'node:child_process'
 import { describe, expect, it, vi } from 'vitest'
 import {
   validateSteerDestination,
@@ -536,182 +536,76 @@ describe('scripts/steer.mjs - supervisory steering verbs', () => {
   })
 
   describe('verifyMergeGates & steerMergeCheck', () => {
-    it('fails closed when PR is not OPEN', () => {
-      const pr = {
-        number: 100,
-        title: 'Merged PR',
-        state: 'MERGED',
-        mergeable: 'MERGEABLE',
-        reviews: [{ state: 'APPROVED', author: { login: 'reviewer-bob' } }],
-        statusCheckRollup: [{ name: 'CI', conclusion: 'SUCCESS', status: 'COMPLETED' }],
-        comments: [{ body: 'approved' }],
-      }
-      const readiness = verifyMergeGates(pr)
-      expect(readiness.ready).toBe(false)
-      expect(readiness.failedGates[0].name).toBe('state')
-    })
-
-    it('fails closed when PR has merge conflicts', () => {
-      const pr = {
-        number: 101,
-        title: 'Conflicting PR',
-        state: 'OPEN',
-        mergeable: 'CONFLICTING',
-        reviews: [{ state: 'APPROVED', author: { login: 'reviewer-bob' } }],
-        statusCheckRollup: [{ name: 'CI', conclusion: 'SUCCESS', status: 'COMPLETED' }],
-        comments: [{ body: 'approved' }],
-      }
-      const readiness = verifyMergeGates(pr)
-      expect(readiness.ready).toBe(false)
-      expect(readiness.failedGates[0].name).toBe('mergeable')
-    })
-
-    it('fails review gate when four-eyes principle is violated (builder == reviewer)', () => {
-      const pr = {
-        number: 102,
-        title: 'Self-reviewed PR',
-        state: 'OPEN',
-        mergeable: 'MERGEABLE',
-        author: { login: 'author-alice' },
-        reviews: [{ state: 'APPROVED', author: { login: 'author-alice' } }], // self review
-        statusCheckRollup: [{ name: 'CI', conclusion: 'SUCCESS', status: 'COMPLETED' }],
-        comments: [{ body: 'approved' }],
-        body: 'No manifest',
-      }
-      const readiness = verifyMergeGates(pr)
-      expect(readiness.ready).toBe(false)
-      expect(readiness.gates.review.pass).toBe(false)
-    })
-
-    it('fails CI gate when status checks are failing or incomplete', () => {
-      const pr = {
-        number: 103,
-        title: 'Failing CI PR',
-        state: 'OPEN',
-        mergeable: 'MERGEABLE',
-        author: { login: 'author-alice' },
-        reviews: [{ state: 'APPROVED', author: { login: 'reviewer-bob' } }],
-        statusCheckRollup: [
-          { name: 'Tests Linux', conclusion: 'SUCCESS', status: 'COMPLETED' },
-          { name: 'Tests Windows', conclusion: 'FAILURE', status: 'COMPLETED' },
-        ],
-        comments: [{ body: 'approved' }],
-      }
-      const readiness = verifyMergeGates(pr)
-      expect(readiness.ready).toBe(false)
-      expect(readiness.gates.ci.pass).toBe(false)
-      expect(readiness.failedGates.some((g) => g.name === 'ci')).toBe(true)
-    })
-
-    it('fails human approval gate and emits human-gate escalation when approval is missing', () => {
-      const pr = {
-        number: 104,
-        title: 'Unapproved PR',
-        state: 'OPEN',
-        mergeable: 'MERGEABLE',
-        author: { login: 'author-alice' },
-        reviews: [{ state: 'APPROVED', author: { login: 'reviewer-bob', is_bot: true } }],
-        statusCheckRollup: [{ name: 'CI', conclusion: 'SUCCESS', status: 'COMPLETED' }],
-        comments: [],
-        body: 'Simple PR description without human approval',
-      }
-      const readiness = verifyMergeGates(pr)
-      expect(readiness.ready).toBe(false)
-      expect(readiness.gates.humanApproval.pass).toBe(false)
-      const humanGate = readiness.failedGates.find((g) => g.name === 'human-approval')
-      expect(humanGate).toBeDefined()
-      expect(humanGate.escalation).toEqual({
-        class: 'human-gate',
-        message: 'PR #104 requires human approval before merge',
-      })
-    })
-
-    it('passes all gates when review, green CI, and human approval are satisfied', () => {
-      const pr = {
+    const head = 'a'.repeat(40)
+    function source(overrides = {}) {
+      return {
         number: 105,
-        title: 'Ready PR',
         state: 'OPEN',
+        isDraft: false,
         mergeable: 'MERGEABLE',
-        author: { login: 'author-alice' },
-        reviews: [{ state: 'APPROVED', author: { login: 'reviewer-bob', is_bot: false } }],
-        statusCheckRollup: [{ name: 'CI', conclusion: 'SUCCESS', status: 'COMPLETED' }],
-        comments: [{ body: 'LGTM! /approve' }],
-        body: '## Role attribution matrix\n| 6 | reviewer | bob | ... | independent | pass |',
+        headRefOid: head,
+        author: { login: 'author' },
+        reviews: [
+          {
+            state: 'APPROVED',
+            authorPermission: 'WRITE',
+            submittedAt: '2026-10-15T12:00:00Z',
+            commit: { oid: head },
+            author: { login: 'reviewer', is_bot: false },
+          },
+        ],
+        statusCheckRollup: [
+          { __typename: 'CheckRun', name: 'CI', status: 'COMPLETED', conclusion: 'SUCCESS' },
+        ],
+        ...overrides,
       }
-      const readiness = verifyMergeGates(pr)
-      expect(readiness.ready).toBe(true)
-      expect(readiness.gates.review.pass).toBe(true)
-      expect(readiness.gates.ci.pass).toBe(true)
-      expect(readiness.gates.humanApproval.pass).toBe(true)
+    }
+    it('holds closed or conflicting source state', () => {
+      expect(verifyMergeGates(source({ state: 'MERGED' })).ready).toBe(false)
+      expect(verifyMergeGates(source({ mergeable: 'CONFLICTING' })).ready).toBe(false)
     })
-
-    it('steerMergeCheck executes merge when gates pass and execute is requested', async () => {
-      const prData = {
-        number: 106,
-        title: 'Ready for Merge',
-        state: 'OPEN',
-        mergeable: 'MERGEABLE',
-        author: { login: 'author-alice' },
-        reviews: [{ state: 'APPROVED', author: { login: 'reviewer-bob', is_bot: false } }],
-        statusCheckRollup: [{ name: 'CI', conclusion: 'SUCCESS', status: 'COMPLETED' }],
-        comments: [{ body: 'approved' }],
-        body: 'Merge owner: auto-merge-requested',
-      }
-
-      const mockSpawn = vi.fn().mockImplementation((cmd, args) => {
-        if (args[0] === 'pr' && args[1] === 'view') {
-          return { status: 0, stdout: JSON.stringify(prData) }
-        }
-        if (args[0] === 'pr' && args[1] === 'merge') {
-          return { status: 0, stdout: 'Merged #106\n' }
-        }
-        return { status: 1 }
-      })
-
-      const res = await steerMergeCheck({
-        prNumber: 106,
-        execute: true,
-        spawnFn: mockSpawn,
-      })
-
-      expect(res.ok).toBe(true)
-      expect(res.merged).toBe(true)
-      expect(mockSpawn).toHaveBeenCalledWith(
-        'gh',
-        ['pr', 'merge', '106', '--squash', '--delete-branch'],
-        { encoding: 'utf8' },
-      )
+    it('holds author review and failed CI', () => {
+      const pr = source()
+      pr.reviews[0].author.login = 'author'
+      expect(verifyMergeGates(pr).gates.review.pass).toBe(false)
+      expect(
+        verifyMergeGates(
+          source({ statusCheckRollup: [{ __typename: 'StatusContext', state: 'FAILURE' }] }),
+        ).ready,
+      ).toBe(false)
     })
-
-    it('steerMergeCheck dry-run halts before merge command', async () => {
-      const prData = {
-        number: 107,
-        title: 'Ready for Merge Dry Run',
-        state: 'OPEN',
-        mergeable: 'MERGEABLE',
-        author: { login: 'author-alice' },
-        reviews: [{ state: 'APPROVED', author: { login: 'reviewer-bob', is_bot: false } }],
-        statusCheckRollup: [{ name: 'CI', conclusion: 'SUCCESS', status: 'COMPLETED' }],
-        body: 'approved: true',
-      }
-
-      const mockSpawn = vi.fn().mockImplementation((cmd, args) => {
-        if (args[0] === 'pr' && args[1] === 'view') {
-          return { status: 0, stdout: JSON.stringify(prData) }
-        }
-        return { status: 1 }
+    it('does not authenticate author text or a CLI human-approval reference', () => {
+      expect(
+        verifyMergeGates(
+          source({
+            reviews: [],
+            body: 'approved: true',
+            comments: [{ body: 'LGTM /approve' }],
+            labels: ['approved'],
+          }),
+          { humanApproval: 'anyone', autoMerge: true },
+        ).ready,
+      ).toBe(false)
+    })
+    it('passes current-head independent human review and successful CI', () => {
+      expect(verifyMergeGates(source()).ready).toBe(true)
+    })
+    it('holds publication when the caller merely requests execute', async () => {
+      const spawnFn = vi.fn(() => ({ status: 0, stdout: JSON.stringify(source()) }))
+      const result = await steerMergeCheck({ prNumber: 105, execute: true, spawnFn })
+      expect(result.merged).toBe(false)
+      expect(spawnFn).toHaveBeenCalledTimes(1)
+    })
+    it('defaults a successful check to inspection', async () => {
+      const spawnFn = vi.fn(() => ({ status: 0, stdout: JSON.stringify(source()) }))
+      const result = await steerMergeCheck({ prNumber: 105, spawnFn })
+      expect(result).toMatchObject({
+        ok: true,
+        ready: true,
+        merged: false,
+        status: 'MERGE_CHECK_ONLY',
       })
-
-      const res = await steerMergeCheck({
-        prNumber: 107,
-        dryRun: true,
-        spawnFn: mockSpawn,
-      })
-
-      expect(res.ok).toBe(true)
-      expect(res.ready).toBe(true)
-      expect(res.merged).toBe(false)
-      expect(mockSpawn).toHaveBeenCalledTimes(1) // only pr view, no pr merge
+      expect(spawnFn).toHaveBeenCalledTimes(1)
     })
   })
 
@@ -900,12 +794,13 @@ describe('scripts/steer.mjs - supervisory steering verbs', () => {
 
     it('runs agentflow-sdlc steer liveness --json via CLI without treating a fresh heartbeat as authenticated authority', () => {
       const heartbeat = new Date(Date.now() - 60000).toISOString()
-      const stdout = execFileSync(
+      const execution = spawnSync(
         process.execPath,
         [CLI_PATH, 'steer', 'liveness', '--last-heartbeat', heartbeat, '--json'],
         { encoding: 'utf8' },
       )
-      const parsed = JSON.parse(stdout)
+      expect(execution.status).toBe(3)
+      const parsed = JSON.parse(execution.stdout)
       expect(parsed.reachable).toBe(false)
       expect(parsed.status).toBe('SUPERVISOR_UNVERIFIED')
       expect(parsed.holdNewSliceAdmission).toBe(true)
@@ -913,7 +808,7 @@ describe('scripts/steer.mjs - supervisory steering verbs', () => {
 
     it('runs agentflow-sdlc steer liveness --json via CLI for stale supervisor with unmerged slices (AC-7)', () => {
       const stale = new Date(Date.now() - 35 * 60 * 1000).toISOString()
-      const stdout = execFileSync(
+      const execution = spawnSync(
         process.execPath,
         [
           CLI_PATH,
@@ -927,19 +822,21 @@ describe('scripts/steer.mjs - supervisory steering verbs', () => {
         ],
         { encoding: 'utf8' },
       )
-      const parsed = JSON.parse(stdout)
+      expect(execution.status).toBe(3)
+      const parsed = JSON.parse(execution.stdout)
       expect(parsed.reachable).toBe(false)
       expect(parsed.status).toBe('SUPERVISOR_UNREACHABLE')
       expect(parsed.holdNewSliceAdmission).toBe(true)
     })
 
     it('runs agentflow-sdlc steer btw --json via CLI (AC-8)', () => {
-      const stdout = execFileSync(
+      const execution = spawnSync(
         process.execPath,
         [CLI_PATH, 'steer', 'btw', '--goal', 'goal://cap-514', '--json'],
         { encoding: 'utf8' },
       )
-      const parsed = JSON.parse(stdout)
+      expect(execution.status).toBe(0)
+      const parsed = JSON.parse(execution.stdout)
       expect(parsed.ok).toBe(true)
       expect(parsed.mode).toBe('read-only-no-nudge')
       expect(parsed.nudgeDispatched).toBe(false)
@@ -952,7 +849,7 @@ describe('scripts/steer.mjs - supervisory steering verbs', () => {
         const briefPath = join(tempDir, 'task.md')
         writeFileSync(briefPath, '# No Nudge Task\nQueued without interrupting workers.')
 
-        const stdout = execFileSync(
+        const execution = spawnSync(
           process.execPath,
           [
             CLI_PATH,
@@ -968,7 +865,8 @@ describe('scripts/steer.mjs - supervisory steering verbs', () => {
           ],
           { encoding: 'utf8' },
         )
-        const parsed = JSON.parse(stdout)
+        expect(execution.status).toBe(0)
+        const parsed = JSON.parse(execution.stdout)
         expect(parsed.ok).toBe(true)
         expect(parsed.dryRun).toBe(true)
         expect(parsed.noNudge).toBe(true)
