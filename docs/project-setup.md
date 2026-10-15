@@ -4,24 +4,35 @@ Use this guide after installing the framework into a consuming project. It turns
 
 The safe default is **single-agent**, multi-role execution: one executor moves through the phases in [`docs/agent-workflow.md`](agent-workflow.md), records role-pass evidence, opens a PR, and leaves merge ownership to a human/operator unless told otherwise. Optional multi-agent routing is available when a project explicitly configures it.
 
+## Execution substrate selection (`S0` / `S1` / `S2`)
+
+OpenRig is optional. AgentFlow adapts its execution topology to the CLIs, model capacity, and orchestration tools installed on your machine:
+
+| Substrate Tier                                      | Requirements                                                               | Best For                                                                    | How Roles & Reviews Run                                                                                                                                                    |
+| --------------------------------------------------- | -------------------------------------------------------------------------- | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`S0`: Single-CLI + Native L2 Subagents**          | 1 agent CLI (`agy`, `claude`, `codex`, or `pi`)                            | Individual developers, single subscription, `P0`–`P2` tasks                 | Single parent session runs workflow phases and spawns native L2 subagents (`effort: low` for discovery/QA; fresh subagent for Phase 6 review with `selfReviewDisclosure`). |
+| **`S1`: Multi-CLI Orthogonal Routing (No OpenRig)** | 2+ agent CLIs (e.g., `agy` + `codex` or `claude` + `agy`), no `rig` daemon | Cross-model Four-Eyes independence without persistent tmux daemons          | `resolve-role-route.mjs` routes Builder (e.g., `Gemini 4 Argon`) and Reviewer (e.g., `GPT-6 Astra`) to distinct CLIs (`effort: medium`).                                   |
+| **`S2`: OpenRig Lean 4-Seat Squad**                 | OpenRig (`rig`) + 1–3 agent CLIs                                           | Autonomous multi-slice queues, parallel `.worktrees/*`, continuous steering | Persistent 4-seat delivery squad (`orch.arch`, `dev.build`, `dev.qa`, `rev.review`) + L2 subagents inside `.worktrees/<branch>`. See [`OPENRIG.md`](../OPENRIG.md).        |
+
 ## Quick checklist
 
-1. **Choose routable platforms** — decide which built-in local adapters are available: `claude`,
+1. **Choose execution substrate (`S0`, `S1`, or `S2`)** — inspect local CLIs and OpenRig availability via `agentflow-sdlc doctor-env`.
+2. **Choose routable platforms** — decide which built-in local adapters are available: `claude`,
    `codex`, `agy`, and/or `pi`. Evidence may use any identity from runtime platform registry.
-2. **Choose execution mode** — keep `single-agent` unless role routing adds clear value.
-3. **Choose role owners/fallbacks** — if multi-agent routing is allowed, assign owners and fallbacks per role.
-4. **Choose branch strategy** — set trunk, integration, protected branches, and allowed work branch prefixes.
-5. **Choose validation commands** — list the CI-equivalent commands copied into PR manifests.
-6. **Choose bounded-work rules** — define small safe paths and sensitive areas that require higher assurance.
-7. **Record merge expectations** — human/operator merge by default; document any explicit auto-merge command.
-8. **Enable integration lifecycle automation** — install/keep `.github/workflows/integration-lifecycle.yml` so issues close when PRs merge into the configured integration branch.
-9. **Choose release versioning** — keep default `main.minor.fix` or configure SemVer, CalVer, custom tags, package version source, and release approval expectations.
-10. **Validate environment** — run `agentflow-sdlc doctor-env` to check tools and install guidance without installing anything.
-11. **Validate setup** — run the validators before treating the project as configured.
+3. **Choose execution mode & effort policy** — keep `single-agent` (`S0`) unless multi-CLI routing (`S1`) or OpenRig (`S2`) adds clear value; keep default loop effort at `medium` (`low` for QA/discovery) to prevent high-effort context degradation.
+4. **Choose role owners/fallbacks** — if multi-agent routing is allowed, assign orthogonal owners and fallbacks per role.
+5. **Choose branch strategy** — set trunk, integration, protected branches, and allowed work branch prefixes.
+6. **Choose validation commands** — list the CI-equivalent commands copied into PR manifests.
+7. **Choose bounded-work rules** — define small safe paths and sensitive areas that require higher assurance.
+8. **Record merge expectations** — human/operator merge by default; document any explicit auto-merge command.
+9. **Enable integration lifecycle automation** — install/keep `.github/workflows/integration-lifecycle.yml` so issues close when PRs merge into the configured integration branch.
+10. **Choose release versioning** — keep default `main.minor.fix` or configure SemVer, CalVer, custom tags, package version source, and release approval expectations.
+11. **Validate environment** — run `agentflow-sdlc doctor-env` to check tools and install guidance without installing anything.
+12. **Validate setup** — run the validators before treating the project as configured.
 
-## Minimal single-agent config
+## Minimal single-agent config (`S0`)
 
-Start here when a project wants the default workflow and no role routing.
+Start here when a project wants the default workflow and no external role routing.
 
 ```json
 {

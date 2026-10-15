@@ -112,6 +112,31 @@
     "adapters": {
       "type": "object",
       "additionalProperties": true
+    },
+    "executionTopology": {
+      "type": "object",
+      "properties": {
+        "substrateTier": {
+          "enum": ["auto", "s0-single-cli", "s1-multi-cli", "s2-openrig-squad"]
+        },
+        "openrigSquadPreset": {
+          "enum": ["lean-4-seat", "multi-tier-7-seat"]
+        },
+        "compositeBuilderMaxRung": {
+          "enum": ["P0", "P1"]
+        }
+      },
+      "additionalProperties": true
+    },
+    "effortPolicy": {
+      "type": "object",
+      "properties": {
+        "defaultLoopEffort": { "enum": ["low", "medium", "high"] },
+        "subagentSearchEffort": { "enum": ["low", "medium"] },
+        "highEffortMaxContextTokens": { "type": "integer", "minimum": 8000 },
+        "enforceCleanSubagentForHighEffort": { "type": "boolean" }
+      },
+      "additionalProperties": true
     }
   },
   "additionalProperties": true

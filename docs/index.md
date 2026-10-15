@@ -81,16 +81,18 @@ flowchart LR
 | [High-assurance flow](examples/high-assurance-flow.md)                       | See human security and acceptance gates                                 |
 | [Intelligent-collaboration flow](examples/intelligent-collaboration-flow.md) | See smallest-sufficient collaboration and compact synthesis             |
 
-## Runtime, routing, and collaboration
+## Runtime, substrates, routing, and collaboration
 
-| Document                                                  | Use it for                                                                |
-| --------------------------------------------------------- | ------------------------------------------------------------------------- |
-| [Runtime platforms](runtime-platforms.md)                 | Registered evidence identities                                            |
-| [Execution targets](execution-targets.md)                 | Distinguish launcher, executor, transport, model, and delegation boundary |
-| [Agent routing](agent-routing.md)                         | Configure owners, fallbacks, and role alternation                         |
-| [Capabilities](capabilities.md)                           | Resolve PLAN, WORKFLOW, LOOP, and SUB-AGENTS portably                     |
-| [Intelligent collaboration](intelligent-collaboration.md) | Choose the smallest sufficient collaboration mode                         |
-| [Role collaboration](role-collaboration.md)               | Define deterministic handover acceptance, rework, and councils            |
+| Document                                                  | Use it for                                                                                    |
+| --------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| [Project setup](project-setup.md)                         | Select execution substrate (`S0` single-CLI, `S1` multi-CLI orthogonal, `S2` OpenRig squad)   |
+| [Runtime platforms](runtime-platforms.md)                 | Registered evidence identities                                                                |
+| [Execution targets](execution-targets.md)                 | Distinguish launcher, executor, transport, model, and delegation boundary                     |
+| [Agent routing](agent-routing.md)                         | Configure owners, fallbacks, effort calibration, and role alternation                         |
+| [Capabilities](capabilities.md)                           | Resolve PLAN, WORKFLOW, LOOP, and SUB-AGENTS portably                                         |
+| [Intelligent collaboration](intelligent-collaboration.md) | Choose the smallest sufficient collaboration mode and enforce the Effort-Degradation Guard    |
+| [Role collaboration](role-collaboration.md)               | Define deterministic handover acceptance, rework, and councils                                |
+| [OpenRig harness integration](../OPENRIG.md)              | Operate the `S2` Lean 4-Seat OpenRig squad (`orch.arch`, `dev.build`, `dev.qa`, `rev.review`) |
 
 Runtime-specific references:
 
@@ -129,7 +131,7 @@ Cockpit is optional. CLI and GitHub evidence remain authoritative without it.
 | [Release versioning](release-versioning.md) | Plan versions, tags, approval, and closeout evidence |
 | [Release publishing](release-publishing.md) | Run the maintained publication gate                  |
 
-The current release is [v1.1.0](releases/v1.1.0.md). Published history is intentionally retained as an archive: [v1.0.0](releases/v1.0.0.md), [v0.7.0](releases/v0.7.0.md), [v0.6.0](releases/v0.6.0.md), [v0.5.0](releases/v0.5.0.md), [v0.4.1](releases/v0.4.1.md), and [v0.4.0](releases/v0.4.0.md).
+The current release is [v1.10.0](releases/v1.10.0.md). Published history is intentionally retained as an archive: [v1.9.0](releases/v1.9.0.md), [v1.8.0](releases/v1.8.0.md), [v1.7.0](releases/v1.7.0.md), [v1.6.0](releases/v1.6.0.md), [v1.5.0](releases/v1.5.0.md), [v1.4.1](releases/v1.4.1.md), [v1.4.0](releases/v1.4.0.md), [v1.3.0](releases/v1.3.0.md), [v1.2.0](releases/v1.2.0.md), [v1.1.0](releases/v1.1.0.md), [v1.0.0](releases/v1.0.0.md), [v0.7.0](releases/v0.7.0.md), [v0.6.0](releases/v0.6.0.md), [v0.5.0](releases/v0.5.0.md), [v0.4.1](releases/v0.4.1.md), and [v0.4.0](releases/v0.4.0.md).
 
 ## Architecture decisions
 

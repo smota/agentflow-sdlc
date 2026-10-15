@@ -6,14 +6,18 @@ This adapter integrates AgentFlow SDLC with [OpenRig](https://openrig.dev/), pro
 
 ## Architecture & Layout
 
-- **`agentflow/`**: Canonical OpenRig Rig Bundle.
-  - `rig.yaml`: Pods `orch`, `dev`, `rev` with Grok 4.7 lead/review and Claude/Codex builders/QA.
-  - `configurations.yaml`: 8 declared presets (`balanced-grok-lead`, `inverted-codex-lead`, `grok-heavy`, `claude-heavy`, `codex-heavy`, `all-grok`, `all-claude`, `all-codex`).
-  - `CULTURE.md`: AgentFlow SDLC laws (mandatory Git Worktrees, Four-Eyes Principle, proof contracts before code).
-  - `agents/agentflow/`: Agent manifests, 12 profiles, guidance, and vendored skills.
-- **`agentflow-product/`**: Generic product squad base (`pm.manager`, `pm.analyst`).
-- **`agentflow-steer/`**: Generic supervisory steering squad base (`steer.lead`), operating strictly out-of-rig without git worktrees or code-authoring permissions.
-- **`lifecycle.mjs`**: Install, update, and squad operations, run through `agentflow-sdlc adapters ... openrig` on macOS, Linux, and Windows. It syncs all three bases to `~/.openrig/specs`, sets up Pi state bridges for the preset's Pi seats, adds the grok-cli marker, manages steering state directories, and applies Git hygiene.
+- **`agentflow/`**: Canonical OpenRig Delivery Rig Bundle (Lean 4-Seat Default Squad + optional `eval.tester`).
+  - `rig.yaml`: Pods `orch` (`orch.arch`), `dev` (`dev.build`, `dev.qa`), `rev` (`rev.review`), and `eval` (`eval.tester`) calibrated to `effort: medium` (primary reasoning loops) and `effort: low` (QA/verification) to prevent high-effort context degradation.
+  - `configurations.yaml`: 2026 presets (`frontline`, `all-antigravity`, `all-codex`, `all-claude`, `all-grok`) with orthogonal builder (`antigravity/gemini-4-argon`) and reviewer (`gpt-6-astra`) defaults.
+  - `CULTURE.md`: AgentFlow SDLC laws (mandatory Git Worktrees, Four-Eyes Principle, proof contracts before code, L2 subagent delegation, and `P0`/`P1` Composite Phase 3–5 Builder Pass).
+  - `agents/agentflow/`: Agent manifests, profiles, guidance, and vendored skills.
+- **`agentflow-product/`**: Generic product squad base (`pm.manager`, `pm.analyst`) with outbox handoff and multi-writer admission (`handoff-step.mjs`, `pipeline-admission.mjs`).
+- **`agentflow-steer/`**: Generic supervisory steering squad base (`steer.lead`), operating strictly out-of-rig without git worktrees or code-authoring permissions, paired with the `d3-flash` fast-path decider.
+- **Routing, Fallback & Continuity Modules**:
+  - `tier-routing.mjs`: Complexity rung resolution (`P0`–`P4`), Lean 4-Seat vs. Multi-Tier 7-Seat mapping, `P0`/`P1` Composite Phase 3–5 compression, and sticky rework affinity.
+  - `platform-fallback.mjs`: Two-level platform/model fallback chains, 2026 model matrix (`gemini-4-argon`, `gpt-6-astra`, `gpt-6.1-sol`, `grok-4.7`, `gemini-3.8-flash`), Four-Eyes orthogonality enforcement, and Effort-Degradation Guard.
+  - `continuity-policy.mjs`: Pre-phase token headroom gates and role-differentiated continuity (`ephemeral-slice`, `isolated-review`, `stateful-lead`).
+- **`lifecycle.mjs`**: Install, update, and squad operations, run through `agentflow-sdlc adapters ... openrig` on macOS, Linux, and Windows. It syncs all bases to `~/.openrig/specs`, sets up Pi state bridges, manages steering state directories, and applies Git hygiene.
 
 ---
 

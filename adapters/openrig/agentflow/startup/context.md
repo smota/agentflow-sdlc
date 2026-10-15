@@ -2,9 +2,10 @@
 
 1. Run `rig whoami --json`. It names your seat and your peers' sessions. Use
    those names; do not guess addresses. During launch a peer may not be listed
-   yet: if one of the squad seats (`orch.arch`, `dev.build-jr`, `dev.build`,
-   `dev.build-sr`, `dev.qa`, `rev.review`) is missing, check `rig ps --nodes`
-   again a little later before assuming it failed.
+   yet: if one of the default Lean 4-Seat squad seats (`orch.arch`, `dev.build`,
+   `dev.qa`, `rev.review` — or optional `dev.build-jr` / `dev.build-sr` in classic
+   6-seat layouts) is missing, check `rig ps --nodes` again a little later before
+   assuming it failed.
 
 2. Find the repository you work in: `git rev-parse --show-toplevel`. If that
    fails, or your working directory is this rig's own folder, the rig was
@@ -25,8 +26,15 @@
 5. Workflow cadence. The queue wakes a seat. It is not the record.
    - Phases 0-8 are the state machine: product manager, analyst, architect,
      implementation planner, developer, tester, reviewer, technical writer,
-     PR readiness. `orch.arch` owns 2, 3, 7, and 8. A builder owns 4.
-     `dev.qa` owns 5. `rev.review` owns 6.
+     PR readiness. `orch.arch` owns 2, 3, 7, and 8. `dev.build` owns 4 (and may
+     spawn ephemeral L2 subagents inside `.worktrees/<branch-name>`). `dev.qa`
+     owns 5. `rev.review` owns 6.
+   - For bounded (`P0`) and standard bilateral (`P1`) slices that do not touch
+     `tests/oracles/**`, `dev.build` may execute a **Composite Phase 3-5 Builder
+     Pass** inside its worktree (recording Phases 3, 4, and 5 sequentially with
+     test evidence) before handing off to `rev.review` for independent Phase 6
+     review. For `P2-P4` slices, explicit seat separation across Phases 3, 4, 5,
+     and 6 is mandatory.
    - Phases 0 and 1 belong to the product squad named in `sibling.md` when
      this copy has one. They are not this squad's seats. With no sibling
      recorded, one agent may still run phases 0 and 1; do not treat that as
@@ -38,8 +46,9 @@
    - A queue item without a goal URI and a transition URI is not a handoff.
      The receiving seat runs `agentflow-sdlc phase read` and stops if the
      previous phase is missing and was not a recorded skip.
-   - P0-P4 chooses the builder and whether Council or a human gate applies.
-     It does not delete a phase. A skip needs `--status skipped --reason`.
+   - P0-P4 chooses the collaboration class, effort envelope, and whether Council
+     or a human gate applies. It does not delete a phase. A skip needs
+     `--status skipped --reason`.
    - Defect return transitions: A phase return is recorded with
      `--status skipped --reason "<defect summary> (return to phase <target>)"`.
      Legal return targets: Phase 2, 3, or 4 can return to Phase 1 (`pm.analyst`)

@@ -26,6 +26,8 @@ Subcommands:
   unfreeze     Format and seal unfreeze resolution with next epoch fencing token
   triage       Connect to decider port with sanitized payloads for heuristic triage
   merge-check  Verify review digest, green CI status, and human approval before merging PR
+  liveness     Evaluate supervisory liveness circuit breaker and slice admission hold
+  btw          Non-disruptive Human BTW read-only status query with zero worker nudges
 
 Options:
   --help, -h   Show help for steer or any subcommand
@@ -42,7 +44,28 @@ Options:
   --summary <text>             Optional summary string (defaults to title in brief)
   --goal <uri>                 Optional goal URI reference
   --transition <uri>           Optional transition URI reference
+  --no-nudge                   Buffer brief for next boundary without interrupting active turns
   --dry-run                    Preview queue item creation without dispatching
+  --json                       Emit JSON result
+`
+
+export const LIVENESS_USAGE = `Usage: agentflow-sdlc steer liveness [options]
+
+Evaluates external supervisory steering liveness circuit breaker and slice admission hold.
+
+Options:
+  --last-heartbeat <iso>       Last recorded supervisor heartbeat timestamp (ISO-8601 or epoch ms)
+  --unmerged-count <n>         Number of unmerged accepted slices pending integration (default: 0)
+  --stale-timeout <ms>         Timeout threshold in milliseconds (default: 1800000 / 30m)
+  --json                       Emit JSON result
+`
+
+export const BTW_USAGE = `Usage: agentflow-sdlc steer btw [options]
+
+Non-disruptive human BTW query inspecting board and steering state with zero worker nudges.
+
+Options:
+  --goal <uri>                 Optional goal URI reference to inspect
   --json                       Emit JSON result
 `
 
@@ -161,6 +184,7 @@ export async function steerAssign({
   goal,
   transition,
   dryRun = false,
+  noNudge = false,
   targetDir = process.cwd(),
   spawnFn = spawnSync,
   fs = { existsSync, readFileSync, writeFileSync, mkdirSync },
@@ -200,6 +224,10 @@ export async function steerAssign({
     derivedSummary,
   ]
 
+  if (noNudge) {
+    command.push('--no-nudge')
+  }
+
   if (dryRun) {
     return {
       ok: true,
@@ -208,13 +236,14 @@ export async function steerAssign({
       destination: validatedDest,
       briefFile: briefPath,
       summary: derivedSummary,
+      ...(noNudge ? { noNudge: true } : {}),
       command,
     }
   }
 
   const result = spawnFn('rig', command.slice(1), { encoding: 'utf8' })
   if (result.status === 0) {
-    if (goal || transition) {
+    if (!noNudge && (goal || transition)) {
       const msg = `Goal: ${goal || 'unspecified'} | Transition: ${transition || 'unspecified'} | Brief: ${briefPath}`
       spawnFn('rig', ['send', validatedDest, msg], { encoding: 'utf8' })
     }
@@ -224,6 +253,7 @@ export async function steerAssign({
       destination: validatedDest,
       briefFile: briefPath,
       summary: derivedSummary,
+      ...(noNudge ? { noNudge: true } : {}),
       output: result.stdout?.trim(),
     }
   }
@@ -240,6 +270,7 @@ export async function steerAssign({
       summary: derivedSummary,
       goal: goal || null,
       transition: transition || null,
+      ...(noNudge ? { noNudge: true } : {}),
       createdAt: new Date().toISOString(),
     }
     fs.writeFileSync(itemPath, JSON.stringify(itemData, null, 2))
@@ -250,6 +281,7 @@ export async function steerAssign({
       destination: validatedDest,
       briefFile: briefPath,
       summary: derivedSummary,
+      ...(noNudge ? { noNudge: true } : {}),
       queueFile: itemPath,
       note: 'rig CLI not in PATH; brief persisted into local queue directory',
     }
@@ -602,6 +634,86 @@ export async function steerMergeCheck({
   )
 }
 
+export const SUPERVISOR_STALE_TIMEOUT_MS = 30 * 60 * 1000
+
+export function evaluateSupervisorLiveness({
+  lastHeartbeatAt = null,
+  nowMs = Date.now(),
+  staleTimeoutMs = SUPERVISOR_STALE_TIMEOUT_MS,
+  unmergedAcceptedCount = 0,
+} = {}) {
+  const holdNewSliceAdmission = Number(unmergedAcceptedCount) >= 1
+
+  if (!lastHeartbeatAt) {
+    return {
+      reachable: false,
+      status: 'SUPERVISOR_UNREACHABLE',
+      ageMs: null,
+      staleTimeoutMs,
+      holdNewSliceAdmission,
+    }
+  }
+
+  const lastMs = typeof lastHeartbeatAt === 'number' ? lastHeartbeatAt : Date.parse(lastHeartbeatAt)
+  const ageMs = Number.isFinite(lastMs) ? Math.max(0, nowMs - lastMs) : null
+
+  if (!Number.isFinite(lastMs) || ageMs > staleTimeoutMs) {
+    return {
+      reachable: false,
+      status: 'SUPERVISOR_UNREACHABLE',
+      ageMs,
+      staleTimeoutMs,
+      holdNewSliceAdmission,
+    }
+  }
+
+  return {
+    reachable: true,
+    status: 'SUPERVISOR_HEALTHY',
+    ageMs,
+    staleTimeoutMs,
+    holdNewSliceAdmission: false,
+  }
+}
+
+export function steerBtwQuery({
+  targetDir = process.cwd(),
+  goal = null,
+  fs = { existsSync, readFileSync },
+} = {}) {
+  let state = null
+  const heartbeatPath = join(targetDir, '.agent-runs', 'steer', 'heartbeat.json')
+  const statePath = join(targetDir, '.agentflow', 'state.json')
+
+  if (fs?.existsSync?.(heartbeatPath)) {
+    try {
+      state = JSON.parse(fs.readFileSync(heartbeatPath, 'utf8'))
+    } catch {
+      state = null
+    }
+  } else if (fs?.existsSync?.(statePath)) {
+    try {
+      state = JSON.parse(fs.readFileSync(statePath, 'utf8'))
+    } catch {
+      state = null
+    }
+  }
+
+  const result = {
+    ok: true,
+    mode: 'read-only-no-nudge',
+    nudgeDispatched: false,
+    goal,
+    inspectedAt: new Date().toISOString(),
+  }
+
+  if (state !== null) {
+    result.state = state
+  }
+
+  return result
+}
+
 export async function runSteerCli(rawArgs = []) {
   const args = [...rawArgs]
   const isJson = hasFlag(args, '--json')
@@ -640,6 +752,14 @@ export async function runSteerCli(rawArgs = []) {
       process.stdout.write(MERGE_CHECK_USAGE)
       return 0
     }
+    if (subcommand === 'liveness') {
+      process.stdout.write(LIVENESS_USAGE)
+      return 0
+    }
+    if (subcommand === 'btw') {
+      process.stdout.write(BTW_USAGE)
+      return 0
+    }
     process.stdout.write(STEER_USAGE)
     return 0
   }
@@ -660,6 +780,7 @@ export async function runSteerCli(rawArgs = []) {
       const goal = getFlag(subArgs, '--goal')
       const transition = getFlag(subArgs, '--transition')
       const dryRun = hasFlag(subArgs, '--dry-run')
+      const noNudge = hasFlag(subArgs, '--no-nudge')
 
       const result = await steerAssign({
         destination,
@@ -668,6 +789,7 @@ export async function runSteerCli(rawArgs = []) {
         goal,
         transition,
         dryRun,
+        noNudge,
         targetDir,
       })
 
@@ -815,6 +937,47 @@ export async function runSteerCli(rawArgs = []) {
 
       if (!result.ok) {
         return result.escalation ? 3 : 1
+      }
+      return 0
+    }
+
+    if (subcommand === 'liveness') {
+      const lastHeartbeat = getFlag(subArgs, ['--last-heartbeat', '--heartbeat'])
+      const unmergedCount = getFlag(subArgs, ['--unmerged-count', '--unmerged'])
+      const staleTimeout = getFlag(subArgs, '--stale-timeout')
+
+      const result = evaluateSupervisorLiveness({
+        lastHeartbeatAt: lastHeartbeat || null,
+        unmergedAcceptedCount: unmergedCount ? Number(unmergedCount) : 0,
+        ...(staleTimeout ? { staleTimeoutMs: Number(staleTimeout) } : {}),
+      })
+
+      if (isJson) {
+        process.stdout.write(JSON.stringify(result, null, 2) + '\n')
+      } else {
+        if (result.reachable) {
+          process.stdout.write(
+            `✓ Supervisor healthy (age: ${result.ageMs !== null ? Math.round(result.ageMs / 1000) + 's' : 'unknown'}, status: ${result.status})\n`,
+          )
+        } else {
+          process.stdout.write(
+            `✗ Supervisor unreachable (${result.status}, holdNewSliceAdmission: ${result.holdNewSliceAdmission})\n`,
+          )
+        }
+      }
+      return 0
+    }
+
+    if (subcommand === 'btw') {
+      const goal = getFlag(subArgs, '--goal')
+      const result = steerBtwQuery({ targetDir, goal })
+
+      if (isJson) {
+        process.stdout.write(JSON.stringify(result, null, 2) + '\n')
+      } else {
+        process.stdout.write(
+          `✓ BTW status query complete (mode: ${result.mode}, nudgeDispatched: ${result.nudgeDispatched})\n`,
+        )
       }
       return 0
     }

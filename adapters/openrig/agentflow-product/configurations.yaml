@@ -57,3 +57,11 @@ presets:
   all-codex:
     pm.manager: codex
     pm.analyst: codex
+
+  frontline:
+    pm.manager: pi
+    pm.analyst: pi
+
+  all-antigravity:
+    pm.manager: pi
+    pm.analyst: pi

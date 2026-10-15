@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "phase": 2,
+  "role": "architect",
+  "seat": "orch.arch",
+  "status": "pass",
+  "reason": null,
+  "seatVerified": false,
+  "seatRig": null,
+  "body": "high-assurance, Two-Plane Separation",
+  "idempotencyKey": "g3-phase2-arch",
+  "uri": "transitions/0003.json"
+}

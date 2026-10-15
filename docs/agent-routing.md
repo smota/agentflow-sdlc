@@ -113,6 +113,18 @@ workflow-status comment/PR manifest aggregate those rows into the `roleAttributi
 `routing.defaultMode: "single-agent"` (or omits `routing` entirely) — single-agent mode remains
 fully valid and never requires this table.
 
+## 2026 frontier models & effort-degradation calibration
+
+Modern frontier models (`antigravity/gemini-4-argon`, `gpt-6-astra`, `gpt-6.1-sol`, `grok-cli/grok-4.7`, `claude-opus-4-6`, `claude-sonnet-4-6`) do **not** improve monotonically with higher reasoning effort in long-running tool loops. When context exceeds ~`40k–80k` tokens, `effort: high` increases latency/cost 3–6x and degrades tool-grounding accuracy (hallucinating environment state or inventing speculative review blockers).
+
+AgentFlow enforces the **Effort-Degradation Guard** across all three substrates (`S0`, `S1`, `S2`):
+
+| Effort Tier            | Target Roles & Rungs                                                                                      | Context Ceiling              | Recommended 2026 Models                                                                                    | Rationale                                                                                                                 |
+| ---------------------- | --------------------------------------------------------------------------------------------------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| **`low`**              | `P0` bounded slices, L2 discovery scouts, `tester` / `dev.qa`, `eval.tester`, `d3-flash` decider          | Up to `120k` tokens          | `antigravity/gemini-3.8-flash`, `grok-cli/grok-4.7`, `gpt-5.3-codex-spark`, `claude-haiku-4-5`, `d3-flash` | Immediate tool execution (`git grep`, test runners) without reasoning-token bloat.                                        |
+| **`medium` (Default)** | Primary L1 seats: `architect` (`orch.arch`), `developer` (`dev.build` `P1`–`P3`), `review` (`rev.review`) | Up to `100k` tokens          | `antigravity/gemini-4-argon`, `gpt-6-astra`, `claude-sonnet-4-6`, `grok-cli/grok-code-fast-1`              | Optimal balance of multi-file planning, subagent coordination, and grounded verification.                                 |
+| **`high` (Isolated)**  | Clean-context child subagents ONLY (`P2`–`P4` Council deliberation, security/crypto invariant checks)     | **Strict `<30k–40k` tokens** | `gpt-6.1-sol`, `antigravity/gemini-3.1-pro`, `claude-opus-4-6`, `grok-cli/grok-4.7`                        | Never used on a dirty parent session; always spawned as a fresh L2 child subagent receiving a compact `<15k` token brief. |
+
 ## Handover comments
 
 Ticket comments are the canonical durable evidence for handovers in every workflow mode. The

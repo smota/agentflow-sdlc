@@ -1,10 +1,11 @@
 version: '0.2'
 name: agentflow
 summary: >
-  AgentFlow SDLC delivery squad for parallel, independent development across
-  projects with rigorous proof contracts, worktree isolation, dynamic complexity
-  matching, Council deliberation, Codex GPT-6.1 Sol lead architecture and review,
-  Gemini implementation builders via Pi (Flash Medium, Pro High), and Grok 4.7 Junior builder (Low) and QA (Medium) via Pi.
+  AgentFlow SDLC Lean 4-Seat delivery squad for parallel, independent development
+  with rigorous proof contracts, worktree isolation, L2 native subagents,
+  P0/P1 Composite Phase 3-5 Builder Pass, Codex GPT-6.1 Sol / Astra lead architecture
+  and orthogonal review (medium effort), Gemini 4 Argon builder via Pi (medium effort),
+  and Grok 4.7 / Gemini 3.8 Flash QA & Eval (low effort).
 
 culture_file: CULTURE.md
 
@@ -27,14 +28,14 @@ non_interruptive: true
 pods:
   - id: orch
     label: Orchestration & Governance
-    summary: Architect lead decomposes goals, sets workflow profiles (P0-P4), enforces proof contracts and convenes Council.
+    summary: Architect lead decomposes goals, sets workflow profiles (P0-P4), pins oracle digests, and convenes clean-context L2 Council subagents.
     members:
       - id: arch
         agent_ref: 'local:agents/agentflow'
         profile: architect
         runtime: codex
         model: gpt-6.1-sol
-        effort: high
+        effort: medium
         cwd: '.'
         startup:
           files:
@@ -45,73 +46,37 @@ pods:
 
   - id: dev
     label: Development & Verification
-    summary: Capability ladder builders (Jr/Standard/Sr) implement in isolated worktrees; QA validates proof contracts.
+    summary: Primary builder implements in isolated .worktrees/<branch> using L2 subagents (Composite Phase 3-5 for P0/P1); QA validates P2-P4 and high-consequence proof contracts.
     members:
-      - id: build-jr
-        agent_ref: 'local:agents/agentflow'
-        profile: builder-jr-pi
-        runtime: pi
-        model: grok-cli/grok-4.7
-        effort: low
-        cwd: '.'
       - id: build
         agent_ref: 'local:agents/agentflow'
         profile: builder-pi
         runtime: pi
-        model: antigravity/gemini-3.8-flash
+        model: antigravity/gemini-4-argon
         effort: medium
-        cwd: '.'
-      - id: build-sr
-        agent_ref: 'local:agents/agentflow'
-        profile: builder-sr-pi
-        runtime: pi
-        model: antigravity/gemini-3.1-pro
-        effort: high
         cwd: '.'
       - id: qa
         agent_ref: 'local:agents/agentflow'
         profile: qa-pi
         runtime: pi
         model: grok-cli/grok-4.7
-        effort: medium
-        cwd: '.'
-      - id: test-eng
-        agent_ref: 'local:agents/agentflow'
-        profile: test-eng-pi
-        runtime: pi
-        model: antigravity/gemini-3.1-pro
-        effort: high
+        effort: low
         cwd: '.'
     edges:
       - kind: delegates_to
         from: build
         to: qa
-      - kind: delegates_to
-        from: build-jr
-        to: qa
-      - kind: delegates_to
-        from: build-sr
-        to: qa
-      - kind: delegates_to
-        from: build
-        to: test-eng
-      - kind: delegates_to
-        from: build-jr
-        to: test-eng
-      - kind: delegates_to
-        from: build-sr
-        to: test-eng
 
   - id: rev
     label: Independent Audit & Council
-    summary: Four-Eyes independent reviewer issues digest-bound verdicts and participates in Council deliberation.
+    summary: Four-Eyes independent reviewer issues digest-bound verdicts and dispatches clean-context L2 subagents for P2-P4 deep reasoning.
     members:
       - id: review
         agent_ref: 'local:agents/agentflow'
         profile: reviewer
         runtime: codex
-        model: gpt-6.1-sol
-        effort: high
+        model: gpt-6-astra
+        effort: medium
         cwd: '.'
         startup:
           files:
@@ -126,10 +91,10 @@ pods:
     members:
       - id: tester
         agent_ref: 'local:agents/agentflow'
-        profile: eval-tester
-        runtime: codex
-        model: gpt-6.1-sol
-        effort: medium
+        profile: eval-tester-pi
+        runtime: pi
+        model: antigravity/gemini-3.8-flash
+        effort: low
         cwd: '.'
         startup:
           files:
@@ -143,19 +108,7 @@ edges:
     from: orch.arch
     to: dev.build
   - kind: delegates_to
-    from: orch.arch
-    to: dev.build-jr
-  - kind: delegates_to
-    from: orch.arch
-    to: dev.build-sr
-  - kind: delegates_to
     from: dev.build
-    to: rev.review
-  - kind: delegates_to
-    from: dev.build-jr
-    to: rev.review
-  - kind: delegates_to
-    from: dev.build-sr
     to: rev.review
   - kind: can_observe
     from: orch.arch
@@ -169,9 +122,6 @@ edges:
   - kind: can_observe
     from: orch.arch
     to: dev.build
-  - kind: can_observe
-    from: orch.arch
-    to: dev.build-sr
   - kind: can_observe
     from: orch.arch
     to: eval.tester
