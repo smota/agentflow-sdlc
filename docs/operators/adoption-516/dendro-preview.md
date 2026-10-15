@@ -111,3 +111,16 @@ The clean-branch after hashes are AGENTS
 The original dirty managed culture delta is excluded from that clean branch; it remains an
 independent owner modification, not adoption output. Recheck the original baseline hashes before
 applying, and retain the backlog pause and every source/custody/qualification hold afterward.
+
+## Repository preparation delivered for review
+
+The revised machine-held patch is committed as `e73b45b` on an isolated Dendro branch and open in
+[draft PR 61](https://github.com/smota/dendro/pull/61), tracked by
+[consumer issue 60](https://github.com/smota/dendro/issues/60). The four-file diff excludes the
+original checkout's dirty managed instructions, whose baseline hash remains unchanged.
+`cargo check --workspace --locked`, `cargo test --workspace --locked`,
+`cargo clippy --workspace --locked -- -D warnings`, and `cargo fmt --check` all passed.
+Candidate planning against the actual branch returns eight held contracts with no effects;
+provision rejects the hold before home writes. This supersedes the earlier preparation-only
+status for repository files. Installed rigs, runtime support, custody recovery, qualification,
+backlog resumption and human security/acceptance remain separate held obligations.
