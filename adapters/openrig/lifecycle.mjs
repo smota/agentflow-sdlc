@@ -710,8 +710,10 @@ export function siblingRecord(kind, rigName, sibling, extra = {}) {
       '',
       'Reverse seam defect return:',
       'If phase 2, 3, or 4 identifies an unresolvable intake ambiguity, invalid assumption, or scope defect, record a defect transition:',
-      '`agentflow-sdlc phase append --phase <current> --status skipped --reason "Defect: <summary> (return to phase 1)" --seat <seat>`',
-      'Then wake the product squad analyst:',
+      '- When the current phase has NOT yet recorded pass, append:',
+      '  `agentflow-sdlc phase append --phase <current> --status skipped --reason "Defect: <summary> (return to phase <3|1>)" --seat <seat>`',
+      '- When Phase 4 (pass) is already recorded on the ledger, Phase 4 cannot be re-appended; transition directly to the target return phase (Phase 3 for orch.arch planning/oracle addendum or Phase 1 for pm.analyst intake defect) per RETURNS[4] = [3, 1], preserving sticky builder seat affinity (dev.build-jr stays owner of P0 slices across 4 -> 3 -> 4).',
+      'Then wake the product squad analyst or planner:',
       `\`rig queue handoff --to pm-analyst@${deliveryOrProductSibling} --goal <goal-uri> --from-phase <current> --reason "Defect return to phase 1"\``,
     )
   }
@@ -1131,3 +1133,13 @@ export function squadRemove(ctx) {
   out(`==> Squad '${rigName}' removed.`)
   return 0
 }
+
+export {
+  BUILDER_RUNGS,
+  CONSEQUENCE_FLOOR_RE,
+  resolveBuilderRung,
+  resolveBuilderSeat,
+  resolveStickyBuilderOnReturn,
+  countUnmergedAccepted,
+  canAdmitNextSlice,
+} from './tier-routing.mjs'
