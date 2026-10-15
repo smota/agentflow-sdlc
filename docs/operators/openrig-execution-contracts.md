@@ -181,3 +181,8 @@ counters into legacy epochs. A future native handoff host must use the existing 
 `advance` and operation journal with trusted source custody and typed grants, rather than adding
 a parallel phase medium. Until that adapter is supported, missing native source history remains
 an honest recovery hold.
+
+Structural rig changes such as working-directory, environment and startup settings require verified
+replacement of the affected occupants, even when model tuples do not change. The current adapter
+conservatively restarts all seats for such structural deltas. Comment-only YAML changes do not
+force a restart. An unchanged old session cannot confirm that changed startup configuration ran.
