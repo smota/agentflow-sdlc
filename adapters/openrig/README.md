@@ -1,5 +1,8 @@
 # AgentFlow SDLC for OpenRig
 
+For the native source-backed asynchronous handoff host boundary, see
+[Native source handoff](../../docs/native-source-handoff.md).
+
 For classified quota recovery and its trusted host integration limits, see
 [Classified OpenRig recovery](../../docs/openrig-recovery.md).
 
