@@ -229,6 +229,114 @@ function resolveTaskAdmission(deps, options, workflow, expected = null) {
   return binding
 }
 
+function stable(value) {
+  if (Array.isArray(value)) return value.map(stable)
+  if (value && typeof value === 'object')
+    return Object.fromEntries(
+      Object.entries(value)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([key, item]) => [key, stable(item)]),
+    )
+  return value
+}
+function requestDigest(record) {
+  // Integrity only: authoritative workflow/task/custody ports are still rechecked.
+  return createHash('sha256')
+    .update(
+      JSON.stringify(
+        stable({
+          version: record.version,
+          goal: record.goal,
+          phase: record.phase,
+          to: record.to,
+          binding: record.binding,
+          oracleAdmission: record.oracleAdmission,
+          phaseOptions: record.phaseOptions,
+          queueId: record.queueId,
+          envelopeBody: record.envelopeBody,
+          recoveryOwner: record.recoveryOwner,
+        }),
+      ),
+    )
+    .digest('hex')
+}
+function sameSourceGeneration(left, right) {
+  if (
+    !left ||
+    !right ||
+    ['goal', 'runId', 'storeRef'].some((field) => left[field] !== right[field])
+  )
+    return false
+  if ((left.protocol ?? 'legacy') !== (right.protocol ?? 'legacy')) return false
+  const fields =
+    right.protocol === 'run-v1'
+      ? ['owner', 'generation', 'revocationEpoch']
+      : ['epoch', 'fencingToken']
+  return fields.every((field) => left[field] === right[field])
+}
+function sourceAcceptance(deps, record) {
+  if (typeof deps.verifySuccessorCustody !== 'function') return null
+  const receipt = deps.verifySuccessorCustody(structuredClone(record)),
+    binding = record.binding
+  return receipt?.verified === true &&
+    receipt.accepted === true &&
+    receipt.queueId === record.queueId &&
+    receipt.destination === record.to &&
+    receipt.runId === binding.runId &&
+    receipt.epoch === binding.epoch &&
+    receipt.fencingToken === binding.fencingToken &&
+    receipt.oracleOwner === binding.oracleOwner &&
+    receipt.oracleDigest === binding.oracleDigest
+    ? receipt
+    : null
+}
+function validateStoredRequest(record) {
+  const options = record.phaseOptions
+  if (
+    record.version !== 2 ||
+    !options ||
+    typeof options !== 'object' ||
+    Array.isArray(options) ||
+    record.goal !== options.goal ||
+    record.phase !== options.phase ||
+    record.to !== options.to ||
+    options.epoch !== record.binding?.epoch ||
+    (options.oracleDigest !== undefined && options.oracleDigest !== record.binding?.oracleDigest) ||
+    record.recoveryOwner !== (record.binding?.recoveryOwner ?? record.binding?.oracleOwner) ||
+    !record.to ||
+    !Number.isInteger(record.phase) ||
+    record.phase < 0 ||
+    record.phase > 8 ||
+    !/^qitem-[a-zA-Z0-9-]+$/.test(record.queueId ?? '') ||
+    !['phase-pending', 'phase-appended', 'dispatch-unknown', 'submitted', 'completed'].includes(
+      record.state,
+    ) ||
+    JSON.stringify(stable(record.binding)) !== JSON.stringify(stable(options.workflowBinding))
+  )
+    throw new HandoffStepError(
+      'Persisted handoff record destination/phase/workflow binding is inconsistent',
+    )
+  const canonicalBody = formatPointerEnvelope({
+    ...options,
+    epoch: record.binding.epoch,
+    oracleDigest: record.binding.oracleDigest,
+  })
+  if (
+    record.envelopeBody !== canonicalBody ||
+    (options.body !== undefined && options.body !== canonicalBody)
+  )
+    throw new HandoffStepError(
+      'Persisted handoff record body differs from canonical source binding',
+    )
+  if (
+    record.bodyDigest !== createHash('sha256').update(canonicalBody).digest('hex') ||
+    record.requestDigest !== requestDigest(record)
+  )
+    throw new HandoffStepError(
+      'Persisted handoff request integrity unavailable; explicit source reconciliation required, no resealing',
+    )
+}
+
 /**
  * Executes an outbox-backed atomic phase append and queue handoff step.
  */
@@ -270,8 +378,9 @@ function executeLockedStep(deps = {}, options = {}) {
   const home = deps.home ?? homedir()
   const run =
     deps.run ??
-    ((cmd, args) =>
+    ((cmd, args, options = {}) =>
       spawnSync(cmd, args, {
+        ...options,
         encoding: 'utf8',
         env: deps.env ?? process.env,
         shell: false,
@@ -286,23 +395,22 @@ function executeLockedStep(deps = {}, options = {}) {
     throw new HandoffStepError(
       `Legacy outbox record requires explicit source/custody reconciliation: ${oldFile}`,
     )
-  const matching = readdirSync(outboxDir)
+  const priorOperations = readdirSync(outboxDir)
     .filter((name) => name.endsWith('.json'))
     .map((name) => ({
       file: join(outboxDir, name),
       record: JSON.parse(readFileSync(join(outboxDir, name), 'utf8')),
     }))
-    .filter(
-      ({ record }) =>
-        record.goal === options.goal &&
-        record.phase === options.phase &&
-        (!options.key || record.phaseOptions?.key === options.key),
-    )
+    .filter(({ record }) => record.goal === options.goal && record.phase === options.phase)
+  const matching = priorOperations.filter(
+    ({ record }) => !options.key || record.phaseOptions?.key === options.key,
+  )
   if (matching.length > 1)
     throw new HandoffStepError(
       'Multiple handoff operations match; supply original --key to reconcile custody',
     )
   let record = matching[0]?.record ?? null
+  if (record) validateStoredRequest(record)
   if (options.handoffOnly && !record)
     throw new HandoffStepError(
       'Outbox record not found for recovery; retain original key and source binding',
@@ -338,6 +446,38 @@ function executeLockedStep(deps = {}, options = {}) {
     throw new HandoffStepError(
       'Authoritative binding/fence changed; reconcile existing handoff before transfer',
     )
+  if (!record) {
+    for (const { record: prior } of priorOperations) {
+      const priorBinding = prior.binding
+      const protocol = priorBinding?.protocol ?? 'legacy'
+      const counters =
+        protocol === 'run-v1' ? ['generation', 'revocationEpoch'] : ['epoch', 'fencingToken']
+      const minimum = protocol === 'run-v1' ? 0 : 1
+      if (
+        !priorBinding ||
+        !['legacy', 'run-v1'].includes(protocol) ||
+        !['goal', 'runId', 'storeRef'].every(
+          (field) => typeof priorBinding[field] === 'string' && priorBinding[field],
+        ) ||
+        !counters.every(
+          (field) => Number.isSafeInteger(priorBinding[field]) && priorBinding[field] >= minimum,
+        )
+      )
+        throw new HandoffStepError(
+          'Prior handoff source scope unknown; source binding reconciliation required before new key',
+        )
+      if (!sameSourceGeneration(prior.binding, binding)) continue
+      validateStoredRequest(prior)
+      if (prior.state !== 'completed' || !sourceAcceptance(deps, prior))
+        throw new HandoffStepError(
+          'Prior handoff delivery unresolved for this source generation; fresh source custody acceptance required before a new key',
+        )
+      if (JSON.stringify(resolveBinding(deps, options)) !== JSON.stringify(binding))
+        throw new HandoffStepError(
+          'Source binding changed during prior custody acceptance verification',
+        )
+    }
+  }
   if (record && !record.oracleAdmission)
     throw new HandoffStepError(
       'Legacy handoff source task admission requires explicit reconciliation',
@@ -397,6 +537,9 @@ function executeLockedStep(deps = {}, options = {}) {
       createdAt: (deps.now?.() ?? new Date()).toISOString(),
       recoveryOwner: binding.recoveryOwner ?? binding.oracleOwner,
     }
+    record.bodyDigest = createHash('sha256').update(record.envelopeBody).digest('hex')
+    record.requestDigest = requestDigest(record)
+    validateStoredRequest(record)
     mkdirSync(outboxDir, { recursive: true })
     saveAtomic(outboxFile, record)
   }
@@ -404,10 +547,11 @@ function executeLockedStep(deps = {}, options = {}) {
     record.state = state
     saveAtomic(outboxFile, record)
   }
+  validateStoredRequest(record)
   if (record.state === 'phase-pending') {
     const options = record.phaseOptions
     if (typeof deps.appendPhase === 'function') {
-      const res = deps.appendPhase(options)
+      const res = deps.appendPhase(structuredClone(options))
       if (res?.error || res?.ok === false || !(res?.status === 0 || res?.ok === true))
         throw new HandoffStepError(
           `phase append failed: ${res?.error?.message || res?.stderr || 'unknown result'}`,
@@ -424,6 +568,7 @@ function executeLockedStep(deps = {}, options = {}) {
   if (JSON.stringify(freshBinding) !== JSON.stringify(binding))
     throw new HandoffStepError('Authoritative binding/fence changed before queue dispatch')
   resolveTaskAdmission(deps, record.phaseOptions, freshBinding, record.oracleAdmission)
+  validateStoredRequest(record)
   if (record.state !== 'submitted' && record.state !== 'completed') {
     writeFileSync(bodyFile, record.envelopeBody, 'utf8')
     // Persist uncertainty before the call: a crash after persistence must replay
@@ -431,17 +576,21 @@ function executeLockedStep(deps = {}, options = {}) {
     persist('dispatch-unknown')
     let result
     try {
-      result = run('rig', [
-        'queue',
-        'create',
-        '--id',
-        record.queueId,
-        '--destination',
-        record.to,
-        '--body-file',
-        bodyFile,
-        '--json',
-      ])
+      result = run(
+        'rig',
+        [
+          'queue',
+          'create',
+          '--id',
+          record.queueId,
+          '--destination',
+          record.to,
+          '--body-file',
+          '-',
+          '--json',
+        ],
+        { input: record.envelopeBody },
+      )
     } catch (error) {
       throw new HandoffStepError(
         `Queue delivery outcome unknown: ${error.message}. Recover with: agentflow-sdlc handoff step --handoff-only --goal ${record.goal} --phase ${record.phase}`,
@@ -472,30 +621,33 @@ function executeLockedStep(deps = {}, options = {}) {
   }
   // Queue persistence or a wake receipt is not successor acceptance. Without a
   // host-verified, operation-bound custody receipt the obligation remains owned.
-  if (record.state !== 'completed' && typeof deps.verifySuccessorCustody === 'function') {
-    const receipt = deps.verifySuccessorCustody(structuredClone(record))
-    if (
-      receipt?.verified === true &&
-      receipt.accepted === true &&
-      receipt.queueId === record.queueId &&
-      receipt.destination === record.to &&
-      receipt.runId === binding.runId &&
-      receipt.epoch === binding.epoch &&
-      receipt.fencingToken === binding.fencingToken &&
-      receipt.oracleOwner === binding.oracleOwner &&
-      receipt.oracleDigest === binding.oracleDigest
-    ) {
+  const wasCompleted = record.state === 'completed'
+  if (wasCompleted && typeof deps.verifySuccessorCustody !== 'function')
+    throw new HandoffStepError(
+      'Current source successor custody acceptance verifier unavailable; historical completed record retained',
+    )
+  let custodyVerified = false
+  if (typeof deps.verifySuccessorCustody === 'function') {
+    const receipt = sourceAcceptance(deps, record)
+    if (receipt) {
       if (JSON.stringify(resolveBinding(deps, record.phaseOptions)) !== JSON.stringify(binding))
         throw new HandoffStepError(
           'Authoritative binding/fence changed during custody verification',
         )
-      record.custodyReceipt = structuredClone(receipt)
-      persist('completed')
+      custodyVerified = true
+      if (!wasCompleted) {
+        record.custodyReceipt = structuredClone(receipt)
+        persist('completed')
+      }
     }
   }
+  if (wasCompleted && !custodyVerified)
+    throw new HandoffStepError(
+      'Current source successor custody acceptance unresolved; historical completed record retained',
+    )
   return {
     status: record.state,
-    custodyVerified: record.state === 'completed',
+    custodyVerified,
     goal: record.goal,
     phase: record.phase,
     to: record.to,
