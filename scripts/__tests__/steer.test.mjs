@@ -14,9 +14,67 @@ import {
   evaluateSupervisorLiveness,
   steerBtwQuery,
 } from '../steer.mjs'
+import { recordDigest } from '../../lib/core/record-digest.mjs'
 import { tripLedgerBreaker } from '../../lib/core/role-collaboration.mjs'
 
 const CLI_PATH = join(process.cwd(), 'bin', 'cli.mjs')
+
+function verifiedSteering(ledger, resolution, rationale, humanApproval = null) {
+  const nowMs = Date.now()
+  const steeringBinding = {
+    authorityId: 'steer.lead',
+    replyRoute: 'external:operator',
+    goal: 'fixture-goal',
+    task: 'fixture-task',
+    powers: ['unfreeze'],
+    issuedAt: nowMs - 1,
+    expiresAt: nowMs + 120000,
+  }
+  const steeringRequest = {
+    goal: 'fixture-goal',
+    task: 'fixture-task',
+    power: 'unfreeze',
+    challenge: 'fixture-challenge-12345678901234567890',
+    deadlineAt: nowMs + 60000,
+    subjectDigest: recordDigest(ledger),
+    subjectId: 'ledger:fixture',
+  }
+  steeringRequest.actionDigest = recordDigest({
+    resolution,
+    rationale,
+    humanApproval,
+    actor: 'steer.lead',
+    subjectDigest: steeringRequest.subjectDigest,
+    subjectId: steeringRequest.subjectId,
+    goal: steeringRequest.goal,
+    task: steeringRequest.task,
+    nextToken: ledger.fencingToken + 1,
+  })
+  return {
+    nowMs,
+    clock: () => nowMs,
+    steeringBinding,
+    steeringRequest,
+    resolveSteeringSubject: () => ({
+      verified: true,
+      subjectId: steeringRequest.subjectId,
+      subjectDigest: recordDigest(ledger),
+      goal: steeringRequest.goal,
+      task: steeringRequest.task,
+    }),
+    verifySteeringEndpoint: ({ binding, request }) => ({
+      ...request,
+      authorityId: binding.authorityId,
+      replyRoute: binding.replyRoute,
+      authenticated: true,
+      decision: 'approve',
+      nonceConsumed: true,
+      reachable: true,
+      observedAt: nowMs,
+      expiresAt: nowMs + 60000,
+    }),
+  }
+}
 
 describe('scripts/steer.mjs - supervisory steering verbs', () => {
   describe('validateSteerDestination', () => {
@@ -300,6 +358,11 @@ describe('scripts/steer.mjs - supervisory steering verbs', () => {
           resolution: 'slice-split',
           rationale: 'Slice split into two smaller vertical capabilities to avoid timeout.',
           actor: 'steer.lead',
+          ...verifiedSteering(
+            frozenLedger,
+            'slice-split',
+            'Slice split into two smaller vertical capabilities to avoid timeout.',
+          ),
           targetDir: tempDir,
         })
 
@@ -344,6 +407,12 @@ describe('scripts/steer.mjs - supervisory steering verbs', () => {
           rationale: 'Waived due to environment blocker.',
           actor: 'steer.lead',
           humanApproval: 'human:alice#waiver-123',
+          ...verifiedSteering(
+            frozenLedger,
+            'person-waiver',
+            'Waived due to environment blocker.',
+            'human:alice#waiver-123',
+          ),
           targetDir: tempDir,
         })
         expect(okResult.ok).toBe(true)
@@ -689,7 +758,7 @@ describe('scripts/steer.mjs - supervisory steering verbs', () => {
       }
     })
 
-    it('runs agentflow-sdlc steer unfreeze with frozen ledger and returns json', () => {
+    it('previews CLI unfreeze with explicit actor without applying unauthenticated authority', () => {
       const tempDir = mkdtempSync(join(tmpdir(), 'steer-cli-'))
       try {
         const { ledger: frozenLedger } = tripLedgerBreaker({ fencingToken: 4 })
@@ -708,19 +777,23 @@ describe('scripts/steer.mjs - supervisory steering verbs', () => {
             're-scope',
             '--rationale',
             'Trimming scope to deliver minimal vertical capability',
+            '--actor',
+            'steer.lead',
+            '--dry-run',
             '--json',
           ],
           { encoding: 'utf8' },
         )
         const parsed = JSON.parse(stdout)
         expect(parsed.ok).toBe(true)
-        expect(parsed.applied).toBe(true)
+        expect(parsed.applied).toBe(false)
+        expect(parsed.authorized).toBe(false)
         expect(parsed.fencingToken).toBe(6)
         expect(parsed.ledger.frozen).toBe(false)
 
         const onDisk = JSON.parse(readFileSync(ledgerPath, 'utf8'))
-        expect(onDisk.frozen).toBe(false)
-        expect(onDisk.fencingToken).toBe(6)
+        expect(onDisk.frozen).toBe(true)
+        expect(onDisk.fencingToken).toBe(5)
       } finally {
         rmSync(tempDir, { recursive: true, force: true })
       }
@@ -811,6 +884,9 @@ describe('scripts/steer.mjs - supervisory steering verbs', () => {
             'slice-split',
             '--rationale',
             'Split for safety',
+            '--actor',
+            'steer.lead',
+            '--dry-run',
           ],
           { encoding: 'utf8' },
         )
@@ -822,7 +898,7 @@ describe('scripts/steer.mjs - supervisory steering verbs', () => {
       }
     })
 
-    it('runs agentflow-sdlc steer liveness --json via CLI for healthy supervisor', () => {
+    it('runs agentflow-sdlc steer liveness --json via CLI without treating a fresh heartbeat as authenticated authority', () => {
       const heartbeat = new Date(Date.now() - 60000).toISOString()
       const stdout = execFileSync(
         process.execPath,
@@ -830,9 +906,9 @@ describe('scripts/steer.mjs - supervisory steering verbs', () => {
         { encoding: 'utf8' },
       )
       const parsed = JSON.parse(stdout)
-      expect(parsed.reachable).toBe(true)
-      expect(parsed.status).toBe('SUPERVISOR_HEALTHY')
-      expect(parsed.holdNewSliceAdmission).toBe(false)
+      expect(parsed.reachable).toBe(false)
+      expect(parsed.status).toBe('SUPERVISOR_UNVERIFIED')
+      expect(parsed.holdNewSliceAdmission).toBe(true)
     })
 
     it('runs agentflow-sdlc steer liveness --json via CLI for stale supervisor with unmerged slices (AC-7)', () => {
@@ -904,7 +980,7 @@ describe('scripts/steer.mjs - supervisory steering verbs', () => {
   })
 
   describe('evaluateSupervisorLiveness', () => {
-    it('returns SUPERVISOR_HEALTHY when last heartbeat is within 30 minutes', () => {
+    it('returns SUPERVISOR_UNVERIFIED when only a recent heartbeat is supplied', () => {
       const nowMs = 1700000000000
       const recentHeartbeat = new Date(nowMs - 5 * 60 * 1000).toISOString()
       const result = evaluateSupervisorLiveness({
@@ -913,11 +989,11 @@ describe('scripts/steer.mjs - supervisory steering verbs', () => {
         unmergedAcceptedCount: 0,
       })
 
-      expect(result.reachable).toBe(true)
-      expect(result.status).toBe('SUPERVISOR_HEALTHY')
+      expect(result.reachable).toBe(false)
+      expect(result.status).toBe('SUPERVISOR_UNVERIFIED')
       expect(result.ageMs).toBe(5 * 60 * 1000)
       expect(result.staleTimeoutMs).toBe(SUPERVISOR_STALE_TIMEOUT_MS)
-      expect(result.holdNewSliceAdmission).toBe(false)
+      expect(result.holdNewSliceAdmission).toBe(true)
     })
 
     it('returns SUPERVISOR_UNREACHABLE with holdNewSliceAdmission when > 30m and unmerged >= 1 (AC-7)', () => {
@@ -946,7 +1022,7 @@ describe('scripts/steer.mjs - supervisory steering verbs', () => {
 
       expect(result.reachable).toBe(false)
       expect(result.status).toBe('SUPERVISOR_UNREACHABLE')
-      expect(result.holdNewSliceAdmission).toBe(false)
+      expect(result.holdNewSliceAdmission).toBe(true)
     })
 
     it('returns SUPERVISOR_UNREACHABLE when lastHeartbeatAt is missing or invalid', () => {
@@ -963,7 +1039,7 @@ describe('scripts/steer.mjs - supervisory steering verbs', () => {
       expect(invalid.reachable).toBe(false)
       expect(invalid.status).toBe('SUPERVISOR_UNREACHABLE')
       expect(invalid.ageMs).toBeNull()
-      expect(invalid.holdNewSliceAdmission).toBe(false)
+      expect(invalid.holdNewSliceAdmission).toBe(true)
     })
   })
 

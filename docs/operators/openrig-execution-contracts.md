@@ -116,3 +116,32 @@ Assignments record `id`, `mode` (`temporary` or `persistent`), `identity`, role 
 `handoff deliver` accepts optional `--task-file` and `--oracle-assignment-file` JSON declarations. Initial delivery, held flush and person release recheck current task/assignment authority. A person release cannot bypass oracle permissions. Phase-step hosts must enforce the same oracle admission in their source-authorized append/dispatch boundary; task custody alone does not grant oracle write authority.
 
 Two or more failed repair rounds require a revised bounded `repairScope` containing distinct `previousRevision` and `revision`, reason and accountable task owner. Existing oracle digests, workflow identity, fencing and publication holds remain intact.
+
+## Authenticated steering
+
+A named owner, a heartbeat and an authenticated endpoint are different evidence. A fresh heartbeat
+without a trusted host verifier returns `SUPERVISOR_UNVERIFIED`; every unverified or unreachable
+result holds new slice admission. Verified liveness requires the `observe` power, not a reusable
+approval for another action. External authorities work without a local steering seat.
+
+The host endpoint verifier binds authority, reply route, goal, task, challenge and deadline. Its
+receipt must be fresh and expire within the issued binding. Decision powers additionally require
+an explicit approved decision, a consumed nonce, source subject identity and exact subject/action
+digests. The host owns authentication and nonce consumption. Callable test fixtures demonstrate
+this boundary; arbitrary JSON, command flags and heartbeat files cannot provide it.
+
+Applying a legacy ledger unfreeze requires an explicit actor and a trusted source resolver identifying
+the actual ledger's goal/task/subject. The approved action binds resolution, rationale, human approval
+reference, subject identity/digest and next token. Reusing approval for another decision or an identical
+ledger belonging to another task is rejected. Missing provenance keeps the hold. Tokens must be safe
+nonnegative integers and increase without overflow.
+
+The standalone CLI currently has no authenticated host adapter: use `steer unfreeze --actor <identity>
+--dry-run` for an explicitly unauthorized preview. A real application must supply trusted endpoint and
+source adapters; identity flags cannot satisfy them. A human-approval reference is part of the decision,
+not independent proof that a person approved a PR.
+
+Legacy file application uses a cooperative lock, rechecks the digest and atomically renames the updated
+file. Other writers must honor that lock. This is not source-store CAS or run-service fencing; native
+run recovery continues through the existing source-backed service. A stale lock requires ownership
+reconciliation and is never removed automatically.

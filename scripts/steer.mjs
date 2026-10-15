@@ -1,8 +1,20 @@
 #!/usr/bin/env node
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  writeFileSync,
+  openSync,
+  closeSync,
+  unlinkSync,
+  renameSync,
+} from 'node:fs'
+import { randomUUID } from 'node:crypto'
 import { join, resolve } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
+import { evaluateSteeringBinding } from '../lib/core/steering-binding.mjs'
+import { recordDigest } from '../lib/core/record-digest.mjs'
 import {
   UNFREEZE_RESOLUTIONS,
   createUnfreezeResolution,
@@ -71,13 +83,13 @@ Options:
 
 export const UNFREEZE_USAGE = `Usage: agentflow-sdlc steer unfreeze --ledger <file> --resolution <type> --rationale <text> [options]
 
-Formats and verifies a sealed unfreeze resolution incrementing the next epoch fencing token.
+Previews a sealed unfreeze resolution. Application requires an authenticated host steering adapter;\nstandalone CLI declarations cannot authenticate authority.
 
 Options:
   --ledger <file>              Path to frozen role collaboration rework ledger JSON
   --resolution <type>          Resolution type: re-scope | slice-split | person-waiver | abandonment
   --rationale <text>           Detailed rationale explaining why unfreeze is justified
-  --actor <seat>               Authoring steering seat (defaults to steer.lead or steer-lead@<rig>)
+  --actor <seat>               Explicit authoring steering identity (required)
   --human-approval <ref>       Human authorization reference (required for waiver or abandonment)
   --dry-run                    Verify resolution and next ledger without writing file
   --no-apply                   Do not write updated ledger back to disk
@@ -297,10 +309,16 @@ export async function steerUnfreeze({
   actor,
   humanApproval,
   approvalRef,
+  steeringBinding,
+  steeringRequest,
+  verifySteeringEndpoint,
+  resolveSteeringSubject,
+  nowMs = Date.now(),
+  clock = Date.now,
   dryRun = false,
   apply = true,
   targetDir = process.cwd(),
-  fs = { existsSync, readFileSync, writeFileSync },
+  fs = { existsSync, readFileSync, writeFileSync, openSync, closeSync, unlinkSync, renameSync },
 } = {}) {
   if (!ledgerFile) throw new Error('--ledger <file> is required')
   if (!resolution) {
@@ -318,7 +336,8 @@ export async function steerUnfreeze({
     throw new Error(`Ledger at ${ledgerFile} is not frozen`)
   }
 
-  const effectiveActor = actor || process.env.OPENRIG_SESSION_NAME || 'steer.lead'
+  const effectiveActor = actor
+  if (!effectiveActor) throw new Error('An explicit authenticated steering actor is required')
   if (isInRigSeat(effectiveActor)) {
     throw new Error(
       `in-rig execution seat "${effectiveActor}" cannot author an unfreeze resolution; steering plane only`,
@@ -330,7 +349,13 @@ export async function steerUnfreeze({
     )
   }
 
-  const currentToken = Number.isInteger(rawLedger.fencingToken) ? rawLedger.fencingToken : 0
+  if (
+    !Number.isSafeInteger(rawLedger.fencingToken) ||
+    rawLedger.fencingToken < 0 ||
+    rawLedger.fencingToken >= Number.MAX_SAFE_INTEGER
+  )
+    throw new Error('A valid current legacy fencing token is required')
+  const currentToken = rawLedger.fencingToken
   const nextToken = currentToken + 1
 
   const effectiveApproval = humanApproval || approvalRef
@@ -345,13 +370,134 @@ export async function steerUnfreeze({
 
   const nextLedger = unfreezeLedger(rawLedger, resolutionRecord)
 
+  let cleanupRequired = false
+  let authority = { authorized: false, reachable: false, status: 'STEERING_PREVIEW_UNVERIFIED' }
   if (apply && !dryRun) {
-    fs.writeFileSync(ledgerPath, JSON.stringify(nextLedger, null, 2))
+    const binding = structuredClone(steeringBinding ?? {})
+    const request = structuredClone(steeringRequest ?? {})
+    let subject
+    try {
+      subject =
+        typeof resolveSteeringSubject === 'function'
+          ? resolveSteeringSubject({ ledgerPath, subjectDigest: recordDigest(rawLedger) })
+          : null
+    } catch {
+      subject = null
+    }
+    if (
+      !subject ||
+      subject.verified !== true ||
+      subject.subjectDigest !== recordDigest(rawLedger) ||
+      subject.subjectId !== request.subjectId ||
+      subject.goal !== request.goal ||
+      subject.task !== request.task
+    )
+      return {
+        ok: false,
+        applied: false,
+        authorized: false,
+        status: 'STEERING_SUBJECT_UNVERIFIED',
+        obligation: {
+          owner: 'human/operator',
+          action: 'verify-steering-authority',
+          deadlineAt: Number.isFinite(nowMs) ? nowMs + 900000 : null,
+        },
+      }
+    if (
+      binding.authorityId !== effectiveActor ||
+      request.power !== 'unfreeze' ||
+      request.subjectDigest !== recordDigest(rawLedger) ||
+      request.actionDigest !==
+        recordDigest({
+          resolution,
+          rationale,
+          humanApproval: effectiveApproval ?? null,
+          actor: effectiveActor,
+          subjectDigest: recordDigest(rawLedger),
+          subjectId: subject.subjectId,
+          goal: subject.goal,
+          task: subject.task,
+          nextToken,
+        })
+    )
+      throw new Error(
+        'Steering authority must bind the actor, unfreeze power, source identity and exact decision digests',
+      )
+    authority = evaluateSteeringBinding({
+      binding,
+      request,
+      verifyEndpoint: verifySteeringEndpoint,
+      nowMs,
+    })
+    if (!authority.authorized) return { ok: false, applied: false, ...authority }
+    const lockPath = `${ledgerPath}.agentflow-steer.lock`
+    let descriptor
+    try {
+      descriptor = fs.openSync(lockPath, 'wx', 0o600)
+    } catch {
+      return {
+        ok: false,
+        applied: false,
+        authorized: false,
+        status: 'STEERING_LEDGER_LOCKED',
+        obligation: {
+          owner: 'human/operator',
+          action: 'reconcile-steering-ledger-lock',
+          deadlineAt: nowMs + 900000,
+        },
+      }
+    }
+    const temporaryPath = `${ledgerPath}.agentflow-${randomUUID()}.tmp`
+    try {
+      const currentLedger = JSON.parse(fs.readFileSync(ledgerPath, 'utf8'))
+      if (recordDigest(currentLedger) !== request.subjectDigest)
+        throw new Error('Steering ledger changed during authority verification')
+      const finalTime = clock()
+      if (!Number.isFinite(finalTime) || finalTime < nowMs || finalTime >= authority.validUntil)
+        throw new Error('Steering authority expired before application')
+      const currentSubject = resolveSteeringSubject({
+        ledgerPath,
+        subjectDigest: recordDigest(currentLedger),
+      })
+      if (
+        currentSubject?.verified !== true ||
+        ['subjectId', 'goal', 'task', 'subjectDigest'].some(
+          (field) => currentSubject[field] !== subject[field],
+        )
+      )
+        throw new Error('Steering subject changed before application')
+      fs.writeFileSync(temporaryPath, JSON.stringify(nextLedger, null, 2), {
+        flag: 'wx',
+        mode: 0o600,
+        flush: true,
+      })
+      fs.renameSync(temporaryPath, ledgerPath)
+    } finally {
+      try {
+        fs.closeSync(descriptor)
+      } catch {
+        cleanupRequired = true
+      }
+      try {
+        fs.unlinkSync(lockPath)
+      } catch {
+        cleanupRequired = true
+      }
+      try {
+        if (fs.existsSync(temporaryPath)) fs.unlinkSync(temporaryPath)
+      } catch {
+        cleanupRequired = true
+      }
+    }
   }
 
   return {
     ok: true,
     applied: apply && !dryRun,
+    authorized: authority.authorized,
+    cleanupRequired,
+    storageGuarantee: 'cooperative-file-lock-and-atomic-rename',
+    status: apply && !dryRun ? 'STEERING_APPLIED' : 'STEERING_PREVIEW_UNVERIFIED',
     ledgerPath,
     fencingToken: nextToken,
     resolution: resolutionRecord,
@@ -641,10 +787,14 @@ export function evaluateSupervisorLiveness({
   nowMs = Date.now(),
   staleTimeoutMs = SUPERVISOR_STALE_TIMEOUT_MS,
   unmergedAcceptedCount = 0,
+  steeringBinding,
+  steeringRequest,
+  verifySteeringEndpoint,
 } = {}) {
-  const holdNewSliceAdmission = Number(unmergedAcceptedCount) >= 1
+  const validCount = Number.isSafeInteger(unmergedAcceptedCount) && unmergedAcceptedCount >= 0
+  const holdNewSliceAdmission = true
 
-  if (!lastHeartbeatAt) {
+  if (!lastHeartbeatAt || !validCount) {
     return {
       reachable: false,
       status: 'SUPERVISOR_UNREACHABLE',
@@ -657,7 +807,14 @@ export function evaluateSupervisorLiveness({
   const lastMs = typeof lastHeartbeatAt === 'number' ? lastHeartbeatAt : Date.parse(lastHeartbeatAt)
   const ageMs = Number.isFinite(lastMs) ? Math.max(0, nowMs - lastMs) : null
 
-  if (!Number.isFinite(lastMs) || ageMs > staleTimeoutMs) {
+  if (
+    !Number.isFinite(lastMs) ||
+    !Number.isFinite(nowMs) ||
+    lastMs > nowMs ||
+    !Number.isFinite(staleTimeoutMs) ||
+    staleTimeoutMs <= 0 ||
+    ageMs > staleTimeoutMs
+  ) {
     return {
       reachable: false,
       status: 'SUPERVISOR_UNREACHABLE',
@@ -667,6 +824,21 @@ export function evaluateSupervisorLiveness({
     }
   }
 
+  const authority = evaluateSteeringBinding({
+    binding: steeringBinding,
+    request: steeringRequest,
+    verifyEndpoint: verifySteeringEndpoint,
+    nowMs,
+  })
+  if (!authority.authorized || steeringRequest?.power !== 'observe')
+    return {
+      reachable: false,
+      status: 'SUPERVISOR_UNVERIFIED',
+      ageMs,
+      staleTimeoutMs,
+      holdNewSliceAdmission,
+      obligation: authority.obligation,
+    }
   return {
     reachable: true,
     status: 'SUPERVISOR_HEALTHY',
@@ -827,6 +999,10 @@ export async function runSteerCli(rawArgs = []) {
 
       if (isJson) {
         process.stdout.write(JSON.stringify(result, null, 2) + '\n')
+      } else if (!result.ok) {
+        process.stdout.write(
+          `Unfreeze held: ${result.status}; authenticated steering endpoint required\n`,
+        )
       } else {
         process.stdout.write(
           `✓ Unfreeze resolution sealed [${result.resolution.digest}]\n` +
@@ -836,7 +1012,7 @@ export async function runSteerCli(rawArgs = []) {
             `  Ledger: ${result.ledgerPath} (${result.applied ? 'updated' : 'preview'})\n`,
         )
       }
-      return 0
+      return result.ok ? 0 : 3
     }
 
     if (subcommand === 'triage') {
