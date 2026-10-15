@@ -1,6 +1,7 @@
 import { execFileSync, spawnSync } from 'node:child_process'
 import {
   cpSync,
+  copyFileSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -12,7 +13,8 @@ import {
   writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join, resolve } from 'node:path'
+import { join, resolve, dirname, delimiter } from 'node:path'
+import { resolveExecutable } from '../../lib/environment.mjs'
 import { afterEach, describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
 
@@ -26,9 +28,14 @@ function fixture({ installed = false } = {}) {
   const bin = join(root, 'bin')
   mkdirSync(project)
   mkdirSync(bin)
-  symlinkSync(process.execPath, join(bin, 'node'))
-  const git = execFileSync('which', ['git'], { encoding: 'utf8' }).trim()
-  symlinkSync(git, join(bin, 'git'))
+  const nodePath = join(bin, process.platform === 'win32' ? 'node.exe' : 'node')
+  try {
+    symlinkSync(process.execPath, nodePath)
+  } catch {
+    copyFileSync(process.execPath, nodePath)
+  }
+  const git = resolveExecutable('git')
+  if (!git) throw new Error('Fixture requires native Git')
   execFileSync(git, ['init', '--quiet', project], {
     env: { ...process.env, GIT_CEILING_DIRECTORIES: tmpdir() },
   })
@@ -37,7 +44,7 @@ function fixture({ installed = false } = {}) {
       cpSync(resolve('adapters/openrig', base), join(home, '.openrig/specs', base), {
         recursive: true,
       })
-  return { root, home, project, bin }
+  return { root, home, project, bin, git }
 }
 function snapshot(root) {
   if (!existsSync(root)) return null
@@ -76,7 +83,10 @@ function cli(f, operation, ...args) {
       encoding: 'utf8',
       timeout: 30000,
       env: {
-        PATH: f.bin,
+        PATH: [f.bin, dirname(f.git)].join(delimiter),
+        ...(process.platform === 'win32'
+          ? { SystemRoot: process.env.SystemRoot, PATHEXT: process.env.PATHEXT }
+          : {}),
         HOME: join(f.root, 'user'),
         USERPROFILE: join(f.root, 'user'),
         GIT_CEILING_DIRECTORIES: tmpdir(),
