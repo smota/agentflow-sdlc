@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { mkdtempSync, rmSync, existsSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { spawnSync } from 'node:child_process'
 import { join } from 'node:path'
 import {
   loadProjectConfig,
@@ -66,12 +68,40 @@ describe('AgentFlow source routing adoption (#527)', () => {
   })
 })
 
-it('keeps this project desired fleet activation held while preserving its native role routing', () => {
-  const config = JSON.parse(readFileSync(join(process.cwd(), 'agent-workflow.config.json'), 'utf8'))
-  expect(config.adapters.openrig.executionPolicy.activation).toBe('held')
-  expect(config.adapters.openrig.executionPolicy.seats['dev.build']).toMatchObject({
-    runtime: 'pi',
-    providerRoute: 'munito',
-    model: 'qwen/qwen3.8-27b',
-  })
+it('the actual project policy allows a held preview and blocks materialization before home writes', () => {
+  const temporary = mkdtempSync(join(tmpdir(), 'agentflow-own-policy-'))
+  const home = join(temporary, 'absent-home')
+  const invoke = (operation) =>
+    spawnSync(
+      process.execPath,
+      [
+        join(process.cwd(), 'bin/cli.mjs'),
+        'adapters',
+        'squads',
+        operation,
+        'openrig',
+        '--kind',
+        'all',
+        '--home',
+        home,
+        'policy-check',
+        process.cwd(),
+        ...(operation === 'plan' ? ['--json'] : []),
+      ],
+      { encoding: 'utf8', timeout: 15000 },
+    )
+  try {
+    const planned = invoke('plan')
+    expect(planned.status).toBe(0)
+    const result = JSON.parse(planned.stdout)
+    expect(result.effects).toEqual([])
+    expect(result.plans).toHaveLength(3)
+    expect(result.plans.every((plan) => plan.activation === 'held')).toBe(true)
+    const attempted = invoke('provision')
+    expect(attempted.status).not.toBe(0)
+    expect(attempted.stderr).toMatch(/activation.*held/i)
+    expect(existsSync(home)).toBe(false)
+  } finally {
+    rmSync(temporary, { recursive: true, force: true })
+  }
 })
