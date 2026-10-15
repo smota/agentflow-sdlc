@@ -682,7 +682,7 @@ export async function steerMergeCheck({
     'view',
     String(prNum),
     '--json',
-    'number,title,state,isDraft,mergeable,headRefOid,reviewDecision,author,reviews,statusCheckRollup',
+    'number,title,state,isDraft,mergeable,headRefOid,baseRefName,reviewDecision,author,reviews,statusCheckRollup',
   ]
   if (repo) viewArgs.push('--repo', repo)
   const observePr = () => {
@@ -725,7 +725,7 @@ export async function steerMergeCheck({
     return value
   }
   const pr = observePr()
-  const readiness = verifyMergeGates(pr, { resolveReviewEvidence })
+  const readiness = verifyMergeGates(pr, { resolveReviewEvidence, repository: repo })
   const common = {
     pr: prNum,
     title: pr.title,
@@ -792,12 +792,13 @@ export async function steerMergeCheck({
       obligation: authority.obligation,
     }
   const currentPr = observePr()
-  const currentReadiness = verifyMergeGates(currentPr, { resolveReviewEvidence })
+  const currentReadiness = verifyMergeGates(currentPr, { resolveReviewEvidence, repository: repo })
   if (!currentReadiness.ready || currentReadiness.headOid !== readiness.headOid)
     return {
       ok: false,
       ...common,
       status: 'MERGE_READINESS_CHANGED',
+      ready: false,
       failedGates: currentReadiness.failedGates,
     }
   const finalTime = clock()
@@ -806,7 +807,7 @@ export async function steerMergeCheck({
     finalTime < authority.observedAt ||
     finalTime >= authority.validUntil
   )
-    return { ok: false, ...common, status: 'MERGE_AUTHORITY_EXPIRED' }
+    return { ok: false, ...common, ready: false, status: 'MERGE_AUTHORITY_EXPIRED' }
   const mergeArgs = [
     'pr',
     'merge',
@@ -1020,7 +1021,7 @@ export async function runSteerCli(rawArgs = []) {
     }
     if (subcommand === 'liveness') {
       process.stdout.write(LIVENESS_USAGE)
-      return result.holdNewSliceAdmission ? 3 : 0
+      return 0
     }
     if (subcommand === 'btw') {
       process.stdout.write(BTW_USAGE)
