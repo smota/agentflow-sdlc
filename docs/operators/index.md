@@ -4,6 +4,7 @@ Operators diagnose installed state, provider availability, source connectivity, 
 and optional Cockpit behavior.
 
 For OpenRig, preview [execution contracts](openrig-execution-contracts.md) before changing a squad.
+Use the [verified mutation contract](openrig-mutations.md) for source-authorized changes and compensating rollback.
 
 ```bash
 agentflow-sdlc onboarding verify --target /path/to/project --json
