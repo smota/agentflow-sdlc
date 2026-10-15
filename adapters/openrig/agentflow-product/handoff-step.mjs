@@ -112,6 +112,15 @@ export function parseQueueEnvelope(body = '') {
     }
     if (fields['Envelope-Version'] !== 'pointer-v1')
       throw new HandoffStepError('Unsupported pointer envelope version')
+    for (const [name, minimum, maximum] of [
+      ['Phase', 0, 8],
+      ['Epoch', 1, Number.MAX_SAFE_INTEGER],
+    ]) {
+      if (fields[name] === undefined || fields[name] === '') continue
+      const value = Number(fields[name])
+      if (!Number.isSafeInteger(value) || value < minimum || value > maximum)
+        throw new HandoffStepError(`Invalid pointer envelope ${name}`)
+    }
     return {
       format: 'pointer-v1',
       warning: null,

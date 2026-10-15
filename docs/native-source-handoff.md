@@ -81,3 +81,9 @@ in the same source generation holds a different operation key; a genuinely sourc
 operation or a separately fenced generation does not impose a permanent ban on later work.
 Queue bodies use immutable stdin bytes. Submission, source acceptance and run-writer ownership
 remain separate facts.
+
+Protected-scope classification conservatively covers case aliases on case-insensitive hosts;
+exact source paths and assignment permissions are retained rather than rewritten or expanded.
+Pointer-v1 metadata rejects non-integer or out-of-range phases and legacy epochs. Phase zero
+remains valid, absent metadata stays unknown, and legacy epoch validation never translates
+native generation/revocation counters into positive epochs.
