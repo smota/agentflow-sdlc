@@ -75,3 +75,32 @@ contract deltas rather than arbitrary installed YAML. The new source policy does
 installed tuples above or waive coding calibration, actual-route observation, custody or review.
 Generic base template install/update remains a separate explicit maintenance operation whose live
 effects require its own setup authority; it is not automatically protected by project activation.
+
+## Installed base parsing hold
+
+A bounded read of the three installed base `configurations.yaml` files found a real pre-existing
+setup blocker. Delivery (`agentflow`) and steering (`agentflow-steer`) parsed strictly; product
+(`agentflow-product`) did not. The product file repeats `presets.balanced-grok-lead` at lines 17
+and 29, producing `DUPLICATE_KEY` at line 29. The two values are identical. No raw installed
+configuration, credentials or host paths are included in this record.
+
+| Installed base      | Configuration SHA256                                               | Strict parse  |
+| ------------------- | ------------------------------------------------------------------ | ------------- |
+| `agentflow`         | `258e5729c807ce6a9f3fdc65fe4211bc8597070513b5434ab1e62d7b34ffdf58` | valid         |
+| `agentflow-product` | `21fa31ee311dc2514ad3ed802acbef1bca049869d46cb2325ad7534b640ac908` | duplicate key |
+| `agentflow-steer`   | `4b088d2d84916c7c7ea2da44ac4bb166d9029e1602a2eb2cf95593ee3321b87e` | valid         |
+
+The real-home desired plan therefore remains blocked. The lifecycle correctly reports the installed
+parse failure rather than silently substituting source defaults and claiming an observed setup.
+An ignored, absent staging home instead produced eight held source contracts with `effects: []`
+and no home creation. That verifies source planning only.
+
+A minimal repair candidate exists in repository-local scratch for review, not deployment. It removes
+only the second identical entry (lines 29–31); strict parsing succeeds and the effective parsed
+configuration is unchanged. Candidate SHA256 is
+`b183c4f221e10df723ed9701c5cd3258465a0eea82a0b57cdcdc6e13fb258018`; its three-line removal patch
+SHA256 is `e161f1c6a45cac0f2da3e420709a8e9299b9922188b1fb4f4a87602176e4578f`.
+Recheck the exact before hash and review the patch before any installed write. Base upgrade or
+repair is a separate setup action; repairing parsing does not establish runtime readiness, mutate
+existing squad authority, qualify Munito, recover custody or resume work. No installed file was
+changed during this diagnosis.
