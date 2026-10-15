@@ -1,0 +1,20 @@
+{
+  "ready": true,
+  "observationProtocolVersion": 1,
+  "processReady": true,
+  "catchupStatus": "verified",
+  "catchupVerified": true,
+  "observedExecution": {
+    "providerRoute": "munito",
+    "model": "qwen/qwen3.8-27b",
+    "effort": "medium",
+    "observedAt": "2026-10-15T12:00:00.000Z",
+    "sessionId": "session-2",
+    "generation": "generation-2",
+    "launchId": "launch-2"
+  },
+  "launchId": "launch-2",
+  "sessionId": "session-2",
+  "lastEntryId": "entry-1",
+  "updatedAt": "2026-10-15T12:00:00.000Z"
+}

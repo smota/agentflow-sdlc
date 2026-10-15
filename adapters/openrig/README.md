@@ -92,3 +92,6 @@ agentflow-sdlc adapters squads list openrig
 agentflow-sdlc adapters squads update openrig my-project
 agentflow-sdlc adapters squads remove openrig [--purge] my-project
 ```
+
+See [Pi runtime observation compatibility](../../docs/openrig-runtime-compatibility.md) for
+the local upstream candidate, unsupported live observation, and preflight admission limits.

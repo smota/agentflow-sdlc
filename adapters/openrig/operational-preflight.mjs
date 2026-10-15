@@ -1,5 +1,7 @@
 // Admission evidence evaluator, not a runtime controller. Only a trusted host reader may set
 // sourceVerified; the bundled compact OpenRig collector deliberately cannot attest a model.
+import { evaluateRuntimeCapabilities } from './runtime-capabilities.mjs'
+
 const TUPLE_FIELDS = ['runtime', 'providerRoute', 'model', 'effort', 'profile']
 const identifier = (value) =>
   typeof value === 'string' && /^[a-zA-Z0-9][a-zA-Z0-9_.:@/-]{0,159}$/.test(value)
@@ -20,6 +22,7 @@ export function evaluateOperationalPreflight({
   task = {},
   now,
   maxAgeMs = 60000,
+  runtimeCompatibility = null,
 } = {}) {
   const owner = identifier(task.owner) ? task.owner : 'operator'
   const required = Array.isArray(task.requiredSeats) ? task.requiredSeats : []
@@ -35,6 +38,21 @@ export function evaluateOperationalPreflight({
     const observation = uniqueSeat(observations.entries, rawSeat)
     const binding = task.bindings?.[rawSeat]
     const reasons = []
+    // Raw reports are re-evaluated; compatible/sourceVerified booleans supplied by a caller
+    // cannot promote an unknown or merely proposed protocol into supported execution.
+    const runtimeReport =
+      runtimeCompatibility === null ? null : uniqueSeat(runtimeCompatibility, rawSeat)
+    const compatibility =
+      runtimeCompatibility === null
+        ? null
+        : evaluateRuntimeCapabilities({
+            runtime: contract?.runtime,
+            report: runtimeReport?.report,
+            expected: { ...contract, ...binding },
+            nowMs: clock,
+          })
+    const runtimeCompatible = compatibility === null || compatibility.compatible === true
+    if (!runtimeCompatible) reasons.push('runtime-compatibility-unverified')
     const configured = !!contract && sameTuple(contract, installed)
     if (!contract) reasons.push('required-seat-unavailable')
     else if (!configured) reasons.push('installed-contract-unverified')
@@ -76,7 +94,8 @@ export function evaluateOperationalPreflight({
       observed &&
       daemon.state === 'running' &&
       observation?.processReady === true &&
-      observation?.catchupVerified === true
+      observation?.catchupVerified === true &&
+      runtimeCompatible
     // Role authority is meaningful only when tied to this exact observed occupant and task.
     const authorized = observed && observation?.authorized === true
     if (!authorized)
