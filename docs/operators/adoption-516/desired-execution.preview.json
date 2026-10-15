@@ -16,6 +16,7 @@
     "adapters": {
       "openrig": {
         "executionPolicy": {
+          "activation": "held",
           "preset": "all-codex",
           "seats": {
             "orch.arch": {

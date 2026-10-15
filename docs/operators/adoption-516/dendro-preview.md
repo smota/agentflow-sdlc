@@ -26,6 +26,9 @@ prove the physical fleet has one seat. The desired adapter execution policy is a
 existing workflow configuration, which the authority loader supports. This avoids a wholesale
 configuration consolidation while direct routing callers still read the legacy workflow file.
 No model inventory, probe, desired tuple or configured pin becomes actual execution evidence.
+The canonical `executionPolicy.activation: held` is machine-enforced: desired previews work,
+but provision/update cannot materialize this unqualified policy. The base preset remains
+`all-codex`; explicit per-seat overrides intentionally select the proposed mixed routes.
 
 `CODEX.md` and `docs/guiding-principles.md` were absent. The concrete patch proposes a scoped
 consumer adapter and principles derived from the seeded governance and existing Rust policy,
@@ -81,9 +84,30 @@ quota failover. Keep at most one Munito worker until actual route health is veri
    never use checkout/reset to erase the pre-existing AGENTS delta. Reconcile any external
    mutation before compensation. Rollback does not reset source history or fencing.
 
-The concrete repository patch passed `git apply --check` against the dirty Dendro baseline.
+The activation-held repository patch passed `git apply --check` against the dirty Dendro baseline
+and a clean HEAD staging copy. A clean-branch adoption excludes the pre-existing dirty managed
+culture delta from the commit, preserving those working-tree bytes separately.
 A separate staging copy applied it and ran the actual public squads planning CLI: eight coherent
 contracts, `effects: []`, `observation: not-performed`, no staging home created. The installed
 preview uses the actual source materializer against existing rig text, preserving IDs and working
 directories; it does not provision or restart anything. Required runtime, custody, authority and
 human review gaps remain visible rather than being replaced with success claims.
+
+## Held repository patch verification
+
+The consuming-repository work is tracked in [Dendro #60](https://github.com/smota/dendro/issues/60).
+The reviewed four-file patch SHA256 is
+`dddd0256de79478d61f545456e94e9188d173b94605f878e1bce5a8642b51a9a`.
+Both dirty-baseline and clean-HEAD apply checks passed. The clean staging copy produced eight
+contracts through the real public planning command, all with activation held and no effects.
+An actual all-kind provision attempt rejected that source policy before creating the staging home.
+These are hermetic repository/configuration checks, not live runtime or Dendro Rust acceptance.
+
+The clean-branch after hashes are AGENTS
+`23cb411f2cf8020a1f603cc9caff1a0453c744f0d45f3426bb9e86aac97b5891`, workflow configuration
+`338ef9e30f5e265259fc78628859f5648e2cd18e25caf97e770f4a832a4cb3e7`, Codex adapter
+`e83cd9a471c54d7c5fe3f163acf26a4505a95ba53e72e85b70cadd451da6fb53`, and guiding principles
+`37298e9285be6df4e4a56e878a13d7e5d9357636dd4ba22b88b2f65b9bdf09a2`.
+The original dirty managed culture delta is excluded from that clean branch; it remains an
+independent owner modification, not adoption output. Recheck the original baseline hashes before
+applying, and retain the backlog pause and every source/custody/qualification hold afterward.
