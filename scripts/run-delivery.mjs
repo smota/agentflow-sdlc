@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+import { oraclePackageCandidate } from '../lib/core/oracle-package.mjs'
+import { resolveOraclePackage as resolvePackageProofs } from '../lib/verification/oracle-package-resolver.mjs'
 import { readFileSync, existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { hostname, userInfo } from 'node:os'
@@ -61,7 +63,7 @@ export const RUN_EXIT_CODES = {
   unknown: 6,
 }
 const help =
-  'Usage: agentflow-sdlc run <source-plan|start|status|context|next|freeze|verify|intent-plan|advance|checkpoint|pause|handoff|resume|grant-plan|grant-issue|grant-status|grant-revoke|act|reconcile|journal-reconcile|migrate|resolve-escalation|publish> <id> [--target <dir>] [--execute] [--plan <file> --confirm <digest>] [--json]'
+  'Usage: agentflow-sdlc run <source-plan|start|status|context|next|freeze|oracle-pin|oracle-verify|verify|intent-plan|advance|checkpoint|pause|handoff|resume|grant-plan|grant-issue|grant-status|grant-revoke|act|reconcile|journal-reconcile|migrate|resolve-escalation|publish> <id> [--target <dir>] [--execute] [--plan <file> --confirm <digest>] [--json]'
 
 // W8e / D3 — replaces message-regex classification. A GovernedBlockError carries its exit code as a
 // fact about the error (RUN_EXIT_CODES.blocked, documented and distinct from a genuine error), so
@@ -350,6 +352,7 @@ export async function runDelivery(
       },
       // W8f D1 — the run and the role-pass gate (scripts/validate-sdlc-role-pass.mjs) both resolve
       // observation trust through the ONE shared function; no second copy of this decision lives here.
+      resolveOraclePackage: async (request) => resolvePackageProofs({ root, config, request }),
       resolveObservation: async (observation) =>
         resolveVerifiedObservation({ root, config, observation }),
       observeWriter: async (state) => observeLocalWriter(state.writer),
@@ -689,6 +692,50 @@ export async function runDelivery(
         result.advancePlan = plan
         result.confirm = recordDigest(plan)
       }
+    } else if (command === 'oracle-verify') {
+      let { state } = await service.read()
+      const checkName = flag('--check'),
+        spec = config.oracleAssurance
+      const proof = Object.values(spec?.proofs ?? {}).find((item) => item.check === checkName)
+      const check = config.checks?.[checkName]
+      if (
+        !proof ||
+        !check ||
+        !state ||
+        state.phase !== 3 ||
+        state.status !== 'active' ||
+        !execute ||
+        authority.owner !== state.owner ||
+        authority.generation !== state.generation ||
+        !actionBoundaryAllows(state.boundary, boundary, sdlcConfig)
+      )
+        throw new GovernedBlockError(
+          'Current phase-three writer authority and configured oracle proof check required',
+        )
+      if (
+        !(await service.admitAttempt({ estimatedNext: config.budget?.estimatedNext, authority }))
+          .admitted
+      )
+        throw new GovernedBlockError('Oracle proof budget admission blocked')
+      state = (await service.read()).state
+      const collected = collectProcessObservation({
+        root,
+        definition: { ...check, ...oraclePackageCandidate(spec, state) },
+        boundary,
+      })
+      result = {
+        state: collected.observation.outcome === 'pass' ? 'observed' : 'blocked',
+        observation: collected.observation,
+        observationPath: collected.observationPath,
+        candidate: collected.candidate,
+      }
+    } else if (command === 'oracle-pin') {
+      result = await service.pinOracle({
+        digest: flag('--digest'),
+        seat: flag('--seat', 'dev.build'),
+        proposal: flag('--package') ? readJson(flag('--package')) : undefined,
+        authority,
+      })
     } else if (command === 'freeze')
       result = await service.freezeContract({
         expectedRevision: (await service.read()).revision,
@@ -939,7 +986,7 @@ export async function runDelivery(
       })
     return result?.state === 'unknown'
       ? 6
-      : result?.blocked || result?.verification?.outcome === 'fail'
+      : result?.state === 'blocked' || result?.blocked || result?.verification?.outcome === 'fail'
         ? 3
         : 0
   } catch (error) {

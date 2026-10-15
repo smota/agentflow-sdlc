@@ -1070,7 +1070,7 @@ const COMMAND_USAGE = {
     "Usage: agentflow-sdlc config <doctor|check|sync|inspect|prompt|project|validate|consolidate> [--target <dir>] [--harness <name>] [--dry-run|--apply] [--confirm <token>] [--json]\nLow-level primitive. To change an adopted project, use `agentflow-sdlc onboarding refine`. `config sync` changes other agents' harnesses and runs only when you ask for it.\n",
   project:
     'Usage: agentflow-sdlc project [--target <dir>] [--apply --confirm <digest>] [--json]\nInspect or apply deterministic projections to .agentflow/ and adapter specs.\n',
-  run: 'Usage: agentflow-sdlc run <source-plan|start|status|context|next|freeze|verify|intent-plan|advance|checkpoint|pause|handoff|resume|grant-plan|grant-issue|grant-status|grant-revoke|act|reconcile|journal-reconcile|migrate|resolve-escalation|publish> <id> [--target <dir>] [--execute] [--plan <file> --confirm <digest>] [--json]\n',
+  run: 'Usage: agentflow-sdlc run <source-plan|start|status|context|next|freeze|oracle-pin|oracle-verify|verify|intent-plan|advance|checkpoint|pause|handoff|resume|grant-plan|grant-issue|grant-status|grant-revoke|act|reconcile|journal-reconcile|migrate|resolve-escalation|publish> <id> [--target <dir>] [--execute] [--plan <file> --confirm <digest>] [--json]\n',
   doctor:
     'Usage: agentflow-sdlc doctor [--target <dir>] [--harness <name>] [--baseline-receipt <file>] [--runtime-request <file>] [--runtime-evidence <file>] [--json]\nRead-only project inspection. Evidence file paths must remain inside the target project.\n',
   'doctor-env': 'Usage: agentflow-sdlc doctor-env [--inspect] [--target <dir>] [--json]\n',

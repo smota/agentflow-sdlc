@@ -16,7 +16,7 @@ const target = path.resolve(flag('--target', process.cwd()))
 const source = flag('--path')
 if (!type || !source) {
   process.stderr.write(
-    'Usage: validate-evidence-contract --type artifact-ref|artifact-refs|transition-envelope|execution-receipt|review-attestation|role-handoff|acceptance-contract|delivery-receipt|acceptance-decision|council-request|council-advice|council-synthesis|rework-request|oracle-custody-request|oracle-custody-receipt --path <json> [--request <source-request.json>] [--target <dir>] [--json]\n',
+    'Usage: validate-evidence-contract --type artifact-ref|artifact-refs|transition-envelope|execution-receipt|review-attestation|role-handoff|acceptance-contract|delivery-receipt|acceptance-decision|council-request|council-advice|council-synthesis|rework-request|oracle-custody-request|oracle-custody-receipt|oracle-package-request|oracle-package-receipt --path <json> [--request <source-request.json>] [--target <dir>] [--json]\n',
   )
   process.exit(2)
 }
