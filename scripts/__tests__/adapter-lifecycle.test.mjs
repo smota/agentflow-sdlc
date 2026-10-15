@@ -485,41 +485,35 @@ describe('adapters squads openrig (AC8-AC11)', () => {
     expect(tree(home)).toEqual(before)
   })
 
-  it('updates the spec, rig definition, and sibling record and keeps seat runtime state', () => {
+  it('holds legacy update without overwriting spec, sibling or seat runtime state', () => {
     const home = tempDir('agentflow-home-')
     const project = tempDir('agentflow-project-')
     plantPi(home)
     provision(home, '--sibling', 'agentflow-pm', 'demo', project)
     const seatState = join(home, '.openrig/state/pi/orch-arch@agentflow-demo/agent/session.json')
     writeFileSync(seatState, '{"turn":7}')
-    const seatsBefore = tree(join(home, '.openrig/state/pi'))
     writeFileSync(specs(home, 'agentflow-demo/rig.yaml'), 'name: tampered\n')
     writeFileSync(specs(home, 'agentflow-demo/sibling.md'), 'stale\n')
-
-    ok(cli(['adapters', 'squads', 'update', 'openrig', 'demo', project], { home }))
-    const rig = readFileSync(specs(home, 'agentflow-demo/rig.yaml'), 'utf8')
-    expect(rig).toContain('name: agentflow-demo')
-    expect(rig).toContain('path: sibling.md')
-    expect(readFileSync(specs(home, 'agentflow-demo/sibling.md'), 'utf8')).toContain(
-      'No sibling squad was named',
-    )
-    expect(tree(join(home, '.openrig/state/pi'))).toEqual(seatsBefore)
-
-    ok(
-      cli(['adapters', 'squads', 'update', 'openrig', '--sibling', 'agentflow-pm', 'demo'], {
+    const before = tree(home)
+    for (const options of [[], ['--sibling', 'agentflow-pm']]) {
+      const result = cli(['adapters', 'squads', 'update', 'openrig', ...options, 'demo', project], {
         home,
-      }),
-    )
-    expect(readFileSync(specs(home, 'agentflow-demo/sibling.md'), 'utf8')).toContain(
-      'pm-manager@agentflow-pm',
-    )
+      })
+      expect(result.status).toBe(1)
+      expect(result.stderr).toContain('source-bound mutation')
+      expect(tree(home)).toEqual(before)
+    }
   })
 
-  it('keeps the kind and sibling of a product squad on update', () => {
+  it('holds product squad update and preserves its existing kind and sibling', () => {
     const home = tempDir('agentflow-home-')
     const project = tempDir('agentflow-project-')
     provision(home, '--kind', 'product', '--sibling', 'agentflow-demo', 'pm', project)
-    ok(cli(['adapters', 'squads', 'update', 'openrig', 'pm'], { home }))
+    const before = tree(home)
+    const result = cli(['adapters', 'squads', 'update', 'openrig', 'pm'], { home })
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('source-bound mutation')
+    expect(tree(home)).toEqual(before)
     expect(readFileSync(specs(home, 'agentflow-pm/rig.yaml'), 'utf8')).toContain('id: manager')
     expect(readFileSync(specs(home, 'agentflow-pm/sibling.md'), 'utf8')).toContain(
       'dev-qa@agentflow-demo',

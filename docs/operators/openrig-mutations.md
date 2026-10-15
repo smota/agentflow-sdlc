@@ -37,7 +37,10 @@ project squad naming convention applies. `--kind all` uses the existing delivery
 steering project IDs and rejects `--rig`. All selected installed `rig.yaml` files must exist.
 A missing or malformed spec is reported rather than provisioned or silently reconstructed.
 
-The before text and source revision come from the actual installed YAML bytes. Before contracts
+The before digest and source revision come from the actual installed YAML bytes. Public output
+contains a derived `rig-mutation-preview` with `planDigest`, selected tuple fields and changes; it
+omits raw before/after YAML and arbitrary environment/startup content. Full sealed apply plans
+remain internal to trusted hosts. Before contracts
 contain literal installed fields; recognized Pi transport prefixes are normalized without guessing
 a gateway from a model namespace. Absent fields remain null, and a generated contracts sidecar is
 not treated as an observation. The desired side uses the shared canonical execution resolver.
@@ -47,3 +50,29 @@ Every result is explicitly **held**, with `effects: []`, `workflowAnchor: null` 
 identity or runtime compare-and-swap support. It writes no spec, bridge, home or service state and
 launches no child process. There is no public apply command: a future apply host must satisfy the
 existing source-authorized mutation contract, including fresh CAS checks and human gates.
+
+## Activation and legacy write compatibility
+
+`adapters.openrig.executionPolicy.activation` accepts `active` or `held`. Omission retains legacy
+active configuration semantics; `active` grants no workflow, mutation or publication authority.
+`held` leaves desired contracts visible in planning but rejects installed squad writes before base
+installation, auth/state bridges, hooks or project hygiene changes. Invalid values are errors.
+
+Fresh provision remains supported for active desired policies and absent target IDs. Provision
+rejects every existing target path, including a regular file or dangling link; all-kind provision
+checks every target before the first write. Existing per-rig Pi bridges and steering state also
+require source-bound recovery even if the spec is missing; fresh provision cannot overwrite an
+orphan or partial session. It cannot overwrite a current rig or delete pre-existing
+state during rollback. Existing-squad `squads update` is held until a real source-bound mutation host
+can enforce revision/occupant/executor CAS; use `squads mutation-plan` for its read-only preview.
+There is no force flag or caller-boolean escape. This is a deliberate compatibility change from
+blind installed-spec rewriting.
+
+Generic adapter base `install`/`update` remains a separate explicit template-maintenance operation.
+It can update shared deployed base material and profiles; this work does not certify live readiness
+or automatically make that operation source-bound. Preserve its existing review and setup authority.
+
+The trusted mutation planner conservatively treats non-tuple configuration changes (including
+working directory, environment, startup and rig settings) as affecting every seat; replacement and
+source readback proof remain mandatory. Public previews expose only structural flags and digests,
+not the changed payload. A null flag means the current planner has not supplied that observation.

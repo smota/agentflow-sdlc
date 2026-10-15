@@ -729,6 +729,27 @@ function validateTopologySeats(plans) {
   }
 }
 
+function requireFreshSquadTargets(ctx, names) {
+  const { specs, piState, steerState } = locations(ctx.home)
+  for (const name of names) {
+    if (lexists(join(specs, name)))
+      fail(`Squad '${name}' already exists; use source-bound mutation preview and admission`)
+    if (lexists(join(steerState, name)))
+      fail(`Existing steering state for '${name}' requires source-bound recovery before provision`)
+  }
+  if (isDirectory(piState)) {
+    for (const seat of readdirSync(piState)) {
+      if (names.some((name) => seat.endsWith(`@${name}`)))
+        fail(`Existing Pi state for '${seat}' requires source-bound recovery before provision`)
+    }
+  }
+}
+
+function requireActiveExecution(plan) {
+  if (plan.activation !== 'active')
+    fail('Execution policy activation is held; desired preview only, no installed writes permitted')
+}
+
 function writeSquadSpec({
   ctx,
   kind,
@@ -745,6 +766,8 @@ function writeSquadSpec({
   const { specs, piState } = locations(home)
   // The complete desired contract is resolved before installation or any bridge/write.
   const plan = executionPlan ?? prepareSquadExecution(ctx, kind, projectCwd)
+  requireActiveExecution(plan)
+  requireFreshSquadTargets(ctx, [rigName])
   const baseDir = join(specs, BASES[kind])
   if (!isFile(join(baseDir, 'rig.yaml'))) {
     out(`==> Base spec not found in ${baseDir}. Installing the ${ADAPTER_ID} adapter first...`)
@@ -832,11 +855,14 @@ function provisionAll(ctx) {
     if (!isDirectory(projectCwd)) fail(`Project directory '${operands[1]}' does not exist.`)
   }
 
+  requireFreshSquadTargets(ctx, [pmRig, devRig, steerRig])
+
   // Preflight all three desired rigs before installing even the first missing base.
   const executionPlans = Object.fromEntries(
     Object.keys(BASES).map((kind) => [kind, prepareSquadExecution(ctx, kind, projectCwd)]),
   )
   validateTopologySeats(Object.values(executionPlans))
+  for (const plan of Object.values(executionPlans)) requireActiveExecution(plan)
   for (const base of Object.values(BASES)) {
     if (!isFile(join(specs, base, 'rig.yaml'))) {
       out(
@@ -964,12 +990,9 @@ function writeSquad(ctx, isUpdate) {
     if (!isDirectory(targetDir)) {
       fail(`Squad '${rigName}' does not exist in ${specs}. Provision it first.`)
     }
-    kind ??= detectKind(rigName, targetDir)
-    const detected = detectSiblings(targetDir)
-    if (options.sibling === undefined) sibling = detected.sibling
-    if (options.steer === undefined) steer = detected.steer
-    if (options.product === undefined) product = detected.product
-    if (options.delivery === undefined) delivery = detected.delivery
+    fail(
+      'Existing squad update requires a source-bound mutation host with CAS admission; use adapters squads mutation-plan for read-only preview',
+    )
   }
   kind ??= 'delivery'
 
@@ -1034,11 +1057,13 @@ export function squadPlan(ctx) {
   const result = {
     ok: true,
     operation: 'plan',
+    activation: plans.some((item) => item.activation === 'held') ? 'held' : 'active',
     effects: [],
     observation: 'not-performed',
-    plans: plans.map(({ kind: item, preset, contracts, diagnostics }) => ({
+    plans: plans.map(({ kind: item, preset, activation, contracts, diagnostics }) => ({
       kind: item,
       preset,
+      activation,
       contracts,
       diagnostics,
     })),
@@ -1078,7 +1103,12 @@ function observedMutationContracts(rigText) {
       }
       const locator = typeof member.model === 'string' ? member.model.split('/')[0] : null
       const providerRoute =
-        member.providerRoute ?? (member.runtime === 'pi' ? (locatorRoutes[locator] ?? null) : null)
+        member.providerRoute ??
+        (member.runtime === 'pi'
+          ? Object.hasOwn(locatorRoutes, locator)
+            ? locatorRoutes[locator]
+            : null
+          : null)
       return {
         seat: `${pod.id}.${member.id}`,
         runtime: member.runtime ?? null,
@@ -1097,6 +1127,58 @@ function observedMutationContracts(rigText) {
       }
     })
   })
+}
+
+// Public summaries are derived evidence, not the sealed apply plan. Installed YAML can
+// contain arbitrary environment/startup payloads; never print those through a preview.
+function publicMutationPreview(plan) {
+  const tupleFields = [
+    'runtime',
+    'executionTarget',
+    'providerRoute',
+    'providerFamily',
+    'model',
+    'runnerModel',
+    'effort',
+    'profile',
+    'capabilityTier',
+  ]
+  const tuple = (value) =>
+    value ? Object.fromEntries(tupleFields.map((field) => [field, value[field] ?? null])) : null
+  return {
+    version: 1,
+    type: 'rig-mutation-preview',
+    planDigest: plan.digest,
+    rigName: plan.rigName,
+    desiredSpecName: plan.rigName,
+    sourceRevision: plan.sourceRevision,
+    beforeDigest: plan.beforeDigest,
+    afterDigest: plan.afterDigest,
+    workflowAnchor: null,
+    executorIdentity: null,
+    effects: [],
+    admissionHolds: plan.admissionHolds,
+    beforeContracts: plan.beforeContracts.map((value) => ({ seat: value.seat, ...tuple(value) })),
+    afterContracts: plan.afterContracts.map((value) => ({ seat: value.seat, ...tuple(value) })),
+    changes: plan.changes.map((change) => ({
+      seat: change.seat,
+      structuralConfigurationChanged: change.structuralConfigurationChanged ?? null,
+      fields: Object.fromEntries(
+        Object.entries(change.fields).filter(([field]) => tupleFields.includes(field)),
+      ),
+      before: tuple(change.before),
+      after: tuple(change.after),
+    })),
+    structuralConfigurationChanged: plan.structuralConfigurationChanged ?? null,
+    structuralBeforeDigest: plan.structuralBeforeDigest ?? null,
+    structuralAfterDigest: plan.structuralAfterDigest ?? null,
+    affectedSeats: plan.affectedSeats,
+    restarts: plan.restarts,
+    requiredActions: plan.requiredActions,
+    requiredPermissions: plan.requiredPermissions,
+    requiredRuntimeGuards: plan.requiredRuntimeGuards,
+    operationalStatus: plan.operationalStatus,
+  }
 }
 
 export function squadMutationPlan(ctx) {
@@ -1134,7 +1216,13 @@ export function squadMutationPlan(ctx) {
       workflow: null,
       executorIdentity: null,
     })
-    return { kind: item.kind, rigName, status: 'held', plan }
+    return {
+      kind: item.kind,
+      rigName,
+      activation: item.activation,
+      status: 'held',
+      plan: publicMutationPreview(plan),
+    }
   })
   const result = {
     ok: true,

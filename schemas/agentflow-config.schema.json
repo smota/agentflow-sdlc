@@ -252,6 +252,10 @@
                     },
                     "additionalProperties": false
                   }
+                },
+                "activation": {
+                  "enum": ["active", "held"],
+                  "description": "Held permits desired previews only; it grants no installed mutation authority."
                 }
               },
               "additionalProperties": true

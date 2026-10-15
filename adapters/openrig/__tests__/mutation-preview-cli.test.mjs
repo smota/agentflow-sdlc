@@ -13,7 +13,6 @@ import {
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { parse } from 'yaml'
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../../..')
 const roots = []
 afterEach(() => roots.splice(0).forEach((path) => rmSync(path, { recursive: true, force: true })))
@@ -93,7 +92,7 @@ describe('public read-only rig mutation preview (#523)', () => {
       status: 'held',
     })
     expect(plan.rigName).toBe('existing-production-id')
-    expect(plan.beforeRigText).toBe(readFileSync(path, 'utf8'))
+    expect(plan.beforeDigest).toBe(createHash('sha256').update(readFileSync(path)).digest('hex'))
     expect(plan.sourceRevision).toBe(createHash('sha256').update(f.installed).digest('hex'))
     expect(plan.beforeContracts).toContainEqual(
       expect.objectContaining({
@@ -112,7 +111,7 @@ describe('public read-only rig mutation preview (#523)', () => {
     expect(plan.admissionHolds.map((h) => h.code)).toEqual(
       expect.arrayContaining(['WORKFLOW_SOURCE_UNAVAILABLE', 'EXECUTOR_OBSERVATION_UNSUPPORTED']),
     )
-    expect(parse(plan.afterRigText).name).toBe('existing-production-id')
+    expect(plan.desiredSpecName).toBe('existing-production-id')
     expect(f.snapshot(f.home)).toEqual(before)
   })
   it('previews the existing default three IDs without creating or repairing any spec', () => {
@@ -139,5 +138,31 @@ describe('public read-only rig mutation preview (#523)', () => {
       /installed.*(?:missing|not found|does not exist)/i,
     )
     expect(f.snapshot(f.home)).toEqual(before)
+  })
+})
+
+it('projects safe public metadata without exposing arbitrary installed YAML payloads', () => {
+  const f = fixture(),
+    path = f.spec('private-config')
+  writeFileSync(path, readFileSync(path, 'utf8') + 'env:\n  API_KEY: synthetic-secret-marker\n')
+  const result = f.run(['--kind', 'delivery', '--rig', 'private-config'])
+  expect(result.status, result.stderr).toBe(0)
+  expect(result.stdout).not.toContain('synthetic-secret-marker')
+  const { plan } = JSON.parse(result.stdout).plans[0]
+  expect(plan.beforeRigText).toBeUndefined()
+  expect(plan.afterRigText).toBeUndefined()
+  expect(plan.type).toBe('rig-mutation-preview')
+  expect(plan.planDigest).toMatch(/^[a-f0-9]{64}$/)
+})
+
+it('keeps unrecognized transport prefixes unknown without inheriting object prototype keys', () => {
+  const f = fixture(),
+    path = f.spec('unknown-route')
+  writeFileSync(path, f.installed.replace('munito/qwen/installed-only', 'constructor/test'))
+  const r = f.run(['--kind', 'delivery', '--rig', 'unknown-route'])
+  expect(r.status, r.stderr).toBe(0)
+  expect(JSON.parse(r.stdout).plans[0].plan.beforeContracts[0]).toMatchObject({
+    providerRoute: null,
+    model: 'constructor/test',
   })
 })
