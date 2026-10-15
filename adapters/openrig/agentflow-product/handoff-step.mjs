@@ -42,6 +42,20 @@ export function formatPointerEnvelope({
   transition,
 } = {}) {
   const trans = transitionUri ?? transition ?? ''
+  for (const value of [
+    goal,
+    phase,
+    status,
+    worktree,
+    epoch,
+    baseSha,
+    candidateSha,
+    oracleDigest,
+    proofArtifactRef,
+    trans,
+  ])
+    if (value != null && /[\x00-\x1f\x7f]/.test(String(value)))
+      throw new HandoffStepError('Pointer envelope scalar contains control/header injection')
   return [
     'Envelope-Version: pointer-v1',
     `Goal: ${goal ?? ''}`,
@@ -68,12 +82,36 @@ export function parseQueueEnvelope(body = '') {
 
   if (isPointerV1) {
     const fields = {}
+    const allowed = new Set([
+      'Envelope-Version',
+      'Goal',
+      'Phase',
+      'Status',
+      'Worktree',
+      'Epoch',
+      'Base-SHA',
+      'Candidate-SHA',
+      'Oracle-Digest',
+      'Proof-Artifact',
+      'Transition',
+    ])
     for (const line of str.split(/\r?\n/)) {
-      const match = line.match(/^([A-Za-z0-9_-]+):\s*(.*)$/)
+      if (!line.trim()) continue
+      if (/[\x00-\x1f\x7f]/.test(line))
+        throw new HandoffStepError('Invalid pointer envelope control')
+      const match = line.match(/^([A-Za-z0-9_-]+): *(.*)$/)
+      if (!match || !allowed.has(match[1]))
+        throw new HandoffStepError('Invalid pointer envelope header')
       if (match) {
+        if (Object.hasOwn(fields, match[1]))
+          throw new HandoffStepError('Duplicate pointer envelope header')
+        if (/[\x00-\x1f\x7f]/.test(match[2]))
+          throw new HandoffStepError('Invalid pointer envelope control')
         fields[match[1]] = match[2].trim()
       }
     }
+    if (fields['Envelope-Version'] !== 'pointer-v1')
+      throw new HandoffStepError('Unsupported pointer envelope version')
     return {
       format: 'pointer-v1',
       warning: null,
@@ -156,14 +194,32 @@ function resolveBinding(deps, options) {
   return structuredClone(binding)
 }
 
-function resolveTaskAdmission(deps, options, expected = null) {
+function resolveTaskAdmission(deps, options, workflow, expected = null) {
+  if (options.target !== undefined && options.target !== options.to)
+    throw new HandoffStepError('Oracle target and handoff destination must be identical')
   const result = resolveOracleDispatch({
     deps,
-    request: options,
+    request: { ...options, target: options.to },
     now: (deps.now?.() ?? new Date()).toISOString(),
   })
   if (!result.admitted)
     throw new HandoffStepError(`Source task/oracle admission held: ${result.status}`)
+  const scope = result.taskBinding?.scope
+  if (
+    !scope ||
+    scope.protocol !== 'legacy' ||
+    scope.goal !== workflow.goal ||
+    scope.runId !== workflow.runId ||
+    scope.epoch !== workflow.epoch ||
+    scope.fence !== workflow.fencingToken
+  )
+    throw new HandoffStepError('Source task scope differs from authoritative workflow binding')
+  if (
+    result.assignment &&
+    (result.assignment.custody.owner !== workflow.oracleOwner ||
+      result.assignment.custody.oracleDigest !== workflow.oracleDigest)
+  )
+    throw new HandoffStepError('Source oracle custody differs from authoritative workflow binding')
   const binding = {
     taskBinding: result.taskBinding,
     assignmentDigest: result.assignment?.assignmentDigest ?? null,
@@ -289,6 +345,7 @@ function executeLockedStep(deps = {}, options = {}) {
   const oracleAdmission = resolveTaskAdmission(
     deps,
     record?.phaseOptions ?? options,
+    binding,
     record?.oracleAdmission ?? null,
   )
   if (!record) {
@@ -366,7 +423,7 @@ function executeLockedStep(deps = {}, options = {}) {
   const freshBinding = resolveBinding(deps, record.phaseOptions)
   if (JSON.stringify(freshBinding) !== JSON.stringify(binding))
     throw new HandoffStepError('Authoritative binding/fence changed before queue dispatch')
-  resolveTaskAdmission(deps, record.phaseOptions, record.oracleAdmission)
+  resolveTaskAdmission(deps, record.phaseOptions, freshBinding, record.oracleAdmission)
   if (record.state !== 'submitted' && record.state !== 'completed') {
     writeFileSync(bodyFile, record.envelopeBody, 'utf8')
     // Persist uncertainty before the call: a crash after persistence must replay
