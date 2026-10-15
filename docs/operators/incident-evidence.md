@@ -20,8 +20,8 @@ const incidents = await summarizeConfiguredIncidents({
 })
 ```
 
-The status command owner can attach this result to its existing source-backed status.
-The module does not install a CLI command or runtime observation reader. Without an
+The public `run incidents` command reads the configured source through this module.
+A status command can also attach this result; no runtime observation reader is installed. Without an
 independently bound evidence reader, claims remain unknown. `summarizeIncidentEvidence`
 also accepts a trusted `resolveSource()` returning `{source, revision, sourceRevision,
 events}`. Canonical run reduction checks event seals, parent links, run identity, and
@@ -116,7 +116,9 @@ allowed a retry to transfer ownership a second time. Its fixture exercises canon
 custody, grants, source generation and recovery, using a cooperative memory source and
 synthetic accepted phases solely for setup. It does not weaken the standard profile to
 allow external effects. The recovery implementation owner receives these regression tests;
-the reporting author does not change the audited recovery implementation.
+the reporting author does not change the audited recovery implementation. Those unchanged
+regressions now pass after the #522 source-custody and atomic-continuation repairs; 41 focused
+recovery checks pass. This establishes tested cooperative behavior, not a deployed recovery host.
 
 This rehearsal work is self-review for modules previously authored by the same Codex
 executor. It is not independent cognitive assurance, deployment evidence, proof of Dendro
