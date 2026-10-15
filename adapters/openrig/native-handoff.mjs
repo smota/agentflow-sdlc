@@ -67,7 +67,7 @@ export async function executeNativeHandoff({
   portTimeoutMs = 1000,
 } = {}) {
   const result = (status, reason, extra = {}) => ({
-    status,
+    status: status === 'held' && sourceWriteStarted ? 'unknown' : status,
     accepted: false,
     reason,
     obligation: {
@@ -83,8 +83,32 @@ export async function executeNativeHandoff({
     admitted = false,
     sourceWriteStarted = false
   try {
-    op = normalizeOperation(operation)
-    authority = structuredClone(authority)
+    const replayIdentity = operation?.id
+    let suppliedOperation, suppliedAuthority
+    try {
+      suppliedOperation = structuredClone(operation)
+      suppliedAuthority = structuredClone(authority)
+    } catch {
+      /* Discover any prior effect before rejecting malformed replay input. */
+    }
+    // Observe prior effects before validating mutable replay inputs or host ports.
+    // Invalid new input cannot erase an existing source-owned obligation.
+    if (typeof service?.read === 'function' && safeKey(replayIdentity)) {
+      // A failed source read cannot prove absence of a prior admitted effect.
+      sourceWriteStarted = true
+      const prior = await service.read()
+      sourceWriteStarted =
+        !!prior.state?.admissions?.[replayIdentity] ||
+        !!prior.state?.operations?.[replayIdentity] ||
+        prior.events?.some(
+          (event) =>
+            event.kind === 'checkpoint' &&
+            event.payload.kind === 'native-handoff-intent' &&
+            event.payload.operationId === replayIdentity,
+        )
+    }
+    op = normalizeOperation(suppliedOperation)
+    authority = suppliedAuthority
     digest = operationDigest(op)
     const args = op.arguments
     if (
@@ -170,13 +194,16 @@ export async function executeNativeHandoff({
               portTimeoutMs,
             )
           : null
+      const oracleNow = clock()
+      if (!Number.isFinite(oracleNow) || oracleNow < nowMs)
+        throw new Error('Oracle admission clock unverified')
       const admission = resolveOracleDispatch({
         deps: {
           resolveOracleTask: () => source,
           resolveOracleAuthority: () => resolvedAuthority,
         },
         request: { goal: state.goalRef, to: args.destination, oracleAssignment: source.assignment },
-        now: new Date(nowMs).toISOString(),
+        now: new Date(oracleNow).toISOString(),
       })
       if (!admission.admitted) throw new Error('Oracle task admission held')
       if (
@@ -214,9 +241,18 @@ export async function executeNativeHandoff({
         (latest.sourceRevision ?? latest.revision) !== source.sourceRevision
       )
         throw new Error('Source changed during admission')
+      const expiry = admission.assignment ? Date.parse(source.assignment.expiresAt) : Infinity
+      const finalNow = clock()
+      if (
+        !Number.isFinite(finalNow) ||
+        finalNow < oracleNow ||
+        (admission.assignment && (!Number.isFinite(expiry) || expiry <= finalNow))
+      )
+        throw new Error('Oracle assignment expired during admission')
+      return expiry
     }
     snapshot = await read()
-    sourceWriteStarted = !!snapshot.state.admissions[op.id]
+    sourceWriteStarted ||= !!snapshot.state.admissions[op.id]
     await inspect(snapshot)
     const existing = snapshot.state.admissions[op.id]
     if (existing && (existing.operationDigest !== digest || existing.grantId !== grantId))
@@ -259,9 +295,14 @@ export async function executeNativeHandoff({
         { expectedRevision: snapshot.revision, authority, grantId },
         async (persisted, receipt) => {
           const current = await read()
-          await inspect(current)
+          const validUntil = await inspect(current)
           const ack = await bounded(
-            host.dispatchQueue,
+            (input) => {
+              const dispatchNow = clock()
+              if (!Number.isFinite(dispatchNow) || dispatchNow < nowMs || dispatchNow >= validUntil)
+                throw new Error('Oracle assignment expired before dispatch')
+              return host.dispatchQueue(input)
+            },
             { operation: persisted, admission: receipt, body },
             portTimeoutMs,
           )

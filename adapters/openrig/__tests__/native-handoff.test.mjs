@@ -668,4 +668,81 @@ describe('native source handoff bridge #521', () => {
     expect((await executeNativeHandoff(f.args)).status).toBe('accepted')
     expect(f.counts()).toBe(1)
   })
+  it.each(['body', 'host', 'source-read'])(
+    'retains unknown prior effects when replay %s is invalid',
+    async (changed) => {
+      const f = await fixture()
+      expect((await executeNativeHandoff(f.args)).status).toBe('submitted')
+      const read = f.service.read
+      if (changed === 'body') f.args.body = 'changed after submission'
+      else if (changed === 'host') delete f.args.host.resolveTask
+      else
+        f.service.read = async () => {
+          throw new Error('source unavailable')
+        }
+
+      expect((await executeNativeHandoff(f.args)).status).toBe('unknown')
+      expect(f.counts()).toBe(1)
+      expect(Object.keys((await read()).state.admissions)).toHaveLength(1)
+    },
+  )
+  it.each(['already-expired', 'during-runtime', 'before-dispatch'])(
+    'checks protected assignment expiry at the current trusted clock: %s',
+    async (mode) => {
+      const f = await fixture(),
+        original = f.args.host.resolveTask,
+        runtime = f.args.host.resolveOperationalPreflightInput
+      let current = Date.parse(now) + (mode === 'already-expired' ? 60000 : 0)
+      f.args.clock = () => current
+      f.args.operation.paths = ['tests/oracles/schema.json']
+      let resolved
+      f.args.host.resolveTask = async (input) => {
+        resolved = await original(input)
+        Object.assign(resolved.task, {
+          worktree: '.worktrees/oracle',
+          builderIdentity: 'feature-builder',
+          reviewerIdentity: 'independent-reviewer',
+        })
+        resolved.assignment = {
+          id: 'source-assignment',
+          role: 'test-engineer',
+          policySeat: 'dev.test-eng',
+          mode: 'temporary',
+          identity: 'test-engineer',
+          authorityRef: 'fixture:assignment',
+          target: f.args.operation.arguments.destination,
+          allowedPaths: ['tests/oracles/**'],
+          worktree: resolved.task.worktree,
+          expiresAt: new Date(Date.parse(now) + 30000).toISOString(),
+          scope: structuredClone(resolved.task),
+          custody: { owner: 'test-engineer', oracleDigest: oracle },
+        }
+        return resolved
+      }
+      f.args.host.resolveOracleAuthority = () => ({
+        verified: true,
+        sourceRef: resolved.sourceRef,
+        sourceRevision: resolved.sourceRevision,
+        task: structuredClone(resolved.task),
+        assignment: structuredClone(resolved.assignment),
+        ownershipManifest: JSON.parse(readFileSync('manifests/path-ownership.json', 'utf8')),
+      })
+      f.args.host.resolveOperationalPreflightInput = async (input) => {
+        const evidence = await runtime(input)
+        if (
+          mode === 'during-runtime' ||
+          (mode === 'before-dispatch' && input.snapshot.state.admissions[f.args.operation.id])
+        )
+          current = Date.parse(now) + 60000
+        evidence.input.observations.entries.forEach((entry) => {
+          entry.eventAt = new Date(current).toISOString()
+        })
+        return evidence
+      }
+      expect((await executeNativeHandoff(f.args)).status).toBe(
+        mode === 'before-dispatch' ? 'unknown' : 'held',
+      )
+      expect(f.counts()).toBe(0)
+    },
+  )
 })
