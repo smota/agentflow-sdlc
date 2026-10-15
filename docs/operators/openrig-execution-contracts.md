@@ -102,3 +102,17 @@ occupant and authorization evidence. It does not infer daemon health from invent
 A stopped or unavailable daemon leaves admission held without a service start. Positive evaluator
 fixtures specify a trusted host reader contract; they do not claim that such a reader is deployed.
 The upstream Pi reader/catch-up integration remains tracked in #524.
+
+## Oracle writer admission
+
+Protected-oracle work requires a source-authorized independent test engineer. The delivery bundle registers optional `test-eng`, `test-eng-pi` and `test-eng-claude` profiles; registration does not create a member, provision a runtime, or grant permissions.
+
+The standalone product handoff bridge resolves task scope through the trusted host callback `resolveOracleTask`. Its result must contain the current `task`, `sourceRef`, `sourceRevision` and `verified: true`. Missing or unreadable task scope holds delivery. A request's task file is a declaration to compare against that source, never its own authorization.
+
+For protected targets, `resolveOracleAuthority` must resolve the exact assignment and task from current source authority and supply the canonical ownership manifest. It must verify issuer authority and current assignment; implementing this callback as a pass-through of caller records is unsafe. No production authority callback is provisioned automatically. Until a host supplies it, protected work remains held; positive tests use explicit fixture adapters, not live authorization.
+
+Assignments record `id`, `mode` (`temporary` or `persistent`), `identity`, role `test-engineer`, policy seat `dev.test-eng`, target session, bounded `allowedPaths`, isolated `worktree`, `authorityRef`, expiry, and `scope` binding goal/run/epoch/fence/touch surface. Custody records the current oracle digest and writer identity, or an explicitly source-authorized uninitialized state. The source task identifies separate feature-builder and reviewer identities. Source ownership rules restrict all grants; caller booleans, names and profiles cannot substitute for source resolution.
+
+`handoff deliver` accepts optional `--task-file` and `--oracle-assignment-file` JSON declarations. Initial delivery, held flush and person release recheck current task/assignment authority. A person release cannot bypass oracle permissions. Phase-step hosts must enforce the same oracle admission in their source-authorized append/dispatch boundary; task custody alone does not grant oracle write authority.
+
+Two or more failed repair rounds require a revised bounded `repairScope` containing distinct `previousRevision` and `revision`, reason and accountable task owner. Existing oracle digests, workflow identity, fencing and publication holds remain intact.

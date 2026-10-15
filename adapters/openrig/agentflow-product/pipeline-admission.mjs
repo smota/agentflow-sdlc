@@ -1,5 +1,6 @@
 // Pipeline admission and priority governance for OpenRig handoff bridge (#511).
 // Uses only Node built-ins so it runs standalone in ~/.openrig/specs/agentflow-product/.
+import { evaluateOracleWriterAdmission } from './oracle-admission.mjs'
 
 export const PHASE_PRIORITY_ORDER = Object.freeze([8, 6, 5, 4, 3, 2, 1, 0])
 
@@ -101,7 +102,17 @@ export function evaluateMultiWriterAdmission({
   activeSlices = [],
   maxWriters = 3,
   hotFileDenylist = DEFAULT_HOT_FILE_DENYLIST,
+  oracleAssignment,
+  resolveOracleAuthority,
+  now,
 } = {}) {
+  const oracle = evaluateOracleWriterAdmission({
+    task: candidate,
+    assignment: oracleAssignment,
+    resolveAuthority: resolveOracleAuthority,
+    now,
+  })
+  if (!oracle.admitted) return oracle
   const activeWriters = activeSlices.filter((s) => s.phase === 4 && s.goal !== candidate.goal)
 
   // Check dependsOn: if any dependency matches an unintegrated active slice, block admission

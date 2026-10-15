@@ -95,6 +95,12 @@ function fakeDeps({
     return { status: 9, stdout: '', stderr: `unexpected rig ${args.join(' ')}` }
   }
   const deps = {
+    resolveOracleTask: ({ goal }) => ({
+      verified: true,
+      task: { goal, touchSurface: [] },
+      sourceRef: 'fixture://known-read-only-task',
+      sourceRevision: 'fixture-revision',
+    }),
     env: { ...(sender ? { OPENRIG_SESSION_NAME: sender } : {}), ...env },
     home,
     now: () => new Date((clock += 1000)),

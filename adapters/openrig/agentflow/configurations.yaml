@@ -2,6 +2,12 @@ schema: openrig.bundle-configurations/v1
 recommended: balanced-grok-lead
 
 seats:
+  # Optional capability registry, not a provisioned member or permission grant.
+  dev.test-eng:
+    runtimes:
+      pi: test-eng-pi
+      codex: test-eng
+      claude-code: test-eng-claude
   orch.arch:
     runtimes:
       codex: architect

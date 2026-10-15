@@ -24,6 +24,7 @@ import { homedir } from 'node:os'
 import { delimiter, dirname, join, resolve } from 'node:path'
 import { createInterface } from 'node:readline/promises'
 import { fileURLToPath } from 'node:url'
+import { resolveOracleDispatch } from './oracle-admission.mjs'
 import {
   executeHandoffStep,
   formatPointerEnvelope,
@@ -62,6 +63,7 @@ export const DELIVERY_SEAT_PREFIXES = [
   'dev-build',
   'dev-build-sr',
   'dev-qa',
+  'dev-test-eng',
   'rev-review',
 ]
 
@@ -356,6 +358,18 @@ export function isFree(signals) {
 // --- delivery ----------------------------------------------------------------------------------
 
 function transport(deps, hold) {
+  if (isDeliverySeat(hold.target)) {
+    const admission = resolveOracleDispatch({ deps, request: hold, now: deps.now().toISOString() })
+    if (!admission.admitted) {
+      saveHold(deps, {
+        ...hold,
+        state: 'held',
+        signals: [{ id: admission.status, detail: admission.reason }],
+      })
+      throw new HandoffError(`Oracle/task admission held: ${admission.status}: ${admission.reason}`)
+    }
+    if (admission.assignment) hold.oracleAdmission = admission.assignment
+  }
   const dir = join(storeDir(deps, hold.rig), 'outbox')
   mkdirSync(dir, { recursive: true })
   const bodyFile = join(dir, `${hold.id}.txt`)
@@ -391,6 +405,13 @@ export function flushSquad(deps, rig, medium) {
     const held = holdsOf(deps, rig).filter((hold) => hold.state === 'held')
     if (held.length === 0) return { delivered: null, signals: [] }
     const oldest = held[0]
+    const oracle = resolveOracleDispatch({ deps, request: oldest, now: deps.now().toISOString() })
+    if (!oracle.admitted)
+      return {
+        delivered: null,
+        signals: [{ id: oracle.status, detail: oracle.reason }],
+        oracleAdmission: oracle,
+      }
     const { signals } = readSignals(deps, rig, medium ?? oldest.medium)
     if (!isFree(signals)) return { delivered: null, signals }
     return { delivered: deliverHold(deps, oldest, 'flush'), signals }
@@ -423,6 +444,8 @@ export function deliver(deps, options) {
     reply: Boolean(options.reply),
     medium: mediumFor(options.goal, options),
     body: options.body,
+    task: options.task ?? null,
+    oracleAssignment: options.oracleAssignment ?? null,
     createdAt: deps.now().toISOString(),
     signals: [],
   }
@@ -436,16 +459,29 @@ export function deliver(deps, options) {
   return withLock(deps, hold.rig, () => {
     const waiting = holdsOf(deps, hold.rig).filter((item) => item.state === 'held')
     const { signals, currentGoals } = readSignals(deps, hold.rig, hold.medium)
+    const oracle = resolveOracleDispatch({ deps, request: hold, now: deps.now().toISOString() })
+    if (!oracle.admitted) signals.push({ id: oracle.status, detail: oracle.reason })
+    if (oracle.assignment) hold.oracleAdmission = oracle.assignment
     const known = !signals.some((signal) => signal.id === 'unknown')
     // A reply about a goal the squad is already doing is not new work.
-    if (hold.reply && hold.goal && known && currentGoals.has(hold.goal)) {
+    if (hold.reply && hold.goal && known && oracle.admitted && currentGoals.has(hold.goal)) {
       transport(deps, hold)
-      return { status: 'delivered', target, reason: `reply about current goal ${hold.goal}` }
+      return {
+        status: 'delivered',
+        target,
+        reason: `reply about current goal ${hold.goal}`,
+        ...(oracle.assignment ? { oracleAdmission: oracle.assignment } : {}),
+      }
     }
     // A free squad takes the oldest waiting handoff first; a new one waits behind it.
     if (isFree(signals) && waiting.length === 0) {
       transport(deps, hold)
-      return { status: 'delivered', target, reason: 'delivery squad is free' }
+      return {
+        status: 'delivered',
+        target,
+        reason: 'delivery squad is free',
+        ...(oracle.assignment ? { oracleAdmission: oracle.assignment } : {}),
+      }
     }
     let heldSignals = signals
     let flushed = null
@@ -564,6 +600,8 @@ const VALUE_FLAGS = new Set([
   'root',
   'rig',
   'note',
+  'task-file',
+  'oracle-assignment-file',
 ])
 const BOOLEAN_FLAGS = new Set(['reply', 'json', 'all', 'set', 'clear'])
 
@@ -669,6 +707,9 @@ export async function main(
     const { options, positionals } = parseArgs(rest)
     if (options['body-file'] !== undefined)
       options.body = readFileSync(resolve(options['body-file']), 'utf8')
+    if (options['task-file'] !== undefined) options.task = readJson(resolve(options['task-file']))
+    if (options['oracle-assignment-file'] !== undefined)
+      options.oracleAssignment = readJson(resolve(options['oracle-assignment-file']))
     const medium = mediumFor(options.goal, options)
 
     if (command === 'deliver') {
