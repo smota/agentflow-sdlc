@@ -700,7 +700,7 @@ export async function main(
       if (stepOptions.json) write(JSON.stringify(result, null, 2))
       else
         write(
-          `Step handoff completed for goal ${result.goal} (phase ${result.phase}) to ${result.to}.`,
+          `Step handoff ${result.status} for goal ${result.goal} (phase ${result.phase}) to ${result.to}; custody verified: ${result.custodyVerified}.`,
         )
       return 0
     }
