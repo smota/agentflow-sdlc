@@ -17,3 +17,6 @@ agentflow-sdlc cockpit doctor --json
 Use [troubleshooting](troubleshooting.md) for failure classes and
 [upgrade and rollback](../adopters/upgrade-and-rollback.md) for transactional recovery. Cockpit is
 optional; source and core validation remain usable when it is stopped or absent.
+
+For the dated Dendro and AgentFlow incident adoption preparation, see
+[the held Dendro preview](adoption-516/dendro-preview.md).

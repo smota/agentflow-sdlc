@@ -1,0 +1,73 @@
+{
+  "promptSha256": "8f8b50d95c9ca1c0c1db1d9d70c51470eebbb08b3566fa2bac262ac2ddb42ae0",
+  "results": [
+    {
+      "requestedHarness": "pi",
+      "requestedProviderRoute": "munito",
+      "requestedModel": "qwen/qwen3.8-27b",
+      "elapsedSeconds": 3.83,
+      "exitCode": 0,
+      "timeout": false,
+      "oracleMatched": true,
+      "actualRouteObservation": "unverified",
+      "qualification": "tiny extraction task only",
+      "priorDeepSeekSemanticFailureRetained": false,
+      "stderrPresent": false
+    },
+    {
+      "requestedHarness": "pi",
+      "requestedProviderRoute": "munito",
+      "requestedModel": "zai-org/glm-5.3-flash",
+      "elapsedSeconds": 2.56,
+      "exitCode": 0,
+      "timeout": false,
+      "oracleMatched": true,
+      "actualRouteObservation": "unverified",
+      "qualification": "tiny extraction task only",
+      "priorDeepSeekSemanticFailureRetained": false,
+      "stderrPresent": false
+    },
+    {
+      "requestedHarness": "pi",
+      "requestedProviderRoute": "munito",
+      "requestedModel": "deepseek-ai/deepseek-v4-flash",
+      "elapsedSeconds": 2.3,
+      "exitCode": 0,
+      "timeout": false,
+      "oracleMatched": true,
+      "actualRouteObservation": "unverified",
+      "qualification": "tiny extraction task only",
+      "priorDeepSeekSemanticFailureRetained": true,
+      "stderrPresent": false
+    },
+    {
+      "requestedHarness": "pi",
+      "requestedProviderRoute": "munito",
+      "requestedModel": "google/gemma-4-12b",
+      "elapsedSeconds": 1.73,
+      "exitCode": 0,
+      "timeout": false,
+      "oracleMatched": false,
+      "actualRouteObservation": "unverified",
+      "qualification": "tiny extraction task only",
+      "priorDeepSeekSemanticFailureRetained": false,
+      "stderrPresent": false
+    },
+    {
+      "requestedHarness": "pi",
+      "requestedProviderRoute": "munito",
+      "requestedModel": "qwen/qwen3.6-35b-a3b",
+      "elapsedSeconds": 6.18,
+      "exitCode": 0,
+      "timeout": false,
+      "oracleMatched": true,
+      "actualRouteObservation": "unverified",
+      "qualification": "tiny extraction task only",
+      "priorDeepSeekSemanticFailureRetained": false,
+      "stderrPresent": false
+    }
+  ],
+  "scope": "One identical no-tool extraction request per model; not coding, tool, custody, authority, auth or model-observation qualification.",
+  "priorDeepSeekFinding": "Earlier independent recovery reasoning failed semantic calibration; current tiny-task pass does not erase it.",
+  "gemmaDisposition": "Exact oracle did not match; no extraction qualification or promotion. No blind retry."
+}
