@@ -318,11 +318,19 @@ export function resolveOracleDispatch({
       'Declared task does not match a current resolved source task',
       task,
     )
-  return evaluateOracleWriterAdmission({
+  const admission = evaluateOracleWriterAdmission({
     task,
     assignment: request.oracleAssignment ?? task.oracleAssignment,
     resolveAuthority: deps.resolveOracleAuthority,
     target: request.target ?? request.to,
     now,
   })
+  return {
+    ...admission,
+    taskBinding: {
+      sourceRef: resolved.sourceRef,
+      sourceRevision: resolved.sourceRevision,
+      taskDigest: digest(task),
+    },
+  }
 }

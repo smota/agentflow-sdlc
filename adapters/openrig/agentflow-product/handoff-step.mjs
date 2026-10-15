@@ -17,6 +17,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import { homedir, hostname } from 'node:os'
 import { dirname, join } from 'node:path'
 import { spawnSync } from 'node:child_process'
+import { resolveOracleDispatch } from './oracle-admission.mjs'
 
 export class HandoffStepError extends Error {
   constructor(message, exitCode = 1) {
@@ -163,6 +164,23 @@ function resolveBinding(deps, options) {
   return structuredClone(binding)
 }
 
+function resolveTaskAdmission(deps, options, expected = null) {
+  const result = resolveOracleDispatch({
+    deps,
+    request: options,
+    now: (deps.now?.() ?? new Date()).toISOString(),
+  })
+  if (!result.admitted)
+    throw new HandoffStepError(`Source task/oracle admission held: ${result.status}`)
+  const binding = {
+    taskBinding: result.taskBinding,
+    assignmentDigest: result.assignment?.assignmentDigest ?? null,
+  }
+  if (expected && JSON.stringify(binding) !== JSON.stringify(expected))
+    throw new HandoffStepError('Source task scope or oracle assignment changed before handoff')
+  return binding
+}
+
 /**
  * Executes an outbox-backed atomic phase append and queue handoff step.
  */
@@ -272,6 +290,15 @@ function executeLockedStep(deps = {}, options = {}) {
     throw new HandoffStepError(
       'Authoritative binding/fence changed; reconcile existing handoff before transfer',
     )
+  if (record && !record.oracleAdmission)
+    throw new HandoffStepError(
+      'Legacy handoff source task admission requires explicit reconciliation',
+    )
+  const oracleAdmission = resolveTaskAdmission(
+    deps,
+    record?.phaseOptions ?? options,
+    record?.oracleAdmission ?? null,
+  )
   if (!record) {
     if (typeof deps.appendPhase !== 'function')
       throw new HandoffStepError(
@@ -307,6 +334,7 @@ function executeLockedStep(deps = {}, options = {}) {
       phase: options.phase,
       to: options.to,
       binding,
+      oracleAdmission,
       phaseOptions,
       queueId: `qitem-${randomUUID()}`,
       state: 'phase-pending',
@@ -346,6 +374,7 @@ function executeLockedStep(deps = {}, options = {}) {
   const freshBinding = resolveBinding(deps, record.phaseOptions)
   if (JSON.stringify(freshBinding) !== JSON.stringify(binding))
     throw new HandoffStepError('Authoritative binding/fence changed before queue dispatch')
+  resolveTaskAdmission(deps, record.phaseOptions, record.oracleAdmission)
   if (record.state !== 'submitted' && record.state !== 'completed') {
     writeFileSync(bodyFile, record.envelopeBody, 'utf8')
     // Persist uncertainty before the call: a crash after persistence must replay

@@ -159,3 +159,25 @@ retain their positive epoch/fence contract for compatibility.
 The native source fixture uses the actual run service and its existing source snapshot. It
 proves identity compatibility, not a deployed authority resolver or permission to initialize
 missing historical state. A missing source revision remains a source gap.
+
+## Oracle admission at the phase handoff boundary
+
+The synchronous `handoff step` host boundary resolves its source task and required oracle-writer
+capability before any phase append. A valid workflow binding alone cannot bypass task admission.
+It records the exact source task identity and assignment digest in the existing handoff outbox,
+then re-resolves both after phase append and before queue dispatch. Revocation, missing writer,
+unknown scope or changed task surface holds dispatch. A phase already appended remains preserved
+for reconciliation rather than being rolled back or appended twice.
+
+Known nonprotected tasks still require a source-resolved bounded surface; they do not acquire
+protected oracle capability through a generic success boolean. Legacy outbox entries lacking
+source task admission require explicit reconciliation. Installed bundles need normal deployment
+before this source change affects their behavior; no standalone caller flag supplies the trusted
+resolver or grants authority.
+
+This synchronous compatibility path retains its explicit legacy epoch/fence protocol. Native
+`run-v1` oracle assignment support does not translate native zero-valued generation/revocation
+counters into legacy epochs. A future native handoff host must use the existing run service's
+`advance` and operation journal with trusted source custody and typed grants, rather than adding
+a parallel phase medium. Until that adapter is supported, missing native source history remains
+an honest recovery hold.
