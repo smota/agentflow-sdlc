@@ -145,3 +145,17 @@ Legacy file application uses a cooperative lock, rechecks the digest and atomica
 file. Other writers must honor that lock. This is not source-store CAS or run-service fencing; native
 run recovery continues through the existing source-backed service. A stale lock requires ownership
 reconciliation and is never removed automatically.
+
+## Native oracle assignment identity
+
+Oracle writer assignments distinguish tagged `protocol: run-v1` source identity from legacy
+positive epoch/fence bindings. Native assignments preserve the exact existing `runId`,
+`runRevision`, `sourceRevision`, `owner`, `generation` and `revocationEpoch`; generation and
+revocation epoch may legitimately be zero. The trusted authority resolver must return the
+same source revision and exact task/assignment. No epoch or fence is derived from those native
+counters. Mixed protocols and unknown protocol tags are held. Untagged legacy assignments
+retain their positive epoch/fence contract for compatibility.
+
+The native source fixture uses the actual run service and its existing source snapshot. It
+proves identity compatibility, not a deployed authority resolver or permission to initialize
+missing historical state. A missing source revision remains a source gap.

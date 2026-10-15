@@ -68,6 +68,33 @@ function hold(status, reason, task = {}) {
   }
 }
 
+function counterScopeMatches(task, assignment, source) {
+  const protocol = task.protocol ?? 'legacy'
+  if ((assignment.scope?.protocol ?? 'legacy') !== protocol) return false
+  if (protocol === 'run-v1') {
+    const fields = ['runRevision', 'sourceRevision', 'owner', 'generation', 'revocationEpoch']
+    return (
+      ['runRevision', 'sourceRevision', 'owner'].every((field) => text(task[field])) &&
+      ['generation', 'revocationEpoch'].every(
+        (field) => Number.isSafeInteger(task[field]) && task[field] >= 0,
+      ) &&
+      fields.every((field) => assignment.scope?.[field] === task[field]) &&
+      source.sourceRevision === task.sourceRevision &&
+      ['epoch', 'fence'].every(
+        (field) => task[field] === undefined && assignment.scope?.[field] === undefined,
+      )
+    )
+  }
+  return (
+    protocol === 'legacy' &&
+    Number.isSafeInteger(task.epoch) &&
+    task.epoch >= 1 &&
+    Number.isSafeInteger(task.fence) &&
+    task.fence >= 1 &&
+    ['epoch', 'fence'].every((field) => assignment.scope?.[field] === task[field])
+  )
+}
+
 export function evaluateOracleWriterAdmission({
   task = {},
   assignment,
@@ -151,18 +178,13 @@ export function evaluateOracleWriterAdmission({
   if (
     !text(task.goal) ||
     !text(task.runId) ||
-    !Number.isInteger(task.epoch) ||
-    task.epoch < 1 ||
-    !Number.isInteger(task.fence) ||
-    task.fence < 1 ||
-    ['goal', 'runId', 'epoch', 'fence'].some(
-      (field) => assignment.scope?.[field] !== task[field],
-    ) ||
+    !counterScopeMatches(task, assignment, source) ||
+    ['goal', 'runId'].some((field) => assignment.scope?.[field] !== task[field]) ||
     digest(assignment.scope?.touchSurface) !== digest(task.touchSurface)
   )
     return reject(
       'ORACLE_SCOPE_MISMATCH',
-      'Assignment must preserve task goal, run, epoch, fence and bounded touch surface',
+      'Assignment must preserve task goal, run, tagged native counters or positive legacy epoch/fence, and bounded touch surface',
     )
   const expiry = Date.parse(assignment.expiresAt),
     clock = Date.parse(now)
