@@ -24,6 +24,37 @@ import { homedir } from 'node:os'
 import { delimiter, dirname, join, resolve } from 'node:path'
 import { createInterface } from 'node:readline/promises'
 import { fileURLToPath } from 'node:url'
+import {
+  executeHandoffStep,
+  formatPointerEnvelope,
+  parseQueueEnvelope,
+  validateEpochFence,
+  HandoffStepError,
+} from './handoff-step.mjs'
+import {
+  PHASE_PRIORITY_ORDER,
+  DEFAULT_HOT_FILE_DENYLIST,
+  compareQueuePriority,
+  evaluateMultiWriterAdmission,
+  evaluateRebaseIntegrationGate,
+  globOverlap,
+  normalizeGlob,
+} from './pipeline-admission.mjs'
+
+export {
+  executeHandoffStep,
+  formatPointerEnvelope,
+  parseQueueEnvelope,
+  validateEpochFence,
+  HandoffStepError,
+  PHASE_PRIORITY_ORDER,
+  DEFAULT_HOT_FILE_DENYLIST,
+  compareQueuePriority,
+  evaluateMultiWriterAdmission,
+  evaluateRebaseIntegrationGate,
+  globOverlap,
+  normalizeGlob,
+}
 
 export const DELIVERY_SEAT_PREFIXES = [
   'orch-arch',
@@ -53,6 +84,7 @@ export const USAGE = `Usage:
   agentflow-sdlc handoff flush [--rig <delivery-rig>] [--medium ...] [--json]
   agentflow-sdlc handoff release <hold-id>            (the person only, at a terminal)
   agentflow-sdlc handoff busy <rig> --set [--note <text>] | --clear   (--clear: the person only)
+  agentflow-sdlc handoff step [--goal <id>] [--phase <n>] [--to <session>] [--handoff-only] [--json]
 
 deliver sends to a free delivery squad and holds the handoff while the squad is busy.
 A reply (--reply --goal <uri>) about a goal the squad is already doing is delivered.
@@ -569,6 +601,46 @@ function flushAll(deps, rigs, medium) {
   return delivered
 }
 
+export function parseStepArgs(args) {
+  const options = {}
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index]
+    if (!arg.startsWith('--')) continue
+    const [rawName, inline] = arg.slice(2).split(/=(.*)/s, 2)
+    const name = rawName.toLowerCase()
+    if (name === 'handoff-only' || name === 'handoffonly') {
+      options.handoffOnly = true
+    } else if (name === 'json') {
+      options.json = true
+    } else {
+      const value = inline ?? args[(index += 1)]
+      if (value === undefined) throw new HandoffError(`--${rawName} requires a value.`, 2)
+      if (name === 'phase') options.phase = Number(value)
+      else if (name === 'epoch') options.epoch = Number(value)
+      else if (name === 'base-sha' || name === 'basesha') options.baseSha = value
+      else if (name === 'candidate-sha' || name === 'candidatesha') options.candidateSha = value
+      else if (name === 'oracle-digest' || name === 'oracledigest') options.oracleDigest = value
+      else if (
+        name === 'proof-artifact' ||
+        name === 'proof-artifact-ref' ||
+        name === 'proofartifact' ||
+        name === 'proofartifactref'
+      )
+        options.proofArtifactRef = value
+      else if (name === 'transition' || name === 'transition-uri' || name === 'transitionuri') {
+        options.transitionUri = value
+        options.transition = value
+      } else if (name === 'body-file' || name === 'bodyfile') {
+        options.body = readFileSync(resolve(value), 'utf8')
+      } else {
+        const camel = rawName.replace(/-([a-z])/g, (_, c) => c.toUpperCase())
+        options[camel] = value
+      }
+    }
+  }
+  return options
+}
+
 export async function main(
   argv,
   { deps = defaultDeps(), stdout = process.stdout, stderr = process.stderr } = {},
@@ -579,6 +651,20 @@ export async function main(
     if (!command || command === '--help' || command === '-h') {
       write(USAGE)
       return command ? 0 : 2
+    }
+    if (command === 'step') {
+      if (rest.includes('--help') || rest.includes('-h')) {
+        write(USAGE)
+        return 0
+      }
+      const stepOptions = parseStepArgs(rest)
+      const result = executeHandoffStep(deps, stepOptions)
+      if (stepOptions.json) write(JSON.stringify(result, null, 2))
+      else
+        write(
+          `Step handoff completed for goal ${result.goal} (phase ${result.phase}) to ${result.to}.`,
+        )
+      return 0
     }
     const { options, positionals } = parseArgs(rest)
     if (options['body-file'] !== undefined)
