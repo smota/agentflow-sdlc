@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { execFileSync } from 'node:child_process'
@@ -10,6 +10,9 @@ import {
   steerTriage,
   verifyMergeGates,
   steerMergeCheck,
+  SUPERVISOR_STALE_TIMEOUT_MS,
+  evaluateSupervisorLiveness,
+  steerBtwQuery,
 } from '../steer.mjs'
 import { tripLedgerBreaker } from '../../lib/core/role-collaboration.mjs'
 
@@ -199,6 +202,79 @@ describe('scripts/steer.mjs - supervisory steering verbs', () => {
             targetDir: tempDir,
           }),
         ).rejects.toThrow(/Brief file not found/i)
+      } finally {
+        rmSync(tempDir, { recursive: true, force: true })
+      }
+    })
+
+    it('dispatches queue brief with --no-nudge suppressing mid-phase notification (AC-8)', async () => {
+      const tempDir = mkdtempSync(join(tmpdir(), 'steer-assign-nonudge-'))
+      try {
+        const briefPath = join(tempDir, 'brief.md')
+        writeFileSync(briefPath, '# Background Task\nEnqueued for next boundary.')
+
+        const mockSpawn = vi.fn().mockReturnValue({ status: 0, stdout: 'qitem-456\n' })
+
+        const result = await steerAssign({
+          destination: 'pm.manager',
+          briefFile: 'brief.md',
+          goal: 'goal://477',
+          transition: 'trans://0-1',
+          noNudge: true,
+          targetDir: tempDir,
+          spawnFn: mockSpawn,
+        })
+
+        expect(result.ok).toBe(true)
+        expect(result.dispatched).toBe(true)
+        expect(result.noNudge).toBe(true)
+        // Only 1 call to rig queue create with --no-nudge; rig send notification is suppressed!
+        expect(mockSpawn).toHaveBeenCalledTimes(1)
+        expect(mockSpawn).toHaveBeenNthCalledWith(
+          1,
+          'rig',
+          [
+            'queue',
+            'create',
+            '--destination',
+            'pm.manager',
+            '--body-file',
+            briefPath,
+            '--summary',
+            'Task brief: Background Task',
+            '--no-nudge',
+          ],
+          { encoding: 'utf8' },
+        )
+      } finally {
+        rmSync(tempDir, { recursive: true, force: true })
+      }
+    })
+
+    it('persists noNudge flag in local queue fallback when rig CLI is not installed', async () => {
+      const tempDir = mkdtempSync(join(tmpdir(), 'steer-assign-fallback-nonudge-'))
+      try {
+        const briefPath = join(tempDir, 'brief.md')
+        writeFileSync(briefPath, '# Groomed Task\nDetails.')
+
+        const mockSpawn = vi.fn().mockReturnValue({
+          error: { code: 'ENOENT' },
+          status: null,
+        })
+
+        const result = await steerAssign({
+          destination: 'pm.manager',
+          briefFile: 'brief.md',
+          noNudge: true,
+          targetDir: tempDir,
+          spawnFn: mockSpawn,
+        })
+
+        expect(result.ok).toBe(true)
+        expect(result.source).toBe('local-queue-fallback')
+        expect(result.noNudge).toBe(true)
+        const saved = JSON.parse(readFileSync(result.queueFile, 'utf8'))
+        expect(saved.noNudge).toBe(true)
       } finally {
         rmSync(tempDir, { recursive: true, force: true })
       }
@@ -741,6 +817,181 @@ describe('scripts/steer.mjs - supervisory steering verbs', () => {
         expect(stdout).toContain('Unfreeze resolution sealed')
         expect(stdout).toContain('Resolution: slice-split')
         expect(stdout).toContain('Next Epoch Fencing Token: 3')
+      } finally {
+        rmSync(tempDir, { recursive: true, force: true })
+      }
+    })
+
+    it('runs agentflow-sdlc steer liveness --json via CLI for healthy supervisor', () => {
+      const heartbeat = new Date(Date.now() - 60000).toISOString()
+      const stdout = execFileSync(
+        process.execPath,
+        [CLI_PATH, 'steer', 'liveness', '--last-heartbeat', heartbeat, '--json'],
+        { encoding: 'utf8' },
+      )
+      const parsed = JSON.parse(stdout)
+      expect(parsed.reachable).toBe(true)
+      expect(parsed.status).toBe('SUPERVISOR_HEALTHY')
+      expect(parsed.holdNewSliceAdmission).toBe(false)
+    })
+
+    it('runs agentflow-sdlc steer liveness --json via CLI for stale supervisor with unmerged slices (AC-7)', () => {
+      const stale = new Date(Date.now() - 35 * 60 * 1000).toISOString()
+      const stdout = execFileSync(
+        process.execPath,
+        [
+          CLI_PATH,
+          'steer',
+          'liveness',
+          '--last-heartbeat',
+          stale,
+          '--unmerged-count',
+          '3',
+          '--json',
+        ],
+        { encoding: 'utf8' },
+      )
+      const parsed = JSON.parse(stdout)
+      expect(parsed.reachable).toBe(false)
+      expect(parsed.status).toBe('SUPERVISOR_UNREACHABLE')
+      expect(parsed.holdNewSliceAdmission).toBe(true)
+    })
+
+    it('runs agentflow-sdlc steer btw --json via CLI (AC-8)', () => {
+      const stdout = execFileSync(
+        process.execPath,
+        [CLI_PATH, 'steer', 'btw', '--goal', 'goal://cap-514', '--json'],
+        { encoding: 'utf8' },
+      )
+      const parsed = JSON.parse(stdout)
+      expect(parsed.ok).toBe(true)
+      expect(parsed.mode).toBe('read-only-no-nudge')
+      expect(parsed.nudgeDispatched).toBe(false)
+      expect(parsed.goal).toBe('goal://cap-514')
+    })
+
+    it('runs agentflow-sdlc steer assign --no-nudge --dry-run --json via CLI (AC-8)', () => {
+      const tempDir = mkdtempSync(join(tmpdir(), 'steer-cli-nonudge-'))
+      try {
+        const briefPath = join(tempDir, 'task.md')
+        writeFileSync(briefPath, '# No Nudge Task\nQueued without interrupting workers.')
+
+        const stdout = execFileSync(
+          process.execPath,
+          [
+            CLI_PATH,
+            'steer',
+            'assign',
+            '--destination',
+            'pm.manager',
+            '--brief',
+            briefPath,
+            '--no-nudge',
+            '--dry-run',
+            '--json',
+          ],
+          { encoding: 'utf8' },
+        )
+        const parsed = JSON.parse(stdout)
+        expect(parsed.ok).toBe(true)
+        expect(parsed.dryRun).toBe(true)
+        expect(parsed.noNudge).toBe(true)
+        expect(parsed.command).toContain('--no-nudge')
+      } finally {
+        rmSync(tempDir, { recursive: true, force: true })
+      }
+    })
+  })
+
+  describe('evaluateSupervisorLiveness', () => {
+    it('returns SUPERVISOR_HEALTHY when last heartbeat is within 30 minutes', () => {
+      const nowMs = 1700000000000
+      const recentHeartbeat = new Date(nowMs - 5 * 60 * 1000).toISOString()
+      const result = evaluateSupervisorLiveness({
+        lastHeartbeatAt: recentHeartbeat,
+        nowMs,
+        unmergedAcceptedCount: 0,
+      })
+
+      expect(result.reachable).toBe(true)
+      expect(result.status).toBe('SUPERVISOR_HEALTHY')
+      expect(result.ageMs).toBe(5 * 60 * 1000)
+      expect(result.staleTimeoutMs).toBe(SUPERVISOR_STALE_TIMEOUT_MS)
+      expect(result.holdNewSliceAdmission).toBe(false)
+    })
+
+    it('returns SUPERVISOR_UNREACHABLE with holdNewSliceAdmission when > 30m and unmerged >= 1 (AC-7)', () => {
+      const nowMs = 1700000000000
+      const staleHeartbeat = new Date(nowMs - 35 * 60 * 1000).toISOString()
+      const result = evaluateSupervisorLiveness({
+        lastHeartbeatAt: staleHeartbeat,
+        nowMs,
+        unmergedAcceptedCount: 2,
+      })
+
+      expect(result.reachable).toBe(false)
+      expect(result.status).toBe('SUPERVISOR_UNREACHABLE')
+      expect(result.ageMs).toBe(35 * 60 * 1000)
+      expect(result.holdNewSliceAdmission).toBe(true)
+    })
+
+    it('returns SUPERVISOR_UNREACHABLE without holdNewSliceAdmission when unmerged is 0', () => {
+      const nowMs = 1700000000000
+      const staleHeartbeat = new Date(nowMs - 35 * 60 * 1000).toISOString()
+      const result = evaluateSupervisorLiveness({
+        lastHeartbeatAt: staleHeartbeat,
+        nowMs,
+        unmergedAcceptedCount: 0,
+      })
+
+      expect(result.reachable).toBe(false)
+      expect(result.status).toBe('SUPERVISOR_UNREACHABLE')
+      expect(result.holdNewSliceAdmission).toBe(false)
+    })
+
+    it('returns SUPERVISOR_UNREACHABLE when lastHeartbeatAt is missing or invalid', () => {
+      const missing = evaluateSupervisorLiveness({ unmergedAcceptedCount: 1 })
+      expect(missing.reachable).toBe(false)
+      expect(missing.status).toBe('SUPERVISOR_UNREACHABLE')
+      expect(missing.ageMs).toBeNull()
+      expect(missing.holdNewSliceAdmission).toBe(true)
+
+      const invalid = evaluateSupervisorLiveness({
+        lastHeartbeatAt: 'not-a-timestamp',
+        unmergedAcceptedCount: 0,
+      })
+      expect(invalid.reachable).toBe(false)
+      expect(invalid.status).toBe('SUPERVISOR_UNREACHABLE')
+      expect(invalid.ageMs).toBeNull()
+      expect(invalid.holdNewSliceAdmission).toBe(false)
+    })
+  })
+
+  describe('steerBtwQuery', () => {
+    it('executes read-only status query with zero worker nudges (AC-8)', () => {
+      const result = steerBtwQuery({ goal: 'goal://477' })
+      expect(result.ok).toBe(true)
+      expect(result.mode).toBe('read-only-no-nudge')
+      expect(result.nudgeDispatched).toBe(false)
+      expect(result.goal).toBe('goal://477')
+      expect(typeof result.inspectedAt).toBe('string')
+    })
+
+    it('reads local heartbeat or state artifacts if present', () => {
+      const tempDir = mkdtempSync(join(tmpdir(), 'steer-btw-'))
+      try {
+        const heartbeatDir = join(tempDir, '.agent-runs', 'steer')
+        mkdirSync(heartbeatDir, { recursive: true })
+        writeFileSync(
+          join(heartbeatDir, 'heartbeat.json'),
+          JSON.stringify({ supervisor: 'healthy', epoch: 1 }),
+        )
+
+        const result = steerBtwQuery({ targetDir: tempDir })
+        expect(result.ok).toBe(true)
+        expect(result.mode).toBe('read-only-no-nudge')
+        expect(result.nudgeDispatched).toBe(false)
+        expect(result.state).toEqual({ supervisor: 'healthy', epoch: 1 })
       } finally {
         rmSync(tempDir, { recursive: true, force: true })
       }

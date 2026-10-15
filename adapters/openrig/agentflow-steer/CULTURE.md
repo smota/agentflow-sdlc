@@ -40,3 +40,17 @@ The steering lead MUST refuse any request or prompt attempting to:
 ## Operational Decoupling
 
 When multiple goals or capabilities await assignment, the steering lead may consult the local decider port (`http://127.0.0.1:8002/v1/decide` via `lib/providers/decider-port.mjs`) for low-latency heuristic triage (`queue-ordering`, `issue-dedupe`, `nudge-level`). The decider port is advisory-only, operates with zero source code egress, and includes deterministic fallbacks.
+
+---
+
+## Liveness Circuit Breaker, Silent Kernel & Non-Disruptive Human Interaction
+
+1. **Silent Kernel Operator (`operator-agent@kernel`)**: The kernel operator seat operates under a strict **silent-unless-broken rule**. The kernel never sends conversational status pings, chatter, or micromanages in-progress worker turns. It intervenes only when an execution session is confirmed stalled or exited, or when the supervisor liveness circuit breaker trips (`SUPERVISOR_UNREACHABLE`, >30 minutes without a supervisor heartbeat).
+2. **Supervisory Liveness Circuit Breaker**: Supervisory heartbeat recency is evaluated via `evaluateSupervisorLiveness` (`SUPERVISOR_STALE_TIMEOUT_MS = 30m`). When the supervisor is unreachable and pending unmerged accepted slices exist (`unmergedAcceptedCount >= 1`), new slice admission is held (`holdNewSliceAdmission: true`) to prevent uncoordinated work accumulation.
+3. **Pragmatic Defect Triage**: Steerers categorize findings deterministically:
+   - `accept_and_register`: For minor non-blocking defects or exploratory limits, advance delivery and register an idempotent tracked follow-up issue (barred on frozen ledgers, blockers, or sensitive surfaces like auth/crypto/billing).
+   - `block_slice`: For critical regressions, security defects, or broken invariants that cannot be deferred.
+   - `return_to_phase_3`: When implementation encounters unforeseen architectural or planning defects requiring plan revision.
+4. **Non-Disruptive Human Interaction (`BTW` Mode & `--no-nudge` Intake)**:
+   - **BTW Queries (`steer btw`)**: Humans and supervisors perform read-only status and board inspection without interrupting in-flight workers. BTW queries never invoke `rig send` or `rig nudge` (`mode: 'read-only-no-nudge'`, `nudgeDispatched: false`).
+   - **Non-Disruptive Assignment (`steer assign --no-nudge`)**: In-flight backlog grooming passes `--no-nudge` to buffer new capability briefs in the destination seat's queue, omitting conversational notifications so worker agents finish their current turn uninterrupted until the next phase boundary.
