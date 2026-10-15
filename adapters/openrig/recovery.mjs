@@ -1,5 +1,7 @@
 import { resolveTwoLevelFallback } from './platform-fallback.mjs'
 import { recordDigest } from '../../lib/core/record-digest.mjs'
+import { reduceRun } from '../../lib/core/run-state.mjs'
+import { requireOracleCustodyReceipt } from '../../lib/core/oracle-custody.mjs'
 
 const finite = (value) => typeof value === 'number' && Number.isFinite(value)
 const safeId = (value) =>
@@ -16,6 +18,38 @@ const artifacts = (value) =>
   !Array.isArray(value) &&
   Object.keys(value).length > 0 &&
   Object.entries(value).every(([key, value]) => safeId(key) && digest(value))
+
+// Active custody is a native source fact. Neither a digest pin nor a host boolean
+// substitutes for the original typed request and its source-recorded receipt.
+function activeOracleCustody(snapshot) {
+  const state = snapshot.state
+  if (!state.oracleDigest) return true
+  if (state.oraclePin?.oracleDigest !== state.oracleDigest) return false
+  const receipts = Object.values(state.oracleCustody ?? {})
+  if (!receipts.length) return false
+  return receipts.every((receipt) => {
+    try {
+      const event = snapshot.events.find(
+        (event) =>
+          event.kind === 'oracle-custody-recorded' &&
+          event.payload.receipt?.digest === receipt.digest,
+      )
+      if (!event || recordDigest(event.payload.receipt) !== recordDigest(receipt)) return false
+      requireOracleCustodyReceipt(receipt, event.payload.request)
+      return (
+        receipt.runId === state.runId &&
+        receipt.goalRef === state.goalRef &&
+        receipt.generation === state.generation &&
+        receipt.revocationEpoch === state.revocationEpoch &&
+        receipt.oracleDigest === state.oracleDigest &&
+        receipt.candidateDigest === state.candidateDigest &&
+        event.previousDigest === event.payload.request.runRevision
+      )
+    } catch {
+      return false
+    }
+  })
+}
 
 // Only structured error identity/status is classification evidence. Usage metadata and prose
 // may repeat historical failures, so neither is searched for error-looking substrings.
@@ -86,6 +120,7 @@ export async function recoverExecution({
   operation,
   operationOptions,
   inspectRecoveryContext,
+  renewOracleCustody,
   dispatch,
   readback,
 } = {}) {
@@ -164,6 +199,17 @@ export async function recoverExecution({
       clearTimeout(timer)
     }
   }
+  const readSource = async () => {
+    const snapshot = await bounded(() => service.read())
+    const projected = reduceRun(snapshot.events)
+    if (
+      !projected ||
+      projected.revision !== snapshot.revision ||
+      recordDigest(projected) !== recordDigest(snapshot.state)
+    )
+      throw new Error('source projection changed')
+    return snapshot
+  }
   const classification = classifyExecutionFailure({ ...failure, nowMs })
   if (
     [
@@ -190,7 +236,7 @@ export async function recoverExecution({
     return hold('source-service-unavailable')
   let snapshot
   try {
-    snapshot = await bounded(() => service.read())
+    snapshot = await readSource()
   } catch {
     return hold('source-read-unavailable')
   }
@@ -231,16 +277,38 @@ export async function recoverExecution({
         result.state === 'confirmed'
           ? 'operation-already-confirmed-verify-readback'
           : result.state === 'failed'
-            ? 'operation-failed-replan-within-budget'
+            ? 'operation-failed-governed-new-incident-required'
             : 'operation-outcome-unknown',
       )
     } catch {
       return hold('operation-reconciliation-unavailable')
     }
   }
-  if (Math.max(attempts.length, prior.length) >= policy.maxAttempts)
+  const anchors = (snapshot.events ?? []).filter(
+    (event) =>
+      event.kind === 'checkpoint' && event.payload?.recoveryContinuation?.incident === incident,
+  )
+  let anchor = anchors.at(-1)?.payload.recoveryContinuation ?? null
+  if (
+    anchor &&
+    (anchor.version !== 1 ||
+      anchor.classification !== classification.classification ||
+      anchor.policyDigest !== policyDigest ||
+      anchor.operationId !== operation.id ||
+      anchor.grantId !== operationOptions?.grantId ||
+      anchor.operationDigest !== recordDigest(operation) ||
+      anchor.targetOwner !== recovery?.owner ||
+      anchor.targetWriterDigest !== recordDigest(recovery?.writer) ||
+      anchor.currentContractDigest !== recordDigest(currentContract) ||
+      anchor.replacementContractDigest !== recordDigest(replacementContract) ||
+      anchors.some(
+        (event) => recordDigest(event.payload.recoveryContinuation) !== recordDigest(anchor),
+      ))
+  )
+    return hold('recovery-continuation-unbound')
+  if (!anchor && Math.max(attempts.length, prior.length) >= policy.maxAttempts)
     return hold('incident-attempt-budget-exhausted')
-  const persistAttempt = async () => {
+  const persistAttempt = async (continuation = null) => {
     await bounded(() =>
       service.record(
         'checkpoint',
@@ -249,12 +317,13 @@ export async function recoverExecution({
           recoveryIncident: incident,
           recoveryPolicyDigest: policyDigest,
           classification: classification.classification,
+          ...(continuation ? { recoveryContinuation: structuredClone(continuation) } : {}),
         },
         { expectedRevision: snapshot.revision, authority: recovery?.checkpointAuthority },
       ),
     )
     effects.push('source-attempt-checkpoint')
-    snapshot = await bounded(() => service.read())
+    snapshot = await readSource()
     state = snapshot.state
   }
   if (
@@ -295,18 +364,95 @@ export async function recoverExecution({
     typeof dispatch !== 'function'
   )
     return hold('trusted-host-ports-unavailable')
-  // Explicit future writer identity is required. Refreshing a source revision after transfer
-  // never authorizes a different principal, generation, operation, grant, or payload.
+  if (recovery?.boundary !== state.boundary) return hold('recovery-source-boundary-changed')
+  let continued = false
+  if (anchor) {
+    if (
+      !Number.isSafeInteger(anchor.fromGeneration) ||
+      anchor.targetGeneration !== anchor.fromGeneration + 1 ||
+      anchor.revocationEpoch !== state.revocationEpoch ||
+      anchor.candidateDigest !== state.candidateDigest ||
+      anchor.oracleDigest !== state.oracleDigest ||
+      anchor.boundary !== recovery.boundary
+    )
+      return hold('recovery-continuation-source-changed')
+    if (state.generation === anchor.targetGeneration) {
+      const anchorIndex = snapshot.events.indexOf(anchors.at(-1))
+      const transfer = snapshot.events
+        .slice(anchorIndex + 1)
+        .find(
+          (event) =>
+            event.kind === 'resumed' &&
+            event.generation === anchor.fromGeneration &&
+            event.payload.owner === anchor.targetOwner &&
+            recordDigest(event.payload.writer) === anchor.targetWriterDigest,
+        )
+      if (
+        !transfer ||
+        state.owner !== anchor.targetOwner ||
+        recordDigest(state.writer) !== anchor.targetWriterDigest
+      )
+        return hold('recovery-continuation-owner-unbound')
+      continued = true
+    } else if (state.generation !== anchor.fromGeneration || state.owner !== anchor.fromOwner)
+      return hold('recovery-continuation-owner-unbound')
+  } else if (
+    state.owner === recovery?.owner &&
+    recordDigest(state.writer) === recordDigest(recovery?.writer)
+  )
+    return hold('recovery-continuation-unbound')
+  // A current-generation continuation never asks source.resume to transfer again.
   if (
     operationOptions?.expectedRevision !== snapshot.revision ||
     operationOptions?.authority?.owner !== recovery?.owner ||
-    operationOptions?.authority?.generation !== state.generation + 1
+    operationOptions?.authority?.generation !==
+      (continued ? state.generation : state.generation + 1)
   )
     return hold('recovery-operation-options-stale')
+  const ensureCustody = async (authority) => {
+    if (activeOracleCustody(snapshot)) return true
+    if (typeof renewOracleCustody !== 'function') return false
+    const scope = recordDigest({
+      owner: state.owner,
+      generation: state.generation,
+      revocationEpoch: state.revocationEpoch,
+      candidateDigest: state.candidateDigest,
+      oracleDigest: state.oracleDigest,
+      boundary: state.boundary,
+      writer: state.writer,
+      phase: state.phase,
+      status: state.status,
+    })
+    await bounded(() =>
+      renewOracleCustody({
+        state: structuredClone(state),
+        authority: structuredClone(authority),
+        incident,
+        operation: structuredClone(operation),
+      }),
+    )
+    snapshot = await readSource()
+    state = snapshot.state
+    return (
+      scope ===
+        recordDigest({
+          owner: state.owner,
+          generation: state.generation,
+          revocationEpoch: state.revocationEpoch,
+          candidateDigest: state.candidateDigest,
+          oracleDigest: state.oracleDigest,
+          boundary: state.boundary,
+          writer: state.writer,
+          phase: state.phase,
+          status: state.status,
+        }) && activeOracleCustody(snapshot)
+    )
+  }
   try {
-    await persistAttempt()
+    if (!(await ensureCustody({ owner: state.owner, generation: state.generation })))
+      return hold('source-oracle-custody-unresolved')
   } catch {
-    return hold('attempt-checkpoint-unavailable')
+    return hold('attempt-checkpoint-or-custody-unavailable')
   }
   let evidence
   try {
@@ -323,49 +469,43 @@ export async function recoverExecution({
   } catch {
     return hold('recovery-context-unavailable')
   }
-  if (
-    evidence?.verified !== true ||
-    evidence.runId !== state.runId ||
-    evidence.revision !== state.revision ||
-    evidence.generation !== state.generation ||
-    evidence.incident !== incident ||
-    evidence.policyDigest !== policyDigest ||
-    evidence.operationDigest !== recordDigest(operation) ||
-    !finite(evidence.observedAt) ||
-    evidence.observedAt > currentTime() ||
-    currentTime() - evidence.observedAt > 60000 ||
-    evidence.currentContractDigest !== recordDigest(currentContract) ||
-    evidence.replacementContractDigest !== recordDigest(replacementContract) ||
-    ![
-      'authorized',
-      'healthy',
-      'checkpointVerified',
-      'custodyVerified',
-      'reviewerIndependenceVerified',
-      'capabilityFloorsVerified',
-      'costPolicyVerified',
-      'quotaIndependent',
-    ].every((key) => evidence[key] === true) ||
-    !artifacts(evidence.artifactDigests)
-  )
-    return hold('recovery-context-unverified')
-  try {
-    const plan = await bounded(() =>
-      service.recoveryPlan({
-        owner: recovery.owner,
-        boundary: recovery.boundary,
-        writer: recovery.writer,
-      }),
+  const validEvidence = (value) =>
+    !(
+      value?.verified !== true ||
+      value.runId !== state.runId ||
+      value.revision !== state.revision ||
+      value.generation !== state.generation ||
+      value.incident !== incident ||
+      value.policyDigest !== policyDigest ||
+      value.operationDigest !== recordDigest(operation) ||
+      !finite(value.observedAt) ||
+      value.observedAt > currentTime() ||
+      currentTime() - value.observedAt > 60000 ||
+      value.currentContractDigest !== recordDigest(currentContract) ||
+      value.replacementContractDigest !== recordDigest(replacementContract) ||
+      ![
+        'authorized',
+        'healthy',
+        'checkpointVerified',
+        'custodyVerified',
+        'reviewerIndependenceVerified',
+        'capabilityFloorsVerified',
+        'costPolicyVerified',
+        'quotaIndependent',
+      ].every((key) => value[key] === true) ||
+      !artifacts(value.artifactDigests)
     )
-    if (plan.blocked) return hold('source-recovery-blocked')
-    // The existing selector runs only after source-owned safe-boundary verification.
+  if (!validEvidence(evidence)) return hold('recovery-context-unverified')
+  const selectFallback = () => {
+    // Native safe-boundary verification (first transfer) or the exact source-backed
+    // continuation (already transferred) precedes the selector.
     // Unknown health is never passed as the selector's legacy permissive null default.
     if (
       !Array.isArray(evidence.healthyPlatforms) ||
       !policy.fallback ||
       !safeId(policy.fallback.seat)
     )
-      return hold('fallback-policy-or-health-unverified')
+      return 'fallback-policy-or-health-unverified'
     const selected = resolveTwoLevelFallback({
       ...policy.fallback,
       healthyPlatforms: evidence.healthyPlatforms,
@@ -376,15 +516,84 @@ export async function recoverExecution({
       selected.platform !== `${replacementContract.runtime}:${replacementContract.providerRoute}` ||
       ['runtime', 'model', 'effort'].some((key) => selected[key] !== replacementContract[key])
     )
-      return hold('fallback-selection-mismatch')
-    await bounded(() => service.resume({ plan, authority: recovery.authority }))
-    effects.push('source-writer-transfer')
-    const resumed = await bounded(() => service.read())
+      return 'fallback-selection-mismatch'
+    return null
+  }
+  try {
+    if (anchor && recordDigest(anchor.artifactDigests) !== recordDigest(evidence.artifactDigests))
+      return hold('recovery-artifacts-changed')
+    if (!anchor) {
+      anchor = {
+        version: 1,
+        classification: classification.classification,
+        incident,
+        policyDigest,
+        operationId: operation.id,
+        grantId: operationOptions.grantId,
+        operationDigest: recordDigest(operation),
+        targetOwner: recovery.owner,
+        targetWriterDigest: recordDigest(recovery.writer),
+        fromOwner: state.owner,
+        fromGeneration: state.generation,
+        targetGeneration: state.generation + 1,
+        revocationEpoch: state.revocationEpoch,
+        candidateDigest: state.candidateDigest,
+        oracleDigest: state.oracleDigest,
+        boundary: recovery.boundary,
+        currentContractDigest: recordDigest(currentContract),
+        replacementContractDigest: recordDigest(replacementContract),
+        artifactDigests: structuredClone(evidence.artifactDigests),
+      }
+      await persistAttempt(anchor)
+      effects.push('source-continuation-checkpoint')
+    }
+    if (!continued) {
+      const plan = await bounded(() =>
+        service.recoveryPlan({
+          owner: recovery.owner,
+          boundary: recovery.boundary,
+          writer: recovery.writer,
+        }),
+      )
+      if (plan.blocked) return hold('source-recovery-blocked')
+      const selectionHold = selectFallback()
+      if (selectionHold) return hold(selectionHold)
+      await bounded(() => service.resume({ plan, authority: recovery.authority }))
+      effects.push('source-writer-transfer')
+      snapshot = await readSource()
+      state = snapshot.state
+    } else {
+      const selectionHold = selectFallback()
+      if (selectionHold) return hold(selectionHold)
+    }
     if (
-      resumed.state?.owner !== operationOptions.authority.owner ||
-      resumed.state?.generation !== operationOptions.authority.generation
+      state.owner !== operationOptions.authority.owner ||
+      state.generation !== operationOptions.authority.generation ||
+      recordDigest(state.writer) !== anchor.targetWriterDigest ||
+      state.revocationEpoch !== anchor.revocationEpoch ||
+      state.candidateDigest !== anchor.candidateDigest ||
+      state.oracleDigest !== anchor.oracleDigest
     )
       return hold('replacement-writer-unverified')
+    if (!(await ensureCustody(operationOptions.authority)))
+      return hold('source-oracle-custody-unresolved')
+    const fresh = await bounded(() =>
+      inspectRecoveryContext({
+        state: structuredClone(state),
+        currentContract: structuredClone(currentContract),
+        replacementContract: structuredClone(replacementContract),
+        incident,
+        policyDigest,
+        operation: structuredClone(operation),
+      }),
+    )
+    if (
+      !validEvidence(fresh) ||
+      recordDigest(fresh.artifactDigests) !== recordDigest(anchor.artifactDigests)
+    )
+      return hold('replacement-context-unverified')
+    evidence = fresh
+    const resumed = snapshot
     try {
       await bounded(() =>
         service.executeDelegatedOperation(
@@ -407,10 +616,10 @@ export async function recoverExecution({
     if (reconciled.state !== 'confirmed')
       return hold(
         reconciled.state === 'failed'
-          ? 'replacement-operation-failed'
+          ? 'operation-failed-governed-new-incident-required'
           : 'operation-outcome-unknown',
       )
-    const final = await bounded(() => service.read())
+    const final = await readSource()
     const actual = await bounded(() =>
       readback({ state: structuredClone(final.state), incident, operationId: operation.id }),
     )
@@ -429,6 +638,9 @@ export async function recoverExecution({
       recordDigest(actual.artifactDigests) !== recordDigest(evidence.artifactDigests)
     )
       return hold('replacement-readback-unverified')
+    const current = await readSource()
+    if (current.revision !== final.revision || !activeOracleCustody(current))
+      return hold('replacement-readback-source-changed')
     return {
       status: 'recovered',
       classification: classification.classification,
