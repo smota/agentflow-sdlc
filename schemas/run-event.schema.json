@@ -52,6 +52,8 @@
       "enum": [
         "started",
         "contract-frozen",
+        "oracle-pinned",
+        "oracle-custody-recorded",
         "candidate",
         "observation",
         "budget-admission",
@@ -75,5 +77,56 @@
       "format": "date-time"
     }
   },
-  "additionalProperties": true
+  "additionalProperties": true,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "oracle-custody-recorded"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "type": "object",
+            "required": ["request", "receipt"],
+            "properties": {
+              "request": {
+                "allOf": [
+                  {
+                    "$ref": "oracle-custody.schema.json"
+                  },
+                  {
+                    "properties": {
+                      "type": {
+                        "const": "oracle-custody-request"
+                      }
+                    }
+                  }
+                ]
+              },
+              "receipt": {
+                "allOf": [
+                  {
+                    "$ref": "oracle-custody.schema.json"
+                  },
+                  {
+                    "properties": {
+                      "type": {
+                        "const": "oracle-custody-receipt"
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    }
+  ],
+  "$id": "https://agentflow.dev/schemas/run-event.schema.json"
 }

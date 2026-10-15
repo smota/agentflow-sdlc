@@ -73,3 +73,48 @@ agentflow-sdlc collaboration verify --handoff role-handoff.json --delivery deliv
 Extension manifests use `requiredExecutionIntents`, `requiredToolPermissions`, and
 `controlRequirements`. Prose
 alone cannot satisfy a control.
+
+## Oracle custody in a native run
+
+`createRunService().recordOracleCustody()` records `oracle-custody-recorded` in the existing run
+ledger. It does not open another ledger, advance a phase, grant write permissions or satisfy a
+human gate. Its request binds the current source/run revision, native writer generation and
+revocation epoch, candidate and existing oracle pin. Native generation zero remains zero.
+
+The trusted host `resolveOracleCustody(request)` MUST verify the exact source-backed test-engineering
+assignment, manifest, identity and evidence. Compose the existing oracle-assignment admission
+contract; do not infer authorization from `pinnedBefore`, the run owner or a seat name. The host
+returns a verified, checksummed `oracle-custody-receipt` binding the exact request. Checksums prove
+consistency, not authentication. Service authorization and compare-and-swap still control the write.
+
+The two custody modes are distinct:
+
+- `historical-author` requires verified evidence of who actually authored the pinned oracle;
+- `prospective-assignment` names the assigned future executor and records no historical author.
+
+A caller cannot record either event through the generic `record` method or substitute its own
+verification boolean. Assignment and manifest references require revisions and SHA-256 digests.
+Historical authorship and prospective assignment occupy separate optional `oracleCustody.author` and
+`oracleCustody.assignment` fields, retaining their verified references. Changed pins, changed
+candidates, native writer generations, revocation epochs and candidate-invalidating recovery clear
+active custody while
+retaining prior events. Legacy states without custody events keep their existing reduced shape,
+including segmented snapshot checksums. Missing historical evidence stays unknown; migration MUST
+NOT infer an author or reset writer/rework history. Prospective assignments require fresh dispatch
+admission when used; recording them does not make an expired assignment current.
+
+Source transport revision is observed by the host and checked immediately before source append;
+it cannot be reconstructed from event reduction alone. The event also binds the prior run revision,
+which the reducer checks. Artifact authority labels describe references and are not authentication;
+the trusted verifier establishes their actual source authority. Existing service authorization,
+reduction and source compare-and-swap remain mandatory before persistence.
+
+Portable validation requires the source request for receipts:
+
+```bash
+agentflow-sdlc sdlc validate-evidence --type oracle-custody-request --path request.json
+agentflow-sdlc sdlc validate-evidence --type oracle-custody-receipt --path receipt.json --request request.json
+```
+
+Passing this check proves binding and consistency only; it is not independent verification of
+the referenced assignment, manifest or historical author.

@@ -16,7 +16,7 @@ const target = path.resolve(flag('--target', process.cwd()))
 const source = flag('--path')
 if (!type || !source) {
   process.stderr.write(
-    'Usage: validate-evidence-contract --type artifact-ref|artifact-refs|transition-envelope|execution-receipt|review-attestation|role-handoff|acceptance-contract|delivery-receipt|acceptance-decision|council-request|council-advice|council-synthesis|rework-request --path <json> [--target <dir>] [--json]\n',
+    'Usage: validate-evidence-contract --type artifact-ref|artifact-refs|transition-envelope|execution-receipt|review-attestation|role-handoff|acceptance-contract|delivery-receipt|acceptance-decision|council-request|council-advice|council-synthesis|rework-request|oracle-custody-request|oracle-custody-receipt --path <json> [--request <source-request.json>] [--target <dir>] [--json]\n',
   )
   process.exit(2)
 }
@@ -28,6 +28,9 @@ try {
       ? validateExecutionReceipt(value, config)
       : validateEvidenceContract(type, value, config, loadProjectConfig(target), {
           expectedDigest: flag('--expected-digest'),
+          request: flag('--request')
+            ? JSON.parse(fs.readFileSync(path.resolve(target, flag('--request')), 'utf8'))
+            : undefined,
           packageRoot: target,
         })
   process.stdout.write(`${JSON.stringify(report, null, 2)}\n`)
