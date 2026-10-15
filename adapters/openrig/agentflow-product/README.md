@@ -19,7 +19,10 @@ Presets use the same names as the delivery bundle and a different seat map. `bal
 Retries reuse the original phase key and the queue's supported `--id` retry identity. A queue
 exit code of zero means **submitted**; it does not prove successor custody. Submitted and
 uncertain records remain in the outbox, with the existing run/store, epoch, fence and oracle
-owner preserved. A submitted replay checks custody without sending another queue create.
+owner preserved. Local outbox writes flush file bytes and atomically rename the staged file,
+preserving the retry identity across a process crash. This portable bridge does not claim directory
+metadata durability across host power loss; stronger guarantees belong to the authoritative source
+journal. It does not require directory `fsync`, which is unsupported on Windows. A submitted replay checks custody without sending another queue create.
 
 A host using `executeHandoffStep` MUST supply `resolveWorkflowBinding(options)`. This is a trusted
 source adapter, not a caller-provided approval flag. It MUST read the existing authoritative run

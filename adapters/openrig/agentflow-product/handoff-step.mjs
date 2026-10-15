@@ -2,9 +2,6 @@
 // Uses only Node built-ins so it runs standalone in ~/.openrig/specs/agentflow-product/.
 import {
   existsSync,
-  openSync,
-  closeSync,
-  fsyncSync,
   mkdirSync,
   readFileSync,
   readdirSync,
@@ -15,7 +12,7 @@ import {
 } from 'node:fs'
 import { createHash, randomUUID } from 'node:crypto'
 import { homedir, hostname } from 'node:os'
-import { dirname, join } from 'node:path'
+import { join } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { resolveOracleDispatch } from './oracle-admission.mjs'
 
@@ -128,14 +125,9 @@ function saveAtomic(file, value) {
   const staged = `${file}.${randomUUID()}.tmp`
   writeFileSync(staged, `${JSON.stringify(value, null, 2)}\n`, { flag: 'wx', flush: true })
   renameSync(staged, file)
-  // Persist the directory entry as well as the bytes before an external effect.
-  // Unsupported filesystems fail closed instead of claiming durable custody.
-  const directory = openSync(dirname(file), 'r')
-  try {
-    fsyncSync(directory)
-  } finally {
-    closeSync(directory)
-  }
+  // File flush plus atomic rename preserves the process-crash retry identity.
+  // Directory metadata persistence across power loss is not a portable guarantee;
+  // the authoritative source journal owns stronger durability requirements.
 }
 
 // Host injection is a trust boundary, not a caller-supplied approval boolean. It must
