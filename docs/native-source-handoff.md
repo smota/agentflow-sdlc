@@ -66,3 +66,18 @@ hold honestly. Tests use isolated in-memory source stores and fake host ports:
 one fixture performs real governed `service.advance`; separate explicitly seeded
 pre-existing phase records exercise phase-3 oracle pin and custody. Those fixtures
 are not evidence of a live Dendro run, deployed provider, or accepted upstream fix.
+
+## Legacy outbox recovery boundary
+
+The synchronous legacy wrapper still uses its positive epoch/fence protocol; native zero counters
+are never translated into that protocol. New legacy v2 outbox records retain immutable request and
+body digests plus exact phase, destination, task and workflow bindings. Existing records lacking
+those integrity fields hold for explicit source/queue reconciliation; recovery never auto-reseals
+or deletes their history. A digest establishes integrity, not authority.
+
+Every recovery rechecks current task/workflow authority. Even a local record marked completed
+needs a fresh source-verified successor receipt before reporting custody. An unresolved operation
+in the same source generation holds a different operation key; a genuinely source-accepted prior
+operation or a separately fenced generation does not impose a permanent ban on later work.
+Queue bodies use immutable stdin bytes. Submission, source acceptance and run-writer ownership
+remain separate facts.
