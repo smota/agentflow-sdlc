@@ -35,9 +35,7 @@
     "agentflow-sdlc roles sync --harness claude-code --apply",
     "agentflow-sdlc cockpit doctor --json"
   ],
-  "settings": [
-    ".claude/settings.json"
-  ],
+  "settings": [".claude/settings.json"],
   "generatedBy": "agentflow-sdlc",
   "canonicalSource": "adapters/claude-code/manifest.json"
 }

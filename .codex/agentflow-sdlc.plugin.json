@@ -35,9 +35,7 @@
     "agentflow-sdlc roles sync --harness codex --apply",
     "agentflow-sdlc cockpit doctor --json"
   ],
-  "settings": [
-    ".codex/hooks.json"
-  ],
+  "settings": [".codex/hooks.json"],
   "generatedBy": "agentflow-sdlc",
   "canonicalSource": "adapters/codex/manifest.json"
 }

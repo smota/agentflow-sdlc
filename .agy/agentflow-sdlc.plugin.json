@@ -35,9 +35,7 @@
     "agentflow-sdlc roles sync --harness agy --apply",
     "agentflow-sdlc cockpit doctor --json"
   ],
-  "settings": [
-    ".agy/settings.json"
-  ],
+  "settings": [".agy/settings.json"],
   "generatedBy": "agentflow-sdlc",
   "canonicalSource": "adapters/agy/manifest.json"
 }
