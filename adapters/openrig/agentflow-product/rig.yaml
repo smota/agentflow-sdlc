@@ -1,8 +1,9 @@
 version: '0.2'
 name: agentflow-product
-summary: >
-  AgentFlow product squad. The product manager frames the job and the outcome via Grok 4.7 (Medium).
-  The analyst owns testable acceptance via Gemini 3.1 Pro (High) on Pi. Neither seat implements.
+summary: >-
+  Subscription-balanced AgentFlow squad. Resolve the pinned distribution for
+  model, client, effort and two ordered fallbacks; preserve workflow and
+  publication authority.
 
 culture_file: CULTURE.md
 
@@ -40,8 +41,8 @@ pods:
         agent_ref: 'local:agents/agentflow'
         profile: analyst
         runtime: pi
-        model: antigravity/gemini-3.1-pro
-        effort: high
+        model: antigravity/gemini-3.8-flash
+        effort: medium
         cwd: '.'
         startup:
           files:

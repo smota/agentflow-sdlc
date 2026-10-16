@@ -92,3 +92,11 @@ Every message costs its reader attention. Say what changed, what you need, and w
 - **Never answer another seat's prompt or menu for the person**: If an interactive prompt or confirmation appears, notify the person.
 - **Don't restart or stop the OpenRig daemon**: The daemon coordinates the team and host topology.
 - **Keep credentials and secrets strictly out of commits**: Never commit tokens, keys, passwords, or private environment files.
+
+<!-- BEGIN AgentFlow EXECUTION DISTRIBUTION -->
+
+## Execution distribution
+
+Resolve this project's pinned `executionDistribution` with `agentflow-sdlc distribution inspect` before routing, provisioning, expansion, recovery or upgrades. The shared template profile is `subscription-balanced-v1`; an existing project selection and reasoned overrides take precedence. Run `distribution check --rig <path>` for installed drift. Software upgrades and calibration preserve the selected distribution. Quota recovery selects an eligible approved fallback at a safe checkpoint; it does not rewrite defaults. Model, effort, client and both fallback options come from the resolved policy. Record actual execution separately. A policy change uses `distribution plan` and exact-confirmed `distribution apply`; the person authorizes that migration separately from a software upgrade. Unsupported enforcement or unavailable observation remains explicit.
+
+<!-- END AgentFlow EXECUTION DISTRIBUTION -->

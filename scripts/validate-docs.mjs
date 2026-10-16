@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { POSTURES, EVIDENCE_VOCABULARY_TERMS } from '../lib/sdlc-vocabulary.mjs'
 
 const KNOWN_CLI_COMMANDS = new Set([
+  'distribution',
   'init',
   'run',
   'doctor',

@@ -10,63 +10,15 @@ contract (see [ADR 004](../../../docs/adr/004-separate-sdlc-policy-from-harness-
 
 ---
 
-## Squad Topology
+## Execution policy and topology
 
-| Pod    | Seat       | Role                | Default Runtime    | Default Model       | Responsibility                                                                                |
-| ------ | ---------- | ------------------- | ------------------ | ------------------- | --------------------------------------------------------------------------------------------- |
-| `orch` | `arch`     | Architect Lead      | `pi` (Grok bridge) | `grok-cli/grok-4.7` | Goal intake, task decomposition, complexity rating (P0-P4), proof contracts, Council convener |
-| `dev`  | `build-jr` | Junior Builder      | `claude-code`      | Claude              | Linear bug fixes, minor tasks, single-file edits (P0)                                         |
-| `dev`  | `build`    | Standard Builder    | `claude-code`      | Claude              | Feature delivery, subsystem extensions, bilateral workflows (P1)                              |
-| `dev`  | `build-sr` | Senior Builder      | `claude-code`      | Claude              | Core refactorings, multi-module architecture, Council participant (P2-P3)                     |
-| `dev`  | `qa`       | QA & Verification   | `codex`            | Codex               | Test matrix execution, regression proof verification, edge cases                              |
-| `rev`  | `review`   | Independent Auditor | `pi` (Grok bridge) | `grok-cli/grok-4.7` | Four-Eyes review, digest-bound verdicts, risk audits, Council peer                            |
-
----
-
-## Configurations & Presets
-
-The rig declares 8 runtime configuration presets to accommodate provider availability and preference:
-
-1. **`balanced-grok-lead`** _(Recommended)_:
-   - `orch.arch`: `pi` (`grok-4.7`)
-   - `dev.build-jr`: `claude-code`
-   - `dev.build`: `claude-code`
-   - `dev.build-sr`: `claude-code`
-   - `dev.qa`: `codex`
-   - `rev.review`: `pi` (`grok-4.7`)
-
-2. **`inverted-codex-lead`**:
-   - `orch.arch`: `codex`
-   - Builders (`build-jr`, `build`, `build-sr`): `codex`
-   - `dev.qa`: `claude-code`
-   - `rev.review`: `pi` (`grok-4.7`)
-
-3. **`grok-heavy`**:
-   - `orch.arch`: `pi` (`grok-4.7`)
-   - Builders: `pi` (`grok-4.7`)
-   - `dev.qa`: `codex`
-   - `rev.review`: `pi` (`grok-4.7`)
-
-4. **`claude-heavy`**:
-   - `orch.arch`: `claude-code`
-   - Builders: `claude-code`
-   - `dev.qa`: `codex`
-   - `rev.review`: `claude-code`
-
-5. **`codex-heavy`**:
-   - `orch.arch`: `codex`
-   - Builders: `codex`
-   - `dev.qa`: `codex`
-   - `rev.review`: `codex`
-
-6. **`all-grok`**:
-   - All 6 seats run on `pi` (`grok-4.7`).
-
-7. **`all-claude`**:
-   - All 6 seats run on `claude-code`.
-
-8. **`all-codex`**:
-   - All 6 seats run on `codex`.
+The base has orchestration, building, QA, independent review and eval seats. Optional junior,
+senior and test-engineering profiles do not create seats or task authority by themselves.
+The canonical existing/expansion model, client, effort and two fallback options are in the pinned
+execution distribution. Run `agentflow-sdlc distribution inspect --target <project> --json`.
+See [execution distributions](../../../docs/execution-distributions.md) for policy changes,
+upgrade preservation and temporary quota selection. Generated configurations select
+`subscription-balanced-v1`; legacy presets remain compatibility options for unselected projects.
 
 ---
 
@@ -77,7 +29,7 @@ The rig declares 8 runtime configuration presets to accommodate provider availab
 Launch the squad attached to any project directory with `--cwd`:
 
 ```bash
-# Recommended preset (balanced-grok-lead)
+# Inspect the selected distribution before launching
 rig up agentflow --cwd <project-root>
 
 # Inverted Codex lead preset

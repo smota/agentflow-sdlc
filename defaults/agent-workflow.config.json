@@ -83,5 +83,10 @@
   },
   "gateNotifications": {
     "hookUrl": null
+  },
+  "executionDistribution": {
+    "profile": "subscription-balanced-v1",
+    "profileDigest": "ee486327708eb3de6b1cb67c825358af8679d9e0d9a8b6ca0164f14c1cfe8fcc",
+    "overrides": {}
   }
 }

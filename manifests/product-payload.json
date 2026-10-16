@@ -755,6 +755,31 @@
       "source": "lib/services/doctor-service.mjs",
       "target": "lib/services/doctor-service.mjs",
       "ownership": "managed"
+    },
+    {
+      "source": "manifests/execution-distributions/subscription-balanced-v1.json",
+      "target": "manifests/execution-distributions/subscription-balanced-v1.json",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/config/execution-distribution.mjs",
+      "target": "lib/config/execution-distribution.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/config/distribution-change.mjs",
+      "target": "lib/config/distribution-change.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/config/distribution-cli.mjs",
+      "target": "lib/config/distribution-cli.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "docs/execution-distributions.md",
+      "target": "docs/execution-distributions.md",
+      "ownership": "managed"
     }
   ]
 }

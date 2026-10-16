@@ -421,6 +421,15 @@ function writeBases(home, plan, out) {
   for (const [kind, name] of Object.entries(BASES)) {
     mirror(plan.sources[kind], join(specs, name))
     writeFileSync(join(specs, name, 'rig.yaml'), plan.executionPlans[kind].rigText)
+    const bundle = parseExecutionYaml(
+      readFileSync(join(plan.sources[kind], 'configurations.yaml'), 'utf8'),
+      'bundle',
+    )
+    if (plan.preset === bundle.distribution?.profile)
+      writeFileSync(
+        join(specs, name, 'execution-distribution.json'),
+        JSON.stringify(bundle.distribution, null, 2) + '\n',
+      )
   }
 }
 
@@ -488,11 +497,41 @@ export function update(ctx) {
   }
   const exact = Boolean(ctx.options?.exact)
   const plan = planInstall(adapterDir, null)
+  // An upgrade refreshes software, not a selected model policy. Validate every
+  // pinned base before the first write; legacy bases retain their exact rig bytes.
+  const preserved = {}
+  for (const [kind, name] of Object.entries(BASES)) {
+    const target = join(specs, name)
+    const selectionFile = join(target, 'execution-distribution.json')
+    if (isFile(selectionFile)) {
+      const selection = JSON.parse(readFileSync(selectionFile, 'utf8'))
+      const projected = planRigExecution({
+        rigText: readFileSync(join(adapterDir, name, 'rig.yaml'), 'utf8'),
+        configText: readFileSync(join(adapterDir, name, 'configurations.yaml'), 'utf8'),
+        preset: selection.profile,
+        config: { executionDistribution: selection },
+      })
+      if (!projected.ok)
+        fail(
+          projected.diagnostics
+            .filter((d) => d.severity === 'error')
+            .map((d) => d.message)
+            .join('; '),
+        )
+      preserved[kind] = { rigText: projected.rigText, selection }
+    } else
+      preserved[kind] = { rigText: readFileSync(join(target, 'rig.yaml'), 'utf8'), selection: null }
+  }
   out('==> 1. Refreshing AgentFlow delivery, product, and steer bases from this product...')
   const extras = []
   for (const [kind, name] of Object.entries(BASES)) {
     const kept = refreshTree(join(adapterDir, BASES[kind]), join(specs, name), { exact })
-    writeFileSync(join(specs, name, 'rig.yaml'), plan.executionPlans[kind].rigText)
+    writeFileSync(join(specs, name, 'rig.yaml'), preserved[kind].rigText)
+    if (preserved[kind].selection)
+      writeFileSync(
+        join(specs, name, 'execution-distribution.json'),
+        JSON.stringify(preserved[kind].selection, null, 2) + '\n',
+      )
     extras.push(...kept.map((file) => `${name}/${file}`))
   }
   if (extras.length > 0) {
@@ -698,11 +737,18 @@ function prepareSquadExecution(ctx, kind, projectCwd) {
   if (!validation.ok) fail(validation.errors.join('; '))
   const config = loaded.isUnified
     ? loaded.unified
-    : { models: loaded.models, adapters: loaded.adapters }
+    : {
+        models: loaded.models,
+        adapters: loaded.adapters,
+        executionDistribution: loaded.workflow.executionDistribution,
+      }
   const desired = {
     rigText: readFileSync(join(baseDir, 'rig.yaml'), 'utf8'),
     configText: readFileSync(join(baseDir, 'configurations.yaml'), 'utf8'),
-    preset: ctx.options.preset ?? config.adapters?.openrig?.executionPolicy?.preset,
+    preset:
+      ctx.options.preset ??
+      config.executionDistribution?.profile ??
+      config.adapters?.openrig?.executionPolicy?.preset,
     config,
   }
   const plan = planRigExecution(desired)

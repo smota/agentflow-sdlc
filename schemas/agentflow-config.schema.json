@@ -298,6 +298,43 @@
         }
       },
       "additionalProperties": true
+    },
+    "executionDistribution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["profile", "profileDigest"],
+      "properties": {
+        "profile": {
+          "type": "string",
+          "minLength": 1
+        },
+        "profileDigest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "overrides": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["reason", "options"],
+            "properties": {
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              },
+              "options": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "items": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "additionalProperties": true
