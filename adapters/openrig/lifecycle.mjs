@@ -2,6 +2,7 @@
 // this product, and provision, update, list, or remove per-project squads. Called through
 // `agentflow-sdlc adapters ...`; core dispatches here by adapter id and knows nothing below.
 // It calls `rig` only for status, stop, and spec sync, as an argument array without a shell.
+import { createHash } from 'node:crypto'
 import { spawnSync } from 'node:child_process'
 import {
   chmodSync,
@@ -21,6 +22,16 @@ import {
 } from 'node:fs'
 import { homedir } from 'node:os'
 import { delimiter, dirname, join, relative, resolve } from 'node:path'
+import { loadAuthoritativeConfigs, validateConfigAuthority } from '../../lib/config/authority.mjs'
+import { executionDocument, parseExecutionYaml, planRigExecution } from './execution-plan.mjs'
+import { normalizeContractModel } from '../../lib/config/execution-contract.mjs'
+import { planRigMutation } from './mutation.mjs'
+
+import {
+  COMPACT_NODE_FIELDS,
+  evaluateOperationalPreflight,
+  parseCompactObservation,
+} from './operational-preflight.mjs'
 
 const ADAPTER_ID = 'openrig'
 const BASES = { delivery: 'agentflow', product: 'agentflow-product', steer: 'agentflow-steer' }
@@ -70,29 +81,9 @@ function locations(home) {
   }
 }
 
-// configurations.yaml is flat two-level YAML, so a line scan is enough; no YAML dependency.
 export function parsePresets(text) {
-  const presets = {}
-  let recommended = ''
-  let section = ''
-  let current = null
-  for (const line of text.split(/\r?\n/)) {
-    const top = line.match(/^(\S[^:]*):\s*(.*)$/)
-    if (top) {
-      section = top[1]
-      if (section === 'recommended') recommended = top[2].trim()
-      continue
-    }
-    if (section !== 'presets') continue
-    const name = line.match(/^ {2}(\S[^:]*):\s*$/)
-    if (name) {
-      current = presets[name[1]] = {}
-      continue
-    }
-    const seat = line.match(/^ {4}(\S+):\s*(\S+)\s*$/)
-    if (seat && current) current[seat[1]] = seat[2]
-  }
-  return { recommended, presets }
+  const value = parseExecutionYaml(text, 'bundle configurations')
+  return { recommended: value.recommended ?? '', presets: value.presets ?? {} }
 }
 
 function resolvePreset(configFile, requested) {
@@ -108,7 +99,7 @@ function resolvePreset(configFile, requested) {
 
 function piSeatsOf(preset, rigName) {
   return Object.entries(preset.seats)
-    .filter(([, runtime]) => runtime === 'pi')
+    .filter(([, value]) => (typeof value === 'string' ? value : value.runtime) === 'pi')
     .map(([seat]) => `${seat.replaceAll('.', '-')}@${rigName}`)
 }
 
@@ -124,33 +115,32 @@ function planInstall(adapterDir, requested) {
   if (delivery.name !== product.name) {
     fail(`Delivery preset "${delivery.name}" and product preset "${product.name}" differ.`)
   }
-  let steerPiSeats = []
-  const steerConfig = join(sources.steer, 'configurations.yaml')
-  if (isFile(steerConfig)) {
-    const { presets: steerPresets, recommended: steerRec } = parsePresets(
-      readFileSync(steerConfig, 'utf8'),
-    )
-    const steerPresetName =
-      requested && steerPresets[requested]
-        ? requested
-        : steerPresets[delivery.name]
-          ? delivery.name
-          : steerRec
-    if (steerPresets[steerPresetName]) {
-      steerPiSeats = piSeatsOf(
-        { name: steerPresetName, seats: steerPresets[steerPresetName] },
-        BASES.steer,
+  const steerPresetName = resolvePreset(join(sources.steer, 'configurations.yaml'), requested).name
+  const executionPlans = {}
+  for (const [kind, dir] of Object.entries(sources)) {
+    const plan = planRigExecution({
+      rigText: readFileSync(join(dir, 'rig.yaml'), 'utf8'),
+      configText: readFileSync(join(dir, 'configurations.yaml'), 'utf8'),
+      preset: kind === 'steer' ? steerPresetName : delivery.name,
+    })
+    if (!plan.ok)
+      fail(
+        plan.diagnostics
+          .filter((item) => item.severity === 'error')
+          .map((item) => `${item.seat}: ${item.message}`)
+          .join('; '),
       )
-    }
+    executionPlans[kind] = plan
   }
   return {
     sources,
+    executionPlans,
     preset: delivery.name,
-    piSeats: [
-      ...piSeatsOf(delivery, BASES.delivery),
-      ...piSeatsOf(product, BASES.product),
-      ...steerPiSeats,
-    ],
+    piSeats: Object.entries(executionPlans).flatMap(([kind, plan]) =>
+      plan.contracts
+        .filter((item) => item.runtime === 'pi')
+        .map((item) => `${item.seat.replaceAll('.', '-')}@${BASES[kind]}`),
+    ),
   }
 }
 
@@ -428,7 +418,10 @@ function refreshTree(source, target, { exact }) {
 function writeBases(home, plan, out) {
   const { specs } = locations(home)
   out('==> 1. Syncing AgentFlow delivery, product, and steer bases to the OpenRig user library...')
-  for (const [kind, name] of Object.entries(BASES)) mirror(plan.sources[kind], join(specs, name))
+  for (const [kind, name] of Object.entries(BASES)) {
+    mirror(plan.sources[kind], join(specs, name))
+    writeFileSync(join(specs, name, 'rig.yaml'), plan.executionPlans[kind].rigText)
+  }
 }
 
 function setupPiSeats(home, plan, out) {
@@ -494,10 +487,12 @@ export function update(ctx) {
     )
   }
   const exact = Boolean(ctx.options?.exact)
+  const plan = planInstall(adapterDir, null)
   out('==> 1. Refreshing AgentFlow delivery, product, and steer bases from this product...')
   const extras = []
   for (const [kind, name] of Object.entries(BASES)) {
     const kept = refreshTree(join(adapterDir, BASES[kind]), join(specs, name), { exact })
+    writeFileSync(join(specs, name, 'rig.yaml'), plan.executionPlans[kind].rigText)
     extras.push(...kept.map((file) => `${name}/${file}`))
   }
   if (extras.length > 0) {
@@ -562,54 +557,6 @@ function renameRig(rigText, rigName) {
   const index = lines.findIndex((line) => line.startsWith('name: '))
   if (index !== -1) lines[index] = `name: ${rigName}`
   return lines.join('\n')
-}
-
-// Set each product seat's runtime from the preset. A Pi seat gets the Grok model line.
-function applyProductPreset(rigText, preset) {
-  const lines = rigText.split('\n')
-  const out = []
-  let member = null
-  for (let index = 0; index < lines.length; index += 1) {
-    const id = lines[index].match(/^ +- id: (\S+)\s*$/)
-    if (id) member = id[1]
-    if (member && /^ +runtime: \S+\s*$/.test(lines[index])) {
-      const runtime = preset.seats[`pm.${member}`]
-      if (!runtime) fail(`Preset "${preset.name}" has no runtime for pm.${member}.`)
-      const indent = lines[index].match(/^ +/)[0]
-      out.push(`${indent}runtime: ${runtime}`)
-      const next = lines[index + 1] || ''
-      if (runtime === 'pi' && !/^ +model: /.test(next))
-        out.push(`${indent}model: grok-cli/grok-4.7`)
-      if (runtime !== 'pi' && /^ +model: /.test(next)) index += 1
-      continue
-    }
-    out.push(lines[index])
-  }
-  return out.join('\n')
-}
-
-// Set steer lead seat's runtime from the preset if declared.
-function applySteerPreset(rigText, preset) {
-  if (!preset?.seats?.['steer.lead']) return rigText
-  const runtime = preset.seats['steer.lead']
-  const lines = rigText.split('\n')
-  const out = []
-  let member = null
-  for (let index = 0; index < lines.length; index += 1) {
-    const id = lines[index].match(/^ +- id: (\S+)\s*$/)
-    if (id) member = id[1]
-    if (member === 'lead' && /^ +runtime: \S+\s*$/.test(lines[index])) {
-      const indent = lines[index].match(/^ +/)[0]
-      out.push(`${indent}runtime: ${runtime}`)
-      const next = lines[index + 1] || ''
-      if (runtime === 'pi' && !/^ +model: /.test(next))
-        out.push(`${indent}model: antigravity/gemini-3.1-pro`)
-      if (runtime !== 'pi' && /^ +model: /.test(next)) index += 1
-      continue
-    }
-    out.push(lines[index])
-  }
-  return out.join('\n')
 }
 
 // Add sibling or steering file to the startup files, after the startup/context.md entry.
@@ -733,25 +680,74 @@ function ensureSteerDir(home, rigName) {
 }
 
 function squadPiSeats(kind, rigName, rigText) {
-  if (kind === 'delivery') return DELIVERY_PI_SEATS.map((seat) => `${seat}@${rigName}`)
-  if (kind === 'steer') {
-    const seats = []
-    let id = ''
-    for (const line of rigText.split('\n')) {
-      const member = line.match(/^ +- id: (\S+)\s*$/)
-      if (member) id = member[1]
-      if (/^ +runtime: pi\s*$/.test(line) && id) seats.push(`steer-${id}@${rigName}`)
+  const rig = parseExecutionYaml(rigText, 'planned rig')
+  return rig.pods.flatMap((pod) =>
+    pod.members
+      .filter((member) => member.runtime === 'pi')
+      .map((member) => `${pod.id}-${member.id}@${rigName}`),
+  )
+}
+
+function prepareSquadExecution(ctx, kind, projectCwd) {
+  const installed = join(locations(ctx.home).specs, BASES[kind])
+  const baseDir = isFile(join(installed, 'rig.yaml'))
+    ? installed
+    : join(ctx.adapterDir, BASES[kind])
+  const loaded = loadAuthoritativeConfigs(projectCwd)
+  const validation = validateConfigAuthority(loaded)
+  if (!validation.ok) fail(validation.errors.join('; '))
+  const config = loaded.isUnified
+    ? loaded.unified
+    : { models: loaded.models, adapters: loaded.adapters }
+  const desired = {
+    rigText: readFileSync(join(baseDir, 'rig.yaml'), 'utf8'),
+    configText: readFileSync(join(baseDir, 'configurations.yaml'), 'utf8'),
+    preset: ctx.options.preset ?? config.adapters?.openrig?.executionPolicy?.preset,
+    config,
+  }
+  const plan = planRigExecution(desired)
+  if (!plan.ok)
+    fail(
+      plan.diagnostics
+        .filter((item) => item.severity === 'error')
+        .map((item) => `${item.seat}: ${item.message}`)
+        .join('; '),
+    )
+  return Object.freeze({
+    ...plan,
+    baseDir,
+    desired,
+    configuredSeats: Object.keys(config.adapters?.openrig?.executionPolicy?.seats ?? {}),
+  })
+}
+
+function validateTopologySeats(plans) {
+  const seats = new Set(plans.flatMap((plan) => plan.contracts.map((item) => item.seat)))
+  for (const seat of new Set(plans.flatMap((plan) => plan.configuredSeats))) {
+    if (!seats.has(seat))
+      fail(`Explicit execution override names a seat absent from the planned topology: ${seat}`)
+  }
+}
+
+function requireFreshSquadTargets(ctx, names) {
+  const { specs, piState, steerState } = locations(ctx.home)
+  for (const name of names) {
+    if (lexists(join(specs, name)))
+      fail(`Squad '${name}' already exists; use source-bound mutation preview and admission`)
+    if (lexists(join(steerState, name)))
+      fail(`Existing steering state for '${name}' requires source-bound recovery before provision`)
+  }
+  if (isDirectory(piState)) {
+    for (const seat of readdirSync(piState)) {
+      if (names.some((name) => seat.endsWith(`@${name}`)))
+        fail(`Existing Pi state for '${seat}' requires source-bound recovery before provision`)
     }
-    return seats
   }
-  const seats = []
-  let id = ''
-  for (const line of rigText.split('\n')) {
-    const member = line.match(/^ +- id: (\S+)\s*$/)
-    if (member) id = member[1]
-    if (/^ +runtime: pi\s*$/.test(line) && id) seats.push(`pm-${id}@${rigName}`)
-  }
-  return seats
+}
+
+function requireActiveExecution(plan) {
+  if (plan.activation !== 'active')
+    fail('Execution policy activation is held; desired preview only, no installed writes permitted')
 }
 
 function writeSquadSpec({
@@ -764,9 +760,14 @@ function writeSquadSpec({
   product,
   delivery,
   isUpdate,
+  executionPlan,
 }) {
   const { home, options, env, out } = ctx
   const { specs, piState } = locations(home)
+  // The complete desired contract is resolved before installation or any bridge/write.
+  const plan = executionPlan ?? prepareSquadExecution(ctx, kind, projectCwd)
+  requireActiveExecution(plan)
+  requireFreshSquadTargets(ctx, [rigName])
   const baseDir = join(specs, BASES[kind])
   if (!isFile(join(baseDir, 'rig.yaml'))) {
     out(`==> Base spec not found in ${baseDir}. Installing the ${ADAPTER_ID} adapter first...`)
@@ -774,20 +775,7 @@ function writeSquadSpec({
   }
 
   const targetDir = join(specs, rigName)
-  let rigText = renameRig(readFileSync(join(baseDir, 'rig.yaml'), 'utf8'), rigName)
-  if (kind === 'product') {
-    rigText = applyProductPreset(
-      rigText,
-      resolvePreset(join(baseDir, 'configurations.yaml'), options.preset),
-    )
-  } else if (kind === 'steer') {
-    if (options.preset) {
-      rigText = applySteerPreset(
-        rigText,
-        resolvePreset(join(baseDir, 'configurations.yaml'), options.preset),
-      )
-    }
-  }
+  let rigText = renameRig(plan.rigText, rigName)
 
   const startupFile = kind === 'steer' ? 'steering.md' : 'sibling.md'
   rigText = addSiblingStartup(rigText, startupFile)
@@ -801,6 +789,10 @@ function writeSquadSpec({
     if (isFile(join(baseDir, name))) bridge(join(baseDir, name), join(targetDir, name), false)
   }
   writeFileSync(join(targetDir, 'rig.yaml'), rigText)
+  writeFileSync(
+    join(targetDir, 'execution-contracts.json'),
+    `${JSON.stringify({ preset: plan.preset, contracts: plan.contracts, diagnostics: plan.diagnostics }, null, 2)}\n`,
+  )
 
   const siblingContent = siblingRecord(kind, rigName, sibling, { steer, product, delivery })
   if (kind === 'steer') {
@@ -863,6 +855,14 @@ function provisionAll(ctx) {
     if (!isDirectory(projectCwd)) fail(`Project directory '${operands[1]}' does not exist.`)
   }
 
+  requireFreshSquadTargets(ctx, [pmRig, devRig, steerRig])
+
+  // Preflight all three desired rigs before installing even the first missing base.
+  const executionPlans = Object.fromEntries(
+    Object.keys(BASES).map((kind) => [kind, prepareSquadExecution(ctx, kind, projectCwd)]),
+  )
+  validateTopologySeats(Object.values(executionPlans))
+  for (const plan of Object.values(executionPlans)) requireActiveExecution(plan)
   for (const base of Object.values(BASES)) {
     if (!isFile(join(specs, base, 'rig.yaml'))) {
       out(
@@ -896,6 +896,7 @@ function provisionAll(ctx) {
       sibling: devRig,
       steer: steerRig,
       isUpdate: false,
+      executionPlan: executionPlans.product,
     })
     createdTargetDirs.push(join(specs, pmRig))
 
@@ -907,6 +908,7 @@ function provisionAll(ctx) {
       sibling: pmRig,
       steer: steerRig,
       isUpdate: false,
+      executionPlan: executionPlans.delivery,
     })
     createdTargetDirs.push(join(specs, devRig))
 
@@ -918,6 +920,7 @@ function provisionAll(ctx) {
       product: pmRig,
       delivery: devRig,
       isUpdate: false,
+      executionPlan: executionPlans.steer,
     })
     createdTargetDirs.push(join(specs, steerRig))
     createdSteerDirs.push(join(steerState, steerRig))
@@ -987,12 +990,9 @@ function writeSquad(ctx, isUpdate) {
     if (!isDirectory(targetDir)) {
       fail(`Squad '${rigName}' does not exist in ${specs}. Provision it first.`)
     }
-    kind ??= detectKind(rigName, targetDir)
-    const detected = detectSiblings(targetDir)
-    if (options.sibling === undefined) sibling = detected.sibling
-    if (options.steer === undefined) steer = detected.steer
-    if (options.product === undefined) product = detected.product
-    if (options.delivery === undefined) delivery = detected.delivery
+    fail(
+      'Existing squad update requires a source-bound mutation host with CAS admission; use adapters squads mutation-plan for read-only preview',
+    )
   }
   kind ??= 'delivery'
 
@@ -1038,6 +1038,306 @@ export function squadProvision(ctx) {
 
 export function squadUpdate(ctx) {
   return writeSquad(ctx, true)
+}
+
+// Planning reads source and installed specifications only. It does not bridge auth, install
+// bases, contact the daemon, or equate inventory support with usable live execution.
+export function squadPlan(ctx) {
+  const kind = ctx.options.kind ?? 'all'
+  if (kind !== 'all' && !BASES[kind]) fail(`Unknown squad kind ${kind}`)
+  squadRigName(ctx.operands[0])
+  const projectCwd = resolve(ctx.cwd, ctx.operands[1] ?? '.')
+  if (!isDirectory(projectCwd)) fail('Project directory does not exist')
+  const kinds = kind === 'all' ? Object.keys(BASES) : [kind]
+  const plans = kinds.map((item) => ({
+    kind: item,
+    ...prepareSquadExecution(ctx, item, projectCwd),
+  }))
+  if (kind === 'all') validateTopologySeats(plans)
+  const result = {
+    ok: true,
+    operation: 'plan',
+    activation: plans.some((item) => item.activation === 'held') ? 'held' : 'active',
+    effects: [],
+    observation: 'not-performed',
+    plans: plans.map(({ kind: item, preset, activation, contracts, diagnostics }) => ({
+      kind: item,
+      preset,
+      activation,
+      contracts,
+      diagnostics,
+    })),
+  }
+  if (ctx.options.json) ctx.out(JSON.stringify(result, null, 2))
+  else
+    for (const plan of result.plans) {
+      ctx.out(
+        `${plan.kind}: preset ${plan.preset}; ${plan.contracts.length} configured seats; live readiness not verified`,
+      )
+      for (const item of plan.contracts)
+        ctx.out(
+          `  ${item.seat}: ${item.runtime} / ${item.providerRoute} / ${item.model} / ${item.effort}; support ${item.support}`,
+        )
+      for (const item of plan.diagnostics)
+        ctx.out(`  ${item.severity}: ${item.message} (${item.seat ?? 'topology'})`)
+    }
+  return 0
+}
+
+// Installed YAML is observation of configuration only, not runtime or inventory support.
+// Missing fields stay unknown; no project policy or desired tuple supplies observed values.
+function observedMutationContracts(rigText) {
+  const rig = parseExecutionYaml(rigText, 'installed rig')
+  if (!Array.isArray(rig.pods)) fail('Installed rig pods are missing or malformed')
+  return rig.pods.flatMap((pod) => {
+    if (typeof pod.id !== 'string' || !Array.isArray(pod.members))
+      fail('Installed rig pod/member IDs are missing or malformed')
+    return pod.members.map((member) => {
+      if (typeof member.id !== 'string') fail('Installed rig member ID is missing')
+      const locatorRoutes = {
+        munito: 'munito',
+        antigravity: 'antigravity',
+        'grok-cli': 'grok',
+        'openai-codex': 'openai-codex',
+        anthropic: 'anthropic',
+      }
+      const locator = typeof member.model === 'string' ? member.model.split('/')[0] : null
+      const providerRoute =
+        member.providerRoute ??
+        (member.runtime === 'pi'
+          ? Object.hasOwn(locatorRoutes, locator)
+            ? locatorRoutes[locator]
+            : null
+          : null)
+      return {
+        seat: `${pod.id}.${member.id}`,
+        runtime: member.runtime ?? null,
+        executionTarget: member.executionTarget ?? null,
+        providerRoute,
+        providerFamily: member.providerFamily ?? null,
+        model: normalizeContractModel({
+          runtime: member.runtime,
+          providerRoute,
+          model: member.model ?? null,
+        }),
+        runnerModel: member.model ?? null,
+        effort: member.effort ?? null,
+        profile: member.profile ?? null,
+        capabilityTier: member.capabilityTier ?? null,
+      }
+    })
+  })
+}
+
+// Public summaries are derived evidence, not the sealed apply plan. Installed YAML can
+// contain arbitrary environment/startup payloads; never print those through a preview.
+function publicMutationPreview(plan) {
+  const tupleFields = [
+    'runtime',
+    'executionTarget',
+    'providerRoute',
+    'providerFamily',
+    'model',
+    'runnerModel',
+    'effort',
+    'profile',
+    'capabilityTier',
+  ]
+  const tuple = (value) =>
+    value ? Object.fromEntries(tupleFields.map((field) => [field, value[field] ?? null])) : null
+  return {
+    version: 1,
+    type: 'rig-mutation-preview',
+    planDigest: plan.digest,
+    rigName: plan.rigName,
+    desiredSpecName: plan.rigName,
+    sourceRevision: plan.sourceRevision,
+    beforeDigest: plan.beforeDigest,
+    afterDigest: plan.afterDigest,
+    workflowAnchor: null,
+    executorIdentity: null,
+    effects: [],
+    admissionHolds: plan.admissionHolds,
+    beforeContracts: plan.beforeContracts.map((value) => ({ seat: value.seat, ...tuple(value) })),
+    afterContracts: plan.afterContracts.map((value) => ({ seat: value.seat, ...tuple(value) })),
+    changes: plan.changes.map((change) => ({
+      seat: change.seat,
+      structuralConfigurationChanged: change.structuralConfigurationChanged ?? null,
+      fields: Object.fromEntries(
+        Object.entries(change.fields).filter(([field]) => tupleFields.includes(field)),
+      ),
+      before: tuple(change.before),
+      after: tuple(change.after),
+    })),
+    structuralConfigurationChanged: plan.structuralConfigurationChanged ?? null,
+    structuralBeforeDigest: plan.structuralBeforeDigest ?? null,
+    structuralAfterDigest: plan.structuralAfterDigest ?? null,
+    affectedSeats: plan.affectedSeats,
+    restarts: plan.restarts,
+    requiredActions: plan.requiredActions,
+    requiredPermissions: plan.requiredPermissions,
+    requiredRuntimeGuards: plan.requiredRuntimeGuards,
+    operationalStatus: plan.operationalStatus,
+  }
+}
+
+export function squadMutationPlan(ctx) {
+  const kind = ctx.options.kind ?? 'all'
+  if (kind !== 'all' && !BASES[kind]) fail(`Unknown squad kind ${kind}`)
+  if (kind === 'all' && ctx.options.rig) fail('--rig requires one explicit squad kind')
+  const project = ctx.operands[0]
+  squadRigName(project)
+  const projectCwd = resolve(ctx.cwd, ctx.operands[1] ?? '.')
+  if (!isDirectory(projectCwd)) fail('Project directory does not exist')
+  const kinds = kind === 'all' ? Object.keys(BASES) : [kind]
+  const prepared = kinds.map((item) => ({
+    kind: item,
+    ...prepareSquadExecution(ctx, item, projectCwd),
+  }))
+  if (kind === 'all') validateTopologySeats(prepared)
+  const plans = prepared.map((item) => {
+    const suffix = { delivery: 'dev', product: 'pm', steer: 'steer' }[item.kind]
+    const rigName =
+      ctx.options.rig ?? squadRigName(kind === 'all' ? `${project}-${suffix}` : project)
+    if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(rigName)) fail('Stable installed rig ID required')
+    const installedPath = join(locations(ctx.home).specs, rigName, 'rig.yaml')
+    if (!isFile(installedPath)) fail(`Installed rig specification not found: ${rigName}`)
+    const rigText = readFileSync(installedPath, 'utf8')
+    const document = executionDocument(item.desired.rigText, 'desired rig')
+    document.set('name', rigName)
+    const plan = planRigMutation({
+      rigName,
+      desired: { ...item.desired, rigText: document.toString() },
+      installed: {
+        rigText,
+        contracts: observedMutationContracts(rigText),
+        sourceRevision: createHash('sha256').update(rigText).digest('hex'),
+      },
+      workflow: null,
+      executorIdentity: null,
+    })
+    return {
+      kind: item.kind,
+      rigName,
+      activation: item.activation,
+      status: 'held',
+      plan: publicMutationPreview(plan),
+    }
+  })
+  const result = {
+    ok: true,
+    operation: 'mutation-plan',
+    status: 'held',
+    effects: [],
+    observation: 'installed-configuration-only',
+    plans,
+  }
+  if (ctx.options.json) ctx.out(JSON.stringify(result, null, 2))
+  else
+    for (const item of plans)
+      ctx.out(
+        `${item.rigName}: held preview; ${item.plan.affectedSeats.length} affected seats; authoritative run and mutation executor remain unverified`,
+      )
+  return 0
+}
+
+// Strict read-only operational admission. Compact ps cannot attest actual model or custody;
+// all those dimensions remain unknown, even when a process happens to report READY.
+export function squadPreflight(ctx) {
+  const kind = ctx.options.kind ?? 'all'
+  if (kind !== 'all' && !BASES[kind]) fail(`Unknown squad kind ${kind}`)
+  const project = ctx.operands[0]
+  squadRigName(project)
+  const projectCwd = resolve(ctx.cwd, ctx.operands[1] ?? '.')
+  if (!isDirectory(projectCwd)) fail('Project directory does not exist')
+  const kinds = kind === 'all' ? Object.keys(BASES) : [kind]
+  const plans = kinds.map((item) => ({
+    kind: item,
+    ...prepareSquadExecution(ctx, item, projectCwd),
+  }))
+  if (kind === 'all') validateTopologySeats(plans)
+  const reports = plans.map((plan) => {
+    const suffix = { delivery: 'dev', product: 'pm', steer: 'steer' }[plan.kind]
+    const rigName = squadRigName(kind === 'all' ? `${project}-${suffix}` : project)
+    const installedPath = join(locations(ctx.home).specs, rigName, 'rig.yaml')
+    let installedContracts = []
+    if (isFile(installedPath)) {
+      try {
+        const installed = parseExecutionYaml(readFileSync(installedPath, 'utf8'), 'installed rig')
+        installedContracts = (installed.pods ?? []).flatMap((pod) =>
+          (pod.members ?? []).map((member) => {
+            const seat = `${pod.id}.${member.id}`
+            const desired = plan.contracts.find((item) => item.seat === seat)
+            return {
+              seat,
+              runtime: member.runtime,
+              providerRoute:
+                desired?.runnerModel === member.model ? desired.providerRoute : undefined,
+              model: desired?.runnerModel === member.model ? desired.model : member.model,
+              effort: member.effort,
+              profile: member.profile,
+            }
+          }),
+        )
+      } catch {
+        /* Malformed installed configuration is unverified, never repaired here. */
+      }
+    }
+    let observations = { rigName, complete: false, entries: [] }
+    let collection = 'not-contacted'
+    if (contactsOpenRig(ctx)) {
+      const result = spawnSync(
+        'rig',
+        [
+          'ps',
+          '--nodes',
+          '--rig',
+          rigName,
+          '--json',
+          '--no-cleanup',
+          '--limit',
+          '200',
+          '--fields',
+          COMPACT_NODE_FIELDS,
+        ],
+        { encoding: 'utf8', env: ctx.env, shell: false, timeout: 10000, maxBuffer: 1024 * 1024 },
+      )
+      if (!result.error && result.status === 0) {
+        observations = parseCompactObservation(result.stdout, rigName)
+        collection = observations.complete ? 'inventory-only' : 'incomplete'
+      } else collection = 'unavailable'
+    }
+    const report = evaluateOperationalPreflight({
+      contracts: plan.contracts,
+      installedContracts,
+      daemon: { state: 'unknown' },
+      observations,
+      task: {
+        rigName,
+        owner: 'operator',
+        requiredSeats: plan.contracts.map((item) => item.seat),
+        bindings: {},
+      },
+      now: new Date().toISOString(),
+    })
+    return { rigName, kind: plan.kind, collection, ...report }
+  })
+  const result = {
+    operation: 'preflight',
+    admitted: reports.length > 0 && reports.every((report) => report.admitted),
+    effects: [],
+    reports,
+  }
+  if (ctx.options.json) ctx.out(JSON.stringify(result, null, 2))
+  else
+    for (const report of reports) {
+      ctx.out(
+        `${report.rigName}: held; ${report.collection}; actual execution and task authority require a verified reader`,
+      )
+      for (const seat of report.seats)
+        ctx.out(`  ${seat.seat}: ${seat.status}; ${seat.reasons.join(', ')}`)
+    }
+  return result.admitted ? 0 : 3
 }
 
 export function listSquads(ctx) {

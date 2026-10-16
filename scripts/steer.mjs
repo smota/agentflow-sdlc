@@ -1,8 +1,21 @@
 #!/usr/bin/env node
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  writeFileSync,
+  openSync,
+  closeSync,
+  unlinkSync,
+  renameSync,
+} from 'node:fs'
+import { randomUUID } from 'node:crypto'
 import { join, resolve } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
+import { evaluateMergeReadiness } from '../lib/core/steering-merge-policy.mjs'
+import { evaluateSteeringBinding } from '../lib/core/steering-binding.mjs'
+import { recordDigest } from '../lib/core/record-digest.mjs'
 import {
   UNFREEZE_RESOLUTIONS,
   createUnfreezeResolution,
@@ -71,13 +84,13 @@ Options:
 
 export const UNFREEZE_USAGE = `Usage: agentflow-sdlc steer unfreeze --ledger <file> --resolution <type> --rationale <text> [options]
 
-Formats and verifies a sealed unfreeze resolution incrementing the next epoch fencing token.
+Previews a sealed unfreeze resolution. Application requires an authenticated host steering adapter;\nstandalone CLI declarations cannot authenticate authority.
 
 Options:
   --ledger <file>              Path to frozen role collaboration rework ledger JSON
   --resolution <type>          Resolution type: re-scope | slice-split | person-waiver | abandonment
   --rationale <text>           Detailed rationale explaining why unfreeze is justified
-  --actor <seat>               Authoring steering seat (defaults to steer.lead or steer-lead@<rig>)
+  --actor <seat>               Explicit authoring steering identity (required)
   --human-approval <ref>       Human authorization reference (required for waiver or abandonment)
   --dry-run                    Verify resolution and next ledger without writing file
   --no-apply                   Do not write updated ledger back to disk
@@ -114,10 +127,10 @@ Verifies bilateral review digest, green CI status, and recorded human approval b
 Options:
   <pr-number>                  Pull request number to inspect and verify
   --check-only, --dry-run      Verify merge readiness without calling gh pr merge
-  --execute, --merge           Explicitly call gh pr merge --squash --delete-branch on success (default)
+  --execute, --merge           Request publication (requires authenticated host approval)
   --repo <owner/repo>          Optional GitHub repository override
   --auto-merge                 Treat PR as configured for auto-merge
-  --human-approval <login>     Explicit human approval reference
+  --human-approval <login>     Informational reference; cannot authorize publication
   --json                       Emit JSON result
 `
 
@@ -183,6 +196,13 @@ export async function steerAssign({
   summary,
   goal,
   transition,
+  actor,
+  steeringBinding,
+  steeringRequest,
+  verifySteeringEndpoint,
+  resolveSteeringAssignment,
+  nowMs = Date.now(),
+  clock = Date.now,
   dryRun = false,
   noNudge = false,
   targetDir = process.cwd(),
@@ -241,53 +261,135 @@ export async function steerAssign({
     }
   }
 
-  const result = spawnFn('rig', command.slice(1), { encoding: 'utf8' })
-  if (result.status === 0) {
-    if (!noNudge && (goal || transition)) {
-      const msg = `Goal: ${goal || 'unspecified'} | Transition: ${transition || 'unspecified'} | Brief: ${briefPath}`
-      spawnFn('rig', ['send', validatedDest, msg], { encoding: 'utf8' })
-    }
-    return {
-      ok: true,
-      dispatched: true,
-      destination: validatedDest,
-      briefFile: briefPath,
-      summary: derivedSummary,
-      ...(noNudge ? { noNudge: true } : {}),
-      output: result.stdout?.trim(),
-    }
-  }
-
-  if (result.error?.code === 'ENOENT') {
-    const fallbackDir = resolve(targetDir, '.agent-runs', 'steer', 'queue')
-    fs.mkdirSync(fallbackDir, { recursive: true })
-    const queueId = `qitem-${Date.now()}`
-    const itemPath = join(fallbackDir, `${queueId}.json`)
-    const itemData = {
-      id: queueId,
-      destination: validatedDest,
-      briefFile: briefPath,
-      summary: derivedSummary,
-      goal: goal || null,
-      transition: transition || null,
-      ...(noNudge ? { noNudge: true } : {}),
-      createdAt: new Date().toISOString(),
-    }
-    fs.writeFileSync(itemPath, JSON.stringify(itemData, null, 2))
-    return {
-      ok: true,
-      dispatched: true,
-      source: 'local-queue-fallback',
-      destination: validatedDest,
-      briefFile: briefPath,
-      summary: derivedSummary,
-      ...(noNudge ? { noNudge: true } : {}),
-      queueFile: itemPath,
-      note: 'rig CLI not in PATH; brief persisted into local queue directory',
+  const hold = (status, extra = {}) => ({
+    ok: false,
+    authorized: false,
+    dispatched: false,
+    accepted: false,
+    status,
+    obligation: {
+      owner: 'human/operator',
+      action: 'verify-steering-authority',
+      deadlineAt: Number.isFinite(nowMs) ? nowMs + 900000 : null,
+    },
+    ...extra,
+  })
+  const binding = structuredClone(steeringBinding ?? {})
+  const request = structuredClone(steeringRequest ?? {})
+  if (
+    !actor ||
+    isInRigSeat(actor) ||
+    !isAuthorizedUnfreezeActor(actor) ||
+    binding.authorityId !== actor
+  )
+    return hold('STEERING_ASSIGNMENT_UNAUTHORIZED')
+  const briefDigest = recordDigest({ brief: briefContent })
+  const readSource = () => {
+    try {
+      const source =
+        typeof resolveSteeringAssignment === 'function'
+          ? resolveSteeringAssignment({ briefDigest, destination: validatedDest, goal, transition })
+          : null
+      if (!source || source.then || source.verified !== true) return null
+      return structuredClone(source)
+    } catch {
+      return null
     }
   }
-
-  throw new Error(`Failed to dispatch queue brief via rig CLI: ${result.stderr || result.stdout}`)
+  const source = readSource()
+  if (
+    !source ||
+    !source.sourceRevision ||
+    !source.returnRoute ||
+    !source.goal ||
+    !source.task ||
+    source.subjectId !== request.subjectId ||
+    source.subjectDigest !== request.subjectDigest ||
+    source.goal !== goal ||
+    source.goal !== request.goal ||
+    source.task !== request.task ||
+    source.destination !== validatedDest ||
+    source.briefDigest !== briefDigest ||
+    source.returnRoute !== binding.replyRoute
+  )
+    return hold('STEERING_ASSIGNMENT_SOURCE_UNVERIFIED')
+  const actionDigest = recordDigest({
+    action: 'assign',
+    actor,
+    destination: validatedDest,
+    briefDigest,
+    summary: derivedSummary,
+    goal: source.goal,
+    task: source.task,
+    transition,
+    noNudge,
+    sourceRevision: source.sourceRevision,
+    returnRoute: source.returnRoute,
+  })
+  if (request.power !== 'assign' || request.actionDigest !== actionDigest)
+    return hold('STEERING_ASSIGNMENT_ACTION_UNVERIFIED')
+  const authority = evaluateSteeringBinding({
+    binding,
+    request,
+    nowMs,
+    verifyEndpoint: verifySteeringEndpoint,
+  })
+  if (!authority.authorized) return hold(authority.status)
+  let currentBrief, currentTime
+  try {
+    currentBrief = fs.readFileSync(briefPath, 'utf8')
+    currentTime = clock()
+  } catch {
+    return hold('STEERING_ASSIGNMENT_SOURCE_CHANGED')
+  }
+  if (
+    currentBrief !== briefContent ||
+    recordDigest(readSource()) !== recordDigest(source) ||
+    !Number.isFinite(currentTime) ||
+    currentTime < nowMs ||
+    currentTime >= authority.validUntil
+  )
+    return hold('STEERING_ASSIGNMENT_SOURCE_CHANGED')
+  const qitemId = `qitem-${recordDigest({ challenge: request.challenge, actionDigest }).slice(0, 32)}`
+  command[command.indexOf('--body-file') + 1] = '-'
+  command.push('--id', qitemId, '--json')
+  let result
+  try {
+    result = spawnFn('rig', command.slice(1), {
+      encoding: 'utf8',
+      input: briefContent,
+      timeout: 30000,
+      maxBuffer: 65536,
+    })
+  } catch {
+    return hold('STEERING_ASSIGNMENT_OUTCOME_UNKNOWN', { dispatchAttempted: true })
+  }
+  if (result?.error?.code === 'ENOENT') return hold('STEERING_ASSIGNMENT_TRANSPORT_UNAVAILABLE')
+  let acknowledgement
+  try {
+    acknowledgement = JSON.parse(result?.stdout)
+  } catch {
+    /* Uncertain outcome requires reconciliation. */
+  }
+  if (
+    result?.status !== 0 ||
+    result?.error ||
+    acknowledgement?.qitemId !== qitemId ||
+    acknowledgement?.destinationSession !== validatedDest
+  )
+    return hold('STEERING_ASSIGNMENT_OUTCOME_UNKNOWN', { dispatchAttempted: true, qitemId })
+  return {
+    ok: true,
+    authorized: true,
+    dispatched: true,
+    accepted: false,
+    status: 'STEERING_ASSIGNMENT_SUBMITTED',
+    destination: validatedDest,
+    briefFile: briefPath,
+    summary: derivedSummary,
+    qitemId,
+    ...(noNudge ? { noNudge: true } : {}),
+  }
 }
 
 export async function steerUnfreeze({
@@ -297,10 +399,16 @@ export async function steerUnfreeze({
   actor,
   humanApproval,
   approvalRef,
+  steeringBinding,
+  steeringRequest,
+  verifySteeringEndpoint,
+  resolveSteeringSubject,
+  nowMs = Date.now(),
+  clock = Date.now,
   dryRun = false,
   apply = true,
   targetDir = process.cwd(),
-  fs = { existsSync, readFileSync, writeFileSync },
+  fs = { existsSync, readFileSync, writeFileSync, openSync, closeSync, unlinkSync, renameSync },
 } = {}) {
   if (!ledgerFile) throw new Error('--ledger <file> is required')
   if (!resolution) {
@@ -318,7 +426,8 @@ export async function steerUnfreeze({
     throw new Error(`Ledger at ${ledgerFile} is not frozen`)
   }
 
-  const effectiveActor = actor || process.env.OPENRIG_SESSION_NAME || 'steer.lead'
+  const effectiveActor = actor
+  if (!effectiveActor) throw new Error('An explicit authenticated steering actor is required')
   if (isInRigSeat(effectiveActor)) {
     throw new Error(
       `in-rig execution seat "${effectiveActor}" cannot author an unfreeze resolution; steering plane only`,
@@ -330,7 +439,13 @@ export async function steerUnfreeze({
     )
   }
 
-  const currentToken = Number.isInteger(rawLedger.fencingToken) ? rawLedger.fencingToken : 0
+  if (
+    !Number.isSafeInteger(rawLedger.fencingToken) ||
+    rawLedger.fencingToken < 0 ||
+    rawLedger.fencingToken >= Number.MAX_SAFE_INTEGER
+  )
+    throw new Error('A valid current legacy fencing token is required')
+  const currentToken = rawLedger.fencingToken
   const nextToken = currentToken + 1
 
   const effectiveApproval = humanApproval || approvalRef
@@ -345,13 +460,134 @@ export async function steerUnfreeze({
 
   const nextLedger = unfreezeLedger(rawLedger, resolutionRecord)
 
+  let cleanupRequired = false
+  let authority = { authorized: false, reachable: false, status: 'STEERING_PREVIEW_UNVERIFIED' }
   if (apply && !dryRun) {
-    fs.writeFileSync(ledgerPath, JSON.stringify(nextLedger, null, 2))
+    const binding = structuredClone(steeringBinding ?? {})
+    const request = structuredClone(steeringRequest ?? {})
+    let subject
+    try {
+      subject =
+        typeof resolveSteeringSubject === 'function'
+          ? resolveSteeringSubject({ ledgerPath, subjectDigest: recordDigest(rawLedger) })
+          : null
+    } catch {
+      subject = null
+    }
+    if (
+      !subject ||
+      subject.verified !== true ||
+      subject.subjectDigest !== recordDigest(rawLedger) ||
+      subject.subjectId !== request.subjectId ||
+      subject.goal !== request.goal ||
+      subject.task !== request.task
+    )
+      return {
+        ok: false,
+        applied: false,
+        authorized: false,
+        status: 'STEERING_SUBJECT_UNVERIFIED',
+        obligation: {
+          owner: 'human/operator',
+          action: 'verify-steering-authority',
+          deadlineAt: Number.isFinite(nowMs) ? nowMs + 900000 : null,
+        },
+      }
+    if (
+      binding.authorityId !== effectiveActor ||
+      request.power !== 'unfreeze' ||
+      request.subjectDigest !== recordDigest(rawLedger) ||
+      request.actionDigest !==
+        recordDigest({
+          resolution,
+          rationale,
+          humanApproval: effectiveApproval ?? null,
+          actor: effectiveActor,
+          subjectDigest: recordDigest(rawLedger),
+          subjectId: subject.subjectId,
+          goal: subject.goal,
+          task: subject.task,
+          nextToken,
+        })
+    )
+      throw new Error(
+        'Steering authority must bind the actor, unfreeze power, source identity and exact decision digests',
+      )
+    authority = evaluateSteeringBinding({
+      binding,
+      request,
+      verifyEndpoint: verifySteeringEndpoint,
+      nowMs,
+    })
+    if (!authority.authorized) return { ok: false, applied: false, ...authority }
+    const lockPath = `${ledgerPath}.agentflow-steer.lock`
+    let descriptor
+    try {
+      descriptor = fs.openSync(lockPath, 'wx', 0o600)
+    } catch {
+      return {
+        ok: false,
+        applied: false,
+        authorized: false,
+        status: 'STEERING_LEDGER_LOCKED',
+        obligation: {
+          owner: 'human/operator',
+          action: 'reconcile-steering-ledger-lock',
+          deadlineAt: nowMs + 900000,
+        },
+      }
+    }
+    const temporaryPath = `${ledgerPath}.agentflow-${randomUUID()}.tmp`
+    try {
+      const currentLedger = JSON.parse(fs.readFileSync(ledgerPath, 'utf8'))
+      if (recordDigest(currentLedger) !== request.subjectDigest)
+        throw new Error('Steering ledger changed during authority verification')
+      const finalTime = clock()
+      if (!Number.isFinite(finalTime) || finalTime < nowMs || finalTime >= authority.validUntil)
+        throw new Error('Steering authority expired before application')
+      const currentSubject = resolveSteeringSubject({
+        ledgerPath,
+        subjectDigest: recordDigest(currentLedger),
+      })
+      if (
+        currentSubject?.verified !== true ||
+        ['subjectId', 'goal', 'task', 'subjectDigest'].some(
+          (field) => currentSubject[field] !== subject[field],
+        )
+      )
+        throw new Error('Steering subject changed before application')
+      fs.writeFileSync(temporaryPath, JSON.stringify(nextLedger, null, 2), {
+        flag: 'wx',
+        mode: 0o600,
+        flush: true,
+      })
+      fs.renameSync(temporaryPath, ledgerPath)
+    } finally {
+      try {
+        fs.closeSync(descriptor)
+      } catch {
+        cleanupRequired = true
+      }
+      try {
+        fs.unlinkSync(lockPath)
+      } catch {
+        cleanupRequired = true
+      }
+      try {
+        if (fs.existsSync(temporaryPath)) fs.unlinkSync(temporaryPath)
+      } catch {
+        cleanupRequired = true
+      }
+    }
   }
 
   return {
     ok: true,
     applied: apply && !dryRun,
+    authorized: authority.authorized,
+    cleanupRequired,
+    storageGuarantee: 'cooperative-file-lock-and-atomic-rename',
+    status: apply && !dryRun ? 'STEERING_APPLIED' : 'STEERING_PREVIEW_UNVERIFIED',
     ledgerPath,
     fencingToken: nextToken,
     resolution: resolutionRecord,
@@ -420,218 +656,223 @@ export async function steerTriage({
   }
 }
 
-export function verifyMergeGates(pr, { autoMerge = false, humanApproval = null } = {}) {
-  const gates = {
-    review: { pass: false, details: '' },
-    ci: { pass: false, details: '' },
-    humanApproval: { pass: false, details: '' },
-  }
-  const failedGates = []
-
-  if (pr.state !== 'OPEN') {
-    return {
-      ready: false,
-      reason: `PR #${pr.number} is not OPEN (state: ${pr.state})`,
-      gates,
-      failedGates: [{ name: 'state', reason: `PR state is ${pr.state}` }],
-    }
-  }
-
-  if (pr.mergeable === 'CONFLICTING') {
-    return {
-      ready: false,
-      reason: `PR #${pr.number} has merge conflicts`,
-      gates,
-      failedGates: [{ name: 'mergeable', reason: 'CONFLICTING mergeable state' }],
-    }
-  }
-
-  const authorLogin = pr.author?.login
-
-  // Gate 1: Bilateral review sign-off and four-eyes principle
-  const approvedReviews = (pr.reviews || []).filter((r) => r.state === 'APPROVED')
-  const independentGitHubApproval = approvedReviews.find(
-    (r) => r.author?.login && r.author.login !== authorLogin,
-  )
-
-  const body = pr.body || ''
-  const hasPhase6Pass =
-    /\|\s*6\s*\|\s*reviewer\s*\|[^|]*\|[^|]*\|[^|]*\|[^|]*\|\s*independent\s*\|\s*pass\s*\|/i.test(
-      body,
-    ) || /\|\s*6\s*\|\s*reviewer\s*\|[^|]*\|[^|]*\|[^|]*\|[^|]*\|[^|]*\|\s*pass\s*\|/i.test(body)
-  const hasReviewSection = /## Agent review/i.test(body) && /- Review:\s*(\w+)/i.test(body)
-
-  if (independentGitHubApproval) {
-    gates.review.pass = true
-    gates.review.details = `Approved by independent reviewer @${independentGitHubApproval.author.login}`
-  } else if (hasPhase6Pass || hasReviewSection) {
-    gates.review.pass = true
-    gates.review.details = 'Bilateral role-pass review sign-off verified in PR manifest'
-  } else {
-    gates.review.pass = false
-    gates.review.details = 'No independent review approval or bilateral role pass recorded'
-    failedGates.push({ name: 'review', reason: gates.review.details })
-  }
-
-  // Gate 2: Green CI status
-  const rollup = pr.statusCheckRollup || []
-  if (rollup.length === 0) {
-    gates.ci.pass = true
-    gates.ci.details = 'No status checks recorded'
-  } else {
-    const failedChecks = rollup.filter((c) =>
-      ['FAILURE', 'TIMED_OUT', 'ACTION_REQUIRED', 'CANCELLED'].includes(c.conclusion),
-    )
-    const pendingChecks = rollup.filter(
-      (c) =>
-        c.status === 'IN_PROGRESS' ||
-        c.status === 'QUEUED' ||
-        (c.status && c.status !== 'COMPLETED'),
-    )
-
-    if (failedChecks.length > 0) {
-      gates.ci.pass = false
-      gates.ci.details = `Failed checks: ${failedChecks.map((c) => c.name).join(', ')}`
-      failedGates.push({ name: 'ci', reason: gates.ci.details })
-    } else if (pendingChecks.length > 0) {
-      gates.ci.pass = false
-      gates.ci.details = `Pending checks: ${pendingChecks.map((c) => c.name).join(', ')}`
-      failedGates.push({ name: 'ci', reason: gates.ci.details })
-    } else {
-      gates.ci.pass = true
-      gates.ci.details = `All ${rollup.length} checks green`
-    }
-  }
-
-  // Gate 3: Recorded human approval
-  const humanReviewApproval = approvedReviews.find(
-    (r) => r.author?.is_bot !== true && r.author?.login,
-  )
-  const comments = pr.comments || []
-  const hasApprovedComment = comments.some((c) =>
-    /\b(?:human-approval|\/approve|lgtm|approved)\b/i.test(c.body || ''),
-  )
-  const bodyAutoMerge =
-    /Merge owner:\s*auto-merge-requested/i.test(body) ||
-    /\bhuman-approval:\s*\S+/i.test(body) ||
-    /approved:\s*true/i.test(body)
-  const labels = (pr.labels || []).map((l) => (typeof l === 'string' ? l : l.name || ''))
-  const hasApprovalLabel = labels.some((l) => /approved|auto-merge/i.test(l))
-
-  if (
-    autoMerge ||
-    humanApproval ||
-    humanReviewApproval ||
-    hasApprovedComment ||
-    bodyAutoMerge ||
-    hasApprovalLabel
-  ) {
-    gates.humanApproval.pass = true
-    gates.humanApproval.details = humanApproval
-      ? `Explicit CLI human approval: ${humanApproval}`
-      : humanReviewApproval
-        ? `Human review approval from @${humanReviewApproval.author.login}`
-        : bodyAutoMerge
-          ? 'Recorded auto-merge configuration in PR manifest'
-          : hasApprovedComment
-            ? 'Human approval comment recorded'
-            : 'Human approval label recorded'
-  } else {
-    gates.humanApproval.pass = false
-    gates.humanApproval.details = 'PR requires recorded human approval or auto-merge configuration'
-    failedGates.push({
-      name: 'human-approval',
-      reason: gates.humanApproval.details,
-      escalation: {
-        class: 'human-gate',
-        message: `PR #${pr.number} requires human approval before merge`,
-      },
-    })
-  }
-
-  const ready = failedGates.length === 0
-  return { ready, gates, failedGates }
+export function verifyMergeGates(pr, options = {}) {
+  return evaluateMergeReadiness(pr, options)
 }
 
 export async function steerMergeCheck({
   prNumber,
   dryRun = false,
   checkOnly = false,
-  execute = true,
+  execute = false,
   repo,
   autoMerge = false,
   humanApproval = null,
+  resolveReviewEvidence,
+  steeringBinding,
+  steeringRequest,
+  verifySteeringEndpoint,
+  clock = Date.now,
   spawnFn = spawnSync,
 } = {}) {
   const prNum = Number(prNumber)
-  if (!Number.isInteger(prNum) || prNum <= 0) {
-    throw new Error(`Valid PR number is required, got "${prNumber}"`)
-  }
-
+  if (!Number.isSafeInteger(prNum) || prNum <= 0) throw new Error('Valid PR number required')
   const viewArgs = [
     'pr',
     'view',
     String(prNum),
     '--json',
-    'number,title,state,mergeable,author,reviews,statusCheckRollup,body,labels,comments',
+    'number,title,state,isDraft,mergeable,headRefOid,baseRefName,reviewDecision,author,reviews,statusCheckRollup',
   ]
   if (repo) viewArgs.push('--repo', repo)
-
-  const viewResult = spawnFn('gh', viewArgs, { encoding: 'utf8' })
-  if (viewResult.status !== 0) {
-    throw new Error(
-      `Failed to query PR #${prNum} via gh CLI: ${viewResult.stderr || viewResult.stdout}`,
-    )
+  const observePr = () => {
+    const viewResult = spawnFn('gh', viewArgs, {
+      encoding: 'utf8',
+      shell: false,
+      timeout: 30000,
+      maxBuffer: 1024 * 1024,
+    })
+    if (viewResult.error || viewResult.status !== 0)
+      throw new Error('PR source observation unavailable')
+    const value = JSON.parse(viewResult.stdout)
+    if (value.number !== prNum) throw new Error('Observed PR identity mismatch')
+    if (typeof repo === 'string' && /^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/.test(repo)) {
+      const permissions = new Map()
+      for (const review of value.reviews ?? []) {
+        const login = review?.author?.login
+        if (typeof login !== 'string' || !/^[a-zA-Z0-9][a-zA-Z0-9-]{0,99}$/.test(login)) continue
+        if (!permissions.has(login)) {
+          let permission = null
+          try {
+            const result = spawnFn(
+              'gh',
+              ['api', `repos/${repo}/collaborators/${login}/permission`],
+              { encoding: 'utf8', shell: false, timeout: 10000, maxBuffer: 65536 },
+            )
+            if (!result.error && result.status === 0) {
+              const record = JSON.parse(result.stdout)
+              if (record.user?.login === login && typeof record.permission === 'string')
+                permission = record.permission.toUpperCase()
+            }
+          } catch {
+            /* Unknown permission cannot authorize approval. */
+          }
+          permissions.set(login, permission)
+        }
+        review.authorPermission = permissions.get(login)
+      }
+    }
+    return value
   }
-
-  const pr = JSON.parse(viewResult.stdout)
-  const readiness = verifyMergeGates(pr, { autoMerge, humanApproval })
-
-  if (!readiness.ready) {
-    const escalation = readiness.failedGates.find((g) => g.escalation)?.escalation || null
+  const pr = observePr()
+  const readiness = verifyMergeGates(pr, { resolveReviewEvidence, repository: repo })
+  const common = {
+    pr: prNum,
+    title: pr.title,
+    headOid: readiness.headOid,
+    ready: readiness.ready,
+    merged: false,
+    gates: readiness.gates,
+    failedGates: readiness.failedGates,
+  }
+  if (!readiness.ready)
     return {
       ok: false,
-      pr: prNum,
-      title: pr.title,
-      ready: false,
-      merged: false,
-      gates: readiness.gates,
-      failedGates: readiness.failedGates,
-      escalation,
+      ...common,
+      escalation: readiness.failedGates.some((g) => g.name === 'humanApproval')
+        ? { class: 'human-gate', message: 'Current-head human approval required' }
+        : null,
     }
-  }
-
-  const shouldMerge = !dryRun && !checkOnly && execute
-  if (!shouldMerge) {
-    return {
-      ok: true,
-      pr: prNum,
-      title: pr.title,
-      ready: true,
-      merged: false,
-      gates: readiness.gates,
-    }
-  }
-
-  const mergeArgs = ['pr', 'merge', String(prNum), '--squash', '--delete-branch']
-  if (repo) mergeArgs.push('--repo', repo)
-  const mergeResult = spawnFn('gh', mergeArgs, { encoding: 'utf8' })
-
-  if (mergeResult.status === 0) {
-    return {
-      ok: true,
-      pr: prNum,
-      title: pr.title,
-      ready: true,
-      merged: true,
-      gates: readiness.gates,
-      output: mergeResult.stdout?.trim(),
-    }
-  }
-
-  throw new Error(
-    `Failed to execute merge on PR #${prNum}: ${mergeResult.stderr || mergeResult.stdout}`,
+  if (dryRun || checkOnly || !execute) return { ok: true, ...common, status: 'MERGE_CHECK_ONLY' }
+  const subjectId = `github:${repo}/pull/${prNum}`
+  const subjectDigest = recordDigest({
+    repository: repo,
+    prNumber: prNum,
+    headOid: readiness.headOid,
+  })
+  const actionDigest = recordDigest({
+    action: 'merge',
+    repository: repo,
+    prNumber: prNum,
+    headOid: readiness.headOid,
+    strategy: 'squash',
+    deleteBranch: true,
+  })
+  const request = structuredClone(steeringRequest ?? {}),
+    binding = structuredClone(steeringBinding ?? {})
+  if (
+    typeof repo !== 'string' ||
+    !/^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/.test(repo) ||
+    request.power !== 'merge' ||
+    request.subjectId !== subjectId ||
+    request.subjectDigest !== subjectDigest ||
+    request.actionDigest !== actionDigest
   )
+    return {
+      ok: false,
+      ...common,
+      status: 'MERGE_AUTHORITY_UNVERIFIED',
+      obligation: {
+        owner: 'human/operator',
+        action: 'verify-head-bound-merge-authority',
+        deadlineAt: clock() + 900000,
+      },
+    }
+  const authority = evaluateSteeringBinding({
+    binding,
+    request,
+    verifyEndpoint: verifySteeringEndpoint,
+    nowMs: clock(),
+  })
+  if (!authority.authorized)
+    return {
+      ok: false,
+      ...common,
+      status: 'MERGE_AUTHORITY_UNVERIFIED',
+      obligation: authority.obligation,
+    }
+  const currentPr = observePr()
+  const currentReadiness = verifyMergeGates(currentPr, { resolveReviewEvidence, repository: repo })
+  if (!currentReadiness.ready || currentReadiness.headOid !== readiness.headOid)
+    return {
+      ok: false,
+      ...common,
+      status: 'MERGE_READINESS_CHANGED',
+      ready: false,
+      failedGates: currentReadiness.failedGates,
+    }
+  const finalTime = clock()
+  if (
+    !Number.isFinite(finalTime) ||
+    finalTime < authority.observedAt ||
+    finalTime >= authority.validUntil
+  )
+    return { ok: false, ...common, ready: false, status: 'MERGE_AUTHORITY_EXPIRED' }
+  const mergeArgs = [
+    'pr',
+    'merge',
+    String(prNum),
+    '--squash',
+    '--delete-branch',
+    '--match-head-commit',
+    readiness.headOid,
+    '--repo',
+    repo,
+  ]
+  let result
+  try {
+    result = spawnFn('gh', mergeArgs, {
+      encoding: 'utf8',
+      shell: false,
+      timeout: 30000,
+      maxBuffer: 1024 * 1024,
+    })
+  } catch {
+    return { ok: false, ...common, status: 'MERGE_OUTCOME_UNKNOWN', requiresReconciliation: true }
+  }
+  if (result.error || result.status !== 0)
+    return { ok: false, ...common, status: 'MERGE_OUTCOME_UNKNOWN', requiresReconciliation: true }
+  let observed
+  try {
+    const proof = spawnFn(
+      'gh',
+      [
+        'pr',
+        'view',
+        String(prNum),
+        '--repo',
+        repo,
+        '--json',
+        'number,state,headRefOid,mergeCommit',
+      ],
+      { encoding: 'utf8', shell: false, timeout: 30000, maxBuffer: 1024 * 1024 },
+    )
+    if (!proof.error && proof.status === 0) observed = JSON.parse(proof.stdout)
+  } catch {
+    /* Submission stays unresolved without source readback. */
+  }
+  if (
+    observed?.number === prNum &&
+    observed.state === 'MERGED' &&
+    observed.headRefOid === readiness.headOid &&
+    /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/i.test(observed.mergeCommit?.oid ?? '')
+  )
+    return {
+      ok: true,
+      ...common,
+      merged: true,
+      status: 'MERGE_CONFIRMED',
+      publicationVerified: true,
+      mergeCommit: observed.mergeCommit.oid,
+      requiresReconciliation: false,
+    }
+  return {
+    ok: false,
+    ...common,
+    status: 'MERGE_SUBMITTED',
+    publicationVerified: false,
+    requiresReconciliation: true,
+  }
 }
 
 export const SUPERVISOR_STALE_TIMEOUT_MS = 30 * 60 * 1000
@@ -641,10 +882,14 @@ export function evaluateSupervisorLiveness({
   nowMs = Date.now(),
   staleTimeoutMs = SUPERVISOR_STALE_TIMEOUT_MS,
   unmergedAcceptedCount = 0,
+  steeringBinding,
+  steeringRequest,
+  verifySteeringEndpoint,
 } = {}) {
-  const holdNewSliceAdmission = Number(unmergedAcceptedCount) >= 1
+  const validCount = Number.isSafeInteger(unmergedAcceptedCount) && unmergedAcceptedCount >= 0
+  const holdNewSliceAdmission = true
 
-  if (!lastHeartbeatAt) {
+  if (!lastHeartbeatAt || !validCount) {
     return {
       reachable: false,
       status: 'SUPERVISOR_UNREACHABLE',
@@ -657,7 +902,14 @@ export function evaluateSupervisorLiveness({
   const lastMs = typeof lastHeartbeatAt === 'number' ? lastHeartbeatAt : Date.parse(lastHeartbeatAt)
   const ageMs = Number.isFinite(lastMs) ? Math.max(0, nowMs - lastMs) : null
 
-  if (!Number.isFinite(lastMs) || ageMs > staleTimeoutMs) {
+  if (
+    !Number.isFinite(lastMs) ||
+    !Number.isFinite(nowMs) ||
+    lastMs > nowMs ||
+    !Number.isFinite(staleTimeoutMs) ||
+    staleTimeoutMs <= 0 ||
+    ageMs > staleTimeoutMs
+  ) {
     return {
       reachable: false,
       status: 'SUPERVISOR_UNREACHABLE',
@@ -667,6 +919,21 @@ export function evaluateSupervisorLiveness({
     }
   }
 
+  const authority = evaluateSteeringBinding({
+    binding: steeringBinding,
+    request: steeringRequest,
+    verifyEndpoint: verifySteeringEndpoint,
+    nowMs,
+  })
+  if (!authority.authorized || steeringRequest?.power !== 'observe')
+    return {
+      reachable: false,
+      status: 'SUPERVISOR_UNVERIFIED',
+      ageMs,
+      staleTimeoutMs,
+      holdNewSliceAdmission,
+      obligation: authority.obligation,
+    }
   return {
     reachable: true,
     status: 'SUPERVISOR_HEALTHY',
@@ -799,10 +1066,12 @@ export async function runSteerCli(rawArgs = []) {
         process.stdout.write(
           result.dryRun
             ? `[Dry Run] Prepared brief assignment to ${result.destination}:\n  Brief: ${result.briefFile}\n  Summary: ${result.summary}\n`
-            : `✓ Brief dispatched to ${result.destination}:\n  Brief: ${result.briefFile}\n  Summary: ${result.summary}\n`,
+            : !result.ok
+              ? `Assignment held: ${result.status}; authenticated steering endpoint required\n`
+              : `✓ Brief submitted to ${result.destination}:\n  Brief: ${result.briefFile}\n  Summary: ${result.summary}\n`,
         )
       }
-      return 0
+      return result.ok ? 0 : 3
     }
 
     if (subcommand === 'unfreeze') {
@@ -827,6 +1096,10 @@ export async function runSteerCli(rawArgs = []) {
 
       if (isJson) {
         process.stdout.write(JSON.stringify(result, null, 2) + '\n')
+      } else if (!result.ok) {
+        process.stdout.write(
+          `Unfreeze held: ${result.status}; authenticated steering endpoint required\n`,
+        )
       } else {
         process.stdout.write(
           `✓ Unfreeze resolution sealed [${result.resolution.digest}]\n` +
@@ -836,7 +1109,7 @@ export async function runSteerCli(rawArgs = []) {
             `  Ledger: ${result.ledgerPath} (${result.applied ? 'updated' : 'preview'})\n`,
         )
       }
-      return 0
+      return result.ok ? 0 : 3
     }
 
     if (subcommand === 'triage') {
@@ -899,7 +1172,7 @@ export async function runSteerCli(rawArgs = []) {
       const prArg = subArgs.find((a) => !a.startsWith('--'))
       const prNumber = getFlag(subArgs, '--pr', prArg)
       const checkOnly = hasFlag(subArgs, ['--check-only', '--dry-run'])
-      const execute = hasFlag(subArgs, ['--execute', '--merge']) || !checkOnly
+      const execute = hasFlag(subArgs, ['--execute', '--merge'])
       const repo = getFlag(subArgs, '--repo')
       const autoMerge = hasFlag(subArgs, '--auto-merge')
       const humanApproval = getFlag(subArgs, '--human-approval')
@@ -924,7 +1197,11 @@ export async function runSteerCli(rawArgs = []) {
           process.stdout.write(`✓ PR #${result.pr} is ready to merge (all gates passed).\n`)
         }
       } else {
-        process.stdout.write(`✗ PR #${result.pr} merge-check halted:\n`)
+        process.stdout.write(
+          `PR #${result.pr} held: ${result.status ?? 'MERGE_READINESS_UNVERIFIED'}\n`,
+        )
+        if (result.obligation)
+          process.stdout.write(`  ${result.obligation.owner}: ${result.obligation.action}\n`)
         for (const failure of result.failedGates || []) {
           process.stdout.write(`  - ${failure.name}: ${failure.reason}\n`)
         }
@@ -936,7 +1213,7 @@ export async function runSteerCli(rawArgs = []) {
       }
 
       if (!result.ok) {
-        return result.escalation ? 3 : 1
+        return result.escalation || result.obligation || result.requiresReconciliation ? 3 : 1
       }
       return 0
     }
@@ -965,7 +1242,7 @@ export async function runSteerCli(rawArgs = []) {
           )
         }
       }
-      return 0
+      return result.holdNewSliceAdmission ? 3 : 0
     }
 
     if (subcommand === 'btw') {

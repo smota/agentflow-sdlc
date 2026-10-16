@@ -95,6 +95,12 @@ function fakeDeps({
     return { status: 9, stdout: '', stderr: `unexpected rig ${args.join(' ')}` }
   }
   const deps = {
+    resolveOracleTask: ({ goal }) => ({
+      verified: true,
+      task: { goal, touchSurface: [] },
+      sourceRef: 'fixture://known-read-only-task',
+      sourceRevision: 'fixture-revision',
+    }),
     env: { ...(sender ? { OPENRIG_SESSION_NAME: sender } : {}), ...env },
     home,
     now: () => new Date((clock += 1000)),
@@ -646,7 +652,7 @@ describe('the Pi product seat loads the guard as an extension (AC3)', () => {
     }
   })
 
-  it('refreshes the extension on squad update without touching seat state', () => {
+  it('holds legacy squad update without replacing an extension or touching seat state', () => {
     const home = tempDir('agentflow-pi-home-')
     const project = tempDir('agentflow-project-')
     expect(
@@ -663,9 +669,10 @@ describe('the Pi product seat loads the guard as an extension (AC3)', () => {
         env: { PATH: process.env.PATH, HOME: tempDir('agentflow-user-') },
       },
     )
-    expect(update.status, update.stderr).toBe(0)
-    expect(readFileSync(join(seatDir, 'extensions/agentflow-handoff-guard.js'), 'utf8')).toContain(
-      'guardDecision',
+    expect(update.status).toBe(1)
+    expect(update.stderr).toContain('source-bound mutation')
+    expect(readFileSync(join(seatDir, 'extensions/agentflow-handoff-guard.js'), 'utf8')).toBe(
+      'stale',
     )
     expect(readFileSync(join(seatDir, 'session.json'), 'utf8')).toBe('{"turn":3}')
   })

@@ -1,0 +1,172 @@
+[
+  {
+    "rig": "dendro-dev",
+    "beforeSha256": "9ce9050e79d6babda129a5b54eae5b2e5697a99ad21919a6f516719c9c43a104",
+    "afterSha256": "66dd8059c4939657b9201a95952644393672e9b0f71c57f3a0312df4563bb13e",
+    "identityPreserved": true,
+    "workingDirectoriesPreserved": true,
+    "contracts": [
+      {
+        "seat": "orch.arch",
+        "runtime": "codex",
+        "providerRoute": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "effort": "medium",
+        "profile": "architect"
+      },
+      {
+        "seat": "dev.build",
+        "runtime": "pi",
+        "providerRoute": "munito",
+        "model": "qwen/qwen3.8-27b",
+        "effort": "medium",
+        "profile": "builder-pi"
+      },
+      {
+        "seat": "dev.qa",
+        "runtime": "codex",
+        "providerRoute": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "effort": "low",
+        "profile": "qa"
+      },
+      {
+        "seat": "rev.review",
+        "runtime": "claude-code",
+        "providerRoute": "anthropic",
+        "model": "claude-sonnet-5-5",
+        "effort": "medium",
+        "profile": "reviewer"
+      },
+      {
+        "seat": "eval.tester",
+        "runtime": "codex",
+        "providerRoute": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "effort": "low",
+        "profile": "eval-tester"
+      }
+    ],
+    "admission": "held"
+  },
+  {
+    "rig": "dendro-pm",
+    "beforeSha256": "31f14e3c0f4794c143d6fe597b319df8d45e555c85bebb65f85ed41332454a64",
+    "afterSha256": "f0ce74032c6b1bf71a260781ff8924bcc060c5e1bad5f4d0fc0def9aca399bce",
+    "identityPreserved": true,
+    "workingDirectoriesPreserved": true,
+    "contracts": [
+      {
+        "seat": "pm.manager",
+        "runtime": "codex",
+        "providerRoute": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "effort": "medium",
+        "profile": "product-manager"
+      },
+      {
+        "seat": "pm.analyst",
+        "runtime": "codex",
+        "providerRoute": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "effort": "medium",
+        "profile": "analyst"
+      }
+    ],
+    "admission": "held"
+  },
+  {
+    "rig": "agentflow-dev",
+    "beforeSha256": "d6fea794917601127fbefb1160b077c87deb83e36deed285182833ee82c2bcc7",
+    "afterSha256": "2e404751a9a6b448b56eaeda69eff4c4a05cb22faeed41e766170132601785fc",
+    "identityPreserved": true,
+    "workingDirectoriesPreserved": true,
+    "contracts": [
+      {
+        "seat": "orch.arch",
+        "runtime": "codex",
+        "providerRoute": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "effort": "medium",
+        "profile": "architect"
+      },
+      {
+        "seat": "dev.build",
+        "runtime": "pi",
+        "providerRoute": "munito",
+        "model": "qwen/qwen3.8-27b",
+        "effort": "medium",
+        "profile": "builder-pi"
+      },
+      {
+        "seat": "dev.qa",
+        "runtime": "codex",
+        "providerRoute": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "effort": "low",
+        "profile": "qa"
+      },
+      {
+        "seat": "rev.review",
+        "runtime": "claude-code",
+        "providerRoute": "anthropic",
+        "model": "claude-sonnet-5-5",
+        "effort": "medium",
+        "profile": "reviewer"
+      },
+      {
+        "seat": "eval.tester",
+        "runtime": "codex",
+        "providerRoute": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "effort": "low",
+        "profile": "eval-tester"
+      }
+    ],
+    "admission": "held"
+  },
+  {
+    "rig": "agentflow-pm",
+    "beforeSha256": "f472c96494a546109bb1260d0ec5716e03082866aa6d3232f0ce2d02ed803e79",
+    "afterSha256": "cb6908bc55d778cdb3fe605e91827d3ce660e5ec97beb5cc4681d089bb8a9bf1",
+    "identityPreserved": true,
+    "workingDirectoriesPreserved": true,
+    "contracts": [
+      {
+        "seat": "pm.manager",
+        "runtime": "codex",
+        "providerRoute": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "effort": "medium",
+        "profile": "product-manager"
+      },
+      {
+        "seat": "pm.analyst",
+        "runtime": "codex",
+        "providerRoute": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "effort": "medium",
+        "profile": "analyst"
+      }
+    ],
+    "admission": "held"
+  },
+  {
+    "rig": "agentflow-steer",
+    "beforeSha256": "92d494351dfa2b3fcfa45bdbd57ea3e5e258b11884af0fa2f35158d10e50baa0",
+    "afterSha256": "96d0a14f529495a26df87ae4669d8dc97976ccddf1cafaee5bd2a5d6735cd7ea",
+    "identityPreserved": true,
+    "workingDirectoriesPreserved": true,
+    "contracts": [
+      {
+        "seat": "steer.lead",
+        "runtime": "codex",
+        "providerRoute": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "effort": "medium",
+        "profile": "steering-lead"
+      }
+    ],
+    "admission": "held"
+  }
+]

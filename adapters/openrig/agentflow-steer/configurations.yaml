@@ -40,10 +40,18 @@ presets:
     steer.lead: codex
 
   all-grok:
-    steer.lead: pi
+    steer.lead:
+      runtime: pi
+      providerRoute: grok
 
   all-claude:
     steer.lead: claude-code
 
   all-codex:
+    steer.lead: codex
+  all-antigravity:
+    steer.lead:
+      runtime: pi
+      providerRoute: antigravity
+  frontline:
     steer.lead: codex

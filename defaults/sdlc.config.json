@@ -95,8 +95,7 @@
       "requiredFor": ["high-assurance"],
       "fields": ["Reviewer", "Scope", "Decision", "Notes"],
       "decisions": ["approved", "changes-requested", "blocked"]
-    },
-    "guidedAction": { "requires": ["preview", "auth", "csrf", "confirmation", "audit"] }
+    }
   },
   "actionPolicy": {
     "profileMaximums": {
@@ -132,8 +131,9 @@
   },
   "deliveryPolicy": {
     "deterministicOrigins": ["collector-observed", "external-resolved"],
-    "sourceAcknowledgmentRequired": true,
     "requiredJourneyCoverage": false,
-    "budgetMaxima": {}
+    "oracleAssurance": {
+      "required": true
+    }
   }
 }

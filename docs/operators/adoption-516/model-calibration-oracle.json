@@ -1,0 +1,13 @@
+{
+  "prompt": "Return exactly one JSON object with keys harness,providerRoute,providerFamily,actualModel,admit,reason. Facts: declared execution has runtime pi, providerRoute munito, model qwen/qwen3.8-27b. Actual runtime observation is absent. Provider family has not been verified. History catch-up failed. A historical usage record contains rate_limit_reached_type weekly and used_percent 80; that record is usage metadata, not an error. Rules: harness comes from declared runtime; providerRoute comes from declared route; unavailable provider family and actual model are literal \"unknown\"; admit is false unless actual observation and history are both verified; reason is \"history-unverified\" if history failed, otherwise \"actual-unobserved\" if observation is absent. No other fields or prose.",
+  "expected": {
+    "harness": "pi",
+    "providerRoute": "munito",
+    "providerFamily": "unknown",
+    "actualModel": "unknown",
+    "admit": false,
+    "reason": "history-unverified"
+  },
+  "qualification": "single bounded extraction task only",
+  "timeoutSeconds": 45
+}

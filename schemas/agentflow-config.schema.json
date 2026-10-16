@@ -12,15 +12,23 @@
     "authority": {
       "type": "object",
       "properties": {
-        "human": { "type": "string" },
-        "machine": { "type": "string" },
-        "executionAdapter": { "type": "string" }
+        "human": {
+          "type": "string"
+        },
+        "machine": {
+          "type": "string"
+        },
+        "executionAdapter": {
+          "type": "string"
+        }
       },
       "additionalProperties": true
     },
     "principles": {
       "type": "array",
-      "items": { "type": "string" }
+      "items": {
+        "type": "string"
+      }
     },
     "vocabulary": {
       "type": "object",
@@ -32,10 +40,23 @@
         "type": "object",
         "required": ["phase", "slug", "label", "owns"],
         "properties": {
-          "phase": { "type": "integer", "minimum": 0 },
-          "slug": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
-          "label": { "type": "string" },
-          "owns": { "type": "array", "items": { "type": "string" } }
+          "phase": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "slug": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+          },
+          "label": {
+            "type": "string"
+          },
+          "owns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
         },
         "additionalProperties": true
       }
@@ -50,68 +71,199 @@
         "type": "array",
         "minItems": 2,
         "maxItems": 2,
-        "items": { "type": "string" }
+        "items": {
+          "type": "string"
+        }
       }
     },
-    "labels": { "type": "object", "additionalProperties": true },
-    "release": { "type": "object", "additionalProperties": true },
-    "gateways": { "type": "object", "additionalProperties": true },
-    "actionPolicy": { "type": "object", "additionalProperties": true },
-    "extensionPolicy": { "type": "object", "additionalProperties": true },
-    "deliveryPolicy": { "type": "object", "additionalProperties": true },
+    "labels": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "release": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "gateways": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "actionPolicy": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "extensionPolicy": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "deliveryPolicy": {
+      "type": "object",
+      "additionalProperties": true
+    },
     "ciCommands": {
       "type": "array",
-      "items": { "type": "string" }
+      "items": {
+        "type": "string"
+      }
     },
-    "bounded": { "type": "object", "additionalProperties": true },
-    "branching": { "type": "object", "additionalProperties": true },
-    "integrationLifecycle": { "type": "object", "additionalProperties": true },
+    "bounded": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "branching": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "integrationLifecycle": {
+      "type": "object",
+      "additionalProperties": true
+    },
     "routing": {
       "type": "object",
       "properties": {
-        "defaultMode": { "type": "string" },
-        "agents": { "type": "object", "additionalProperties": true },
-        "roles": { "type": "object", "additionalProperties": true }
+        "defaultMode": {
+          "type": "string"
+        },
+        "agents": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "roles": {
+          "type": "object",
+          "additionalProperties": true
+        }
       },
       "additionalProperties": true
     },
     "orchestration": {
       "type": "object",
       "properties": {
-        "lifecycle": { "type": "string" },
-        "preCodeReview": { "type": "object", "additionalProperties": true },
-        "concurrency": { "type": "object", "additionalProperties": true }
+        "lifecycle": {
+          "type": "string"
+        },
+        "preCodeReview": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "concurrency": {
+          "type": "object",
+          "additionalProperties": true
+        }
       },
       "additionalProperties": true
     },
     "execution": {
       "type": "object",
       "properties": {
-        "escalation": { "type": "object", "additionalProperties": true },
-        "fallbackCascade": { "type": "object", "additionalProperties": true }
+        "escalation": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "fallbackCascade": {
+          "type": "object",
+          "additionalProperties": true
+        }
       },
       "additionalProperties": true
     },
     "models": {
       "type": "object",
       "properties": {
-        "tiers": { "type": "object", "additionalProperties": true },
-        "roleAssignments": { "type": "object", "additionalProperties": true }
+        "tiers": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "roleAssignments": {
+          "type": "object",
+          "additionalProperties": true
+        }
       },
       "additionalProperties": true
     },
     "harness": {
       "type": "object",
       "properties": {
-        "shellRunner": { "type": "object", "additionalProperties": true },
-        "limits": { "type": "object", "additionalProperties": true },
-        "scratchPath": { "type": "string" }
+        "shellRunner": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "limits": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "scratchPath": {
+          "type": "string"
+        }
       },
       "additionalProperties": true
     },
     "adapters": {
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": true,
+      "properties": {
+        "openrig": {
+          "type": "object",
+          "properties": {
+            "rig": {
+              "type": "object"
+            },
+            "executionPolicy": {
+              "type": "object",
+              "properties": {
+                "seats": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object",
+                    "properties": {
+                      "executionTarget": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "providerRoute": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "providerFamily": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "model": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "profile": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "capabilityTier": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "runtime": {
+                        "enum": ["pi", "codex", "claude-code"]
+                      },
+                      "effort": {
+                        "enum": ["off", "none", "minimal", "low", "medium", "high", "xhigh", "max"]
+                      },
+                      "platform": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "activation": {
+                  "enum": ["active", "held"],
+                  "description": "Held permits desired previews only; it grants no installed mutation authority."
+                }
+              },
+              "additionalProperties": true
+            }
+          },
+          "additionalProperties": true
+        }
+      }
     },
     "executionTopology": {
       "type": "object",
@@ -131,10 +283,19 @@
     "effortPolicy": {
       "type": "object",
       "properties": {
-        "defaultLoopEffort": { "enum": ["low", "medium", "high"] },
-        "subagentSearchEffort": { "enum": ["low", "medium"] },
-        "highEffortMaxContextTokens": { "type": "integer", "minimum": 8000 },
-        "enforceCleanSubagentForHighEffort": { "type": "boolean" }
+        "defaultLoopEffort": {
+          "enum": ["low", "medium", "high"]
+        },
+        "subagentSearchEffort": {
+          "enum": ["low", "medium"]
+        },
+        "highEffortMaxContextTokens": {
+          "type": "integer",
+          "minimum": 8000
+        },
+        "enforceCleanSubagentForHighEffort": {
+          "type": "boolean"
+        }
       },
       "additionalProperties": true
     }

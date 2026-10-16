@@ -278,6 +278,20 @@ profiles:
           required: true
       actions: []
 
+  test-eng-claude:
+    summary: Optional independent oracle author; requires an explicit source-authorized assignment before execution.
+    preferences:
+      runtime: claude-code
+    uses:
+      skills: *builder-skills
+      runtime_resources: [claude-activity-hooks]
+    startup:
+      files:
+        - path: guidance/test-eng.md
+          delivery_hint: send_text
+          required: true
+      actions: []
+
   test-eng-pi:
     summary: Test Engineer on Pi authoring tests and test oracles in Phase 3/4 before code implementation.
     preferences:

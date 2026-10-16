@@ -1,5 +1,14 @@
 # AgentFlow SDLC for OpenRig
 
+For the native source-backed asynchronous handoff host boundary, see
+[Native source handoff](../../docs/native-source-handoff.md).
+
+For classified quota recovery and its trusted host integration limits, see
+[Classified OpenRig recovery](../../docs/openrig-recovery.md).
+
+For current-head review and publication authority, see
+[Steering merge authority](../../docs/steering-merge-authority.md).
+
 This adapter integrates AgentFlow SDLC with [OpenRig](https://openrig.dev/), providing a fully autonomous, full-lifecycle engineering squad for parallel, independent software development in the repository each squad is launched against.
 
 ---
@@ -81,7 +90,11 @@ rig up agentflow-my-project-steer --cwd /path/to/my-project
 rig ps
 
 # 4. List, refresh, or remove squads (preserves steering audit state unless --purge is passed)
+agentflow-sdlc adapters squads plan openrig --kind all my-project /path/to/my-project --json
 agentflow-sdlc adapters squads list openrig
 agentflow-sdlc adapters squads update openrig my-project
 agentflow-sdlc adapters squads remove openrig [--purge] my-project
 ```
+
+See [Pi runtime observation compatibility](../../docs/openrig-runtime-compatibility.md) for
+the local upstream candidate, unsupported live observation, and preflight admission limits.

@@ -28,7 +28,7 @@
     "defaultMode": "optional-multi-agent",
     "agents": {
       "grok": {
-        "enabled": true,
+        "enabled": false,
         "availabilityProbe": {
           "executable": "grok",
           "args": ["--version"]
@@ -62,44 +62,53 @@
         },
         "defaultExecutionTarget": "agy-cli",
         "callWorkflowDoc": "docs/agents/agy-routing.md"
+      },
+      "pi": {
+        "enabled": false,
+        "availabilityProbe": {
+          "executable": "pi",
+          "args": ["--version"]
+        },
+        "defaultExecutionTarget": "pi-parent",
+        "callWorkflowDoc": "docs/agents/pi-routing.md"
       }
     },
     "roles": {
       "product-manager": {
-        "owner": "grok",
-        "fallbacks": ["claude", "codex"]
+        "owner": "codex",
+        "fallbacks": ["claude"]
       },
       "analyst": {
-        "owner": "grok",
-        "fallbacks": ["claude", "codex"]
+        "owner": "codex",
+        "fallbacks": ["claude"]
       },
       "architect": {
-        "owner": "grok",
-        "fallbacks": ["claude", "codex"]
+        "owner": "codex",
+        "fallbacks": ["claude"]
       },
       "implementation-planner": {
-        "owner": "grok",
-        "fallbacks": ["claude", "codex"]
+        "owner": "codex",
+        "fallbacks": ["claude"]
       },
       "developer": {
-        "owner": "claude",
-        "fallbacks": ["grok", "codex"]
+        "owner": "codex",
+        "fallbacks": ["claude"]
       },
       "tester": {
         "owner": "codex",
-        "fallbacks": ["claude", "grok"]
+        "fallbacks": ["claude"]
       },
       "reviewer": {
-        "owner": "grok",
-        "fallbacks": ["codex", "claude"]
+        "owner": "claude",
+        "fallbacks": ["codex"]
       },
       "technical-writer": {
         "owner": "claude",
-        "fallbacks": ["grok", "codex"]
+        "fallbacks": ["codex"]
       },
       "pr-readiness": {
-        "owner": "grok",
-        "fallbacks": ["codex", "claude"]
+        "owner": "codex",
+        "fallbacks": ["claude"]
       }
     }
   },
@@ -170,74 +179,147 @@
     },
     "candidate": {
       "inputs": [
-        ".agentflow/model-catalog.json",
-        "AGENTS.md",
-        "CODEX.md",
+        "adapters/openrig/README.md",
+        "adapters/openrig/__tests__/activation-guard-cli.test.mjs",
+        "adapters/openrig/__tests__/execution-plan.test.mjs",
+        "adapters/openrig/__tests__/execution-route-roundtrip.test.mjs",
+        "adapters/openrig/__tests__/fixtures/pi-runner-observation-candidate-v1.json",
+        "adapters/openrig/__tests__/incident-evidence-adversarial.test.mjs",
+        "adapters/openrig/__tests__/incident-evidence-review.test.mjs",
+        "adapters/openrig/__tests__/incident-evidence.test.mjs",
+        "adapters/openrig/__tests__/mutation-preview-cli.test.mjs",
+        "adapters/openrig/__tests__/mutation-proof.test.mjs",
+        "adapters/openrig/__tests__/mutation-review.test.mjs",
+        "adapters/openrig/__tests__/mutation-structural-scope.test.mjs",
+        "adapters/openrig/__tests__/mutation-structural.test.mjs",
+        "adapters/openrig/__tests__/mutation.test.mjs",
+        "adapters/openrig/__tests__/native-handoff.test.mjs",
+        "adapters/openrig/__tests__/operational-preflight-review.test.mjs",
+        "adapters/openrig/__tests__/operational-preflight.test.mjs",
+        "adapters/openrig/__tests__/recovery-atomic-anchor.test.mjs",
+        "adapters/openrig/__tests__/recovery-continuation-adversarial.test.mjs",
+        "adapters/openrig/__tests__/recovery-continuation-final.test.mjs",
+        "adapters/openrig/__tests__/recovery-continuation.fixture.mjs",
+        "adapters/openrig/__tests__/recovery-continuation.test.mjs",
+        "adapters/openrig/__tests__/recovery-rehearsal.test.mjs",
+        "adapters/openrig/__tests__/recovery.test.mjs",
+        "adapters/openrig/__tests__/runtime-capabilities.test.mjs",
+        "adapters/openrig/agentflow-product/README.md",
+        "adapters/openrig/agentflow-product/configurations.yaml",
+        "adapters/openrig/agentflow-product/handoff-step.mjs",
+        "adapters/openrig/agentflow-product/handoff.mjs",
+        "adapters/openrig/agentflow-product/oracle-admission.mjs",
+        "adapters/openrig/agentflow-product/pipeline-admission.mjs",
+        "adapters/openrig/agentflow-steer/CULTURE.md",
+        "adapters/openrig/agentflow-steer/configurations.yaml",
+        "adapters/openrig/agentflow/agents/agentflow/agent.yaml",
+        "adapters/openrig/agentflow/agents/agentflow/guidance/test-eng.md",
+        "adapters/openrig/agentflow/configurations.yaml",
+        "adapters/openrig/execution-plan.mjs",
+        "adapters/openrig/incident-evidence.mjs",
+        "adapters/openrig/lifecycle.mjs",
+        "adapters/openrig/manifest.json",
+        "adapters/openrig/mutation.mjs",
+        "adapters/openrig/native-handoff.mjs",
+        "adapters/openrig/operational-preflight.mjs",
+        "adapters/openrig/platform-fallback.mjs",
+        "adapters/openrig/recovery.mjs",
+        "adapters/openrig/runtime-capabilities.mjs",
         "agent-workflow.config.json",
+        "agents/templates/oracle-package.md",
         "bin/cli.mjs",
         "defaults/sdlc.config.json",
-        "docs/adr/index.md",
-        "docs/agent-workflow.md",
-        "docs/guiding-principles.md",
-        "docs/issue-standards.md",
-        "docs/maintainers/process-autonomy-completion.md",
-        "docs/maintainers/process-autonomy-reconciliation.md",
-        "docs/process-autonomy/adoption-matrix.md",
-        "docs/process-autonomy/harness-dispatch.md",
-        "docs/run-operations.md",
-        "lib/__tests__/codex-engineering.test.mjs",
-        "lib/__tests__/context-service.test.mjs",
-        "lib/__tests__/delegation-source-races.test.mjs",
-        "lib/__tests__/engineering-evidence.test.mjs",
-        "lib/__tests__/engineering-neutral-conformance.test.mjs",
-        "lib/__tests__/github-delivery-actions.test.mjs",
-        "lib/__tests__/handover-protocol.test.mjs",
-        "lib/__tests__/harness-execution-contract.test.mjs",
-        "lib/__tests__/journal-process-recovery.test.mjs",
-        "lib/__tests__/journaled-run-store.test.mjs",
-        "lib/__tests__/onboarding-retrospective.test.mjs",
-        "lib/__tests__/portable-continuation.test.mjs",
-        "lib/__tests__/process-analysis-dimensions.test.mjs",
-        "lib/__tests__/run-service.test.mjs",
-        "lib/__tests__/run-store-migration.test.mjs",
-        "lib/__tests__/telemetry-boundary-review.test.mjs",
-        "lib/application/context-service.mjs",
-        "lib/application/continuation-service.mjs",
+        "docs/evidence-contracts.md",
+        "docs/native-source-handoff.md",
+        "docs/openrig-recovery.md",
+        "docs/openrig-runtime-compatibility.md",
+        "docs/operators/adoption-516/agentflow-preview.md",
+        "docs/operators/adoption-516/dendro-preview.md",
+        "docs/operators/adoption-516/desired-execution.preview.json",
+        "docs/operators/adoption-516/installed-preview.snapshot.json",
+        "docs/operators/adoption-516/model-calibration-oracle.json",
+        "docs/operators/adoption-516/model-calibration.json",
+        "docs/operators/incident-evidence.md",
+        "docs/operators/index.md",
+        "docs/operators/openrig-execution-contracts.md",
+        "docs/operators/openrig-mutations.md",
+        "docs/process-autonomy/delegation.md",
+        "docs/steering-merge-authority.md",
+        "lib/__tests__/adopter-config-surface.test.mjs",
+        "lib/__tests__/configured-run-source.test.mjs",
+        "lib/__tests__/execution-contract-review.test.mjs",
+        "lib/__tests__/execution-contract.test.mjs",
+        "lib/__tests__/execution-policy-projection.test.mjs",
+        "lib/__tests__/fallback-health.test.mjs",
+        "lib/__tests__/handoff-completed-source.test.mjs",
+        "lib/__tests__/handoff-custody.test.mjs",
+        "lib/__tests__/handoff-distinct-key.test.mjs",
+        "lib/__tests__/handoff-immutable-input.test.mjs",
+        "lib/__tests__/handoff-oracle-composition.test.mjs",
+        "lib/__tests__/handoff-outbox-consistency.test.mjs",
+        "lib/__tests__/handoff-pointer-numbers.test.mjs",
+        "lib/__tests__/native-oracle-assignment.test.mjs",
+        "lib/__tests__/openrig-handoff-pipeline.test.mjs",
+        "lib/__tests__/openrig-platform-fallback.test.mjs",
+        "lib/__tests__/oracle-case-scope.test.mjs",
+        "lib/__tests__/oracle-custody.test.mjs",
+        "lib/__tests__/oracle-package.test.mjs",
+        "lib/__tests__/oracle-writer-admission.test.mjs",
+        "lib/__tests__/oracle-writer-scope-regression.test.mjs",
+        "lib/__tests__/queue-action.test.mjs",
+        "lib/__tests__/rig-mutation-action.test.mjs",
+        "lib/__tests__/steering-binding.test.mjs",
+        "lib/__tests__/steering-merge-policy.test.mjs",
+        "lib/adapters/lifecycle.mjs",
+        "lib/application/configured-run-source.mjs",
         "lib/application/run-service.mjs",
+        "lib/config/authority.mjs",
+        "lib/config/execution-contract.mjs",
+        "lib/config/execution-defaults.mjs",
+        "lib/config/harness-defaults.mjs",
+        "lib/config/harness-intelligence.mjs",
+        "lib/config/projection.mjs",
+        "lib/core/delegation-grant.mjs",
+        "lib/core/delivery-policy.mjs",
+        "lib/core/execution-receipt.mjs",
+        "lib/core/model-family.mjs",
+        "lib/core/oracle-custody.mjs",
+        "lib/core/oracle-package.mjs",
         "lib/core/run-state.mjs",
-        "lib/observability/analysis.mjs",
-        "lib/observability/events.mjs",
-        "lib/providers/codex-engineering.mjs",
-        "lib/providers/engineering-evidence.mjs",
-        "lib/providers/github-delivery-actions.mjs",
-        "lib/providers/governed-engineering.mjs",
-        "lib/providers/harness-dispatch.mjs",
-        "lib/providers/local-cli.mjs",
-        "lib/providers/registry.mjs",
-        "lib/runtime/context-sanitizer.mjs",
-        "lib/runtime/handover-protocol.mjs",
-        "lib/sources/github-api-cli.mjs",
-        "lib/sources/journaled-run-store.mjs",
-        "lib/sources/pending-audit-journal.mjs",
-        "lib/sources/segmented-run-store.mjs",
+        "lib/core/steering-binding.mjs",
+        "lib/core/steering-merge-policy.mjs",
+        "lib/evidence-contracts.mjs",
+        "lib/verification/oracle-package-resolver.mjs",
+        "lib/verification/process-collector.mjs",
         "package.json",
         "pnpm-lock.yaml",
-        "schemas/delivery-config.schema.json",
-        "schemas/engineering-capability.schema.json",
-        "schemas/engineering-lifecycle.schema.json",
-        "schemas/engineering-request.schema.json",
-        "schemas/engineering-result.schema.json",
-        "scripts/__tests__/delegation-journey.test.mjs",
-        "scripts/__tests__/run-delivery-delegation.test.mjs",
-        "scripts/__tests__/run-delivery-replay-exit.test.mjs",
-        "scripts/benchmark-process-telemetry.mjs",
-        "scripts/benchmark-run-telemetry.mjs",
-        "scripts/benchmark-segmented-run-store.mjs",
-        "scripts/run-delivery.mjs"
+        "schemas/agentflow-config.schema.json",
+        "schemas/delegation-grant.schema.json",
+        "schemas/oracle-custody.schema.json",
+        "schemas/oracle-package.schema.json",
+        "schemas/run-event.schema.json",
+        "schemas/sdlc-config.schema.json",
+        "schemas/verification-observation.schema.json",
+        "scripts/__tests__/adapter-lifecycle.test.mjs",
+        "scripts/__tests__/adoption-preview.test.mjs",
+        "scripts/__tests__/execution-plan-cli.test.mjs",
+        "scripts/__tests__/handoff-hold.test.mjs",
+        "scripts/__tests__/operational-preflight-cli.test.mjs",
+        "scripts/__tests__/project-routing-adoption.test.mjs",
+        "scripts/__tests__/run-incidents.test.mjs",
+        "scripts/__tests__/steer.test.mjs",
+        "scripts/__tests__/steering-assignment-authority.test.mjs",
+        "scripts/__tests__/steering-authority-review.test.mjs",
+        "scripts/__tests__/steering-authority.test.mjs",
+        "scripts/__tests__/steering-help.test.mjs",
+        "scripts/__tests__/steering-merge-authority.test.mjs",
+        "scripts/run-delivery.mjs",
+        "scripts/steer.mjs",
+        "scripts/validate-evidence-contract.mjs"
       ],
       "context": {
-        "workstream": "autonomy-completion",
-        "scope": "explicit changed files and repository policy; refresh before a new workstream"
+        "workstream": "goal-516",
+        "scope": "Execution contracts, preflight, oracle authority/assurance, steering, custody/recovery, mutation, Pi compatibility and held adoption; issues 517-528 and 530"
       }
     },
     "checks": {
@@ -277,7 +359,84 @@
         "assertions": ["complete regression suite passes"],
         "format": "exit-code",
         "timeoutMs": 180000,
-        "inheritEnv": ["TEMP", "TMP", "HOME", "USERPROFILE"]
+        "inheritEnv": ["TEMP", "TMP", "HOME", "USERPROFILE", "TMPDIR"]
+      },
+      "openrig-execution-contract": {
+        "id": "openrig-execution-contract",
+        "criterionId": "execution-contract-regression",
+        "executable": "node",
+        "args": [
+          "node_modules/vitest/vitest.mjs",
+          "run",
+          "lib/__tests__/execution-contract.test.mjs",
+          "lib/__tests__/execution-contract-review.test.mjs",
+          "lib/__tests__/execution-policy-projection.test.mjs",
+          "lib/__tests__/config-authority.test.mjs",
+          "lib/__tests__/config-projection.test.mjs",
+          "lib/__tests__/config-suite.test.mjs",
+          "lib/__tests__/openrig-platform-fallback.test.mjs",
+          "adapters/openrig/__tests__/execution-plan.test.mjs",
+          "adapters/openrig/__tests__/execution-route-roundtrip.test.mjs",
+          "scripts/__tests__/execution-plan-cli.test.mjs",
+          "scripts/__tests__/adapter-lifecycle.test.mjs"
+        ],
+        "assertions": ["execution-contract-regressions-pass"],
+        "format": "exit-code",
+        "timeoutMs": 120000,
+        "inheritEnv": ["HOME", "USERPROFILE"]
+      },
+      "openrig-preflight": {
+        "id": "openrig-preflight",
+        "criterionId": "operational-preflight-regression",
+        "executable": "node",
+        "args": [
+          "node_modules/vitest/vitest.mjs",
+          "run",
+          "adapters/openrig/__tests__/operational-preflight.test.mjs",
+          "adapters/openrig/__tests__/operational-preflight-review.test.mjs",
+          "scripts/__tests__/operational-preflight-cli.test.mjs",
+          "scripts/__tests__/adapter-lifecycle.test.mjs"
+        ],
+        "assertions": ["operational-preflight-regressions-pass"],
+        "format": "exit-code",
+        "timeoutMs": 120000,
+        "inheritEnv": ["HOME", "USERPROFILE"]
+      },
+      "steering-authority": {
+        "id": "steering-authority",
+        "criterionId": "steering-authority-regression",
+        "executable": "node",
+        "args": [
+          "node_modules/vitest/vitest.mjs",
+          "run",
+          "lib/__tests__/steering-binding.test.mjs",
+          "scripts/__tests__/steering-authority.test.mjs",
+          "scripts/__tests__/steering-authority-review.test.mjs",
+          "scripts/__tests__/steer.test.mjs"
+        ],
+        "assertions": ["steering-authority-regressions-pass"],
+        "format": "exit-code",
+        "timeoutMs": 120000,
+        "inheritEnv": ["HOME", "USERPROFILE"]
+      },
+      "steering-publication": {
+        "id": "steering-publication",
+        "criterionId": "steering-publication-regression",
+        "executable": "node",
+        "args": [
+          "node_modules/vitest/vitest.mjs",
+          "run",
+          "lib/__tests__/steering-merge-policy.test.mjs",
+          "scripts/__tests__/steering-merge-authority.test.mjs",
+          "scripts/__tests__/steer.test.mjs",
+          "lib/__tests__/steering-binding.test.mjs",
+          "scripts/__tests__/steering-authority.test.mjs",
+          "scripts/__tests__/steering-authority-review.test.mjs"
+        ],
+        "assertions": ["steering-publication-regressions-pass"],
+        "format": "exit-code",
+        "timeoutMs": 120000,
+        "inheritEnv": ["HOME", "USERPROFILE"]
       }
     },
     "contracts": {
@@ -303,6 +462,72 @@
         "materiality": "fixed-scope-v1",
         "allowSubdelegation": false,
         "safetyReserve": 4
+      }
+    }
+  },
+  "adapters": {
+    "openrig": {
+      "executionPolicy": {
+        "preset": "all-codex",
+        "seats": {
+          "orch.arch": {
+            "runtime": "codex",
+            "providerRoute": "openai-codex",
+            "model": "gpt-6.1-sol",
+            "effort": "medium",
+            "profile": "architect"
+          },
+          "dev.build": {
+            "runtime": "pi",
+            "providerRoute": "munito",
+            "model": "qwen/qwen3.8-27b",
+            "effort": "medium",
+            "profile": "builder-pi"
+          },
+          "dev.qa": {
+            "runtime": "codex",
+            "providerRoute": "openai-codex",
+            "model": "gpt-6.1-sol",
+            "effort": "low",
+            "profile": "qa"
+          },
+          "rev.review": {
+            "runtime": "claude-code",
+            "providerRoute": "anthropic",
+            "model": "claude-sonnet-5-5",
+            "effort": "medium",
+            "profile": "reviewer"
+          },
+          "eval.tester": {
+            "runtime": "codex",
+            "providerRoute": "openai-codex",
+            "model": "gpt-6.1-sol",
+            "effort": "low",
+            "profile": "eval-tester"
+          },
+          "pm.manager": {
+            "runtime": "codex",
+            "providerRoute": "openai-codex",
+            "model": "gpt-6.1-sol",
+            "effort": "medium",
+            "profile": "product-manager"
+          },
+          "pm.analyst": {
+            "runtime": "codex",
+            "providerRoute": "openai-codex",
+            "model": "gpt-6.1-sol",
+            "effort": "medium",
+            "profile": "analyst"
+          },
+          "steer.lead": {
+            "runtime": "codex",
+            "providerRoute": "openai-codex",
+            "model": "gpt-6.1-sol",
+            "effort": "medium",
+            "profile": "steering-lead"
+          }
+        },
+        "activation": "held"
       }
     }
   }

@@ -73,7 +73,18 @@
           "type": "array",
           "minItems": 1,
           "uniqueItems": true,
-          "items": { "enum": ["edit", "commit", "push", "pr:create", "pr:update", "merge"] }
+          "items": {
+            "enum": [
+              "edit",
+              "commit",
+              "push",
+              "pr:create",
+              "pr:update",
+              "merge",
+              "rig:mutate",
+              "queue:create"
+            ]
+          }
         },
         "capabilities": {
           "type": "array",

@@ -14,4 +14,9 @@ You own test design, oracle definition, and pre-implementation test contracts fo
 
 3. **Path Ownership Boundaries**:
    - You own `tests/oracles/**` and test verification suites.
-   - Under mechanical path ownership rules, you **cannot edit `src/**` or `lib/**`**. Application implementation is strictly owned by builder seats.
+   - The canonical `test-eng-source-guard` in `manifests/path-ownership.json` allows `tests/**`, `lib/__tests__/**`, `scripts/__tests__/**`, and `guidance/**`, denies `src/**`, and denies every other path by default. Application implementation is owned by builder seats.
+
+4. **Assignment and Custody**:
+   - A profile declaration or seat name is not permission to write. Before dispatch, require an explicit persistent or bounded temporary assignment resolved from current source authority.
+   - Record the execution identity, isolated worktree, allowed paths, goal/run/epoch/fence binding, oracle custody, expiry, feature-builder identity and independent reviewer identity. Do not reuse a feature builder or read-only reviewer as the oracle writer.
+   - After two failed repair rounds, stop replaying the previous instruction. Require a revised bounded repair scope, previous/new scope revisions, reason and accountable planner before redispatch.
