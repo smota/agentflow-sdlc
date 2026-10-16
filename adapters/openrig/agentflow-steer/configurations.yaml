@@ -1,5 +1,5 @@
 schema: openrig.bundle-configurations/v1
-recommended: claude-lead
+recommended: subscription-balanced-v1
 
 seats:
   steer.lead:
@@ -55,3 +55,15 @@ presets:
       providerRoute: antigravity
   frontline:
     steer.lead: codex
+  subscription-balanced-v1:
+    steer.lead:
+      runtime: codex
+      executionTarget: codex-cli
+      providerRoute: openai-codex
+      providerFamily: openai
+      model: gpt-6.1-sol
+      effort: medium
+distribution:
+  profile: subscription-balanced-v1
+  profileDigest: ee486327708eb3de6b1cb67c825358af8679d9e0d9a8b6ca0164f14c1cfe8fcc
+  overrides: {}

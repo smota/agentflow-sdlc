@@ -17,7 +17,7 @@ This adapter integrates AgentFlow SDLC with [OpenRig](https://openrig.dev/), pro
 
 - **`agentflow/`**: Canonical OpenRig Delivery Rig Bundle (Lean 4-Seat Default Squad + optional `eval.tester`).
   - `rig.yaml`: Pods `orch` (`orch.arch`), `dev` (`dev.build`, `dev.qa`), `rev` (`rev.review`), and `eval` (`eval.tester`) calibrated to `effort: medium` (primary reasoning loops) and `effort: low` (QA/verification) to prevent high-effort context degradation.
-  - `configurations.yaml`: 2026 presets (`frontline`, `all-antigravity`, `all-codex`, `all-claude`, `all-grok`) with orthogonal builder (`antigravity/gemini-4-argon`) and reviewer (`gpt-6-astra`) defaults.
+  - `configurations.yaml`: 2026 presets (`frontline`, `all-antigravity`, `all-codex`, `all-claude`, `all-grok`) with orthogonal builder (`antigravity/gemini-3.8-flash`) and reviewer (`gpt-6-astra`) defaults.
   - `CULTURE.md`: AgentFlow SDLC laws (mandatory Git Worktrees, Four-Eyes Principle, proof contracts before code, L2 subagent delegation, and `P0`/`P1` Composite Phase 3–5 Builder Pass).
   - `agents/agentflow/`: Agent manifests, profiles, guidance, and vendored skills.
 - **`agentflow-product/`**: Generic product squad base (`pm.manager`, `pm.analyst`) with outbox handoff and multi-writer admission (`handoff-step.mjs`, `pipeline-admission.mjs`).
@@ -98,3 +98,7 @@ agentflow-sdlc adapters squads remove openrig [--purge] my-project
 
 See [Pi runtime observation compatibility](../../docs/openrig-runtime-compatibility.md) for
 the local upstream candidate, unsupported live observation, and preflight admission limits.
+
+## Versioned distribution
+
+[Execution distributions](../../docs/execution-distributions.md) own the selected role/model/client/effort matrix and both fallbacks. The generated default is `subscription-balanced-v1`. Project selections and overrides survive software updates; policy migrations require their own explicit preview/confirmation. Legacy fallback tables apply only without a selected distribution.

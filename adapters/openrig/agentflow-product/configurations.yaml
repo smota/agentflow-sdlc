@@ -1,5 +1,5 @@
 schema: openrig.bundle-configurations/v1
-recommended: balanced-grok-lead
+recommended: subscription-balanced-v1
 
 seats:
   pm.manager:
@@ -69,3 +69,22 @@ presets:
     pm.analyst:
       runtime: pi
       providerRoute: antigravity
+  subscription-balanced-v1:
+    pm.manager:
+      runtime: pi
+      executionTarget: pi-session
+      providerRoute: grok
+      providerFamily: xai
+      model: grok-4.7
+      effort: medium
+    pm.analyst:
+      runtime: pi
+      executionTarget: pi-session
+      providerRoute: antigravity
+      providerFamily: google
+      model: gemini-3.8-flash
+      effort: medium
+distribution:
+  profile: subscription-balanced-v1
+  profileDigest: ee486327708eb3de6b1cb67c825358af8679d9e0d9a8b6ca0164f14c1cfe8fcc
+  overrides: {}

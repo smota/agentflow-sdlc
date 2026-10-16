@@ -1,11 +1,9 @@
 version: '0.2'
 name: agentflow
-summary: >
-  AgentFlow SDLC Lean 4-Seat delivery squad for parallel, independent development
-  with rigorous proof contracts, worktree isolation, L2 native subagents,
-  P0/P1 Composite Phase 3-5 Builder Pass, Codex GPT-6.1 Sol / Astra lead architecture
-  and orthogonal review (medium effort), Gemini 4 Argon builder via Pi (medium effort),
-  and Grok 4.7 / Gemini 3.8 Flash QA & Eval (low effort).
+summary: >-
+  Subscription-balanced AgentFlow squad. Resolve the pinned distribution for
+  model, client, effort and two ordered fallbacks; preserve workflow and
+  publication authority.
 
 culture_file: CULTURE.md
 
@@ -28,7 +26,8 @@ non_interruptive: true
 pods:
   - id: orch
     label: Orchestration & Governance
-    summary: Architect lead decomposes goals, sets workflow profiles (P0-P4), pins oracle digests, and convenes clean-context L2 Council subagents.
+    summary: Architect lead decomposes goals, sets workflow profiles (P0-P4), pins
+      oracle digests, and convenes clean-context L2 Council subagents.
     members:
       - id: arch
         agent_ref: 'local:agents/agentflow'
@@ -46,13 +45,15 @@ pods:
 
   - id: dev
     label: Development & Verification
-    summary: Primary builder implements in isolated .worktrees/<branch> using L2 subagents (Composite Phase 3-5 for P0/P1); QA validates P2-P4 and high-consequence proof contracts.
+    summary: Primary builder implements in isolated .worktrees/<branch> using L2
+      subagents (Composite Phase 3-5 for P0/P1); QA validates P2-P4 and
+      high-consequence proof contracts.
     members:
       - id: build
         agent_ref: 'local:agents/agentflow'
         profile: builder-pi
         runtime: pi
-        model: antigravity/gemini-4-argon
+        model: antigravity/gemini-3.8-flash
         effort: medium
         cwd: '.'
       - id: qa
@@ -69,7 +70,8 @@ pods:
 
   - id: rev
     label: Independent Audit & Council
-    summary: Four-Eyes independent reviewer issues digest-bound verdicts and dispatches clean-context L2 subagents for P2-P4 deep reasoning.
+    summary: Four-Eyes independent reviewer issues digest-bound verdicts and
+      dispatches clean-context L2 subagents for P2-P4 deep reasoning.
     members:
       - id: review
         agent_ref: 'local:agents/agentflow'
@@ -87,7 +89,8 @@ pods:
 
   - id: eval
     label: Autonomous Dogfood & Evaluation
-    summary: Out-of-band exploratory testing against shipped artifacts and live endpoints. Emits backlog findings; never implements or gates PRs.
+    summary: Out-of-band exploratory testing against shipped artifacts and live
+      endpoints. Emits backlog findings; never implements or gates PRs.
     members:
       - id: tester
         agent_ref: 'local:agents/agentflow'

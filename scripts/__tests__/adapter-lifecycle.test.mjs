@@ -235,10 +235,12 @@ describe('adapters install openrig (AC3-AC6)', () => {
   it('preserves all base resources and materializes the selected execution preset', () => {
     const home = tempDir('agentflow-home-')
     const result = install(home)
-    expect(result.stdout).toContain('Preset: balanced-grok-lead')
+    expect(result.stdout).toContain('Preset: subscription-balanced-v1')
     for (const name of ['agentflow', 'agentflow-product', 'agentflow-steer']) {
       const installed = tree(specs(home, name))
       const source = tree(join(OPENRIG, name))
+      delete installed['execution-distribution.json']
+      delete installed['execution-distribution.json']
       delete installed['rig.yaml']
       delete source['rig.yaml']
       expect(installed).toEqual(source)
@@ -250,10 +252,10 @@ describe('adapters install openrig (AC3-AC6)', () => {
       ),
     )
     expect(seats).toMatchObject({
-      'orch.arch': 'pi',
-      'dev.build': 'claude-code',
-      'dev.qa': 'codex',
-      'rev.review': 'pi',
+      'orch.arch': 'codex',
+      'dev.build': 'pi',
+      'dev.qa': 'pi',
+      'rev.review': 'codex',
       'eval.tester': 'pi',
     })
   })
@@ -274,14 +276,14 @@ describe('adapters install openrig (AC3-AC6)', () => {
     writeFileSync(
       config,
       readFileSync(config, 'utf8').replace(
-        'recommended: balanced-grok-lead',
+        'recommended: subscription-balanced-v1',
         'recommended: all-claude',
       ),
     )
     const result = cli(['adapters', 'install', 'openrig-copy'], { home, env: copy.env })
     expect(result.status).toBe(1)
     expect(result.stderr).toContain(
-      'Delivery preset "balanced-grok-lead" and product preset "all-claude" differ',
+      'Delivery preset "subscription-balanced-v1" and product preset "all-claude" differ',
     )
     expect(readdirSync(home)).toEqual([])
   })
@@ -345,6 +347,71 @@ describe('adapters install openrig (AC3-AC6)', () => {
 })
 
 describe('adapters update openrig (AC7)', () => {
+  it('preserves a selected project-specific distribution override through exact software upgrade', () => {
+    const home = tempDir('agentflow-home-')
+    install(home)
+    const file = specs(home, 'agentflow/execution-distribution.json')
+    const selection = JSON.parse(readFileSync(file, 'utf8'))
+    const model = {
+      runtime: 'codex',
+      executionTarget: 'codex-cli',
+      providerRoute: 'openai-codex',
+      providerFamily: 'openai',
+      client: 'codex',
+      subscription: 'openai',
+      model: 'gpt-6.1-sol',
+      effort: 'medium',
+    }
+    selection.overrides = {
+      'dev.build': {
+        reason: 'Person-approved project distribution',
+        options: [
+          model,
+          {
+            ...model,
+            runtime: 'pi',
+            executionTarget: 'pi-session',
+            providerRoute: 'antigravity',
+            providerFamily: 'google',
+            client: 'pi',
+            subscription: 'gemini',
+            model: 'gemini-3.8-flash',
+          },
+          {
+            ...model,
+            runtime: 'pi',
+            executionTarget: 'pi-session',
+            providerRoute: 'grok',
+            providerFamily: 'xai',
+            client: 'pi',
+            subscription: 'grok',
+            model: 'grok-4.7-build-fast',
+          },
+        ],
+      },
+    }
+    writeFileSync(file, JSON.stringify(selection))
+    ok(cli(['adapters', 'update', 'openrig', '--exact'], { home }))
+    expect(JSON.parse(readFileSync(file, 'utf8'))).toEqual(selection)
+    const rig = parse(readFileSync(specs(home, 'agentflow/rig.yaml'), 'utf8'))
+    expect(
+      rig.pods.find((p) => p.id === 'dev').members.find((m) => m.id === 'build'),
+    ).toMatchObject({ runtime: 'codex', model: 'gpt-6.1-sol', effort: 'medium' })
+  })
+  it('holds a changed distribution version before any installed update writes', () => {
+    const home = tempDir('agentflow-home-')
+    install(home)
+    const file = specs(home, 'agentflow/execution-distribution.json'),
+      selection = JSON.parse(readFileSync(file, 'utf8'))
+    selection.profileDigest = '0'.repeat(64)
+    writeFileSync(file, JSON.stringify(selection))
+    const before = tree(home),
+      r = cli(['adapters', 'update', 'openrig'], { home })
+    expect(r.status).toBe(1)
+    expect(r.stderr).toContain('digest mismatch')
+    expect(tree(home)).toEqual(before)
+  })
+
   it('refreshes the bases from the product copy and leaves squads in place', () => {
     const home = tempDir('agentflow-home-')
     const project = tempDir('agentflow-project-')
@@ -398,12 +465,13 @@ describe('adapters update openrig (AC7)', () => {
     expect(existsSync(specs(home, 'agentflow/startup/review-lead.md'))).toBe(false)
     const installed = tree(specs(home, 'agentflow'))
     const source = tree(join(copy.dir, 'agentflow'))
+    delete installed['execution-distribution.json']
     delete installed['rig.yaml']
     delete source['rig.yaml']
     expect(installed).toEqual(source)
     expect(
       parse(readFileSync(specs(home, 'agentflow/rig.yaml'), 'utf8')).pods[0].members[0].runtime,
-    ).toBe('pi')
+    ).toBe('codex')
   })
 
   it('tells the person to install first when nothing is installed', () => {
@@ -490,7 +558,7 @@ describe('adapters squads openrig (AC8-AC11)', () => {
     const project = tempDir('agentflow-project-')
     plantPi(home)
     provision(home, '--sibling', 'agentflow-pm', 'demo', project)
-    const seatState = join(home, '.openrig/state/pi/orch-arch@agentflow-demo/agent/session.json')
+    const seatState = join(home, '.openrig/state/pi/dev-build@agentflow-demo/agent/session.json')
     writeFileSync(seatState, '{"turn":7}')
     writeFileSync(specs(home, 'agentflow-demo/rig.yaml'), 'name: tampered\n')
     writeFileSync(specs(home, 'agentflow-demo/sibling.md'), 'stale\n')

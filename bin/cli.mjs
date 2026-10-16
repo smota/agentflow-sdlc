@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { handleDistribution } from '../lib/config/distribution-cli.mjs'
 import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs'
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path'
@@ -1058,10 +1059,12 @@ function handleResume(rest, targetDir) {
 }
 
 const ROOT_USAGE =
-  'Usage: agentflow-sdlc <init|run|doctor|doctor-env|config|adopt|providers|adapters|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding|onboarding-prompt|wizard|release-plan|handoff|resume|phase|board|gates|mcp|project|goal|steer> [path] [--target <dir>] [--json]\n' +
+  'Usage: agentflow-sdlc <init|run|distribution|doctor|doctor-env|config|adopt|providers|adapters|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding|onboarding-prompt|wizard|release-plan|handoff|resume|phase|board|gates|mcp|project|goal|steer> [path] [--target <dir>] [--json]\n' +
   'Execution adapters: agentflow-sdlc adapters <install|update|squads provision|squads update|squads list|squads remove> <id> (see agentflow-sdlc adapters --help)\n'
 
 const COMMAND_USAGE = {
+  distribution:
+    'Usage: agentflow-sdlc distribution <catalog|inspect|check|plan|apply|undo> [--target <dir>] [--json]\n',
   steer:
     'Usage: agentflow-sdlc steer <assign|unfreeze|triage|merge-check> [options] [--json]\nSupervisory steering verbs for out-of-rig governance and merge verification.\n',
   goal: 'Usage: agentflow-sdlc goal <sync|status|ledger> <number> [--records <file>] [--section <name>] [--apply] [--json]\nManage goal child completion tracking and synchronized delivery ledger.\n',
@@ -1234,6 +1237,7 @@ function main() {
     return handleSkills(rest, targetDir)
   }
 
+  if (command === 'distribution') return handleDistribution(rest)
   if (command === 'roles') {
     try {
       return handleRoles(rest, targetDir)

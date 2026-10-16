@@ -1,5 +1,5 @@
 schema: openrig.bundle-configurations/v1
-recommended: balanced-grok-lead
+recommended: subscription-balanced-v1
 
 seats:
   # Optional capability registry, not a provisioned member or permission grant.
@@ -158,6 +158,63 @@ presets:
     rev.review:
       runtime: pi
       providerRoute: antigravity
+  subscription-balanced-v1:
+    dev.test-eng:
+      runtime: pi
+      executionTarget: pi-session
+      providerRoute: antigravity
+      providerFamily: google
+      model: gemini-3.1-pro
+      effort: medium
+    orch.arch:
+      runtime: codex
+      executionTarget: codex-cli
+      providerRoute: openai-codex
+      providerFamily: openai
+      model: gpt-6.1-sol
+      effort: medium
+    dev.build-jr:
+      runtime: pi
+      executionTarget: pi-session
+      providerRoute: grok
+      providerFamily: xai
+      model: grok-4.7-build-fast
+      effort: low
+    dev.build:
+      runtime: pi
+      executionTarget: pi-session
+      providerRoute: antigravity
+      providerFamily: google
+      model: gemini-3.8-flash
+      effort: medium
+    dev.build-sr:
+      runtime: pi
+      executionTarget: pi-session
+      providerRoute: antigravity
+      providerFamily: google
+      model: gemini-3.1-pro
+      effort: medium
+    dev.qa:
+      runtime: pi
+      executionTarget: pi-session
+      providerRoute: grok
+      providerFamily: xai
+      model: grok-4.7
+      effort: low
+    rev.review:
+      runtime: codex
+      executionTarget: codex-cli
+      providerRoute: openai-codex
+      providerFamily: openai
+      model: gpt-6-astra
+      effort: medium
+    eval.tester:
+      runtime: pi
+      executionTarget: pi-session
+      providerRoute: antigravity
+      providerFamily: google
+      model: gemini-3.8-flash
+      effort: low
 
 effort_policy:
   default_loop_effort: medium
@@ -170,3 +227,7 @@ effort_policy:
 # These optional maps contain deliberate bundle overrides, never a copied default matrix.
 capability_tiers: {}
 fallback_chains: {}
+distribution:
+  profile: subscription-balanced-v1
+  profileDigest: ee486327708eb3de6b1cb67c825358af8679d9e0d9a8b6ca0164f14c1cfe8fcc
+  overrides: {}

@@ -54,3 +54,11 @@ When multiple goals or capabilities await assignment, the steering lead may cons
 4. **Non-Disruptive Human Interaction (`BTW` Mode & `--no-nudge` Intake)**:
    - **BTW Queries (`steer btw`)**: Humans and supervisors perform read-only status and board inspection without interrupting in-flight workers. BTW queries never invoke `rig send` or `rig nudge` (`mode: 'read-only-no-nudge'`, `nudgeDispatched: false`).
    - **Non-Disruptive Assignment (`steer assign --no-nudge`)**: In-flight backlog grooming passes `--no-nudge` to buffer new capability briefs in the destination seat's queue, omitting conversational notifications so worker agents finish their current turn uninterrupted until the next phase boundary.
+
+<!-- BEGIN AgentFlow EXECUTION DISTRIBUTION -->
+
+## Execution distribution
+
+Resolve this project's pinned `executionDistribution` with `agentflow-sdlc distribution inspect` before routing, provisioning, expansion, recovery or upgrades. The shared template profile is `subscription-balanced-v1`; an existing project selection and reasoned overrides take precedence. Run `distribution check --rig <path>` for installed drift. Software upgrades and calibration preserve the selected distribution. Quota recovery selects an eligible approved fallback at a safe checkpoint; it does not rewrite defaults. Model, effort, client and both fallback options come from the resolved policy. Record actual execution separately. A policy change uses `distribution plan` and exact-confirmed `distribution apply`; the person authorizes that migration separately from a software upgrade. Unsupported enforcement or unavailable observation remains explicit.
+
+<!-- END AgentFlow EXECUTION DISTRIBUTION -->

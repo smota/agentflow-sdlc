@@ -269,7 +269,7 @@ describe('agentflow-steer base rig and session guard (Issue #481)', () => {
       const configPath = join(BASE_DIR, 'configurations.yaml')
       expect(existsSync(configPath)).toBe(true)
       const content = readFileSync(configPath, 'utf8')
-      expect(content).toContain('recommended: claude-lead')
+      expect(content).toContain('recommended: subscription-balanced-v1')
       expect(content).toContain('claude-lead:')
       expect(content).toContain('codex-lead:')
       expect(content).toContain('pi-lead:')

@@ -4,6 +4,17 @@ This file is the required first-read policy document for agents working in this 
 
 If this file is missing in a checkout, stop before implementation or gate decisions and create a process follow-up unless the active issue is specifically restoring this file. Do not silently substitute another document as the single source of truth.
 
+## Execution distribution
+
+Before model selection, routing, expansion, recovery or upgrades, resolve the project's pinned
+`executionDistribution` with `agentflow-sdlc distribution inspect`. Follow
+[the distribution contract](docs/execution-distributions.md) for defaults, client/effort selection,
+both fallbacks, overrides and drift checks. Software upgrades, calibration and quota recovery
+preserve the selected distribution. A policy migration requires its own before/after preview and
+explicit person authorization; it is separate from a software upgrade. Temporary fallback choices
+leave saved defaults unchanged. Record actual model, effort and client separately from desired
+configuration; unavailable or unsupported observation remains unknown.
+
 ## Required reading order
 
 Before issue work, architecture proposals, file writes, commits, or gate decisions, read:

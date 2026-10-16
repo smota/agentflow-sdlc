@@ -30,7 +30,8 @@
     "format:check": "prettier --check .",
     "validate:npm": "node scripts/validate-npm-package.mjs",
     "validate:reachability": "node scripts/audit-reachability.mjs",
-    "validate:release": "pnpm format:check && pnpm test && pnpm test:hooks && pnpm test:workflow && pnpm validate:authority && pnpm validate:extensions && pnpm validate:skills && pnpm validate:roles && pnpm validate:paths && pnpm validate:docs && pnpm validate:reachability && pnpm test:evals && pnpm test:collaboration && pnpm test:package && node scripts/sdlc-sandbox-smoke.mjs && node scripts/cockpit-smoke.mjs && node scripts/validate-npm-package.mjs"
+    "validate:release": "pnpm format:check && pnpm test && pnpm test:hooks && pnpm test:workflow && pnpm validate:distribution && pnpm validate:authority && pnpm validate:extensions && pnpm validate:skills && pnpm validate:roles && pnpm validate:paths && pnpm validate:docs && pnpm validate:reachability && pnpm test:evals && pnpm test:collaboration && pnpm test:package && node scripts/sdlc-sandbox-smoke.mjs && node scripts/cockpit-smoke.mjs && node scripts/validate-npm-package.mjs",
+    "validate:distribution": "node scripts/generate-execution-distribution.mjs"
   },
   "devDependencies": {
     "prettier": "^3.3.3",

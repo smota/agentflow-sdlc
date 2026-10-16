@@ -12,39 +12,28 @@ import {
 const config = loadProjectConfig(process.cwd())
 describe('AgentFlow source routing adoption (#527)', () => {
   it.each([
-    'product-manager',
-    'analyst',
-    'architect',
-    'implementation-planner',
-    'developer',
-    'tester',
-    'pr-readiness',
-  ])('selects explicit native Codex for %s regardless of launcher', (role) => {
+    ['product-manager', 'pi', 'grok-4.7', 'medium'],
+    ['analyst', 'pi', 'gemini-3.8-flash', 'medium'],
+    ['architect', 'codex', 'gpt-6.1-sol', 'medium'],
+    ['implementation-planner', 'codex', 'gpt-6.1-sol', 'medium'],
+    ['developer', 'pi', 'gemini-3.8-flash', 'medium'],
+    ['tester', 'pi', 'grok-4.7', 'low'],
+    ['pr-readiness', 'codex', 'gpt-6.1-sol', 'medium'],
+    ['reviewer', 'codex', 'gpt-6-astra', 'medium'],
+    ['technical-writer', 'pi', 'gemini-3.8-flash', 'low'],
+  ])('resolves pinned balanced %s regardless of launcher', (role, client, model, effort) => {
     const route = resolveRoleRoute({ role, currentAgent: 'grok', config, checkAvailability: false })
     expect(route.ok).toBe(true)
-    expect(route.selectedAgent).toBe('codex')
-    expect(route.executor).toBe('codex-cli')
+    expect(route.selectedAgent).toBe(client)
+    expect(route.desiredExecution).toMatchObject({ model, effort })
+    expect(route.actualExecution).toBe('unknown')
+    expect(route.fallbackOptions).toHaveLength(2)
   })
-  it.each(['reviewer', 'technical-writer'])('selects explicit native Claude for %s', (role) => {
-    const route = resolveRoleRoute({
-      role,
-      currentAgent: 'codex',
-      config,
-      checkAvailability: false,
-    })
-    expect(route.ok).toBe(true)
-    expect(route.selectedAgent).toBe('claude')
-    expect(route.executor).toBe('claude-cli')
-  })
-  it('keeps Pi unqualified for active routing and removes obsolete Grok fallbacks', () => {
-    expect(config.routing.agents.pi).toMatchObject({
-      enabled: false,
-      defaultExecutionTarget: 'pi-parent',
-    })
-    for (const route of Object.values(config.routing.roles)) {
-      expect([route.owner, ...route.fallbacks]).not.toContain('grok')
-      expect([route.owner, ...route.fallbacks]).not.toContain('pi')
-    }
+  it('keeps model distribution separate from legacy launcher-routing and Munito qualification', () => {
+    expect(config.routing.agents.pi.enabled).toBe(true)
+    expect(config.executionDistribution.profile).toBe('subscription-balanced-v1')
+    expect(config.adapters.openrig.executionPolicy.seats).toBeUndefined()
+    expect(config.adapters.openrig.executionPolicy.activation).toBe('held')
   })
   it('retains medium loops, low search and fresh bounded high-effort enforcement', () => {
     expect(config.effortPolicy).toMatchObject({
