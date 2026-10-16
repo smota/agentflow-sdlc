@@ -117,3 +117,39 @@ changed. This supersedes the earlier dated statement that this parse-only repair
 The actual public planning command using the real installed bases now succeeds with eight held
 contracts and `effects: []`. Installed project rigs, runtime observation, historical custody and
 human acceptance remain separate obligations. Repairing YAML syntax does not establish readiness.
+
+## Environment deployment checkpoint — 2026-10-16
+
+After both source PRs merged, the person explicitly requested full environment and project
+application and clarified that existing project rigs must reflect the updates. Both original
+checkouts were advanced to their merged revisions on rollout branches; pre-existing modifications
+were restored. A clean merged checkout refreshed shared bases. Transactional adoption refreshed
+Dendro's managed framework with its rollback journal; project-generated regular role, command,
+plugin and settings files were refreshed. Runtime-managed skill links were preserved.
+
+The five existing project definitions (`agentflow-dev`, `agentflow-pm`, `agentflow-steer`,
+`dendro-dev`, `dendro-pm`) were updated as an explicitly authorized offline administrative
+configuration deployment. Dendro's seven running sessions were snapshotted and stopped; all
+target occupants were verified exited, and the daemon was stopped during file deployment.
+Per-file before/after hashes, rollback copies, identity/cwd preservation and readback were
+recorded locally. No native workflow mutation, grant, history recovery or authenticated
+acceptance is claimed by this administrative exception to the prior installed-write hold.
+The shared daemon was restarted without kernel agents; no project occupants were resumed.
+
+Native preflight exposed two packaging defects: the steering permission policy used an invalid
+`local:` prefix, and the eval profile referenced an undeclared `writing-for-agents` resource.
+The relative policy reference now resolves the unchanged rules, and the existing local skill
+draft is vendored as regular portable files with its declaration. All five installed definitions
+pass native schema validation and preflight and are indexed as rigs. Preflight is not proof of
+provider access, effective live model selection or task authority.
+
+Dendro's refreshed verifier additionally requires exact project-scoped Ajv/yaml dependencies,
+tracked with its managed-framework deployment in smota/dendro#62. Its run/oracle/incident modules
+import successfully after locked installation. Feature backlog, existing publication holds and
+source/custody obligations remain unchanged; source activation stays held. The production
+source-bound online mutation host remains unimplemented.
+
+Deployment also reproduced maintenance-tool gaps: generic doctor disagrees with the public
+configuration doctor on valid consumer domain configs; skill sync would write generated wrappers
+through runtime-managed links; and adoption did not refresh all generated harness files. These
+remain disclosed follow-up work, rather than reasons to overwrite links or fabricate readiness.

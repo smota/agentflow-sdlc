@@ -10,7 +10,7 @@ culture_file: CULTURE.md
 docs:
   - path: README.md
 
-permission_policy: 'local:policies/steer.yaml'
+permission_policy: 'policies/steer.yaml'
 
 startup:
   files:

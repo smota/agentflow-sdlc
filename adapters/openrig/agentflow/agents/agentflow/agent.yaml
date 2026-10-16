@@ -34,6 +34,7 @@ resources:
     - { id: seat-continuity-and-handover, path: skills/seat-continuity-and-handover }
     - { id: session-compaction-and-restore, path: skills/session-compaction-and-restore }
     - { id: software-for-agents, path: skills/software-for-agents }
+    - { id: writing-for-agents, path: skills/writing-for-agents }
   runtime_resources:
     - id: claude-activity-hooks
       path: runtime/claude-activity-hooks.json

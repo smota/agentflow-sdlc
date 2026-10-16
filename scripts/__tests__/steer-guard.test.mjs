@@ -227,7 +227,7 @@ describe('agentflow-steer base rig and session guard (Issue #481)', () => {
       expect(existsSync(rigPath)).toBe(true)
       const content = readFileSync(rigPath, 'utf8')
       expect(content).toContain('name: agentflow-steer')
-      expect(content).toContain("permission_policy: 'local:policies/steer.yaml'")
+      expect(content).toContain("permission_policy: 'policies/steer.yaml'")
       expect(content).toContain('id: lead')
       expect(content).toContain('profile: steering-lead')
       expect(content).toContain("cwd: '.'")
