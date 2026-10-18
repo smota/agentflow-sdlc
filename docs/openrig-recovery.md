@@ -136,3 +136,19 @@ tests and did not approve deployment or human acceptance. Its two nonblocking su
 were incorporated: checkpoint payloads clone the local anchor, and both failed-operation
 paths explicitly require governed replanning. Actual model was `claude-haiku-5-5`, low
 effort requested, tools/MCP disabled; combined advisory cost was $0.01699490.
+
+## Optional quota checkpoints and fallback (`lib/config/quota-policy.mjs`)
+
+Proactive quota monitoring (`quotaControl`) is disabled by default (`enabled: false`) and
+evaluated via `evaluateSeatQuotaControl` (re-exported by `adapters/openrig/platform-fallback.mjs`)
+or `agentflow-sdlc distribution quota`. When enabled, it evaluates `weekly` and `five-hour`
+subscription windows (`thresholdRemainingPct: 25` example precedent) under a `most-restrictive`
+precedence rule, classifies observations as `supported`, `approximate`, `stale`, or `unavailable`,
+and rejects context-window token counts or transcript text as quota evidence.
+
+Crossing a quota threshold mid-phase requires reaching a safe checkpoint first
+(`QUOTA_THRESHOLD_REACH_CHECKPOINT`). At a safe checkpoint, fallback selection marks the shared
+subscription pool unavailable, preserves `excludedFamilies` for reviewer independence, and retains
+`owner`, `taskId`, `worktree`, `oracleCustodyDigest`, and `artifactDigests`. If no eligible
+fallback exists or concurrent-writer, cooldown, or switch-count guards trigger, the seat parks
+cleanly (`park-and-checkpoint`) without mutating saved policy or granting publication authority.

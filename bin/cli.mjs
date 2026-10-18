@@ -1064,7 +1064,7 @@ const ROOT_USAGE =
 
 const COMMAND_USAGE = {
   distribution:
-    'Usage: agentflow-sdlc distribution <catalog|inspect|check|plan|apply|undo> [--target <dir>] [--json]\n',
+    'Usage: agentflow-sdlc distribution <catalog|inspect|check|plan|apply|undo|quota> [--target <dir>] [--json]\n',
   steer:
     'Usage: agentflow-sdlc steer <setup|assign|unfreeze|triage|merge-check|liveness|btw> [options] [--json]\nSupervisory steering verbs for out-of-rig governance and merge verification.\n',
   goal: 'Usage: agentflow-sdlc goal <sync|status|ledger> <number> [--records <file>] [--section <name>] [--apply] [--json]\nManage goal child completion tracking and synchronized delivery ledger.\n',
