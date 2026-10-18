@@ -74,9 +74,9 @@ observed.
 operating preferences and resolved parameters only. They never authenticate a host steering endpoint,
 never satisfy `evaluateSteeringBinding` or `evaluateMergeReadiness`, and never grant merge, unfreeze,
 or publication authority. Prose guidance in skills and culture documents is advisory; runtime gates
-enforce authority and readiness independently. See `docs/execution-distributions.md` and
-`docs/steering-merge-authority.md` in the adopting project. Automatic quota monitoring remains
-separately tracked in #535.
+enforce authority and readiness independently. Optional quota checkpoints (`quotaControl.enabled: false`
+by default) can be inspected or evaluated via `agentflow-sdlc distribution quota --target <project> --json`.
+See `docs/execution-distributions.md` and `docs/steering-merge-authority.md` in the adopting project.
 
 ## Grooming protocol
 
