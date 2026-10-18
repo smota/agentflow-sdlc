@@ -24,13 +24,15 @@ it('steer setup --help succeeds without inspecting project state', () => {
   expect(result.stderr).not.toContain('ReferenceError')
 })
 
-it('steer setup --inspect --json reports the unconfirmed agreement', () => {
+it('steer setup --inspect --json reports the confirmed repository agreement', () => {
   const result = runCli(['steer', 'setup', '--inspect', '--json'])
   expect(result.status).toBe(0)
   expect(result.stderr).not.toContain('ReferenceError')
   const report = JSON.parse(result.stdout)
-  expect(report.ok).toBe(false)
-  expect(report.status).toBe('confirmation-required')
+  expect(report.ok).toBe(true)
+  expect(report.status).toBe('confirmed')
+  expect(report.alreadyConfirmed).toBe(true)
+  expect(report.reusedConfirmedAgreement).toBe(true)
   expect(report.agreement.goalScope).toBeTruthy()
   expect(report.agreement.steeringOwner).toBe('steer.lead')
   expect(report.agreement.executionDistribution.steerLeadRoute.default).toBeTruthy()
