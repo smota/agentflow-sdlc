@@ -63,3 +63,24 @@ The bounded CLI projection holds at 100 review or check entries rather than assu
 full projection proves complete history. Larger histories need an authoritative paginated reader.
 A GitHub User account is account-type evidence; it does not prove a physical person's presence.
 Actual publication still requires the authenticated human decision from the trusted host endpoint.
+
+## Guided steering setup and enforcement limits (`steer setup`)
+
+`lib/config/steering-agreement.mjs` and `agentflow-sdlc steer setup` resolve existing steering
+settings from `agent-workflow.config.json` (or unified `agentflow.config.json`), `sdlc.config.json`,
+and the pinned `executionDistribution` profile (`steer.lead` default and fallback routes).
+
+When valid parameters were already confirmed and match the current `confirmedDigest`, `steer setup`
+reuses them without re-prompting (`reusedConfirmedAgreement: true`). When `executionDistribution` or
+`goalScope` is missing, `steer setup` returns bounded questions for the missing fields; for
+`steeringOwner`, `returnRoute`, `reviewAndPublicationAuthority`, `quotaPolicy`, and
+`checkpointsAndStopConditions`, it presents the resolved defaults and requires an explicit
+digest-confirmed plan/apply step (`steer setup --plan` followed by
+`steer setup --apply --plan-file <file> --confirm <digest>`) before updating the project
+configuration.
+
+`steer-guard` blocks direct file edits and git mutations, not `agentflow-sdlc steer setup --apply`.
+Conversational parameter confirmation and `steer setup --apply` record operating preferences only.
+They never fabricate host authentication, never bypass `evaluateSteeringBinding` or
+`evaluateMergeReadiness`, and never grant merge, unfreeze, or publication authority. Prose guidance
+in skills and culture files is advisory; native runtime gates enforce authority independently.
