@@ -335,6 +335,102 @@
           }
         }
       }
+    },
+    "steering": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "type": "integer",
+          "const": 1
+        },
+        "goalScope": {
+          "type": ["string", "null"]
+        },
+        "steeringOwner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "returnRoute": {
+          "type": "string",
+          "minLength": 1
+        },
+        "executionDistribution": {
+          "type": ["object", "null"],
+          "additionalProperties": true
+        },
+        "reviewAndPublicationAuthority": {
+          "enum": [
+            "human-gated-merge",
+            "bounded-self-review-with-human-merge",
+            "high-assurance-human-signoff"
+          ]
+        },
+        "quotaPolicy": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "enum": ["park-and-checkpoint", "approved-fallback-only"]
+            },
+            "autoMonitoring": {
+              "type": "boolean"
+            }
+          }
+        },
+        "checkpointsAndStopConditions": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "checkpointBoundary": {
+              "enum": ["phase-boundary", "slice-boundary", "manual-only"]
+            },
+            "maxReworkRounds": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10
+            },
+            "supervisorStaleTimeoutMs": {
+              "type": "integer",
+              "minimum": 60000
+            },
+            "holdOnUnverifiedAuthority": {
+              "type": "boolean",
+              "const": true
+            }
+          }
+        },
+        "authorityBoundary": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "conversationalConfirmationGrantsAuthority": {
+              "type": "boolean",
+              "const": false
+            },
+            "bypassesSteeringBinding": {
+              "type": "boolean",
+              "const": false
+            },
+            "bypassesMergeReadiness": {
+              "type": "boolean",
+              "const": false
+            },
+            "fabricatesHostAuthentication": {
+              "type": "boolean",
+              "const": false
+            },
+            "grantsPublicationOrMergePower": {
+              "type": "boolean",
+              "const": false
+            }
+          }
+        },
+        "confirmedDigest": {
+          "type": ["string", "null"],
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
     }
   },
   "additionalProperties": true

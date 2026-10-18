@@ -14,8 +14,10 @@ const write = process.argv.includes('--write')
 let drift = false
 function output(path, text) {
   const file = resolve(root, path)
-  if (readFileSync(file, 'utf8') === text) return
-  if (write) writeFileSync(file, text)
+  const existing = readFileSync(file, 'utf8').replace(/\r\n/g, '\n')
+  const normalized = text.replace(/\r\n/g, '\n')
+  if (existing === normalized) return
+  if (write) writeFileSync(file, normalized)
   else {
     drift = true
     process.stderr.write(`Distribution projection differs: ${path}\n`)
@@ -23,7 +25,7 @@ function output(path, text) {
 }
 for (const bundle of ['agentflow', 'agentflow-product', 'agentflow-steer']) {
   const path = `adapters/openrig/${bundle}/configurations.yaml`,
-    text = readFileSync(resolve(root, path), 'utf8'),
+    text = readFileSync(resolve(root, path), 'utf8').replace(/\r\n/g, '\n'),
     doc = parseDocument(text, { uniqueKeys: true })
   if (doc.errors.length) throw doc.errors[0]
   const seats = Object.keys(doc.toJS().seats),
@@ -38,7 +40,7 @@ for (const bundle of ['agentflow', 'agentflow-product', 'agentflow-steer']) {
   doc.setIn(['presets', profile.id], presets)
   output(path, doc.toString())
   const rigPath = `adapters/openrig/${bundle}/rig.yaml`,
-    rigText = readFileSync(resolve(root, rigPath), 'utf8')
+    rigText = readFileSync(resolve(root, rigPath), 'utf8').replace(/\r\n/g, '\n')
   const planned = planRigExecution({
     rigText,
     configText: doc.toString(),
@@ -59,7 +61,7 @@ for (const bundle of ['agentflow', 'agentflow-product', 'agentflow-steer']) {
   )
   output(rigPath, rigDoc.toString())
   const culture = `adapters/openrig/${bundle}/CULTURE.md`,
-    current = readFileSync(resolve(root, culture), 'utf8'),
+    current = readFileSync(resolve(root, culture), 'utf8').replace(/\r\n/g, '\n'),
     start = '<!-- BEGIN AgentFlow EXECUTION DISTRIBUTION -->',
     end = '<!-- END AgentFlow EXECUTION DISTRIBUTION -->'
   const block = `${start}\n\n## Execution distribution\n\nResolve this project's pinned \`executionDistribution\` with \`agentflow-sdlc distribution inspect\` before routing, provisioning, expansion, recovery or upgrades. The shared template profile is \`${profile.id}\`; an existing project selection and reasoned overrides take precedence. Run \`distribution check --rig <path>\` for installed drift. Software upgrades and calibration preserve the selected distribution. Quota recovery selects an eligible approved fallback at a safe checkpoint; it does not rewrite defaults. Model, effort, client and both fallback options come from the resolved policy. Record actual execution separately. A policy change uses \`distribution plan\` and exact-confirmed \`distribution apply\`; the person authorizes that migration separately from a software upgrade. Unsupported enforcement or unavailable observation remains explicit.\n\n${end}`

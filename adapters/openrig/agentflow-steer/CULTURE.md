@@ -54,6 +54,10 @@ When multiple goals or capabilities await assignment, the steering lead may cons
 4. **Non-Disruptive Human Interaction (`BTW` Mode & `--no-nudge` Intake)**:
    - **BTW Queries (`steer btw`)**: Humans and supervisors perform read-only status and board inspection without interrupting in-flight workers. BTW queries never invoke `rig send` or `rig nudge` (`mode: 'read-only-no-nudge'`, `nudgeDispatched: false`).
    - **Non-Disruptive Assignment (`steer assign --no-nudge`)**: In-flight backlog grooming passes `--no-nudge` to buffer new capability briefs in the destination seat's queue, omitting conversational notifications so worker agents finish their current turn uninterrupted until the next phase boundary.
+5. **Guided Steering Setup & Enforcement Limits (`steer setup`)**:
+   - Before steering begins, run `agentflow-sdlc steer setup --inspect --json` to resolve existing project settings, reuse confirmed parameters, ask bounded questions when `executionDistribution` or `goalScope` is missing, and present resolved defaults for `steeringOwner`, `returnRoute`, `reviewAndPublicationAuthority`, `quotaPolicy`, and `checkpointsAndStopConditions` for single-digest confirmation.
+   - Confirm updates via `agentflow-sdlc steer setup --plan` and `agentflow-sdlc steer setup --apply --plan-file <file> --confirm <digest>`.
+   - **Enforcement Limits Disclosure**: `steer-guard` blocks direct file edits and git mutations, not `agentflow-sdlc steer setup --apply`. Conversational parameter confirmation and `steer setup --apply` write operating preferences only. They never authenticate a host steering endpoint, never bypass `evaluateSteeringBinding` or `evaluateMergeReadiness`, and never grant merge, unfreeze, or publication powers. Prose culture rules are advisory; code-level gates enforce authority independently.
 
 <!-- BEGIN AgentFlow EXECUTION DISTRIBUTION -->
 

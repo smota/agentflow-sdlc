@@ -1066,7 +1066,7 @@ const COMMAND_USAGE = {
   distribution:
     'Usage: agentflow-sdlc distribution <catalog|inspect|check|plan|apply|undo> [--target <dir>] [--json]\n',
   steer:
-    'Usage: agentflow-sdlc steer <assign|unfreeze|triage|merge-check> [options] [--json]\nSupervisory steering verbs for out-of-rig governance and merge verification.\n',
+    'Usage: agentflow-sdlc steer <setup|assign|unfreeze|triage|merge-check|liveness|btw> [options] [--json]\nSupervisory steering verbs for out-of-rig governance and merge verification.\n',
   goal: 'Usage: agentflow-sdlc goal <sync|status|ledger> <number> [--records <file>] [--section <name>] [--apply] [--json]\nManage goal child completion tracking and synchronized delivery ledger.\n',
   init: 'Usage: agentflow-sdlc init [--profile <id>] [--posture <posture>] [--no-harness] [--sync] [--target <dir>] [--force] [--json]\nLow-level primitive: applies the adoption plan without a separate confirmation. To adopt a project, use `agentflow-sdlc onboarding`.\n',
   config:
@@ -1158,6 +1158,9 @@ function main() {
     return 0
   }
   if (requestedHelp(rest)) {
+    if (command === 'steer') {
+      return runScript('scripts/steer.mjs', rest, resolve(getFlag(rest, '--target', process.cwd())))
+    }
     process.stdout.write(COMMAND_USAGE[command] ?? ROOT_USAGE)
     return 0
   }

@@ -29,12 +29,18 @@ import {
   triageIssueDedupe,
   triageNudgeLevel,
 } from '../lib/providers/decider-port.mjs'
+import {
+  inspectSteeringAgreement,
+  planSteeringAgreement,
+  applySteeringAgreement,
+} from '../lib/config/steering-agreement.mjs'
 
 export const STEER_USAGE = `Usage: agentflow-sdlc steer <subcommand> [options]
 
 Supervisory steering verbs for out-of-rig governance and merge verification.
 
 Subcommands:
+  setup        Resolve existing steering settings, prompt missing parameters, and confirm agreement
   assign       Format and dispatch durable queue brief to pm.manager (or allowed seat)
   unfreeze     Format and seal unfreeze resolution with next epoch fencing token
   triage       Connect to decider port with sanitized payloads for heuristic triage
@@ -45,6 +51,32 @@ Subcommands:
 Options:
   --help, -h   Show help for steer or any subcommand
   --json       Emit machine-readable JSON output
+`
+
+export const SETUP_USAGE = `Usage: agentflow-sdlc steer setup [options]
+
+Resolves existing steering settings from project configuration and pinned executionDistribution,
+identifies missing or conflicting steering parameters, and previews or applies the confirmed
+operating agreement. Conversational confirmation records operating preferences only and never
+bypasses native authority or merge gates.
+
+Modes:
+  --inspect                    Inspect effective steering agreement and missing/conflicting parameters (default)
+  --plan                       Create a digest-bound steering agreement plan for confirmation
+  --apply                      Persist a confirmed steering agreement plan (--plan-file <file> --confirm <digest>)
+
+Parameter Overrides (for --inspect or --plan):
+  --goal <scope>               Goal URI, workstream, or repository scope
+  --owner <identity>           Accountable external steering owner (e.g. steer.lead or human:<login>)
+  --return-route <seat>        Authorized return/entry seat (pm.manager, orch.arch, or human)
+  --review-authority <mode>    human-gated-merge | bounded-self-review-with-human-merge | high-assurance-human-signoff
+  --quota-policy <mode>        park-and-checkpoint | approved-fallback-only
+  --checkpoint-boundary <mode> phase-boundary | slice-boundary | manual-only
+  --max-rework <n>             Maximum rework rounds before circuit breaker freeze (1-10)
+  --stale-timeout <ms>         Supervisor liveness timeout in milliseconds (>= 60000)
+  --plan-file <file>           Path to plan JSON file when running --apply
+  --confirm <digest>           Exact plan digest when running --apply
+  --json                       Emit JSON result
 `
 
 export const ASSIGN_USAGE = `Usage: agentflow-sdlc steer assign --destination <seat> --brief <file> [options]
@@ -981,6 +1013,22 @@ export function steerBtwQuery({
   return result
 }
 
+export function steerSetup({
+  targetDir = process.cwd(),
+  mode = 'inspect',
+  overrides = {},
+  plan = null,
+  confirm = null,
+} = {}) {
+  if (mode === 'plan') {
+    return planSteeringAgreement(targetDir, overrides)
+  }
+  if (mode === 'apply') {
+    return applySteeringAgreement(targetDir, plan, confirm)
+  }
+  return inspectSteeringAgreement(targetDir, overrides)
+}
+
 export async function runSteerCli(rawArgs = []) {
   const args = [...rawArgs]
   const isJson = hasFlag(args, '--json')
@@ -1001,6 +1049,10 @@ export async function runSteerCli(rawArgs = []) {
   if (!subcommand || hasFlag(filteredArgs, ['--help', '-h'])) {
     if (!subcommand) {
       process.stdout.write(STEER_USAGE)
+      return 0
+    }
+    if (subcommand === 'setup') {
+      process.stdout.write(SETUP_USAGE)
       return 0
     }
     if (subcommand === 'assign') {
@@ -1032,6 +1084,107 @@ export async function runSteerCli(rawArgs = []) {
   }
 
   try {
+    if (subcommand === 'setup') {
+      const isPlan = hasFlag(subArgs, '--plan')
+      const isApply = hasFlag(subArgs, '--apply')
+      const mode = isApply ? 'apply' : isPlan ? 'plan' : 'inspect'
+      const goal = getFlag(subArgs, '--goal')
+      const owner = getFlag(subArgs, '--owner')
+      const returnRoute = getFlag(subArgs, '--return-route')
+      const reviewAuthority = getFlag(subArgs, '--review-authority')
+      const quotaPolicy = getFlag(subArgs, '--quota-policy')
+      const checkpointBoundary = getFlag(subArgs, '--checkpoint-boundary')
+      const maxRework = getFlag(subArgs, '--max-rework')
+      const staleTimeout = getFlag(subArgs, '--stale-timeout')
+
+      const overrides = {}
+      if (typeof goal === 'string') overrides.goalScope = goal
+      if (typeof owner === 'string') overrides.steeringOwner = owner
+      if (typeof returnRoute === 'string') overrides.returnRoute = returnRoute
+      if (typeof reviewAuthority === 'string')
+        overrides.reviewAndPublicationAuthority = reviewAuthority
+      if (typeof quotaPolicy === 'string')
+        overrides.quotaPolicy = { mode: quotaPolicy, autoMonitoring: false }
+      if (checkpointBoundary || maxRework || staleTimeout) {
+        overrides.checkpointsAndStopConditions = {
+          ...(typeof checkpointBoundary === 'string' ? { checkpointBoundary } : {}),
+          ...(maxRework ? { maxReworkRounds: Number(maxRework) } : {}),
+          ...(staleTimeout ? { supervisorStaleTimeoutMs: Number(staleTimeout) } : {}),
+          holdOnUnverifiedAuthority: true,
+        }
+      }
+
+      let planObj = null
+      const planFile = getFlag(subArgs, '--plan-file')
+      if (isApply && typeof planFile === 'string') {
+        planObj = JSON.parse(readFileSync(resolve(targetDir, planFile), 'utf8'))
+      }
+      const confirm = getFlag(subArgs, '--confirm')
+
+      const result = steerSetup({
+        targetDir,
+        mode,
+        overrides,
+        plan: planObj,
+        confirm,
+      })
+
+      if (isJson) {
+        process.stdout.write(JSON.stringify(result, null, 2) + '\n')
+      } else if (mode === 'plan') {
+        const dist = result.after.executionDistribution
+        const routeSummary = dist?.steerLeadRoute?.default
+          ? `${dist.profile} (steer.lead default: ${dist.steerLeadRoute.default.subscription}:${dist.steerLeadRoute.default.model}@${dist.steerLeadRoute.default.effort}, fallbacks: ${(dist.steerLeadRoute.fallbacks || []).map((f) => `${f.subscription}:${f.model}`).join(', ')})`
+          : 'missing'
+        process.stdout.write(
+          `Steering agreement plan prepared [digest: ${result.digest}]\n` +
+            `  Config: ${result.configFile}\n` +
+            `  Goal Scope: ${result.after.goalScope}\n` +
+            `  Execution Distribution: ${routeSummary}\n` +
+            `  Steering Owner: ${result.after.steeringOwner} -> ${result.after.returnRoute}\n` +
+            `  Candidate Digest: ${result.candidateDigest}\n` +
+            `  Note: ${result.enforcementLimits.summary}\n`,
+        )
+      } else if (mode === 'apply') {
+        process.stdout.write(
+          `✓ Steering agreement confirmed and persisted [${result.confirmedDigest}]\n` +
+            `  Receipt: ${result.receipt}\n` +
+            `  Note: ${result.enforcementLimits.summary}\n`,
+        )
+      } else {
+        const dist = result.agreement.executionDistribution
+        const routeSummary = dist?.steerLeadRoute?.default
+          ? `${dist.profile} (steer.lead default: ${dist.steerLeadRoute.default.subscription}:${dist.steerLeadRoute.default.model}@${dist.steerLeadRoute.default.effort}, fallbacks: ${(dist.steerLeadRoute.fallbacks || []).map((f) => `${f.subscription}:${f.model}`).join(', ')})`
+          : 'missing'
+        process.stdout.write(
+          `Steering setup inspection (${result.status})\n` +
+            `  Reused Confirmed Agreement: ${result.reusedConfirmedAgreement ? 'yes' : 'no'}\n` +
+            `  Goal Scope: ${result.agreement.goalScope ?? 'missing'}\n` +
+            `  Execution Distribution: ${routeSummary}\n` +
+            `  Steering Owner: ${result.agreement.steeringOwner} -> ${result.agreement.returnRoute}\n` +
+            `  Review/Publication Authority: ${result.agreement.reviewAndPublicationAuthority}\n` +
+            `  Quota Policy: ${result.agreement.quotaPolicy.mode} (autoMonitoring: ${result.agreement.quotaPolicy.autoMonitoring})\n` +
+            `  Checkpoints: ${result.agreement.checkpointsAndStopConditions.checkpointBoundary} (maxRework: ${result.agreement.checkpointsAndStopConditions.maxReworkRounds})\n` +
+            `  Enforcement Limits: ${result.enforcementLimits.summary}\n`,
+        )
+        if (result.conflicts.length > 0) {
+          process.stdout.write(`  Conflicts:\n`)
+          for (const c of result.conflicts) {
+            process.stdout.write(`    - [${c.parameter}] ${c.reason}\n`)
+          }
+        }
+        if (result.questions.length > 0) {
+          process.stdout.write(`  Questions / Actions:\n`)
+          for (const q of result.questions) {
+            process.stdout.write(`    - [${q.parameter}] ${q.prompt}\n`)
+          }
+        }
+      }
+      if (mode === 'inspect') {
+        return result.conflicts.length > 0 ? 1 : 0
+      }
+      return 0
+    }
     if (subcommand === 'assign') {
       const destination = getFlag(
         subArgs,
