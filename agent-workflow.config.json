@@ -1,68 +1,27 @@
 {
-  "ciCommands": [
-    "pnpm test",
-    "pnpm test:workflow",
-    "pnpm format:check"
-  ],
+  "ciCommands": ["pnpm test", "pnpm test:workflow", "pnpm format:check"],
   "bounded": {
-    "allowedExactPaths": [
-      "README.md",
-      "AGENTS.md",
-      "CLAUDE.md",
-      "CODEX.md",
-      "AGY.md"
-    ],
-    "allowedPathPrefixes": [
-      "docs/",
-      "agents/templates/",
-      "agents/workflows/"
-    ],
-    "deniedPathFragments": [
-      "/auth/",
-      "/billing/",
-      "/migrations/"
-    ],
+    "allowedExactPaths": ["README.md", "AGENTS.md", "CLAUDE.md", "CODEX.md", "AGY.md"],
+    "allowedPathPrefixes": ["docs/", "agents/templates/", "agents/workflows/"],
+    "deniedPathFragments": ["/auth/", "/billing/", "/migrations/"],
     "defaultBase": "origin/development"
   },
   "branching": {
     "trunk": "main",
     "releaseCandidate": null,
     "integration": "development",
-    "directEditDeniedBranches": [
-      "main",
-      "development"
-    ],
+    "directEditDeniedBranches": ["main", "development"],
     "defaultPrTarget": "development",
-    "promotionOrder": [
-      "development",
-      "main"
-    ],
-    "workBranchPrefixes": [
-      "work/",
-      "feature/",
-      "fix/",
-      "hotfix/",
-      "spike/",
-      "chore/"
-    ],
-    "compatibilityBranchPrefixes": [
-      "issue/",
-      "wt/",
-      "claude/"
-    ],
+    "promotionOrder": ["development", "main"],
+    "workBranchPrefixes": ["work/", "feature/", "fix/", "hotfix/", "spike/", "chore/"],
+    "compatibilityBranchPrefixes": ["issue/", "wt/", "claude/"],
     "requireBoundedWorkBranch": true
   },
   "integrationLifecycle": {
     "integrationBranch": "development",
     "trunkBranch": "main",
-    "referenceKeywords": [
-      "Implements",
-      "Closes"
-    ],
-    "addLabels": [
-      "integrated:development",
-      "awaiting-release"
-    ],
+    "referenceKeywords": ["Implements", "Closes"],
+    "addLabels": ["integrated:development", "awaiting-release"],
     "closeIntegratedIssues": true
   },
   "routing": {
@@ -72,9 +31,7 @@
         "enabled": false,
         "availabilityProbe": {
           "executable": "grok",
-          "args": [
-            "--version"
-          ]
+          "args": ["--version"]
         },
         "defaultExecutionTarget": "grok-cli",
         "callWorkflowDoc": "docs/agents/grok-routing.md"
@@ -83,9 +40,7 @@
         "enabled": true,
         "availabilityProbe": {
           "executable": "claude",
-          "args": [
-            "--version"
-          ]
+          "args": ["--version"]
         },
         "defaultExecutionTarget": "claude-cli",
         "callWorkflowDoc": "docs/agents/claude-routing.md"
@@ -94,9 +49,7 @@
         "enabled": true,
         "availabilityProbe": {
           "executable": "codex",
-          "args": [
-            "--version"
-          ]
+          "args": ["--version"]
         },
         "defaultExecutionTarget": "codex-cli",
         "callWorkflowDoc": "docs/agents/codex-routing.md"
@@ -105,9 +58,7 @@
         "enabled": true,
         "availabilityProbe": {
           "executable": "agy",
-          "args": [
-            "--version"
-          ]
+          "args": ["--version"]
         },
         "defaultExecutionTarget": "agy-cli",
         "callWorkflowDoc": "docs/agents/agy-routing.md"
@@ -116,9 +67,7 @@
         "enabled": true,
         "availabilityProbe": {
           "executable": "pi",
-          "args": [
-            "--version"
-          ]
+          "args": ["--version"]
         },
         "defaultExecutionTarget": "pi-parent",
         "callWorkflowDoc": "docs/agents/pi-routing.md"
@@ -128,13 +77,7 @@
   },
   "collaboration": {
     "defaultMode": "auto-minimal",
-    "sensitiveSurfaces": [
-      "security",
-      "auth",
-      "data",
-      "infra",
-      "billing"
-    ],
+    "sensitiveSurfaces": ["security", "auth", "data", "infra", "billing"],
     "councilDomainThreshold": 3,
     "bilateralDomainThreshold": 2,
     "councilOnPublicContract": true,
@@ -146,10 +89,7 @@
       "testability-scout",
       "docs-impact-scout"
     ],
-    "discoveryHelpers": [
-      "requirements-scout",
-      "architecture-scout"
-    ],
+    "discoveryHelpers": ["requirements-scout", "architecture-scout"],
     "councilSeats": [
       {
         "role": "agentflow:architect",
@@ -172,10 +112,7 @@
         "required": true
       }
     ],
-    "fallbackModes": [
-      "sequential",
-      "manual"
-    ],
+    "fallbackModes": ["sequential", "manual"],
     "maxDelegates": 4,
     "maxDepth": 1,
     "maxIterations": 3
@@ -353,12 +290,8 @@
         "id": "docs",
         "criterionId": "documentation-integrity",
         "executable": "node",
-        "args": [
-          "scripts/validate-docs.mjs"
-        ],
-        "assertions": [
-          "documentation validation passes"
-        ],
+        "args": ["scripts/validate-docs.mjs"],
+        "assertions": ["documentation validation passes"],
         "format": "exit-code",
         "timeoutMs": 60000
       },
@@ -377,9 +310,7 @@
           "lib/__tests__/onboarding-migration.test.mjs",
           "lib/__tests__/onboarding-e2e.test.mjs"
         ],
-        "assertions": [
-          "incremental onboarding regression suite passes"
-        ],
+        "assertions": ["incremental onboarding regression suite passes"],
         "format": "exit-code",
         "timeoutMs": 120000
       },
@@ -387,22 +318,11 @@
         "id": "autonomy",
         "criterionId": "autonomy-regression",
         "executable": "node",
-        "args": [
-          "node_modules/vitest/vitest.mjs",
-          "run"
-        ],
-        "assertions": [
-          "complete regression suite passes"
-        ],
+        "args": ["node_modules/vitest/vitest.mjs", "run"],
+        "assertions": ["complete regression suite passes"],
         "format": "exit-code",
         "timeoutMs": 180000,
-        "inheritEnv": [
-          "TEMP",
-          "TMP",
-          "HOME",
-          "USERPROFILE",
-          "TMPDIR"
-        ]
+        "inheritEnv": ["TEMP", "TMP", "HOME", "USERPROFILE", "TMPDIR"]
       },
       "openrig-execution-contract": {
         "id": "openrig-execution-contract",
@@ -423,15 +343,10 @@
           "scripts/__tests__/execution-plan-cli.test.mjs",
           "scripts/__tests__/adapter-lifecycle.test.mjs"
         ],
-        "assertions": [
-          "execution-contract-regressions-pass"
-        ],
+        "assertions": ["execution-contract-regressions-pass"],
         "format": "exit-code",
         "timeoutMs": 120000,
-        "inheritEnv": [
-          "HOME",
-          "USERPROFILE"
-        ]
+        "inheritEnv": ["HOME", "USERPROFILE"]
       },
       "openrig-preflight": {
         "id": "openrig-preflight",
@@ -445,15 +360,10 @@
           "scripts/__tests__/operational-preflight-cli.test.mjs",
           "scripts/__tests__/adapter-lifecycle.test.mjs"
         ],
-        "assertions": [
-          "operational-preflight-regressions-pass"
-        ],
+        "assertions": ["operational-preflight-regressions-pass"],
         "format": "exit-code",
         "timeoutMs": 120000,
-        "inheritEnv": [
-          "HOME",
-          "USERPROFILE"
-        ]
+        "inheritEnv": ["HOME", "USERPROFILE"]
       },
       "steering-authority": {
         "id": "steering-authority",
@@ -467,15 +377,10 @@
           "scripts/__tests__/steering-authority-review.test.mjs",
           "scripts/__tests__/steer.test.mjs"
         ],
-        "assertions": [
-          "steering-authority-regressions-pass"
-        ],
+        "assertions": ["steering-authority-regressions-pass"],
         "format": "exit-code",
         "timeoutMs": 120000,
-        "inheritEnv": [
-          "HOME",
-          "USERPROFILE"
-        ]
+        "inheritEnv": ["HOME", "USERPROFILE"]
       },
       "steering-publication": {
         "id": "steering-publication",
@@ -491,15 +396,10 @@
           "scripts/__tests__/steering-authority.test.mjs",
           "scripts/__tests__/steering-authority-review.test.mjs"
         ],
-        "assertions": [
-          "steering-publication-regressions-pass"
-        ],
+        "assertions": ["steering-publication-regressions-pass"],
         "format": "exit-code",
         "timeoutMs": 120000,
-        "inheritEnv": [
-          "HOME",
-          "USERPROFILE"
-        ]
+        "inheritEnv": ["HOME", "USERPROFILE"]
       }
     },
     "contracts": {
@@ -516,16 +416,11 @@
             "mode": "local-cooperative",
             "origin": "cli",
             "authorityRef": "user:authorized-autonomy-completion",
-            "allowedActions": [
-              "pr:create",
-              "pr:update"
-            ],
+            "allowedActions": ["pr:create", "pr:update"],
             "allowThroughMerge": false
           }
         ],
-        "requiredChecks": [
-          "autonomy-regression"
-        ],
+        "requiredChecks": ["autonomy-regression"],
         "reviewPolicy": "automated",
         "materiality": "fixed-scope-v1",
         "allowSubdelegation": false,
