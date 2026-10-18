@@ -757,8 +757,18 @@
       "ownership": "managed"
     },
     {
+      "source": "manifests/composition-profiles.json",
+      "target": "manifests/composition-profiles.json",
+      "ownership": "managed"
+    },
+    {
       "source": "manifests/execution-distributions/subscription-balanced-v1.json",
       "target": "manifests/execution-distributions/subscription-balanced-v1.json",
+      "ownership": "managed"
+    },
+    {
+      "source": "manifests/product-payload.json",
+      "target": "manifests/product-payload.json",
       "ownership": "managed"
     },
     {

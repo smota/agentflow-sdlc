@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -33,5 +33,17 @@ describe('posture-check (D3: advisory only)', () => {
     const forAutonomous = checkPostureCapability({ posture: 'autonomous', root: sandbox })
     expect(forAutonomous.advisoryOnly).toBe(true)
     expect(forAutonomous.posture).toBe('autonomous')
+  })
+
+  it('distinguishes unsupported Rust discovery from a proven-absent Node suite', () => {
+    sandbox = mkdtempSync(join(tmpdir(), 'posture-check-rust-'))
+    writeFileSync(join(sandbox, 'Cargo.toml'), '[package]\nname = "demo"\nversion = "0.1.0"\n')
+    const warnings = checkPostureCapability({ root: sandbox }).warnings
+    const testWarning = warnings.find((item) => item.code === 'posture-check.no-tests')
+    const ciWarning = warnings.find((item) => item.code === 'posture-check.no-ci')
+    expect(testWarning.status).toBe('unsupported')
+    expect(testWarning.message).toContain('not proven absent')
+    expect(ciWarning.status).toBe('unsupported')
+    expect(ciWarning.message).toContain('not proven absent')
   })
 })
