@@ -33,7 +33,7 @@ describe('AgentFlow source routing adoption (#527)', () => {
     expect(config.routing.agents.pi.enabled).toBe(true)
     expect(config.executionDistribution.profile).toBe('subscription-balanced-v1')
     expect(config.adapters.openrig.executionPolicy.seats).toBeUndefined()
-    expect(config.adapters.openrig.executionPolicy.activation).toBe('held')
+    expect(config.adapters.openrig.executionPolicy.activation).toBe('active')
   })
   it('retains medium loops, low search and fresh bounded high-effort enforcement', () => {
     expect(config.effortPolicy).toMatchObject({
@@ -57,7 +57,7 @@ describe('AgentFlow source routing adoption (#527)', () => {
   })
 })
 
-it('the actual project policy allows a held preview and blocks materialization before home writes', () => {
+it('the actual project policy allows an active plan and materializes squads', () => {
   const temporary = mkdtempSync(join(tmpdir(), 'agentflow-own-policy-'))
   const home = join(temporary, 'absent-home')
   const invoke = (operation) =>
@@ -85,11 +85,10 @@ it('the actual project policy allows a held preview and blocks materialization b
     const result = JSON.parse(planned.stdout)
     expect(result.effects).toEqual([])
     expect(result.plans).toHaveLength(3)
-    expect(result.plans.every((plan) => plan.activation === 'held')).toBe(true)
+    expect(result.plans.every((plan) => plan.activation === 'active')).toBe(true)
     const attempted = invoke('provision')
-    expect(attempted.status).not.toBe(0)
-    expect(attempted.stderr).toMatch(/activation.*held/i)
-    expect(existsSync(home)).toBe(false)
+    expect(attempted.status).toBe(0)
+    expect(existsSync(home)).toBe(true)
   } finally {
     rmSync(temporary, { recursive: true, force: true })
   }

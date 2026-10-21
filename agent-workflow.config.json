@@ -431,7 +431,7 @@
   "adapters": {
     "openrig": {
       "executionPolicy": {
-        "activation": "held"
+        "activation": "active"
       }
     }
   },
