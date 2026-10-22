@@ -70,6 +70,28 @@ rig down agentflow --snapshot
 rig up agentflow --existing --cwd /path/to/project
 ```
 
+### Unified Multi-Pod Rig Mode (`--kind unified`)
+
+Instead of provisioning separate `product` and `delivery` squads that serialize across cross-rig handoffs, you can provision a **Unified Multi-Pod Rig** containing `pm`, `orch`, `dev`, `rev`, and `eval` pods inside a single OpenRig squad while keeping supervisory steering (`steer.lead`) strictly out-of-rig:
+
+```bash
+# Provision a unified multi-pod squad for a project
+agentflow-sdlc adapters squads provision openrig --kind unified my-project /path/to/my-project
+```
+
+- **In-rig pods (`pm`, `orch`, `dev`, `rev`, `eval`):** `pm.manager` and `pm.analyst` hand off directly in-rig to `orch.arch`.
+- **Lateral concurrent delegation (`dev.build -> [dev.qa, rev.review]`):** When `dev.build` completes implementation (`outcome=delivered`), work fans out laterally in parallel to `dev.qa` (Phase 5) and `rev.review` (Phase 6) on the same commit SHA, and `orch.arch` reconciles both verdicts.
+- **Dormant on-demand seats (`launch: on-demand`):** `pm.analyst`, `dev.build-jr`, `dev.build-sr`, `dev.test-eng`, and `eval.tester` remain dormant until woken by queue items or `rig grow`.
+- **Two-plane separation preserved:** `steer.lead` never runs inside the worker rig and retains no git worktree or code-authoring permissions.
+
+### Version-Pinned Base Specs (`@<version>` vs `@dev`)
+
+`agentflow-sdlc adapters install openrig` writes three base spec channels under `~/.openrig/specs/`:
+
+- **Version-pinned (`agentflow@<version>`, `agentflow-product@<version>`, `agentflow-steer@<version>`):** Consuming repositories with `agent-framework-lock.json` (or `.agentflow/adoption-lock.json`) bind their squad symlinks to the exact pinned release (`agentflow@1.10.0`).
+- **Dogfood channel (`agentflow@dev`):** The `agentflow-sdlc` dogfood repository binds to `@dev` so local framework iterations never mutate or break concurrently running adopter squads.
+- **Default channel (`agentflow`):** Unversioned fallback for ad-hoc `rig up agentflow` invocations.
+
 ### Parallel Multi-Squad Mode (Concurrent Teams)
 
 To run simultaneous squads on different projects at the same time:
@@ -108,6 +130,8 @@ and no delivery seat is woken. Idle seats do not make the squad free.
 
 ```bash
 agentflow-sdlc handoff list                        # held handoffs: goal, transition, target, sender, signal, since
+agentflow-sdlc handoff capacity [rig] [--json]     # non-blocking capacity report (queued, active, idle, busy)
+agentflow-sdlc handoff deliver --advisory ...      # enqueue via OpenRig while printing advisory capacity state
 agentflow-sdlc handoff flush                       # deliver the oldest hold if its squad is free
 agentflow-sdlc handoff release <hold-id>           # the person only, at a terminal: deliver now
 agentflow-sdlc handoff busy agentflow-my-project --set --note "finishing a release"
@@ -119,3 +143,47 @@ a guard in each seat's runtime blocks them (a Claude Code and Codex PreToolUse h
 extension). There is no option that sends anyway. Running seats pick the guard up when they start,
 so restart a product squad after `agentflow-sdlc adapters update openrig` and
 `agentflow-sdlc adapters squads update openrig <project>`.
+
+---
+
+## Core Wire-Agnostic Seat & Dispatch Commands
+
+Every AgentFlow repository—whether running standalone (`environment-contract`), with OpenRig (`dendro`), or dogfooding (`agentflow-sdlc`)—shares the same wire-agnostic seat and transition envelope CLI:
+
+```bash
+# Claim, inspect, prime (L1 Framework Law + L2 Project Domain + L3 Live Facts), or release a seat
+agentflow-sdlc seat claim <seat> --session <id> [--platform <slug>] [--ttl <seconds>] [--json]
+agentflow-sdlc seat prime <seat> [--situation fresh|handover|post-compaction|reviewer] [--slice <id>] [--json]
+agentflow-sdlc seat status [<seat>] [--json]
+agentflow-sdlc seat release <seat> [--session <id>] [--json]
+
+# Dispatch a 6-way transition envelope (auto-bridges to `rig queue` when OpenRig is active, or `.agentflow/inbox/<seat>/`)
+agentflow-sdlc dispatch --to <seat> --from <seat> \
+  --outcome delivered|no_change|feasible_work_remains_same_worker|concrete_blocker|unknown_outcome|repeated_failure \
+  [--queue-action close|handoff|keep_open] \
+  [--domain-status in_progress|slice_complete|goal_complete] \
+  --summary "<summary>" [--json]
+```
+
+---
+
+## Assisted Zero-Copy World Builder & `world-integrity` Doctor
+
+Build and maintain a zero-copy addressable context pack (`.agentflow/world/manifest.yaml` + `.agentflow/world/world-lock.json`) pointing directly to `path#h2-slug` and `path#h2-slug/h3-slug` sections in existing repository Markdown without duplicating prose:
+
+```bash
+# 1. Scan repository Markdown sections, token budgets, and OpenRig region/dimension coverage
+agentflow-sdlc world scan [--include <glob>] [--json]
+
+# 2. Preview proposed manifest.yaml, world-lock.json, quality checks, and confirmation digest
+agentflow-sdlc world refine [--stub-gaps] [--allow-stubs] [--json]
+
+# 3. Write .agentflow/world/manifest.yaml and .agentflow/world/world-lock.json
+agentflow-sdlc world apply --confirm <digest> [--stub-gaps] [--allow-stubs] [--json]
+
+# 4. Re-pin section hashes in world-lock.json after intentional documentation edits
+agentflow-sdlc world ack [<atom-id> | --all] [--json]
+
+# 5. Verify world-integrity (broken pointers, edit-distance slug suggestions, claim drift, and prose hash drift)
+agentflow-sdlc doctor [--json]
+```
