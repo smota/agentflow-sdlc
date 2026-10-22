@@ -64,6 +64,14 @@ import { formatOnboardingPrompt } from '../lib/onboarding/prompt.mjs'
 import { inspectDoctor, formatDoctorPlain } from '../lib/services/doctor-service.mjs'
 import { safeReadFileUtf8, createReadScope } from '../lib/services/doctor-readers.mjs'
 import { startMcpStdioServer } from '../lib/mcp/server.mjs'
+import {
+  claimSeatLease,
+  listSeatLeases,
+  readSeatLease,
+  releaseSeatLease,
+} from '../lib/core/seat-lease.mjs'
+import { primeSeat } from '../lib/core/seat-prime.mjs'
+import { dispatchEnvelope } from '../lib/core/dispatch.mjs'
 import os from 'node:os'
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -1058,11 +1066,184 @@ function handleResume(rest, targetDir) {
   return runScript('scripts/run-delivery.mjs', ['resume', runId, ...rest], targetDir)
 }
 
+function seatPositionalArgs(args) {
+  const flagsWithValues = new Set([
+    '--target',
+    '--seat',
+    '--session',
+    '--platform',
+    '--worktree',
+    '--ttl',
+    '--situation',
+    '--slice',
+    '--issue',
+  ])
+  const result = []
+  for (let index = 0; index < args.length; index += 1) {
+    if (flagsWithValues.has(args[index])) {
+      index += 1
+      continue
+    }
+    if (!args[index].startsWith('--')) result.push(args[index])
+  }
+  return result
+}
+
+function handleSeat(rest, targetDir) {
+  const json = rest.includes('--json')
+  const [subcommand, positionalSeat] = seatPositionalArgs(rest)
+  const seat = getFlag(rest, '--seat', positionalSeat || null)
+
+  if (subcommand === 'claim') {
+    if (!seat) {
+      process.stderr.write(COMMAND_USAGE.seat)
+      return 2
+    }
+    const occupantSession = getFlag(
+      rest,
+      '--session',
+      process.env.OPENRIG_SESSION_NAME || `local:${process.pid}`,
+    )
+    const platform = getFlag(rest, '--platform', 'local-cli')
+    const worktree = getFlag(rest, '--worktree', null)
+    const ttlRaw = getFlag(rest, '--ttl', null)
+    const ttlSeconds = ttlRaw ? Number(ttlRaw) : 3600
+    const lease = claimSeatLease(targetDir, {
+      seat,
+      occupantSession,
+      platform,
+      worktree,
+      ttlSeconds,
+    })
+    if (json) process.stdout.write(`${JSON.stringify(lease, null, 2)}\n`)
+    else
+      process.stdout.write(
+        `Claimed seat ${lease.seat} for ${lease.occupantSession} (expires ${lease.expiresAt})\n`,
+      )
+    return 0
+  }
+
+  if (subcommand === 'prime') {
+    if (!seat) {
+      process.stderr.write(COMMAND_USAGE.seat)
+      return 2
+    }
+    const situation = getFlag(rest, '--situation', 'fresh')
+    const sliceId = getFlag(rest, '--slice', null)
+    const issueRef = getFlag(rest, '--issue', null)
+    const worktree = getFlag(rest, '--worktree', null)
+    const primed = primeSeat(targetDir, {
+      seat,
+      situation,
+      sliceId,
+      issueRef,
+      worktree,
+    })
+    if (json) process.stdout.write(`${JSON.stringify(primed, null, 2)}\n`)
+    else process.stdout.write(primed.markdown)
+    return 0
+  }
+
+  if (subcommand === 'status') {
+    const includeExpired = rest.includes('--include-expired')
+    if (seat) {
+      const lease = readSeatLease(targetDir, seat, { inspect: true })
+      if (json) process.stdout.write(`${JSON.stringify({ seat, lease }, null, 2)}\n`)
+      else if (!lease) process.stdout.write(`Seat ${seat}: unleased\n`)
+      else
+        process.stdout.write(
+          `Seat ${lease.seat}: ${lease.occupantSession} (${lease.expired ? 'expired' : 'active'}, expires ${lease.expiresAt})\n`,
+        )
+      return 0
+    }
+    const leases = listSeatLeases(targetDir, { includeExpired })
+    if (json) process.stdout.write(`${JSON.stringify({ leases }, null, 2)}\n`)
+    else if (leases.length === 0) process.stdout.write('No active seat leases.\n')
+    else {
+      for (const item of leases) {
+        process.stdout.write(
+          `${item.seat}\t${item.occupantSession}\t${item.platform}\t${item.expired ? 'expired' : 'active'}\n`,
+        )
+      }
+    }
+    return 0
+  }
+
+  if (subcommand === 'release') {
+    if (!seat) {
+      process.stderr.write(COMMAND_USAGE.seat)
+      return 2
+    }
+    const occupantSession = getFlag(rest, '--session', undefined)
+    const result = releaseSeatLease(targetDir, seat, { occupantSession })
+    if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+    else
+      process.stdout.write(
+        result.released
+          ? `Released seat ${result.seat}\n`
+          : `Seat ${result.seat} had no active lease\n`,
+      )
+    return 0
+  }
+
+  process.stderr.write(COMMAND_USAGE.seat)
+  return 2
+}
+
+function handleDispatch(rest, targetDir) {
+  const json = rest.includes('--json')
+  const to = getFlag(rest, '--to', null)
+  const from = getFlag(rest, '--from', null)
+  const outcome = getFlag(rest, '--outcome', null)
+  const decision = getFlag(rest, '--decision', null)
+  const queueAction = getFlag(rest, '--queue-action', 'handoff')
+  const domainStatus = getFlag(rest, '--domain-status', 'in_progress')
+  const summary = getFlag(rest, '--summary', '')
+  const sliceId = getFlag(rest, '--slice', null)
+  const issueRef = getFlag(rest, '--issue', null)
+  const openrigActive = rest.includes('--openrig')
+    ? true
+    : rest.includes('--no-openrig')
+      ? false
+      : null
+
+  if (!to || !from || (!outcome && !decision)) {
+    process.stderr.write(COMMAND_USAGE.dispatch)
+    return 2
+  }
+
+  const dispatched = dispatchEnvelope(targetDir, {
+    to,
+    from,
+    outcome,
+    decision,
+    queueAction,
+    domainStatus,
+    summary,
+    sliceId,
+    issueRef,
+    openrigActive,
+  })
+
+  if (json) process.stdout.write(`${JSON.stringify(dispatched, null, 2)}\n`)
+  else {
+    process.stdout.write(
+      `Dispatched ${dispatched.envelope.outcome} from ${dispatched.envelope.from} to ${dispatched.envelope.to} (${dispatched.mode})\n`,
+    )
+    process.stdout.write(`  Next coordinator action: ${dispatched.nextAction.action}\n`)
+    process.stdout.write(`  Resume command: ${dispatched.resumeCommand}\n`)
+  }
+  return 0
+}
+
 const ROOT_USAGE =
-  'Usage: agentflow-sdlc <init|run|distribution|doctor|doctor-env|config|adopt|providers|adapters|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding|onboarding-prompt|wizard|release-plan|handoff|resume|phase|board|gates|mcp|project|goal|steer> [path] [--target <dir>] [--json]\n' +
+  'Usage: agentflow-sdlc <init|run|distribution|doctor|doctor-env|config|adopt|providers|adapters|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding|onboarding-prompt|wizard|release-plan|handoff|resume|phase|board|gates|mcp|project|goal|steer|seat|dispatch> [path] [--target <dir>] [--json]\n' +
   'Execution adapters: agentflow-sdlc adapters <install|update|squads provision|squads update|squads list|squads remove> <id> (see agentflow-sdlc adapters --help)\n'
 
 const COMMAND_USAGE = {
+  seat: 'Usage: agentflow-sdlc seat <claim|prime|status|release> [seat] [--seat <id>] [--session <id>] [--situation <fresh|handover|post-compaction|reviewer>] [--slice <id>] [--issue <ref>] [--target <dir>] [--json]\n',
+  dispatch:
+    'Usage: agentflow-sdlc dispatch --to <seat> --from <seat> (--outcome <outcome> | --decision <decision>) [--queue-action <close|handoff|keep_open>] [--domain-status <in_progress|slice_complete|goal_complete>] [--summary <text>] [--slice <id>] [--issue <ref>] [--target <dir>] [--json]\n',
   distribution:
     'Usage: agentflow-sdlc distribution <catalog|inspect|check|plan|apply|undo|quota> [--target <dir>] [--json]\n',
   steer:
@@ -1392,6 +1573,24 @@ function main() {
 
   if (command === 'steer') {
     return runScript('scripts/steer.mjs', rest, targetDir)
+  }
+
+  if (command === 'seat') {
+    try {
+      return handleSeat(rest, targetDir)
+    } catch (error) {
+      process.stderr.write(`${error.message}\n`)
+      return 1
+    }
+  }
+
+  if (command === 'dispatch') {
+    try {
+      return handleDispatch(rest, targetDir)
+    } catch (error) {
+      process.stderr.write(`${error.message}\n`)
+      return 1
+    }
   }
 
   process.stderr.write(ROOT_USAGE)
