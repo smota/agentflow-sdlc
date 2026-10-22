@@ -72,6 +72,12 @@ import {
 } from '../lib/core/seat-lease.mjs'
 import { primeSeat } from '../lib/core/seat-prime.mjs'
 import { dispatchEnvelope } from '../lib/core/dispatch.mjs'
+import {
+  ackWorld,
+  applyWorld,
+  refineWorld,
+  scanWorld,
+} from '../lib/world/world-builder.mjs'
 import os from 'node:os'
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -1236,11 +1242,145 @@ function handleDispatch(rest, targetDir) {
   return 0
 }
 
+function worldPositionalArgs(args) {
+  const flagsWithValues = new Set(['--target', '--confirm', '--include', '--atom'])
+  const result = []
+  for (let index = 0; index < args.length; index += 1) {
+    if (flagsWithValues.has(args[index])) {
+      index += 1
+      continue
+    }
+    if (!args[index].startsWith('--')) result.push(args[index])
+  }
+  return result
+}
+
+function handleWorld(rest, defaultTargetDir) {
+  const json = rest.includes('--json')
+  const stubGaps = rest.includes('--stub-gaps')
+  const allowStubs = rest.includes('--allow-stubs')
+  const all = rest.includes('--all')
+  const confirm = getFlag(rest, '--confirm', null)
+  const includeRaw = getFlag(rest, '--include', '')
+  const include = includeRaw
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+
+  const hasExplicitTarget = rest.includes('--target')
+  const [subcommand, arg1, arg2] = worldPositionalArgs(rest)
+
+  if (subcommand === 'scan') {
+    const targetDir = hasExplicitTarget
+      ? defaultTargetDir
+      : arg1
+        ? resolve(arg1)
+        : defaultTargetDir
+    const result = scanWorld(targetDir, { include })
+    if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+    else {
+      process.stdout.write(
+        `World scan (${result.files.length} files, ${result.sections.length} addressable H2/H3 sections)\n`,
+      )
+      process.stdout.write(
+        `  Missing core regions: ${result.missingCoreRegions.length ? result.missingCoreRegions.join(', ') : 'none'}\n`,
+      )
+      for (const sec of result.sections) {
+        process.stdout.write(
+          `  - ${sec.address} [${sec.regions.join(', ')}] (~${sec.tokens} tokens)\n`,
+        )
+      }
+    }
+    return 0
+  }
+
+  if (subcommand === 'refine') {
+    const targetDir = hasExplicitTarget
+      ? defaultTargetDir
+      : arg1
+        ? resolve(arg1)
+        : defaultTargetDir
+    const plan = refineWorld(targetDir, { include, stubGaps, allowStubs })
+    if (json) process.stdout.write(`${JSON.stringify(plan, null, 2)}\n`)
+    else {
+      process.stdout.write(`World refine preview (${plan.quality.ok ? 'READY' : 'BLOCKED'})\n`)
+      process.stdout.write(`  Digest: ${plan.digest}\n`)
+      process.stdout.write(`  Atoms: ${plan.manifest.atoms.length}\n`)
+      if (plan.quality.errors.length) {
+        process.stdout.write(`  Errors (${plan.quality.errors.length}):\n`)
+        for (const err of plan.quality.errors) {
+          process.stdout.write(`    ✗ ${err.message}\n`)
+        }
+      }
+      if (plan.quality.warnings.length) {
+        process.stdout.write(`  Warnings (${plan.quality.warnings.length}):\n`)
+        for (const warn of plan.quality.warnings) {
+          process.stdout.write(`    ! ${warn.message}\n`)
+        }
+      }
+      if (plan.quality.ok) {
+        process.stdout.write(
+          `  Apply command: agentflow-sdlc world apply --confirm ${plan.digest}${stubGaps ? ' --stub-gaps' : ''}${allowStubs ? ' --allow-stubs' : ''}\n`,
+        )
+      }
+    }
+    return plan.quality.ok ? 0 : 1
+  }
+
+  if (subcommand === 'apply') {
+    const targetDir = hasExplicitTarget
+      ? defaultTargetDir
+      : arg1
+        ? resolve(arg1)
+        : defaultTargetDir
+    if (!confirm) {
+      process.stderr.write('Confirmation digest required: pass --confirm <digest>\n')
+      return 2
+    }
+    const applied = applyWorld(targetDir, { confirm, stubGaps, allowStubs, include })
+    if (json) process.stdout.write(`${JSON.stringify(applied, null, 2)}\n`)
+    else {
+      process.stdout.write(
+        `Applied world manifest (${applied.manifestPath}) and lock (${applied.lockPath})\n`,
+      )
+    }
+    return 0
+  }
+
+  if (subcommand === 'ack') {
+    let atomId = getFlag(rest, '--atom', null)
+    let targetDir = defaultTargetDir
+    if (all) {
+      if (!hasExplicitTarget && arg1) targetDir = resolve(arg1)
+    } else {
+      if (!atomId) atomId = arg1 || null
+      if (!hasExplicitTarget && arg2) targetDir = resolve(arg2)
+    }
+    if (!all && !atomId) {
+      process.stderr.write(COMMAND_USAGE.world)
+      return 2
+    }
+    const result = ackWorld(targetDir, { atomId, all })
+    if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+    else {
+      process.stdout.write(
+        `Acknowledged ${result.updatedAtoms.length} world atom(s): ${result.updatedAtoms.join(', ')}\n`,
+      )
+    }
+    return 0
+  }
+
+  process.stderr.write(COMMAND_USAGE.world)
+  return 2
+}
+
 const ROOT_USAGE =
-  'Usage: agentflow-sdlc <init|run|distribution|doctor|doctor-env|config|adopt|providers|adapters|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding|onboarding-prompt|wizard|release-plan|handoff|resume|phase|board|gates|mcp|project|goal|steer|seat|dispatch> [path] [--target <dir>] [--json]\n' +
+  'Usage: agentflow-sdlc <init|run|distribution|doctor|doctor-env|config|adopt|providers|adapters|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding|onboarding-prompt|wizard|release-plan|handoff|resume|phase|board|gates|mcp|project|goal|steer|seat|dispatch|world> [path] [--target <dir>] [--json]\n' +
   'Execution adapters: agentflow-sdlc adapters <install|update|squads provision|squads update|squads list|squads remove> <id> (see agentflow-sdlc adapters --help)\n'
 
 const COMMAND_USAGE = {
+  world:
+    'Usage: agentflow-sdlc world <scan|refine|apply|ack> [atom-id] [target-dir] [--target <dir>] [--stub-gaps] [--allow-stubs] [--confirm <digest>] [--all] [--json]\n',
   seat: 'Usage: agentflow-sdlc seat <claim|prime|status|release> [seat] [--seat <id>] [--session <id>] [--situation <fresh|handover|post-compaction|reviewer>] [--slice <id>] [--issue <ref>] [--target <dir>] [--json]\n',
   dispatch:
     'Usage: agentflow-sdlc dispatch --to <seat> --from <seat> (--outcome <outcome> | --decision <decision>) [--queue-action <close|handoff|keep_open>] [--domain-status <in_progress|slice_complete|goal_complete>] [--summary <text>] [--slice <id>] [--issue <ref>] [--target <dir>] [--json]\n',
@@ -1587,6 +1727,15 @@ function main() {
   if (command === 'dispatch') {
     try {
       return handleDispatch(rest, targetDir)
+    } catch (error) {
+      process.stderr.write(`${error.message}\n`)
+      return 1
+    }
+  }
+
+  if (command === 'world') {
+    try {
+      return handleWorld(rest, targetDir)
     } catch (error) {
       process.stderr.write(`${error.message}\n`)
       return 1
