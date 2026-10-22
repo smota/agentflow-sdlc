@@ -168,12 +168,26 @@ export function consultRetiredPredecessor({
   }
 }
 
+const SAFE_SEGMENT_RE = /^[A-Za-z0-9._-]+$/
+
+function validateSafeSegment(value, label) {
+  const str = String(value ?? '').trim()
+  if (!str || str === '.' || str === '..' || str.includes('..') || !SAFE_SEGMENT_RE.test(str)) {
+    throw new Error(`INVALID_${label}: '${value}' must be a safe single path segment`)
+  }
+  return str
+}
+
+export const DORMANT_SEATS = Object.freeze(['dev.qa', 'rev.review', 'eval.tester', 'pm.analyst'])
+
 export function resolveLineageLedgerPath({
   homeDir = os.homedir(),
   rigName = 'default-rig',
   seat = 'orch.arch',
 } = {}) {
-  return path.join(homeDir, '.openrig', 'state', 'agentflow-lineage', rigName, `${seat}.jsonl`)
+  const safeRig = validateSafeSegment(rigName, 'RIG_NAME')
+  const safeSeat = validateSafeSegment(seat, 'SEAT')
+  return path.join(homeDir, '.openrig', 'state', 'agentflow-lineage', safeRig, `${safeSeat}.jsonl`)
 }
 
 export function appendLineageLedgerEntry({
@@ -237,5 +251,51 @@ export function writeProofLogArtifact({
     passCount,
     failCount,
     summaryLines,
+  }
+}
+
+export function resolveWorldSituationProfile({
+  seat = 'orch.arch',
+  phase = null,
+  isCompacted = false,
+  isHandover = false,
+} = {}) {
+  const normalizedSeat = seat || 'orch.arch'
+  let situation = 'fresh'
+  if (isCompacted) {
+    situation = 'post-compaction'
+  } else if (isHandover) {
+    situation = 'handover'
+  } else if (normalizedSeat === 'rev.review' || normalizedSeat === 'rev-review' || phase === 6) {
+    situation = 'reviewer'
+  }
+
+  return {
+    pack: 'agentflow-world',
+    seat: normalizedSeat,
+    situation,
+    command: `rig context profile agentflow-world --situation ${situation}`,
+    cliFallback: `agentflow-sdlc seat prime ${normalizedSeat} --situation ${situation}`,
+  }
+}
+
+export function evaluateDormantSeatWake({
+  seat = 'dev.qa',
+  queueDepth = 0,
+  activeOccupant = false,
+  phase = null,
+  isCompacted = false,
+  isHandover = false,
+} = {}) {
+  const depth = Math.max(0, Number(queueDepth) || 0)
+  const shouldWake = depth > 0 && !activeOccupant
+  const mode = depth > 0 ? 'wake-on-demand' : 'stay-dormant'
+  return {
+    shouldWake,
+    mode,
+    seat,
+    queueDepth: depth,
+    activeOccupant: Boolean(activeOccupant),
+    profile: resolveWorldSituationProfile({ seat, phase, isCompacted, isHandover }),
   }
 }

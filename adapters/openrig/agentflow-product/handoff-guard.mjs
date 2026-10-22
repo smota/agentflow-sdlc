@@ -3,9 +3,13 @@
 // is busy. This file is installed with the product base and loaded by the seat's runtime:
 //   - Claude Code: a PreToolUse hook runs it on every Bash call (exit 2 blocks the call).
 //   - Pi: an extension in the seat's own agent directory imports it on every bash tool call.
-// It has no imports, so it keeps working when the product checkout moves.
+// It uses only Node built-ins, so it keeps working when the product checkout moves.
+import { existsSync, readFileSync } from 'node:fs'
 
 const PRODUCT_SEAT = /^pm-[^@\s]+@\S+$/
+const DELIVERY_TARGET_PATTERN =
+  /(?:^|[=\s])(?:orch|dev|rev|eval)[.-](?:arch|build(?:-jr|-sr)?|qa|review|test-eng|tester)(?:@\S+|$)/i
+const PRODUCT_TARGET_PATTERN = /^pm[.-][A-Za-z0-9_-]+(?:@\S+)?$/
 
 const RIG_QUEUE_SENDS = new Set([
   'create',
@@ -33,8 +37,12 @@ const MENTIONS = [
     name: 'tmux send-keys',
   },
   {
-    pattern: /\b(?:agentflow-sdlc|cli\.mjs)\b[\s\S]*\bhandoff\s+release\b/,
+    pattern: /\b(?:agentflow-sdlc|cli\.mjs)\b[\s\S]*\bhandoff\s+release\b|\bhandoff\s+release\b/,
     name: 'agentflow-sdlc handoff release',
+  },
+  {
+    pattern: /\b(?:agentflow-sdlc|cli\.mjs|handoff)\b[\s\S]*\bbusy\b[\s\S]*--clear\b/,
+    name: 'agentflow-sdlc handoff busy --clear',
   },
 ]
 
@@ -224,13 +232,147 @@ export function directSend(command, depth = 0) {
   return null
 }
 
+function extractEnvelopeArg(words) {
+  for (let i = 0; i < words.length; i += 1) {
+    if (words[i].computed) return null
+    const w = words[i].word
+    if (w === '--envelope') {
+      const next = words[i + 1]
+      if (!next || next.computed) return null
+      const candidate = next.word.trim()
+      if (!candidate.includes('..') && /^[^\s;&|()]+\.json$/i.test(candidate)) return candidate
+      return null
+    }
+    if (w.startsWith('--envelope=')) {
+      const candidate = w.slice('--envelope='.length).trim()
+      if (!candidate.includes('..') && /^[^\s;&|()]+\.json$/i.test(candidate)) return candidate
+      return null
+    }
+  }
+  return null
+}
+
+function extractQueueDestination(words) {
+  for (let i = 0; i < words.length; i += 1) {
+    if (words[i].computed) return { computed: true, destination: null }
+    const w = words[i].word
+    if (DELIVERY_TARGET_PATTERN.test(w)) {
+      return { computed: false, destination: w, isDelivery: true }
+    }
+    if (w === '--to' || w === '--destination') {
+      const next = words[i + 1]
+      if (!next || next.computed) return { computed: true, destination: null }
+      return {
+        computed: false,
+        destination: next.word.trim(),
+        isDelivery: DELIVERY_TARGET_PATTERN.test(next.word.trim()),
+      }
+    }
+    if (w.startsWith('--to=') || w.startsWith('--destination=')) {
+      const val = w.slice(w.indexOf('=') + 1).trim()
+      return {
+        computed: false,
+        destination: val,
+        isDelivery: DELIVERY_TARGET_PATTERN.test(val),
+      }
+    }
+  }
+  return { computed: false, destination: null, isDelivery: false }
+}
+
+function validateEnvelopeFile(envelopePath, env) {
+  if (!envelopePath) return false
+  if (existsSync(envelopePath)) {
+    try {
+      const parsed = JSON.parse(readFileSync(envelopePath, 'utf8'))
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return false
+      const decisionOrOutcome = parsed.decision ?? parsed.outcome
+      if (typeof decisionOrOutcome !== 'string' || !decisionOrOutcome.trim()) return false
+      if (typeof parsed.from !== 'string' || !parsed.from.trim()) return false
+      if (typeof parsed.to !== 'string' || !parsed.to.trim()) return false
+      if (DELIVERY_TARGET_PATTERN.test(parsed.to.trim())) return false
+      return PRODUCT_TARGET_PATTERN.test(parsed.to.trim())
+    } catch {
+      return false
+    }
+  }
+  return env?.AGENTFLOW_VALIDATED_ENVELOPE === '1'
+}
+
+function isSimpleValidatedQueueCmd(words) {
+  for (let i = 0; i < words.length; i += 1) {
+    if (words[i].computed) continue
+    const name = basename(words[i].word)
+    if (name !== 'rig') continue
+    const rest = words.slice(i + 1).filter((word) => word.computed || !word.word.startsWith('-'))
+    const verb = rest[0]
+    const subverb = rest[1]
+    if (!verb || verb.computed || verb.word !== 'queue') return false
+    if (!subverb || subverb.computed) return false
+    return (
+      subverb.word === 'create' ||
+      subverb.word === 'handoff' ||
+      subverb.word === 'handoff-and-complete'
+    )
+  }
+  return false
+}
+
+function isValidatedEnvelopeQueueSend(command, env) {
+  const tokens = shellTokens(command)
+  const decoded = tokens.map((token) => token.word ?? token.sep ?? token.redirect).join(' ')
+  for (const item of MENTIONS) {
+    if (item.name !== 'rig queue create/handoff' && item.pattern.test(decoded)) {
+      return false
+    }
+  }
+  if (/\brig\b[\s\S]*\bqueue\b[\s\S]*\b(?:inbox-drop|fallback)\b/.test(decoded)) {
+    return false
+  }
+  const commands = simpleCommands(tokens)
+  if (commands.length === 0) return false
+  let sawValidatedQueue = false
+  for (const words of commands) {
+    const hit = structuralHit(words)
+    if (hit !== null) {
+      if (hit !== 'rig queue create/handoff') return false
+      if (!isSimpleValidatedQueueCmd(words)) return false
+      const targetInfo = extractQueueDestination(words)
+      if (targetInfo.computed || targetInfo.isDelivery || !targetInfo.destination) return false
+      if (!PRODUCT_TARGET_PATTERN.test(targetInfo.destination)) return false
+      const envelopePath = extractEnvelopeArg(words)
+      if (!validateEnvelopeFile(envelopePath, env)) return false
+      sawValidatedQueue = true
+    } else {
+      for (const word of words) {
+        if (/[\s;&|()]/.test(word.word) && directSend(word.word, 1)) return false
+      }
+    }
+  }
+  return sawValidatedQueue
+}
+
 export function isProductSeat(session) {
   return typeof session === 'string' && PRODUCT_SEAT.test(session)
 }
 
 /** Decide one shell command. Only product seats are checked; every other session passes. */
-export function guardDecision({ session, command }) {
+export function guardDecision(input, env = process.env) {
+  const isStringInput = typeof input === 'string'
+  const command = isStringInput ? input : input?.command
+  const effectiveEnv = (!isStringInput && input?.env ? input.env : env) ?? process.env
+  const session = isStringInput
+    ? effectiveEnv?.OPENRIG_SESSION_NAME !== undefined
+      ? effectiveEnv.OPENRIG_SESSION_NAME
+      : 'pm-manager@agentflow-pm'
+    : 'session' in (input ?? {})
+      ? input.session
+      : effectiveEnv?.OPENRIG_SESSION_NAME
+
   if (!isProductSeat(session)) return { block: false }
+  if (isValidatedEnvelopeQueueSend(command, effectiveEnv)) {
+    return { block: false, validatedEnvelope: true }
+  }
   const hit = directSend(command)
   if (!hit) return { block: false }
   return {
@@ -259,7 +401,7 @@ export async function runHook({
     const command = call.tool_input?.command ?? call.tool_input?.cmd
     if (command === undefined || command === null) return 0
     const text = Array.isArray(command) ? command.join(' ') : String(command)
-    const decision = guardDecision({ session, command: text })
+    const decision = guardDecision({ session, command: text, env })
     if (!decision.block) return 0
     stderr.write(`${decision.reason}\n`)
     return 2

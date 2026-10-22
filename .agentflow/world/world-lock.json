@@ -1,0 +1,150 @@
+{
+  "version": 1,
+  "generatedAt": "2026-10-22T11:07:59.102Z",
+  "atoms": {
+    "agents-execution-distribution": {
+      "address": "AGENTS.md#execution-distribution",
+      "sectionSha256": "0c0a64616981ddb12d8bb5d40daaf7fb5590fc422fab6ff416b1dbfeb96bdbf9",
+      "tokens": 188
+    },
+    "agents-required-reading-order": {
+      "address": "AGENTS.md#required-reading-order",
+      "sectionSha256": "eed0cdaae3bb413fcf47c3c4afb42b189741fbbd458d3e7b36fe603db3687cd0",
+      "tokens": 90
+    },
+    "agents-operating-model": {
+      "address": "AGENTS.md#operating-model",
+      "sectionSha256": "b01fa0f655f99a87d301edb6c816012f7b7af5f6d0f89de3f07293f759a52486",
+      "tokens": 338
+    },
+    "agents-development-and-skill-guidelines": {
+      "address": "AGENTS.md#development-and-skill-guidelines",
+      "sectionSha256": "802eecfc858b0d239984cf5fe04d206544ca1e492024062b58cf45b03bbf04d9",
+      "tokens": 129
+    },
+    "agents-issue-and-pr-governance": {
+      "address": "AGENTS.md#issue-and-pr-governance",
+      "sectionSha256": "e716994bd49468e528d0cf7a99f104cbcc6e9c7d14422327f80e4722939a7b2e",
+      "tokens": 101
+    },
+    "agents-branch-discipline": {
+      "address": "AGENTS.md#branch-discipline",
+      "sectionSha256": "57d683ac3d4fbd2650ddae1bfba2227c39956901b994368e660de7ea90ee08ce",
+      "tokens": 73
+    },
+    "agents-review-and-safety": {
+      "address": "AGENTS.md#review-and-safety",
+      "sectionSha256": "e73c24662aa55e01e5da940599767faac0b0c3a1e05014c22eb250b60d1bf6d6",
+      "tokens": 102
+    },
+    "agents-tooling-and-validation": {
+      "address": "AGENTS.md#tooling-and-validation",
+      "sectionSha256": "de5443ac170f35ec3103f076cb83c155f6c98820aa0e8efbcc1a08952528abbe",
+      "tokens": 93
+    },
+    "agents-path-ownership-boundaries": {
+      "address": "AGENTS.md#path-ownership-boundaries",
+      "sectionSha256": "20c5bda863ac58736ebe69e546d48ad3d88ae4149c2abe786582ca943e3a5e7e",
+      "tokens": 189
+    },
+    "agents-two-plane-separation": {
+      "address": "AGENTS.md#two-plane-separation",
+      "sectionSha256": "5ae4d7d6031271086fe7ba1ac121f9236b10556798bec65cc5f7aaa1855d6984",
+      "tokens": 93
+    },
+    "readme-understand-it-in-30-seconds": {
+      "address": "README.md#understand-it-in-30-seconds",
+      "sectionSha256": "5fd78def146ea7e2255ee358435bb6e6ca0546214b24b5b25f9bfd788c8f2ff0",
+      "tokens": 524
+    },
+    "readme-how-it-works": {
+      "address": "README.md#how-it-works",
+      "sectionSha256": "ae4347c0dac2a5b65a2bd7a9eaeb509c91bc8bb80b0b1c1bad30c78c902d4c09",
+      "tokens": 180
+    },
+    "readme-what-is-available-now": {
+      "address": "README.md#what-is-available-now",
+      "sectionSha256": "07213228d95950f1ff381f2a10a4161166fd3416a92be210ba28b6a505727b7a",
+      "tokens": 1174
+    },
+    "readme-what-is-available-now-guiding-principles-core-values": {
+      "address": "README.md#what-is-available-now/guiding-principles-core-values",
+      "sectionSha256": "3cd5d5aee73f0d65406b32da2b2d6f1db39354fe035c99b3ba9f98e9e155cba0",
+      "tokens": 308
+    },
+    "readme-what-is-available-now-release-status": {
+      "address": "README.md#what-is-available-now/release-status",
+      "sectionSha256": "6ca9dbc30e15211b067b952e18384848a3e312877febd819ef6a7f7faa9337b7",
+      "tokens": 106
+    },
+    "readme-choose-your-path": {
+      "address": "README.md#choose-your-path",
+      "sectionSha256": "0173ecb72db5e0a9d43abcf9721dee1a4adf00d1f248d2353800ff46fccf846f",
+      "tokens": 413
+    },
+    "readme-core-principles": {
+      "address": "README.md#core-principles",
+      "sectionSha256": "851aeb8b5735183fd826b17bfde47add9b8fc0e14ee5bca9e4191f9651a2ae31",
+      "tokens": 105
+    },
+    "readme-repository-layout": {
+      "address": "README.md#repository-layout",
+      "sectionSha256": "67efdd50262b5dd02b7cfe378d1886745541ff26d981549958ef221f66a69423",
+      "tokens": 216
+    },
+    "readme-contributing": {
+      "address": "README.md#contributing",
+      "sectionSha256": "60f0af343f1baf6e1a481400bc1fd8d5cd7bfd0cd18f31c022a9d80cdaa0bf8a",
+      "tokens": 71
+    },
+    "readme-license": {
+      "address": "README.md#license",
+      "sectionSha256": "a82228cacff81e3a4889d2b3a2d8d225052ed9cc40d9df71f5511b282a95c959",
+      "tokens": 16
+    },
+    "readme-delivery-improvements-in-development": {
+      "address": "README.md#delivery-improvements-in-development",
+      "sectionSha256": "78102cb6ff236c13ea0a87d44cd565788375b053c93bc8cbb7965252615eadaf",
+      "tokens": 108
+    },
+    "product-1-vision-core-job-to-be-done": {
+      "address": ".agentflow/PRODUCT.md#1-vision-core-job-to-be-done",
+      "sectionSha256": "34f6d04aabb4d34f1f1cb3731c5f41e26bd8ed4c20f857c94e0eef5bed3beef1",
+      "tokens": 160
+    },
+    "product-2-system-invariants-non-negotiables": {
+      "address": ".agentflow/PRODUCT.md#2-system-invariants-non-negotiables",
+      "sectionSha256": "1c6c196c677a0c7b454458bb85f0eede56605bf74ab02d52b48d49f307709404",
+      "tokens": 144
+    },
+    "product-3-intentions-tradeoffs": {
+      "address": ".agentflow/PRODUCT.md#3-intentions-tradeoffs",
+      "sectionSha256": "84b39deccef2d7fc67d94a74c7599ad1e39d468e58171a035576db0af559cf65",
+      "tokens": 85
+    },
+    "product-4-capability-map-boundaries": {
+      "address": ".agentflow/PRODUCT.md#4-capability-map-boundaries",
+      "sectionSha256": "423de437ad8742be4420bed1ed96ce434f6c216e3e05d3e60caf15f2dce0d7a2",
+      "tokens": 252
+    },
+    "product-5-active-horizon-anti-goals": {
+      "address": ".agentflow/PRODUCT.md#5-active-horizon-anti-goals",
+      "sectionSha256": "0f26b9efa05eae0617ef4041b25bf3c505764818bac7e91c006df416164c8c99",
+      "tokens": 121
+    }
+  },
+  "claims": [
+    {
+      "id": "workflow.ciCommands",
+      "file": "agent-workflow.config.json",
+      "key": "ciCommands",
+      "expected": ["pnpm test", "pnpm test:workflow", "pnpm format:check"]
+    },
+    {
+      "id": "package.scripts.test",
+      "file": "package.json",
+      "key": "scripts.test",
+      "expected": "vitest run"
+    }
+  ]
+}

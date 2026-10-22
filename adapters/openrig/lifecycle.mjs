@@ -22,6 +22,7 @@ import {
 } from 'node:fs'
 import { homedir } from 'node:os'
 import { delimiter, dirname, join, relative, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { loadAuthoritativeConfigs, validateConfigAuthority } from '../../lib/config/authority.mjs'
 import { executionDocument, parseExecutionYaml, planRigExecution } from './execution-plan.mjs'
 import { normalizeContractModel } from '../../lib/config/execution-contract.mjs'
@@ -33,9 +34,114 @@ import {
   parseCompactObservation,
 } from './operational-preflight.mjs'
 
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
+const PACKAGE_VERSION = (() => {
+  try {
+    return JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).version || '1.10.0'
+  } catch {
+    return '1.10.0'
+  }
+})()
+
 const ADAPTER_ID = 'openrig'
 const BASES = { delivery: 'agentflow', product: 'agentflow-product', steer: 'agentflow-steer' }
 const BASE_NAMES = Object.values(BASES)
+
+const SAFE_VERSION_RE = /^[A-Za-z0-9._-]+$/
+
+function isValidVersionSegment(ver) {
+  return (
+    typeof ver === 'string' &&
+    ver.length > 0 &&
+    ver !== '.' &&
+    ver !== '..' &&
+    !ver.includes('..') &&
+    SAFE_VERSION_RE.test(ver)
+  )
+}
+
+export function versionedBaseName(baseName, channelOrVersion) {
+  if (!channelOrVersion || channelOrVersion === 'default') return baseName
+  if (typeof channelOrVersion === 'object') {
+    const rawVer = channelOrVersion.version
+      ? String(channelOrVersion.version).trim().replace(/^@/, '')
+      : channelOrVersion.suffix
+        ? String(channelOrVersion.suffix).trim().replace(/^@/, '')
+        : ''
+    if (!rawVer || channelOrVersion.channel === 'default') return baseName
+    if (!isValidVersionSegment(rawVer)) {
+      fail(`Invalid version '${rawVer}' for base spec '${baseName}'.`)
+    }
+    return `${baseName}@${rawVer}`
+  }
+  const normalized = String(channelOrVersion).trim().replace(/^@/, '')
+  if (!normalized) return baseName
+  if (!isValidVersionSegment(normalized)) {
+    fail(`Invalid version '${normalized}' for base spec '${baseName}'.`)
+  }
+  return `${baseName}@${normalized}`
+}
+
+export function resolveProjectSpecChannel(projectDir, { repoRoot = ROOT } = {}) {
+  if (!projectDir || typeof projectDir !== 'string') {
+    return { channel: 'default', version: null, suffix: '' }
+  }
+  const lockCandidates = [
+    join(projectDir, 'agent-framework-lock.json'),
+    join(projectDir, '.agentflow', 'adoption-lock.json'),
+    join(projectDir, '.agentflow', 'agent-framework-lock.json'),
+  ]
+  for (const lockPath of lockCandidates) {
+    if (existsSync(lockPath) && statSync(lockPath).isFile()) {
+      let lock
+      try {
+        lock = JSON.parse(readFileSync(lockPath, 'utf8'))
+      } catch {
+        continue
+      }
+      const ver = String(lock.frameworkVersion || lock.version || '').trim()
+      if (ver) {
+        if (!isValidVersionSegment(ver)) {
+          fail(`Invalid frameworkVersion '${ver}' in ${lockPath}.`)
+        }
+        return { channel: 'versioned', version: ver, suffix: `@${ver}` }
+      }
+    }
+  }
+  const isDogfoodRepo =
+    existsSync(join(projectDir, 'manifests', 'product-payload.json')) &&
+    existsSync(join(projectDir, 'adapters', 'openrig', 'lifecycle.mjs'))
+  if (isDogfoodRepo) {
+    return { channel: 'dev', version: 'dev', suffix: '@dev' }
+  }
+  return { channel: 'default', version: null, suffix: '' }
+}
+
+function mergeProductIntoDeliveryConfig(deliveryConfigText, productConfigText) {
+  if (!productConfigText) return deliveryConfigText
+  try {
+    const deliveryDoc = executionDocument(deliveryConfigText, 'delivery bundle configurations')
+    const productParsed = parseExecutionYaml(productConfigText, 'product bundle configurations')
+    const deliveryParsed = deliveryDoc.toJS({ maxAliasCount: 0 })
+
+    for (const [seat, value] of Object.entries(productParsed.seats ?? {})) {
+      if (!deliveryParsed.seats?.[seat]) {
+        deliveryDoc.setIn(['seats', seat], value)
+      }
+    }
+    for (const [presetName, presetSeats] of Object.entries(productParsed.presets ?? {})) {
+      if (!deliveryParsed.presets?.[presetName] || typeof presetSeats !== 'object') continue
+      for (const [seat, tuple] of Object.entries(presetSeats)) {
+        if (deliveryParsed.presets[presetName]?.[seat] === undefined) {
+          deliveryDoc.setIn(['presets', presetName, seat], tuple)
+        }
+      }
+    }
+    return deliveryDoc.toString()
+  } catch {
+    return deliveryConfigText
+  }
+}
 const DELIVERY_PI_SEATS = [
   'orch-arch',
   'rev-review',
@@ -116,11 +222,17 @@ function planInstall(adapterDir, requested) {
     fail(`Delivery preset "${delivery.name}" and product preset "${product.name}" differ.`)
   }
   const steerPresetName = resolvePreset(join(sources.steer, 'configurations.yaml'), requested).name
+  const productConfigText = readFileSync(join(sources.product, 'configurations.yaml'), 'utf8')
   const executionPlans = {}
   for (const [kind, dir] of Object.entries(sources)) {
+    const rawConfigText = readFileSync(join(dir, 'configurations.yaml'), 'utf8')
+    const configText =
+      kind === 'delivery'
+        ? mergeProductIntoDeliveryConfig(rawConfigText, productConfigText)
+        : rawConfigText
     const plan = planRigExecution({
       rigText: readFileSync(join(dir, 'rig.yaml'), 'utf8'),
-      configText: readFileSync(join(dir, 'configurations.yaml'), 'utf8'),
+      configText,
       preset: kind === 'steer' ? steerPresetName : delivery.name,
     })
     if (!plan.ok)
@@ -138,7 +250,9 @@ function planInstall(adapterDir, requested) {
     preset: delivery.name,
     piSeats: Object.entries(executionPlans).flatMap(([kind, plan]) =>
       plan.contracts
-        .filter((item) => item.runtime === 'pi')
+        .filter(
+          (item) => item.runtime === 'pi' && (kind !== 'delivery' || !item.seat.startsWith('pm.')),
+        )
         .map((item) => `${item.seat.replaceAll('.', '-')}@${BASES[kind]}`),
     ),
   }
@@ -415,21 +529,40 @@ function refreshTree(source, target, { exact }) {
   return extras
 }
 
+function writeBaseInstance(sourceDir, targetDir, rigText, preset, bundle) {
+  mirror(sourceDir, targetDir)
+  writeFileSync(join(targetDir, 'rig.yaml'), rigText)
+  if (preset === bundle.distribution?.profile)
+    writeFileSync(
+      join(targetDir, 'execution-distribution.json'),
+      JSON.stringify(bundle.distribution, null, 2) + '\n',
+    )
+}
+
 function writeBases(home, plan, out) {
   const { specs } = locations(home)
   out('==> 1. Syncing AgentFlow delivery, product, and steer bases to the OpenRig user library...')
   for (const [kind, name] of Object.entries(BASES)) {
-    mirror(plan.sources[kind], join(specs, name))
-    writeFileSync(join(specs, name, 'rig.yaml'), plan.executionPlans[kind].rigText)
     const bundle = parseExecutionYaml(
       readFileSync(join(plan.sources[kind], 'configurations.yaml'), 'utf8'),
       'bundle',
     )
-    if (plan.preset === bundle.distribution?.profile)
-      writeFileSync(
-        join(specs, name, 'execution-distribution.json'),
-        JSON.stringify(bundle.distribution, null, 2) + '\n',
-      )
+    const rigText = plan.executionPlans[kind].rigText
+    writeBaseInstance(plan.sources[kind], join(specs, name), rigText, plan.preset, bundle)
+    writeBaseInstance(
+      plan.sources[kind],
+      join(specs, versionedBaseName(name, PACKAGE_VERSION)),
+      rigText,
+      plan.preset,
+      bundle,
+    )
+    writeBaseInstance(
+      plan.sources[kind],
+      join(specs, versionedBaseName(name, 'dev')),
+      rigText,
+      plan.preset,
+      bundle,
+    )
   }
 }
 
@@ -500,14 +633,23 @@ export function update(ctx) {
   // An upgrade refreshes software, not a selected model policy. Validate every
   // pinned base before the first write; legacy bases retain their exact rig bytes.
   const preserved = {}
+  const productSourceConfigPath = join(adapterDir, BASES.product, 'configurations.yaml')
+  const productSourceConfigText = isFile(productSourceConfigPath)
+    ? readFileSync(productSourceConfigPath, 'utf8')
+    : ''
   for (const [kind, name] of Object.entries(BASES)) {
     const target = join(specs, name)
     const selectionFile = join(target, 'execution-distribution.json')
     if (isFile(selectionFile)) {
       const selection = JSON.parse(readFileSync(selectionFile, 'utf8'))
+      const rawConfigText = readFileSync(join(adapterDir, name, 'configurations.yaml'), 'utf8')
+      const configText =
+        kind === 'delivery'
+          ? mergeProductIntoDeliveryConfig(rawConfigText, productSourceConfigText)
+          : rawConfigText
       const projected = planRigExecution({
         rigText: readFileSync(join(adapterDir, name, 'rig.yaml'), 'utf8'),
-        configText: readFileSync(join(adapterDir, name, 'configurations.yaml'), 'utf8'),
+        configText,
         preset: selection.profile,
         config: { executionDistribution: selection },
       })
@@ -533,6 +675,16 @@ export function update(ctx) {
         JSON.stringify(preserved[kind].selection, null, 2) + '\n',
       )
     extras.push(...kept.map((file) => `${name}/${file}`))
+    const devTarget = join(specs, versionedBaseName(name, 'dev'))
+    if (isDirectory(devTarget)) {
+      refreshTree(join(adapterDir, BASES[kind]), devTarget, { exact })
+      writeFileSync(join(devTarget, 'rig.yaml'), preserved[kind].rigText)
+      if (preserved[kind].selection)
+        writeFileSync(
+          join(devTarget, 'execution-distribution.json'),
+          JSON.stringify(preserved[kind].selection, null, 2) + '\n',
+        )
+    }
   }
   if (extras.length > 0) {
     out('   Left installed files that this product does not ship:')
@@ -548,7 +700,7 @@ export function update(ctx) {
 }
 
 // A project name becomes a directory and a rig name, so it is one plain path segment.
-export function squadRigName(project) {
+export function squadRigName(project, _kind = 'delivery') {
   if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(project)) {
     fail(`'${project}' is not a valid project name. Use letters, digits, '.', '_', or '-'.`)
   }
@@ -645,6 +797,25 @@ export function siblingRecord(kind, rigName, sibling, extra = {}) {
     return `${lines.join('\n')}\n`
   }
 
+  if (kind === 'unified') {
+    const lines = [
+      '# Unified Multi-Pod Topology',
+      '',
+      `This copy is the unified squad \`${rigName}\` containing in-rig pods: \`pm\`, \`orch\`, \`dev\`, \`rev\`, and \`eval\`.`,
+      '- Product intake and specification (`pm.manager`, `pm.analyst`) hand off directly in-rig to `orch.arch`.',
+      '- `dev.build` delegates laterally in parallel to `dev.qa` (Phase 5) and `rev.review` (Phase 6) on the same commit SHA.',
+      '- Supervisory steering (`steer.lead`) remains strictly out-of-rig without git worktrees or code-authoring permissions.',
+    ]
+    if (steer) {
+      lines.push(
+        '',
+        'Supervisory steering plane:',
+        `- steer-lead@${steer} (supervisory steering plane; escalation only for unfreeze / deadlock resolution)`,
+      )
+    }
+    return `${lines.join('\n')}\n`
+  }
+
   const deliveryOrProductSibling =
     siblingStr || (kind === 'product' ? options.delivery : options.product) || ''
   const lines = ['# Sibling squad', '']
@@ -720,18 +891,34 @@ function ensureSteerDir(home, rigName) {
 
 function squadPiSeats(kind, rigName, rigText) {
   const rig = parseExecutionYaml(rigText, 'planned rig')
-  return rig.pods.flatMap((pod) =>
-    pod.members
-      .filter((member) => member.runtime === 'pi')
-      .map((member) => `${pod.id}-${member.id}@${rigName}`),
-  )
+  return rig.pods
+    .filter((pod) => kind !== 'delivery' || pod.id !== 'pm')
+    .flatMap((pod) =>
+      pod.members
+        .filter((member) => member.runtime === 'pi')
+        .map((member) => `${pod.id}-${member.id}@${rigName}`),
+    )
 }
 
 function prepareSquadExecution(ctx, kind, projectCwd) {
-  const installed = join(locations(ctx.home).specs, BASES[kind])
-  const baseDir = isFile(join(installed, 'rig.yaml'))
-    ? installed
-    : join(ctx.adapterDir, BASES[kind])
+  const baseKind = kind === 'unified' ? 'delivery' : kind
+  const channelInfo = resolveProjectSpecChannel(projectCwd)
+  const { specs } = locations(ctx.home)
+  const versionedInstalled = channelInfo.suffix
+    ? join(specs, `${BASES[baseKind]}${channelInfo.suffix}`)
+    : null
+  const unversionedInstalled = join(specs, BASES[baseKind])
+  const baseDir =
+    versionedInstalled && isFile(join(versionedInstalled, 'rig.yaml'))
+      ? versionedInstalled
+      : isFile(join(unversionedInstalled, 'rig.yaml'))
+        ? unversionedInstalled
+        : join(ctx.adapterDir, BASES[baseKind])
+  const baseSpec =
+    versionedInstalled && isFile(join(versionedInstalled, 'rig.yaml'))
+      ? `${BASES[baseKind]}${channelInfo.suffix}`
+      : BASES[baseKind]
+
   const loaded = loadAuthoritativeConfigs(projectCwd)
   const validation = validateConfigAuthority(loaded)
   if (!validation.ok) fail(validation.errors.join('; '))
@@ -742,9 +929,22 @@ function prepareSquadExecution(ctx, kind, projectCwd) {
         adapters: loaded.adapters,
         executionDistribution: loaded.workflow.executionDistribution,
       }
+  const rawConfigText = readFileSync(join(baseDir, 'configurations.yaml'), 'utf8')
+  const productConfigCandidate = [
+    channelInfo.suffix
+      ? join(specs, `${BASES.product}${channelInfo.suffix}`, 'configurations.yaml')
+      : null,
+    join(specs, BASES.product, 'configurations.yaml'),
+    join(ctx.adapterDir, BASES.product, 'configurations.yaml'),
+  ].find((p) => p && isFile(p))
+  const configText =
+    baseKind === 'delivery' && productConfigCandidate
+      ? mergeProductIntoDeliveryConfig(rawConfigText, readFileSync(productConfigCandidate, 'utf8'))
+      : rawConfigText
+
   const desired = {
     rigText: readFileSync(join(baseDir, 'rig.yaml'), 'utf8'),
-    configText: readFileSync(join(baseDir, 'configurations.yaml'), 'utf8'),
+    configText,
     preset:
       ctx.options.preset ??
       config.executionDistribution?.profile ??
@@ -762,6 +962,9 @@ function prepareSquadExecution(ctx, kind, projectCwd) {
   return Object.freeze({
     ...plan,
     baseDir,
+    baseSpec,
+    baseChannel: channelInfo.channel,
+    channelInfo,
     desired,
     configuredSeats: Object.keys(config.adapters?.openrig?.executionPolicy?.seats ?? {}),
   })
@@ -814,11 +1017,24 @@ function writeSquadSpec({
   const plan = executionPlan ?? prepareSquadExecution(ctx, kind, projectCwd)
   requireActiveExecution(plan)
   requireFreshSquadTargets(ctx, [rigName])
-  const baseDir = join(specs, BASES[kind])
-  if (!isFile(join(baseDir, 'rig.yaml'))) {
-    out(`==> Base spec not found in ${baseDir}. Installing the ${ADAPTER_ID} adapter first...`)
+  const baseKind = kind === 'unified' ? 'delivery' : kind
+  const channelInfo = plan.channelInfo ?? resolveProjectSpecChannel(projectCwd)
+  const defaultBaseDir = join(specs, BASES[baseKind])
+  const versionedBaseDir = channelInfo.suffix
+    ? join(specs, `${BASES[baseKind]}${channelInfo.suffix}`)
+    : null
+  if (
+    !isFile(join(defaultBaseDir, 'rig.yaml')) &&
+    (!versionedBaseDir || !isFile(join(versionedBaseDir, 'rig.yaml')))
+  ) {
+    out(
+      `==> Base spec not found in ${defaultBaseDir}. Installing the ${ADAPTER_ID} adapter first...`,
+    )
     installBases(ctx, options.preset, null)
   }
+  const useVersionedBase = Boolean(versionedBaseDir && isFile(join(versionedBaseDir, 'rig.yaml')))
+  const baseDir = useVersionedBase ? versionedBaseDir : defaultBaseDir
+  const baseSpec = useVersionedBase ? `${BASES[baseKind]}${channelInfo.suffix}` : BASES[baseKind]
 
   const targetDir = join(specs, rigName)
   let rigText = renameRig(plan.rigText, rigName)
@@ -834,10 +1050,33 @@ function writeSquadSpec({
   for (const name of SHARED_FILES) {
     if (isFile(join(baseDir, name))) bridge(join(baseDir, name), join(targetDir, name), false)
   }
+  if (kind === 'unified' || kind === 'product') {
+    const productBaseDir =
+      useVersionedBase && isDirectory(join(specs, `${BASES.product}${channelInfo.suffix}`))
+        ? join(specs, `${BASES.product}${channelInfo.suffix}`)
+        : isDirectory(join(specs, BASES.product))
+          ? join(specs, BASES.product)
+          : join(ctx.adapterDir, BASES.product)
+    for (const guardFile of ['handoff-guard.mjs', 'handoff.mjs']) {
+      if (isFile(join(productBaseDir, guardFile)) && !lexists(join(targetDir, guardFile))) {
+        bridge(join(productBaseDir, guardFile), join(targetDir, guardFile), false)
+      }
+    }
+  }
   writeFileSync(join(targetDir, 'rig.yaml'), rigText)
   writeFileSync(
     join(targetDir, 'execution-contracts.json'),
-    `${JSON.stringify({ preset: plan.preset, contracts: plan.contracts, diagnostics: plan.diagnostics }, null, 2)}\n`,
+    `${JSON.stringify(
+      {
+        preset: plan.preset,
+        baseChannel: channelInfo.channel,
+        baseSpec,
+        contracts: plan.contracts,
+        diagnostics: plan.diagnostics,
+      },
+      null,
+      2,
+    )}\n`,
   )
 
   const siblingContent = siblingRecord(kind, rigName, sibling, { steer, product, delivery })
@@ -852,7 +1091,9 @@ function writeSquadSpec({
   out(`==> 2. ${isUpdate ? 'Keeping' : 'Provisioning'} Pi state bridges for squad '${rigName}'...`)
   for (const seat of squadPiSeats(kind, rigName, rigText)) {
     if (!isUpdate || !lexists(join(piState, seat))) bridgePiSeat(home, seat)
-    if (kind === 'product') installPiGuard(home, seat)
+    if ((kind === 'product' || kind === 'unified') && isProductSeatName(seat)) {
+      installPiGuard(home, seat)
+    }
   }
 
   out(`==> 3. Ensuring Git hygiene in target project '${projectCwd}'...`)
@@ -872,7 +1113,7 @@ function writeSquadSpec({
       fail(`rig spec validate failed for ${join(targetDir, 'rig.yaml')}.`)
   }
 
-  return { rigName, targetDir }
+  return { rigName, targetDir, baseChannel: channelInfo.channel, baseSpec }
 }
 
 function provisionAll(ctx) {
@@ -1008,9 +1249,10 @@ function writeSquad(ctx, isUpdate) {
     kind !== 'delivery' &&
     kind !== 'product' &&
     kind !== 'steer' &&
+    kind !== 'unified' &&
     kind !== 'all'
   ) {
-    fail(`--kind must be delivery, product, steer, or all, not '${kind}'.`)
+    fail(`--kind must be delivery, product, steer, unified, or all, not '${kind}'.`)
   }
 
   if (kind === 'all') {
@@ -1090,7 +1332,7 @@ export function squadUpdate(ctx) {
 // bases, contact the daemon, or equate inventory support with usable live execution.
 export function squadPlan(ctx) {
   const kind = ctx.options.kind ?? 'all'
-  if (kind !== 'all' && !BASES[kind]) fail(`Unknown squad kind ${kind}`)
+  if (kind !== 'all' && kind !== 'unified' && !BASES[kind]) fail(`Unknown squad kind ${kind}`)
   squadRigName(ctx.operands[0])
   const projectCwd = resolve(ctx.cwd, ctx.operands[1] ?? '.')
   if (!isDirectory(projectCwd)) fail('Project directory does not exist')
@@ -1099,7 +1341,7 @@ export function squadPlan(ctx) {
     kind: item,
     ...prepareSquadExecution(ctx, item, projectCwd),
   }))
-  if (kind === 'all') validateTopologySeats(plans)
+  if (kind === 'all' || kind === 'unified') validateTopologySeats(plans)
   const result = {
     ok: true,
     operation: 'plan',
@@ -1229,7 +1471,7 @@ function publicMutationPreview(plan) {
 
 export function squadMutationPlan(ctx) {
   const kind = ctx.options.kind ?? 'all'
-  if (kind !== 'all' && !BASES[kind]) fail(`Unknown squad kind ${kind}`)
+  if (kind !== 'all' && kind !== 'unified' && !BASES[kind]) fail(`Unknown squad kind ${kind}`)
   if (kind === 'all' && ctx.options.rig) fail('--rig requires one explicit squad kind')
   const project = ctx.operands[0]
   squadRigName(project)
@@ -1240,9 +1482,9 @@ export function squadMutationPlan(ctx) {
     kind: item,
     ...prepareSquadExecution(ctx, item, projectCwd),
   }))
-  if (kind === 'all') validateTopologySeats(prepared)
+  if (kind === 'all' || kind === 'unified') validateTopologySeats(prepared)
   const plans = prepared.map((item) => {
-    const suffix = { delivery: 'dev', product: 'pm', steer: 'steer' }[item.kind]
+    const suffix = { delivery: 'dev', product: 'pm', steer: 'steer', unified: '' }[item.kind]
     const rigName =
       ctx.options.rig ?? squadRigName(kind === 'all' ? `${project}-${suffix}` : project)
     if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(rigName)) fail('Stable installed rig ID required')
@@ -1392,7 +1634,12 @@ export function listSquads(ctx) {
   // Listing is read-only: an unreadable status shows as stopped, as when rig is absent.
   const { statuses } = rigStatuses(ctx)
   return readdirSync(specs)
-    .filter((name) => name.startsWith('agentflow') && isFile(join(specs, name, 'rig.yaml')))
+    .filter(
+      (name) =>
+        name.startsWith('agentflow') &&
+        !name.includes('@') &&
+        isFile(join(specs, name, 'rig.yaml')),
+    )
     .sort()
     .map((name) => ({
       rig: name,
@@ -1490,4 +1737,13 @@ export {
   resolveStickyBuilderOnReturn,
   countUnmergedAccepted,
   canAdmitNextSlice,
+  joinParallelVerdicts,
 } from './tier-routing.mjs'
+
+export {
+  DORMANT_SEATS,
+  resolveWorldSituationProfile,
+  evaluateDormantSeatWake,
+  resolveLineageLedgerPath,
+  appendLineageLedgerEntry,
+} from './continuity-policy.mjs'
