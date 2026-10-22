@@ -161,12 +161,12 @@ try {
   const doctorResult = inspectDoctor({ packageRoot, targetDir: scratch })
   if (
     doctorResult.schemaVersion !== 1 ||
-    Object.keys(doctorResult.dimensions).length !== 4 ||
+    Object.keys(doctorResult.dimensions).length !== 5 ||
     doctorResult.dimensions['lock-integrity'].find((f) => f.id === 'baseline.receipt')
       ?.alignment !== 'unknown'
   )
     throw new Error(
-      'Package consumer doctor service did not expose explicit unknown baseline and four dimensions',
+      'Package consumer doctor service did not expose explicit unknown baseline and five dimensions',
     )
 
   const profileEntrypoints = {
@@ -232,7 +232,7 @@ try {
       })
       if (
         observed.schemaVersion !== 1 ||
-        Object.keys(observed.dimensions).length !== 4 ||
+        Object.keys(observed.dimensions).length !== 5 ||
         observed.dimensions['lock-integrity'].find((f) => f.id === 'baseline.receipt')
           ?.alignment !== 'matched'
       )

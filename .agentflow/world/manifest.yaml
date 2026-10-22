@@ -1,0 +1,495 @@
+schema: openrig.context-pack/v1
+name: agentflow-sdlc-world
+taxonomy: world
+description: Zero-copy addressable world manifest for agentflow-sdlc
+atoms:
+  - id: agents-execution-distribution
+    address: 'AGENTS.md#execution-distribution'
+    taxonomy: world
+    regions:
+      - state
+      - laws
+    situations:
+      - fresh
+      - handover
+      - post-compaction
+    purpose: 'Section "Execution distribution" in AGENTS.md covering state, laws.'
+    order: 1
+    priority: core
+    probe:
+      prompt: 'What does section "Execution distribution" (AGENTS.md#execution-distribution) define for state?'
+      expect: Establishes Execution distribution in AGENTS.md for state.
+      expectedPatterns:
+        - Execution
+        - distribution
+  - id: agents-required-reading-order
+    address: 'AGENTS.md#required-reading-order'
+    taxonomy: world
+    regions:
+      - actors
+      - laws
+    situations:
+      - fresh
+      - handover
+      - post-compaction
+    purpose: 'Section "Required reading order" in AGENTS.md covering actors, laws.'
+    order: 2
+    priority: core
+    probe:
+      prompt: 'What does section "Required reading order" (AGENTS.md#required-reading-order) define for actors?'
+      expect: Establishes Required reading order in AGENTS.md for actors.
+      expectedPatterns:
+        - Required
+        - reading
+  - id: agents-operating-model
+    address: 'AGENTS.md#operating-model'
+    taxonomy: world
+    regions:
+      - state
+      - identity
+    situations:
+      - fresh
+      - handover
+      - post-compaction
+    purpose: 'Section "Operating model" in AGENTS.md covering state, identity.'
+    order: 3
+    priority: core
+    probe:
+      prompt: 'What does section "Operating model" (AGENTS.md#operating-model) define for state?'
+      expect: Establishes Operating model in AGENTS.md for state.
+      expectedPatterns:
+        - Operating
+        - model
+  - id: agents-development-and-skill-guidelines
+    address: 'AGENTS.md#development-and-skill-guidelines'
+    taxonomy: world
+    regions:
+      - affordances
+      - identity
+    situations:
+      - fresh
+      - handover
+      - post-compaction
+    purpose: 'Section "Development and skill guidelines" in AGENTS.md covering affordances, identity.'
+    order: 4
+    priority: core
+    probe:
+      prompt: 'What does section "Development and skill guidelines" (AGENTS.md#development-and-skill-guidelines) define for affordances?'
+      expect: Establishes Development and skill guidelines in AGENTS.md for affordances.
+      expectedPatterns:
+        - Development
+        - and
+  - id: agents-issue-and-pr-governance
+    address: 'AGENTS.md#issue-and-pr-governance'
+    taxonomy: world
+    regions:
+      - laws
+      - state
+    situations:
+      - fresh
+      - handover
+      - post-compaction
+    purpose: 'Section "Issue and PR governance" in AGENTS.md covering laws, state.'
+    order: 5
+    priority: core
+    probe:
+      prompt: 'What does section "Issue and PR governance" (AGENTS.md#issue-and-pr-governance) define for laws?'
+      expect: Establishes Issue and PR governance in AGENTS.md for laws.
+      expectedPatterns:
+        - Issue
+        - and
+  - id: agents-branch-discipline
+    address: 'AGENTS.md#branch-discipline'
+    taxonomy: world
+    regions:
+      - laws
+      - state
+    situations:
+      - fresh
+      - handover
+      - post-compaction
+    purpose: 'Section "Branch discipline" in AGENTS.md covering laws, state.'
+    order: 6
+    priority: core
+    probe:
+      prompt: 'What does section "Branch discipline" (AGENTS.md#branch-discipline) define for laws?'
+      expect: Establishes Branch discipline in AGENTS.md for laws.
+      expectedPatterns:
+        - Branch
+        - discipline
+  - id: agents-review-and-safety
+    address: 'AGENTS.md#review-and-safety'
+    taxonomy: world
+    regions:
+      - laws
+      - actors
+    situations:
+      - fresh
+      - handover
+      - post-compaction
+    purpose: 'Section "Review and safety" in AGENTS.md covering laws, actors.'
+    order: 7
+    priority: core
+    probe:
+      prompt: 'What does section "Review and safety" (AGENTS.md#review-and-safety) define for laws?'
+      expect: Establishes Review and safety in AGENTS.md for laws.
+      expectedPatterns:
+        - Review
+        - and
+  - id: agents-tooling-and-validation
+    address: 'AGENTS.md#tooling-and-validation'
+    taxonomy: world
+    regions:
+      - affordances
+      - laws
+    situations:
+      - fresh
+      - handover
+      - post-compaction
+    purpose: 'Section "Tooling and validation" in AGENTS.md covering affordances, laws.'
+    order: 8
+    priority: core
+    probe:
+      prompt: 'What does section "Tooling and validation" (AGENTS.md#tooling-and-validation) define for affordances?'
+      expect: Establishes Tooling and validation in AGENTS.md for affordances.
+      expectedPatterns:
+        - Tooling
+        - and
+  - id: agents-path-ownership-boundaries
+    address: 'AGENTS.md#path-ownership-boundaries'
+    taxonomy: world
+    regions:
+      - terrain
+      - actors
+    situations:
+      - fresh
+      - handover
+      - post-compaction
+    purpose: 'Section "Path ownership boundaries" in AGENTS.md covering terrain, actors.'
+    order: 9
+    priority: core
+    probe:
+      prompt: 'What does section "Path ownership boundaries" (AGENTS.md#path-ownership-boundaries) define for terrain?'
+      expect: Establishes Path ownership boundaries in AGENTS.md for terrain.
+      expectedPatterns:
+        - Path
+        - ownership
+  - id: agents-two-plane-separation
+    address: 'AGENTS.md#two-plane-separation'
+    taxonomy: world
+    regions:
+      - actors
+      - terrain
+    situations:
+      - fresh
+      - handover
+      - post-compaction
+    purpose: 'Section "Two-Plane Separation" in AGENTS.md covering actors, terrain.'
+    order: 10
+    priority: core
+    probe:
+      prompt: 'What does section "Two-Plane Separation" (AGENTS.md#two-plane-separation) define for actors?'
+      expect: Establishes Two-Plane Separation in AGENTS.md for actors.
+      expectedPatterns:
+        - Two
+        - Plane
+  - id: readme-understand-it-in-30-seconds
+    address: 'README.md#understand-it-in-30-seconds'
+    taxonomy: world
+    regions:
+      - affordances
+      - state
+    situations:
+      - fresh
+      - handover
+      - post-compaction
+    purpose: 'Section "Understand it in 30 seconds" in README.md covering affordances, state.'
+    order: 11
+    priority: core
+    probe:
+      prompt: 'What does section "Understand it in 30 seconds" (README.md#understand-it-in-30-seconds) define for affordances?'
+      expect: Establishes Understand it in 30 seconds in README.md for affordances.
+      expectedPatterns:
+        - Understand
+        - seconds
+  - id: readme-how-it-works
+    address: 'README.md#how-it-works'
+    taxonomy: world
+    regions:
+      - affordances
+      - actors
+    situations:
+      - fresh
+      - handover
+      - post-compaction
+    purpose: 'Section "How it works" in README.md covering affordances, actors.'
+    order: 12
+    priority: core
+    probe:
+      prompt: 'What does section "How it works" (README.md#how-it-works) define for affordances?'
+      expect: Establishes How it works in README.md for affordances.
+      expectedPatterns:
+        - How
+        - works
+  - id: readme-what-is-available-now
+    address: 'README.md#what-is-available-now'
+    taxonomy: world
+    regions:
+      - identity
+      - state
+    situations:
+      - fresh
+      - handover
+      - post-compaction
+    purpose: 'Section "What is available now" in README.md covering identity, state.'
+    order: 13
+    priority: core
+    probe:
+      prompt: 'What does section "What is available now" (README.md#what-is-available-now) define for identity?'
+      expect: Establishes What is available now in README.md for identity.
+      expectedPatterns:
+        - What
+        - available
+  - id: readme-what-is-available-now-guiding-principles-core-values
+    address: 'README.md#what-is-available-now/guiding-principles-core-values'
+    taxonomy: world
+    regions:
+      - ontology
+      - laws
+    situations:
+      - fresh
+      - handover
+      - post-compaction
+    purpose: 'Section "Guiding principles & core values" in README.md covering ontology, laws.'
+    order: 14
+    priority: core
+    probe:
+      prompt: 'What does section "Guiding principles & core values" (README.md#what-is-available-now/guiding-principles-core-values) define for ontology?'
+      expect: 'Establishes Guiding principles & core values in README.md for ontology.'
+      expectedPatterns:
+        - Guiding
+        - principles
+  - id: readme-what-is-available-now-release-status
+    address: 'README.md#what-is-available-now/release-status'
+    taxonomy: world
+    regions:
+      - state
+      - terrain
+    situations:
+      - fresh
+      - handover
+      - post-compaction
+    purpose: 'Section "Release status" in README.md covering state, terrain.'
+    order: 15
+    priority: core
+    probe:
+      prompt: 'What does section "Release status" (README.md#what-is-available-now/release-status) define for state?'
+      expect: Establishes Release status in README.md for state.
+      expectedPatterns:
+        - Release
+        - status
+  - id: readme-choose-your-path
+    address: 'README.md#choose-your-path'
+    taxonomy: world
+    regions:
+      - terrain
+      - actors
+    situations:
+      - fresh
+      - handover
+      - post-compaction
+    purpose: 'Section "Choose your path" in README.md covering terrain, actors.'
+    order: 16
+    priority: core
+    probe:
+      prompt: 'What does section "Choose your path" (README.md#choose-your-path) define for terrain?'
+      expect: Establishes Choose your path in README.md for terrain.
+      expectedPatterns:
+        - Choose
+        - your
+  - id: readme-core-principles
+    address: 'README.md#core-principles'
+    taxonomy: world
+    regions:
+      - state
+      - actors
+    situations:
+      - fresh
+      - handover
+    purpose: 'Section "Core principles" in README.md covering state, actors.'
+    order: 17
+    priority: recommended
+    probe:
+      prompt: 'What does section "Core principles" (README.md#core-principles) define for state?'
+      expect: Establishes Core principles in README.md for state.
+      expectedPatterns:
+        - Core
+        - principles
+  - id: readme-repository-layout
+    address: 'README.md#repository-layout'
+    taxonomy: world
+    regions:
+      - terrain
+      - affordances
+    situations:
+      - fresh
+      - handover
+      - post-compaction
+    purpose: 'Section "Repository layout" in README.md covering terrain, affordances.'
+    order: 18
+    priority: core
+    probe:
+      prompt: 'What does section "Repository layout" (README.md#repository-layout) define for terrain?'
+      expect: Establishes Repository layout in README.md for terrain.
+      expectedPatterns:
+        - Repository
+        - layout
+  - id: readme-contributing
+    address: 'README.md#contributing'
+    taxonomy: world
+    regions:
+      - actors
+      - affordances
+    situations:
+      - fresh
+      - handover
+      - post-compaction
+    purpose: 'Section "Contributing" in README.md covering actors, affordances.'
+    order: 19
+    priority: core
+    probe:
+      prompt: 'What does section "Contributing" (README.md#contributing) define for actors?'
+      expect: Establishes Contributing in README.md for actors.
+      expectedPatterns:
+        - Contributing
+  - id: readme-license
+    address: 'README.md#license'
+    taxonomy: world
+    regions:
+      - identity
+    situations:
+      - fresh
+      - handover
+      - post-compaction
+    purpose: 'Section "License" in README.md covering identity.'
+    order: 20
+    priority: core
+    probe:
+      prompt: 'What does section "License" (README.md#license) define for identity?'
+      expect: Establishes License in README.md for identity.
+      expectedPatterns:
+        - License
+  - id: readme-delivery-improvements-in-development
+    address: 'README.md#delivery-improvements-in-development'
+    taxonomy: world
+    regions:
+      - affordances
+      - laws
+    situations:
+      - fresh
+      - handover
+      - post-compaction
+    purpose: 'Section "Delivery improvements in development" in README.md covering affordances, laws.'
+    order: 21
+    priority: core
+    probe:
+      prompt: 'What does section "Delivery improvements in development" (README.md#delivery-improvements-in-development) define for affordances?'
+      expect: Establishes Delivery improvements in development in README.md for affordances.
+      expectedPatterns:
+        - Delivery
+        - improvements
+  - id: product-1-vision-core-job-to-be-done
+    address: '.agentflow/PRODUCT.md#1-vision-core-job-to-be-done'
+    taxonomy: world
+    regions:
+      - identity
+      - actors
+    situations:
+      - fresh
+      - handover
+      - post-compaction
+    purpose: 'Section "1. Vision & Core Job-to-be-Done" in .agentflow/PRODUCT.md covering identity, actors.'
+    order: 22
+    priority: core
+    probe:
+      prompt: 'What does section "1. Vision & Core Job-to-be-Done" (.agentflow/PRODUCT.md#1-vision-core-job-to-be-done) define for identity?'
+      expect: 'Establishes 1. Vision & Core Job-to-be-Done in .agentflow/PRODUCT.md for identity.'
+      expectedPatterns:
+        - Vision
+        - Core
+  - id: product-2-system-invariants-non-negotiables
+    address: '.agentflow/PRODUCT.md#2-system-invariants-non-negotiables'
+    taxonomy: world
+    regions:
+      - laws
+      - affordances
+    situations:
+      - fresh
+      - handover
+      - post-compaction
+    purpose: 'Section "2. System Invariants (Non-Negotiables)" in .agentflow/PRODUCT.md covering laws, affordances.'
+    order: 23
+    priority: core
+    probe:
+      prompt: 'What does section "2. System Invariants (Non-Negotiables)" (.agentflow/PRODUCT.md#2-system-invariants-non-negotiables) define for laws?'
+      expect: Establishes 2. System Invariants (Non-Negotiables) in .agentflow/PRODUCT.md for laws.
+      expectedPatterns:
+        - System
+        - Invariants
+  - id: product-3-intentions-tradeoffs
+    address: '.agentflow/PRODUCT.md#3-intentions-tradeoffs'
+    taxonomy: world
+    regions:
+      - identity
+      - terrain
+    situations:
+      - fresh
+      - handover
+      - post-compaction
+    purpose: 'Section "3. Intentions & Tradeoffs" in .agentflow/PRODUCT.md covering identity, terrain.'
+    order: 24
+    priority: core
+    probe:
+      prompt: 'What does section "3. Intentions & Tradeoffs" (.agentflow/PRODUCT.md#3-intentions-tradeoffs) define for identity?'
+      expect: 'Establishes 3. Intentions & Tradeoffs in .agentflow/PRODUCT.md for identity.'
+      expectedPatterns:
+        - Intentions
+        - Tradeoffs
+  - id: product-4-capability-map-boundaries
+    address: '.agentflow/PRODUCT.md#4-capability-map-boundaries'
+    taxonomy: world
+    regions:
+      - terrain
+      - actors
+    situations:
+      - fresh
+      - handover
+      - post-compaction
+    purpose: 'Section "4. Capability Map & Boundaries" in .agentflow/PRODUCT.md covering terrain, actors.'
+    order: 25
+    priority: core
+    probe:
+      prompt: 'What does section "4. Capability Map & Boundaries" (.agentflow/PRODUCT.md#4-capability-map-boundaries) define for terrain?'
+      expect: 'Establishes 4. Capability Map & Boundaries in .agentflow/PRODUCT.md for terrain.'
+      expectedPatterns:
+        - Capability
+        - Map
+  - id: product-5-active-horizon-anti-goals
+    address: '.agentflow/PRODUCT.md#5-active-horizon-anti-goals'
+    taxonomy: world
+    regions:
+      - actors
+      - laws
+    situations:
+      - fresh
+      - handover
+      - post-compaction
+    purpose: 'Section "5. Active Horizon & Anti-Goals" in .agentflow/PRODUCT.md covering actors, laws.'
+    order: 26
+    priority: core
+    probe:
+      prompt: 'What does section "5. Active Horizon & Anti-Goals" (.agentflow/PRODUCT.md#5-active-horizon-anti-goals) define for actors?'
+      expect: 'Establishes 5. Active Horizon & Anti-Goals in .agentflow/PRODUCT.md for actors.'
+      expectedPatterns:
+        - Active
+        - Horizon
