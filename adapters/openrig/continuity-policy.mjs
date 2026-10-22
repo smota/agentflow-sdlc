@@ -239,3 +239,49 @@ export function writeProofLogArtifact({
     summaryLines,
   }
 }
+
+export function resolveWorldSituationProfile({
+  seat = 'orch.arch',
+  phase = null,
+  isCompacted = false,
+  isHandover = false,
+} = {}) {
+  const normalizedSeat = seat || 'orch.arch'
+  let situation = 'fresh'
+  if (isCompacted) {
+    situation = 'post-compaction'
+  } else if (isHandover) {
+    situation = 'handover'
+  } else if (normalizedSeat === 'rev.review' || normalizedSeat === 'rev-review' || phase === 6) {
+    situation = 'reviewer'
+  }
+
+  return {
+    pack: 'agentflow-world',
+    seat: normalizedSeat,
+    situation,
+    command: `rig context profile agentflow-world --situation ${situation}`,
+    cliFallback: `agentflow-sdlc seat prime ${normalizedSeat} --situation ${situation}`,
+  }
+}
+
+export function evaluateDormantSeatWake({
+  seat = 'dev.qa',
+  queueDepth = 0,
+  activeOccupant = false,
+  phase = null,
+  isCompacted = false,
+  isHandover = false,
+} = {}) {
+  const depth = Math.max(0, Number(queueDepth) || 0)
+  const shouldWake = depth > 0 && !activeOccupant
+  const mode = depth > 0 ? 'wake-on-demand' : 'stay-dormant'
+  return {
+    shouldWake,
+    mode,
+    seat,
+    queueDepth: depth,
+    activeOccupant: Boolean(activeOccupant),
+    profile: resolveWorldSituationProfile({ seat, phase, isCompacted, isHandover }),
+  }
+}

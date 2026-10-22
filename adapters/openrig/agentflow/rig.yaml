@@ -57,6 +57,8 @@ pods:
         effort: medium
         cwd: '.'
       - id: qa
+        # Dormant / wake-on-demand seat
+        lifecycle: dormant-on-demand
         agent_ref: 'local:agents/agentflow'
         profile: qa-pi
         runtime: pi
@@ -74,6 +76,8 @@ pods:
       dispatches clean-context L2 subagents for P2-P4 deep reasoning.
     members:
       - id: review
+        # Dormant / wake-on-demand seat
+        lifecycle: dormant-on-demand
         agent_ref: 'local:agents/agentflow'
         profile: reviewer
         runtime: codex
@@ -93,6 +97,8 @@ pods:
       endpoints. Emits backlog findings; never implements or gates PRs.
     members:
       - id: tester
+        # Dormant / wake-on-demand seat
+        lifecycle: dormant-on-demand
         agent_ref: 'local:agents/agentflow'
         profile: eval-tester-pi
         runtime: pi
@@ -106,7 +112,39 @@ pods:
               required: true
     edges: []
 
+  - id: pm
+    label: Product & Intake
+    summary: Phase 0 goal framing and Phase 1 specification analysis. Propose only;
+      never implements code or modifies protected steering state.
+    members:
+      - id: manager
+        agent_ref: 'local:agents/agentflow'
+        profile: product-manager
+        runtime: pi
+        model: grok-cli/grok-4.7
+        effort: medium
+        cwd: '.'
+      - id: analyst
+        # Dormant / wake-on-demand seat
+        lifecycle: dormant-on-demand
+        agent_ref: 'local:agents/agentflow'
+        profile: analyst
+        runtime: pi
+        model: antigravity/gemini-3.8-flash
+        effort: medium
+        cwd: '.'
+    edges:
+      - kind: delegates_to
+        from: manager
+        to: analyst
+      - kind: escalates_to
+        from: analyst
+        to: manager
+
 edges:
+  - kind: delegates_to
+    from: pm.manager
+    to: orch.arch
   - kind: delegates_to
     from: orch.arch
     to: dev.build
@@ -128,3 +166,6 @@ edges:
   - kind: can_observe
     from: orch.arch
     to: eval.tester
+  - kind: can_observe
+    from: orch.arch
+    to: pm.manager

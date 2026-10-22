@@ -264,3 +264,143 @@ export function canAdmitNextSlice({
     maxUnmergedAccepted,
   }
 }
+
+const PASS_VERDICTS = new Set(['pass', 'passed', 'approved', 'delivered', 'ok'])
+const FAIL_VERDICTS = new Set([
+  'concrete_blocker',
+  'repeated_failure',
+  'returned',
+  'blocked',
+  'fail',
+  'failed',
+  'rejected',
+  'rework_required',
+  'changes_requested',
+])
+
+function classifyEnvelope(envelope) {
+  if (!envelope || typeof envelope !== 'object') {
+    return { present: false, passed: false, repeatedFailure: false, label: 'missing' }
+  }
+  const candidates = [envelope.verdict, envelope.outcome, envelope.status]
+    .filter((v) => typeof v === 'string' && v.trim() !== '')
+    .map((v) => v.trim().toLowerCase())
+
+  const repeatedFailure =
+    candidates.includes('repeated_failure') ||
+    envelope.repeatedFailure === true ||
+    envelope.fenceTripped === true
+
+  const failed =
+    repeatedFailure || candidates.some((c) => FAIL_VERDICTS.has(c)) || envelope.ok === false
+
+  const passed = !failed && (candidates.some((c) => PASS_VERDICTS.has(c)) || envelope.ok === true)
+
+  const label = envelope.reason || envelope.summary || candidates[0] || (passed ? 'pass' : 'failed')
+
+  return {
+    present: true,
+    passed,
+    failed: !passed,
+    repeatedFailure,
+    label,
+  }
+}
+
+export function joinParallelVerdicts({
+  qaEnvelope = null,
+  reviewEnvelope = null,
+  sliceTier = 'P2',
+  builderSeat = 'dev.build',
+  reworkRounds = 0,
+  maxReworkRounds = 2,
+} = {}) {
+  const qa = classifyEnvelope(qaEnvelope)
+  const review = classifyEnvelope(reviewEnvelope)
+
+  if (!qa.present || !review.present) {
+    const missing = []
+    if (!qa.present) missing.push('dev.qa')
+    if (!review.present) missing.push('rev.review')
+    return {
+      ok: false,
+      status: 'pending',
+      outcome: 'awaiting_parallel_verdicts',
+      nextSeat: null,
+      sliceTier,
+      commitSha:
+        qaEnvelope?.commitSha ??
+        qaEnvelope?.sha ??
+        reviewEnvelope?.commitSha ??
+        reviewEnvelope?.sha ??
+        null,
+      reasons: [`awaiting parallel verdict from ${missing.join(', ')}`],
+    }
+  }
+
+  const qaSha = qaEnvelope.commitSha ?? qaEnvelope.sha ?? null
+  const reviewSha = reviewEnvelope.commitSha ?? reviewEnvelope.sha ?? null
+  if (qaSha && reviewSha && qaSha !== reviewSha) {
+    return {
+      ok: false,
+      status: 'sha_mismatch',
+      outcome: 'stale_verdict_rejected',
+      nextSeat: builderSeat,
+      sliceTier,
+      commitSha: null,
+      qaCommitSha: qaSha,
+      reviewCommitSha: reviewSha,
+      reasons: [`commit SHA mismatch between dev.qa (${qaSha}) and rev.review (${reviewSha})`],
+    }
+  }
+
+  const commitSha = qaSha ?? reviewSha ?? null
+
+  if (qa.passed && review.passed) {
+    return {
+      ok: true,
+      status: 'approved',
+      outcome: 'ready_for_integration',
+      nextSeat: 'orch.arch',
+      sliceTier,
+      commitSha,
+      reasons: [],
+    }
+  }
+
+  const reasons = []
+  if (!qa.passed) reasons.push(`dev.qa: ${qa.label}`)
+  if (!review.passed) reasons.push(`rev.review: ${review.label}`)
+
+  const effectiveReworkRounds = Math.max(
+    Number(reworkRounds) || 0,
+    Number(qaEnvelope.reworkRounds) || 0,
+    Number(reviewEnvelope.reworkRounds) || 0,
+  )
+  const fenceTripped =
+    qa.repeatedFailure ||
+    review.repeatedFailure ||
+    (effectiveReworkRounds > 0 && effectiveReworkRounds >= maxReworkRounds)
+
+  if (fenceTripped) {
+    return {
+      ok: false,
+      status: 'blocked',
+      outcome: 'escalate_to_steer',
+      nextSeat: 'steer.lead',
+      sliceTier,
+      commitSha,
+      reasons,
+    }
+  }
+
+  return {
+    ok: false,
+    status: 'rework_required',
+    outcome: 'return_to_builder',
+    nextSeat: builderSeat,
+    sliceTier,
+    commitSha,
+    reasons,
+  }
+}
