@@ -72,12 +72,7 @@ import {
 } from '../lib/core/seat-lease.mjs'
 import { primeSeat } from '../lib/core/seat-prime.mjs'
 import { dispatchEnvelope } from '../lib/core/dispatch.mjs'
-import {
-  ackWorld,
-  applyWorld,
-  refineWorld,
-  scanWorld,
-} from '../lib/world/world-builder.mjs'
+import { ackWorld, applyWorld, refineWorld, scanWorld } from '../lib/world/world-builder.mjs'
 import os from 'node:os'
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -1271,11 +1266,7 @@ function handleWorld(rest, defaultTargetDir) {
   const [subcommand, arg1, arg2] = worldPositionalArgs(rest)
 
   if (subcommand === 'scan') {
-    const targetDir = hasExplicitTarget
-      ? defaultTargetDir
-      : arg1
-        ? resolve(arg1)
-        : defaultTargetDir
+    const targetDir = hasExplicitTarget ? defaultTargetDir : arg1 ? resolve(arg1) : defaultTargetDir
     const result = scanWorld(targetDir, { include })
     if (json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
     else {
@@ -1295,11 +1286,7 @@ function handleWorld(rest, defaultTargetDir) {
   }
 
   if (subcommand === 'refine') {
-    const targetDir = hasExplicitTarget
-      ? defaultTargetDir
-      : arg1
-        ? resolve(arg1)
-        : defaultTargetDir
+    const targetDir = hasExplicitTarget ? defaultTargetDir : arg1 ? resolve(arg1) : defaultTargetDir
     const plan = refineWorld(targetDir, { include, stubGaps, allowStubs })
     if (json) process.stdout.write(`${JSON.stringify(plan, null, 2)}\n`)
     else {
@@ -1328,11 +1315,7 @@ function handleWorld(rest, defaultTargetDir) {
   }
 
   if (subcommand === 'apply') {
-    const targetDir = hasExplicitTarget
-      ? defaultTargetDir
-      : arg1
-        ? resolve(arg1)
-        : defaultTargetDir
+    const targetDir = hasExplicitTarget ? defaultTargetDir : arg1 ? resolve(arg1) : defaultTargetDir
     if (!confirm) {
       process.stderr.write('Confirmation digest required: pass --confirm <digest>\n')
       return 2

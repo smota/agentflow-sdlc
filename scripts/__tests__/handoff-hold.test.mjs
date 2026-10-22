@@ -1025,10 +1025,10 @@ describe('advisory capacity inspection and queue-native handoff (#546)', () => {
     ).toBe(true)
 
     expect(
-      guardDecision(
-        'agentflow-sdlc handoff busy agentflow-dev --clear',
-        { OPENRIG_SESSION_NAME: MANAGER, AGENTFLOW_VALIDATED_ENVELOPE: '1' },
-      ).block,
+      guardDecision('agentflow-sdlc handoff busy agentflow-dev --clear', {
+        OPENRIG_SESSION_NAME: MANAGER,
+        AGENTFLOW_VALIDATED_ENVELOPE: '1',
+      }).block,
     ).toBe(true)
   })
 })

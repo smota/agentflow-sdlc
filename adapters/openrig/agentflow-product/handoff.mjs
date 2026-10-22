@@ -448,7 +448,9 @@ export function capacityInspect(input = {}, rig, medium) {
 
   const free = isFree(resolved)
   const busyReason = busyLock?.reason ?? busyLock?.note ?? ''
-  const hardBlocked = Boolean(busyLock && busyReason && /person|human|worktree-lock/i.test(busyReason))
+  const hardBlocked = Boolean(
+    busyLock && busyReason && /person|human|worktree-lock/i.test(busyReason),
+  )
 
   let summary
   if (hardBlocked) {

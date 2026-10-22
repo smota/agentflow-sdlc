@@ -303,10 +303,12 @@ export function guardDecision(input, env = process.env) {
   const command = isStringInput ? input : input?.command
   const effectiveEnv = (!isStringInput && input?.env ? input.env : env) ?? process.env
   const session = isStringInput
-    ? (effectiveEnv?.OPENRIG_SESSION_NAME !== undefined
-        ? effectiveEnv.OPENRIG_SESSION_NAME
-        : 'pm-manager@agentflow-pm')
-    : ('session' in (input ?? {}) ? input.session : effectiveEnv?.OPENRIG_SESSION_NAME)
+    ? effectiveEnv?.OPENRIG_SESSION_NAME !== undefined
+      ? effectiveEnv.OPENRIG_SESSION_NAME
+      : 'pm-manager@agentflow-pm'
+    : 'session' in (input ?? {})
+      ? input.session
+      : effectiveEnv?.OPENRIG_SESSION_NAME
 
   if (!isProductSeat(session)) return { block: false }
   if (isValidatedEnvelopeQueueSend(command, effectiveEnv)) {
