@@ -33,8 +33,12 @@ const MENTIONS = [
     name: 'tmux send-keys',
   },
   {
-    pattern: /\b(?:agentflow-sdlc|cli\.mjs)\b[\s\S]*\bhandoff\s+release\b/,
+    pattern: /\b(?:agentflow-sdlc|cli\.mjs)\b[\s\S]*\bhandoff\s+release\b|\bhandoff\s+release\b/,
     name: 'agentflow-sdlc handoff release',
+  },
+  {
+    pattern: /\b(?:agentflow-sdlc|cli\.mjs|handoff)\b[\s\S]*\bbusy\b[\s\S]*--clear\b/,
+    name: 'agentflow-sdlc handoff busy --clear',
   },
 ]
 
@@ -224,13 +228,90 @@ export function directSend(command, depth = 0) {
   return null
 }
 
+function hasValidEnvelopeArg(words) {
+  for (let i = 0; i < words.length; i += 1) {
+    if (words[i].computed) continue
+    const w = words[i].word
+    if (w === '--envelope') {
+      const next = words[i + 1]
+      if (next && !next.computed && /^[^\s;&|()]+\.json$/i.test(next.word.trim())) return true
+    } else if (w.startsWith('--envelope=')) {
+      const val = w.slice('--envelope='.length).trim()
+      if (/^[^\s;&|()]+\.json$/i.test(val)) return true
+    }
+  }
+  return false
+}
+
+function isSimpleValidatedQueueCmd(words) {
+  for (let i = 0; i < words.length; i += 1) {
+    if (words[i].computed) continue
+    const name = basename(words[i].word)
+    if (name !== 'rig') continue
+    const rest = words.slice(i + 1).filter((word) => word.computed || !word.word.startsWith('-'))
+    const verb = rest[0]
+    const subverb = rest[1]
+    if (!verb || verb.computed || verb.word !== 'queue') return false
+    if (!subverb || subverb.computed) return false
+    return (
+      subverb.word === 'create' ||
+      subverb.word === 'handoff' ||
+      subverb.word === 'handoff-and-complete'
+    )
+  }
+  return false
+}
+
+function isValidatedEnvelopeQueueSend(command, env) {
+  const tokens = shellTokens(command)
+  const decoded = tokens.map((token) => token.word ?? token.sep ?? token.redirect).join(' ')
+  for (const item of MENTIONS) {
+    if (item.name !== 'rig queue create/handoff' && item.pattern.test(decoded)) {
+      return false
+    }
+  }
+  if (/\brig\b[\s\S]*\bqueue\b[\s\S]*\b(?:inbox-drop|fallback)\b/.test(decoded)) {
+    return false
+  }
+  const commands = simpleCommands(tokens)
+  if (commands.length === 0) return false
+  const envMarker = env?.AGENTFLOW_VALIDATED_ENVELOPE === '1'
+  let sawValidatedQueue = false
+  for (const words of commands) {
+    const hit = structuralHit(words)
+    if (hit !== null) {
+      if (hit !== 'rig queue create/handoff') return false
+      if (!isSimpleValidatedQueueCmd(words)) return false
+      if (!envMarker && !hasValidEnvelopeArg(words)) return false
+      sawValidatedQueue = true
+    } else {
+      for (const word of words) {
+        if (/[\s;&|()]/.test(word.word) && directSend(word.word, 1)) return false
+      }
+    }
+  }
+  return sawValidatedQueue
+}
+
 export function isProductSeat(session) {
   return typeof session === 'string' && PRODUCT_SEAT.test(session)
 }
 
 /** Decide one shell command. Only product seats are checked; every other session passes. */
-export function guardDecision({ session, command }) {
+export function guardDecision(input, env = process.env) {
+  const isStringInput = typeof input === 'string'
+  const command = isStringInput ? input : input?.command
+  const effectiveEnv = (!isStringInput && input?.env ? input.env : env) ?? process.env
+  const session = isStringInput
+    ? (effectiveEnv?.OPENRIG_SESSION_NAME !== undefined
+        ? effectiveEnv.OPENRIG_SESSION_NAME
+        : 'pm-manager@agentflow-pm')
+    : ('session' in (input ?? {}) ? input.session : effectiveEnv?.OPENRIG_SESSION_NAME)
+
   if (!isProductSeat(session)) return { block: false }
+  if (isValidatedEnvelopeQueueSend(command, effectiveEnv)) {
+    return { block: false, validatedEnvelope: true }
+  }
   const hit = directSend(command)
   if (!hit) return { block: false }
   return {
@@ -259,7 +340,7 @@ export async function runHook({
     const command = call.tool_input?.command ?? call.tool_input?.cmd
     if (command === undefined || command === null) return 0
     const text = Array.isArray(command) ? command.join(' ') : String(command)
-    const decision = guardDecision({ session, command: text })
+    const decision = guardDecision({ session, command: text, env })
     if (!decision.block) return 0
     stderr.write(`${decision.reason}\n`)
     return 2

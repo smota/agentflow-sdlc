@@ -81,7 +81,8 @@ const AGENT_ENV = [
 const LOCK_STALE_MS = 60_000
 
 export const USAGE = `Usage:
-  agentflow-sdlc handoff deliver --to <session> (--body-file <file> | --body <text>) [--goal <uri>] [--transition <uri>] [--reply] [--medium github --repo <owner/repo> | --medium filesystem --root <dir>] [--json]
+  agentflow-sdlc handoff deliver --to <session> (--body-file <file> | --body <text>) [--goal <uri>] [--transition <uri>] [--reply] [--advisory] [--medium github --repo <owner/repo> | --medium filesystem --root <dir>] [--json]
+  agentflow-sdlc handoff capacity --rig <delivery-rig> [--goal <uri>] [--medium github --repo <owner/repo> | --medium filesystem --root <dir>] [--json]
   agentflow-sdlc handoff list [--rig <delivery-rig>] [--all] [--json]
   agentflow-sdlc handoff flush [--rig <delivery-rig>] [--medium ...] [--json]
   agentflow-sdlc handoff release <hold-id>            (the person only, at a terminal)
@@ -284,7 +285,22 @@ function wipGoals(deps, medium) {
 export function readSignals(deps, rig, medium) {
   const signals = []
   const currentGoals = new Set()
-  const busy = busyRecord(deps, rig)
+  const workingSeats = []
+  const openQueueItems = []
+  const wipBoardItems = []
+  const rawBusy = busyRecord(deps, rig)
+  const busy = rawBusy
+    ? {
+        ...rawBusy,
+        reason:
+          rawBusy.reason ??
+          (rawBusy.note
+            ? /person|human|worktree-lock/i.test(rawBusy.note)
+              ? rawBusy.note
+              : `person: ${rawBusy.note}`
+            : 'person'),
+      }
+    : null
   if (busy)
     signals.push({
       id: 'B5',
@@ -303,6 +319,7 @@ export function readSignals(deps, rig, medium) {
       const state = seat.agentActivity?.state
       if (state === 'idle') continue
       if (state === 'working' || state === 'running') {
+        workingSeats.push({ session: seat.canonicalSessionName, state })
         signals.push({ id: 'B4', detail: `${seat.canonicalSessionName} is ${state}` })
       } else {
         signals.push({
@@ -331,6 +348,12 @@ export function readSignals(deps, rig, medium) {
       const goal = goalLine(item.body)
       if (goal) currentGoals.add(goal)
       const id = item.state === 'pending' ? 'B2' : 'B1'
+      openQueueItems.push({
+        qitemId: item.qitemId,
+        destinationSession: item.destinationSession,
+        state: item.state,
+        goal: goal ?? null,
+      })
       signals.push({
         id,
         detail: `${item.qitemId} ${item.state} for ${item.destinationSession}${goal ? ` (${goal})` : ''}`,
@@ -343,16 +366,111 @@ export function readSignals(deps, rig, medium) {
   else {
     for (const goal of wip.goals) {
       currentGoals.add(goal)
+      wipBoardItems.push(goal)
       signals.push({ id: 'B3', detail: `${goal} is WIP` })
     }
   }
-  return { signals, currentGoals }
+  return {
+    signals,
+    currentGoals,
+    busy,
+    seats: workingSeats,
+    queue: openQueueItems,
+    board: wipBoardItems,
+  }
 }
 
 // Every signal makes the squad busy. B4 (a seat reported working) adds busy; its absence frees
 // nothing, because idle seats with unfinished work are still busy (B1-B3, B5).
 export function isFree(signals) {
-  return signals.length === 0
+  if (Array.isArray(signals)) return signals.length === 0
+  if (signals && typeof signals === 'object') {
+    if (Array.isArray(signals.signals)) return signals.signals.length === 0
+    return (
+      !signals.busy &&
+      (!Array.isArray(signals.seats) || signals.seats.length === 0) &&
+      (!Array.isArray(signals.queue) || signals.queue.length === 0) &&
+      (!Array.isArray(signals.board) || signals.board.length === 0)
+    )
+  }
+  return false
+}
+
+export function capacityInspect(input = {}, rig, medium) {
+  const resolved =
+    input &&
+    typeof input === 'object' &&
+    typeof rig === 'string' &&
+    (typeof input.run === 'function' || typeof input.home === 'string')
+      ? readSignals(input, rig, medium)
+      : input
+
+  let busyLock = null
+  let workingSeats = []
+  let openQueueItems = []
+  let wipGoalsList = []
+
+  if (Array.isArray(resolved)) {
+    const b5 = resolved.find((s) => s?.id === 'B5')
+    if (b5) {
+      busyLock = {
+        reason: b5.reason ?? b5.detail ?? 'person',
+        detail: b5.detail ?? '',
+      }
+    }
+    workingSeats = resolved.filter((s) => s?.id === 'B4').map((s) => s.detail)
+    openQueueItems = resolved.filter((s) => s?.id === 'B1' || s?.id === 'B2').map((s) => s.detail)
+    wipGoalsList = resolved.filter((s) => s?.id === 'B3').map((s) => s.detail)
+  } else if (resolved && typeof resolved === 'object') {
+    busyLock = resolved.busy || null
+    workingSeats = Array.isArray(resolved.seats) ? resolved.seats : []
+    openQueueItems = Array.isArray(resolved.queue) ? resolved.queue : []
+    wipGoalsList = Array.isArray(resolved.board) ? resolved.board : []
+
+    if (Array.isArray(resolved.signals)) {
+      if (!busyLock) {
+        const b5 = resolved.signals.find((s) => s?.id === 'B5')
+        if (b5) busyLock = { reason: b5.reason ?? b5.detail ?? 'person', detail: b5.detail ?? '' }
+      }
+      if (workingSeats.length === 0) {
+        workingSeats = resolved.signals.filter((s) => s?.id === 'B4').map((s) => s.detail)
+      }
+      if (openQueueItems.length === 0) {
+        openQueueItems = resolved.signals
+          .filter((s) => s?.id === 'B1' || s?.id === 'B2')
+          .map((s) => s.detail)
+      }
+      if (wipGoalsList.length === 0) {
+        wipGoalsList = resolved.signals.filter((s) => s?.id === 'B3').map((s) => s.detail)
+      }
+    }
+  }
+
+  const free = isFree(resolved)
+  const busyReason = busyLock?.reason ?? busyLock?.note ?? ''
+  const hardBlocked = Boolean(busyLock && busyReason && /person|human|worktree-lock/i.test(busyReason))
+
+  let summary
+  if (hardBlocked) {
+    summary = `Hard-blocked (${busyReason}); handoffs are held until lock clears.`
+  } else if (free) {
+    summary = 'Delivery squad is free; ready for immediate handoff.'
+  } else {
+    summary = `Advisory busy (${workingSeats.length} working seats, ${openQueueItems.length} queue items, ${wipGoalsList.length} WIP goals); OpenRig queue can buffer delivery.`
+  }
+
+  return {
+    mode: 'advisory',
+    free,
+    hardBlocked,
+    signals: {
+      busyLock,
+      workingSeats,
+      openQueueItems,
+      wipGoals: wipGoalsList,
+    },
+    summary,
+  }
 }
 
 // --- delivery ----------------------------------------------------------------------------------
@@ -427,12 +545,39 @@ function newId(deps) {
   return `hold-${stamp}-${Math.random().toString(16).slice(2, 8)}`
 }
 
-export function deliver(deps, options) {
+export function deliver(first, second, third) {
+  let deps
+  let options
+  if (
+    first &&
+    typeof first === 'object' &&
+    (typeof first.run === 'function' || typeof first.home === 'string') &&
+    first.to === undefined
+  ) {
+    deps = first
+    options = third && typeof third === 'object' ? { ...(second ?? {}), ...third } : (second ?? {})
+  } else {
+    deps =
+      second &&
+      typeof second === 'object' &&
+      (typeof second.run === 'function' || typeof second.home === 'string')
+        ? second
+        : defaultDeps()
+    options =
+      second && deps !== second && typeof second === 'object'
+        ? { ...(first ?? {}), ...second }
+        : (first ?? {})
+  }
+
   const target = options.to
   if (!target || !target.includes('@')) throw new HandoffError('--to <session> is required.', 2)
   if (options.body === undefined)
     throw new HandoffError('--body-file <file> or --body <text> is required.', 2)
-  const sender = deps.env.OPENRIG_SESSION_NAME || 'person'
+  const sender = deps.env?.OPENRIG_SESSION_NAME || 'person'
+  const advisory =
+    Boolean(options.advisory) ||
+    deps.env?.AGENTFLOW_CAPACITY_MODE === 'advisory' ||
+    process.env.AGENTFLOW_CAPACITY_MODE === 'advisory'
   const hold = {
     id: newId(deps),
     state: 'held',
@@ -458,9 +603,18 @@ export function deliver(deps, options) {
 
   return withLock(deps, hold.rig, () => {
     const waiting = holdsOf(deps, hold.rig).filter((item) => item.state === 'held')
-    const { signals, currentGoals } = readSignals(deps, hold.rig, hold.medium)
+    const rawSignals = readSignals(deps, hold.rig, hold.medium)
+    const { signals, currentGoals } = rawSignals
     const oracle = resolveOracleDispatch({ deps, request: hold, now: deps.now().toISOString() })
-    if (!oracle.admitted) signals.push({ id: oracle.status, detail: oracle.reason })
+    if (!oracle.admitted) {
+      signals.push({ id: oracle.status, detail: oracle.reason })
+      if (!rawSignals.busy) {
+        rawSignals.busy = {
+          reason: `worktree-lock: ${oracle.status}: ${oracle.reason}`,
+          note: oracle.reason,
+        }
+      }
+    }
     if (oracle.assignment) hold.oracleAdmission = oracle.assignment
     const known = !signals.some((signal) => signal.id === 'unknown')
     // A reply about a goal the squad is already doing is not new work.
@@ -471,6 +625,33 @@ export function deliver(deps, options) {
         target,
         reason: `reply about current goal ${hold.goal}`,
         ...(oracle.assignment ? { oracleAdmission: oracle.assignment } : {}),
+      }
+    }
+    if (advisory) {
+      const capacity = capacityInspect(rawSignals)
+      if (!capacity.hardBlocked) {
+        transport(deps, hold)
+        return {
+          status: 'delivered',
+          advisory: true,
+          capacity,
+          target,
+          reason: capacity.free
+            ? 'delivery squad is free'
+            : 'advisory capacity: queued via OpenRig native queue',
+          ...(oracle.assignment ? { oracleAdmission: oracle.assignment } : {}),
+        }
+      }
+      const held = { ...hold, signals }
+      saveHold(deps, held)
+      return {
+        status: 'held',
+        id: held.id,
+        target,
+        advisory: true,
+        capacity,
+        signals: held.signals,
+        flushed: null,
       }
     }
     // A free squad takes the oldest waiting handoff first; a new one waits behind it.
@@ -603,7 +784,7 @@ const VALUE_FLAGS = new Set([
   'task-file',
   'oracle-assignment-file',
 ])
-const BOOLEAN_FLAGS = new Set(['reply', 'json', 'all', 'set', 'clear'])
+const BOOLEAN_FLAGS = new Set(['reply', 'json', 'all', 'set', 'clear', 'advisory'])
 
 export function parseArgs(args) {
   const options = {}
@@ -720,6 +901,14 @@ export async function main(
         for (const signal of result.signals) write(`  ${signal.id}: ${signal.detail}`)
         write('It goes out by itself when the squad is free, or when the person releases it.')
       } else write(`Delivered to ${result.target} (${result.reason}).`)
+      return 0
+    }
+    if (command === 'capacity') {
+      const rig = options.rig || positionals[0] || rigOf(options.to)
+      if (!rig) throw new HandoffError('capacity needs --rig <delivery-rig>.', 2)
+      const raw = readSignals(deps, rig, medium)
+      const report = capacityInspect(raw)
+      write(JSON.stringify(report, null, 2))
       return 0
     }
     if (command === 'list') {

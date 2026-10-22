@@ -846,3 +846,189 @@ describe('phase 1 append output states the hold (AC10, AC11)', () => {
     expect(one.goal.transitions.map((item) => item.phase)).toEqual([0, 1])
   })
 })
+
+describe('advisory capacity inspection and queue-native handoff (#546)', () => {
+  it('transforms raw signals into a structured advisory capacity report', () => {
+    const freeReport = hold.capacityInspect({
+      busy: null,
+      seats: [],
+      queue: [],
+      board: [],
+    })
+    expect(freeReport).toEqual({
+      mode: 'advisory',
+      free: true,
+      hardBlocked: false,
+      signals: {
+        busyLock: null,
+        workingSeats: [],
+        openQueueItems: [],
+        wipGoals: [],
+      },
+      summary: expect.stringContaining('free'),
+    })
+
+    const advisoryBusyReport = hold.capacityInspect({
+      busy: null,
+      seats: [`dev-build@${RIG}`],
+      queue: ['q1'],
+      board: [OTHER],
+    })
+    expect(advisoryBusyReport).toEqual({
+      mode: 'advisory',
+      free: false,
+      hardBlocked: false,
+      signals: {
+        busyLock: null,
+        workingSeats: [`dev-build@${RIG}`],
+        openQueueItems: ['q1'],
+        wipGoals: [OTHER],
+      },
+      summary: expect.stringContaining('Advisory busy'),
+    })
+
+    const hardBlockedReport = hold.capacityInspect({
+      busy: { reason: 'person hold: finishing 358' },
+      seats: [],
+      queue: [],
+      board: [],
+    })
+    expect(hardBlockedReport.hardBlocked).toBe(true)
+    expect(hardBlockedReport.free).toBe(false)
+    expect(hardBlockedReport.signals.busyLock).toEqual({ reason: 'person hold: finishing 358' })
+  })
+
+  it('executes handoff capacity --rig via CLI and returns JSON capacity report', async () => {
+    const nodes = idleNodes()
+    nodes[0].agentActivity.state = 'working'
+    const { deps } = fakeDeps({
+      nodes,
+      queue: [
+        {
+          qitemId: 'q1',
+          destinationSession: `dev-build@${RIG}`,
+          state: 'pending',
+          body: `Goal: ${OTHER}`,
+        },
+      ],
+      wip: [OTHER],
+    })
+    const out = []
+    const code = await hold.main(
+      ['capacity', '--rig', RIG, '--medium', 'github', '--repo', 'acme/app', '--json'],
+      {
+        deps,
+        stdout: { write: (text) => out.push(text) },
+        stderr: { write: (text) => out.push(text) },
+      },
+    )
+    expect(code).toBe(0)
+    const report = JSON.parse(out.join(''))
+    expect(report).toMatchObject({
+      mode: 'advisory',
+      free: false,
+      hardBlocked: false,
+    })
+    expect(report.signals.workingSeats).toHaveLength(1)
+    expect(report.signals.openQueueItems).toHaveLength(1)
+    expect(report.signals.wipGoals).toEqual([OTHER])
+  })
+
+  it('delivers through OpenRig queue when B2/B3/B4 are busy in advisory mode, but holds on hard person/worktree lock', () => {
+    const nodes = idleNodes()
+    nodes[1].agentActivity.state = 'working'
+    const { deps, sends, state } = fakeDeps({
+      nodes,
+      queue: [
+        {
+          qitemId: 'q0',
+          destinationSession: `dev-qa@${RIG}`,
+          state: 'pending',
+          body: `Goal: ${OTHER}`,
+        },
+      ],
+      wip: [OTHER],
+    })
+
+    const delivered = hold.deliver(
+      deps,
+      {
+        to: `orch-arch@${RIG}`,
+        body: `Phase 1 analyst pass\nGoal: ${GOAL}`,
+        goal: GOAL,
+        transition: TRANSITION,
+      },
+      { advisory: true },
+    )
+    expect(delivered).toMatchObject({
+      status: 'delivered',
+      advisory: true,
+      target: `orch-arch@${RIG}`,
+      capacity: {
+        mode: 'advisory',
+        free: false,
+        hardBlocked: false,
+      },
+    })
+    expect(sends()).toHaveLength(1)
+    expect(state.queue).toHaveLength(2)
+
+    // Setting a person busy lock causes advisory deliver to hold
+    hold.setBusy(deps, RIG, { note: 'person hold for maintenance' })
+    const heldResult = send(deps, { advisory: true })
+    expect(heldResult).toMatchObject({
+      status: 'held',
+      advisory: true,
+      target: `orch-arch@${RIG}`,
+      capacity: {
+        mode: 'advisory',
+        hardBlocked: true,
+      },
+    })
+    expect(sends()).toHaveLength(1)
+  })
+
+  it('permits native rig queue handoff/create with validated envelope while blocking raw tmux send-keys and handoff release', () => {
+    expect(
+      guardDecision({
+        session: MANAGER,
+        command: 'rig queue handoff q1 --to orch-arch@agentflow-dev --envelope /tmp/envelope.json',
+      }),
+    ).toEqual({
+      block: false,
+      validatedEnvelope: true,
+    })
+
+    expect(
+      guardDecision(
+        'rig queue create --destination orch-arch@agentflow-dev --body-file /tmp/body.txt',
+        { OPENRIG_SESSION_NAME: MANAGER, AGENTFLOW_VALIDATED_ENVELOPE: '1' },
+      ),
+    ).toEqual({
+      block: false,
+      validatedEnvelope: true,
+    })
+
+    // Chaining raw tmux send-keys or handoff release with a validated envelope is still blocked
+    expect(
+      guardDecision(
+        'rig queue handoff q1 --to orch-arch@agentflow-dev --envelope /tmp/envelope.json && tmux send-keys -t orch-arch@agentflow-dev "go" Enter',
+        { OPENRIG_SESSION_NAME: MANAGER, AGENTFLOW_VALIDATED_ENVELOPE: '1' },
+      ).block,
+    ).toBe(true)
+
+    expect(
+      guardDecision(
+        'rig queue handoff q1 --to orch-arch@agentflow-dev --envelope /tmp/envelope.json; agentflow-sdlc handoff release hold-1',
+        { OPENRIG_SESSION_NAME: MANAGER, AGENTFLOW_VALIDATED_ENVELOPE: '1' },
+      ).block,
+    ).toBe(true)
+
+    expect(
+      guardDecision(
+        'agentflow-sdlc handoff busy agentflow-dev --clear',
+        { OPENRIG_SESSION_NAME: MANAGER, AGENTFLOW_VALIDATED_ENVELOPE: '1' },
+      ).block,
+    ).toBe(true)
+  })
+})
