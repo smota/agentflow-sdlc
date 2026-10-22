@@ -81,7 +81,7 @@ const AGENT_ENV = [
 const LOCK_STALE_MS = 60_000
 
 export const USAGE = `Usage:
-  agentflow-sdlc handoff deliver --to <session> (--body-file <file> | --body <text>) [--goal <uri>] [--transition <uri>] [--reply] [--advisory] [--medium github --repo <owner/repo> | --medium filesystem --root <dir>] [--json]
+  agentflow-sdlc handoff deliver --to <session> (--body-file <file> | --body <text>) [--goal <uri>] [--transition <uri>] [--reply] [--medium github --repo <owner/repo> | --medium filesystem --root <dir>] [--json]
   agentflow-sdlc handoff capacity --rig <delivery-rig> [--goal <uri>] [--medium github --repo <owner/repo> | --medium filesystem --root <dir>] [--json]
   agentflow-sdlc handoff list [--rig <delivery-rig>] [--all] [--json]
   agentflow-sdlc handoff flush [--rig <delivery-rig>] [--medium ...] [--json]
@@ -385,9 +385,11 @@ export function readSignals(deps, rig, medium) {
 export function isFree(signals) {
   if (Array.isArray(signals)) return signals.length === 0
   if (signals && typeof signals === 'object') {
+    if (signals.unreadable || signals.busy) return false
     if (Array.isArray(signals.signals)) return signals.signals.length === 0
     return (
       !signals.busy &&
+      !signals.unreadable &&
       (!Array.isArray(signals.seats) || signals.seats.length === 0) &&
       (!Array.isArray(signals.queue) || signals.queue.length === 0) &&
       (!Array.isArray(signals.board) || signals.board.length === 0)
@@ -406,6 +408,7 @@ export function capacityInspect(input = {}, rig, medium) {
       : input
 
   let busyLock = null
+  let unreadable = false
   let workingSeats = []
   let openQueueItems = []
   let wipGoalsList = []
@@ -418,11 +421,13 @@ export function capacityInspect(input = {}, rig, medium) {
         detail: b5.detail ?? '',
       }
     }
+    unreadable = resolved.some((s) => s?.id === 'unknown')
     workingSeats = resolved.filter((s) => s?.id === 'B4').map((s) => s.detail)
     openQueueItems = resolved.filter((s) => s?.id === 'B1' || s?.id === 'B2').map((s) => s.detail)
     wipGoalsList = resolved.filter((s) => s?.id === 'B3').map((s) => s.detail)
   } else if (resolved && typeof resolved === 'object') {
     busyLock = resolved.busy || null
+    unreadable = Boolean(resolved.unreadable)
     workingSeats = Array.isArray(resolved.seats) ? resolved.seats : []
     openQueueItems = Array.isArray(resolved.queue) ? resolved.queue : []
     wipGoalsList = Array.isArray(resolved.board) ? resolved.board : []
@@ -431,6 +436,9 @@ export function capacityInspect(input = {}, rig, medium) {
       if (!busyLock) {
         const b5 = resolved.signals.find((s) => s?.id === 'B5')
         if (b5) busyLock = { reason: b5.reason ?? b5.detail ?? 'person', detail: b5.detail ?? '' }
+      }
+      if (!unreadable && resolved.signals.some((s) => s?.id === 'unknown')) {
+        unreadable = true
       }
       if (workingSeats.length === 0) {
         workingSeats = resolved.signals.filter((s) => s?.id === 'B4').map((s) => s.detail)
@@ -447,10 +455,11 @@ export function capacityInspect(input = {}, rig, medium) {
   }
 
   const free = isFree(resolved)
-  const busyReason = busyLock?.reason ?? busyLock?.note ?? ''
-  const hardBlocked = Boolean(
-    busyLock && busyReason && /person|human|worktree-lock/i.test(busyReason),
-  )
+  const busyReason =
+    busyLock?.reason ??
+    busyLock?.note ??
+    (busyLock ? 'person' : unreadable ? 'unreadable-signals' : '')
+  const hardBlocked = Boolean(busyLock || unreadable)
 
   let summary
   if (hardBlocked) {
@@ -576,10 +585,7 @@ export function deliver(first, second, third) {
   if (options.body === undefined)
     throw new HandoffError('--body-file <file> or --body <text> is required.', 2)
   const sender = deps.env?.OPENRIG_SESSION_NAME || 'person'
-  const advisory =
-    Boolean(options.advisory) ||
-    deps.env?.AGENTFLOW_CAPACITY_MODE === 'advisory' ||
-    process.env.AGENTFLOW_CAPACITY_MODE === 'advisory'
+  const advisory = options.advisory === true
   const hold = {
     id: newId(deps),
     state: 'held',
@@ -786,7 +792,7 @@ const VALUE_FLAGS = new Set([
   'task-file',
   'oracle-assignment-file',
 ])
-const BOOLEAN_FLAGS = new Set(['reply', 'json', 'all', 'set', 'clear', 'advisory'])
+const BOOLEAN_FLAGS = new Set(['reply', 'json', 'all', 'set', 'clear'])
 
 export function parseArgs(args) {
   const options = {}

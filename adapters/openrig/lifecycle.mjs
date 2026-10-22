@@ -47,18 +47,39 @@ const ADAPTER_ID = 'openrig'
 const BASES = { delivery: 'agentflow', product: 'agentflow-product', steer: 'agentflow-steer' }
 const BASE_NAMES = Object.values(BASES)
 
+const SAFE_VERSION_RE = /^[A-Za-z0-9._-]+$/
+
+function isValidVersionSegment(ver) {
+  return (
+    typeof ver === 'string' &&
+    ver.length > 0 &&
+    ver !== '.' &&
+    ver !== '..' &&
+    !ver.includes('..') &&
+    SAFE_VERSION_RE.test(ver)
+  )
+}
+
 export function versionedBaseName(baseName, channelOrVersion) {
   if (!channelOrVersion || channelOrVersion === 'default') return baseName
   if (typeof channelOrVersion === 'object') {
-    const suffix =
-      channelOrVersion.suffix ??
-      (channelOrVersion.version && channelOrVersion.channel !== 'default'
-        ? `@${String(channelOrVersion.version).replace(/^@/, '')}`
-        : '')
-    return `${baseName}${suffix}`
+    const rawVer = channelOrVersion.version
+      ? String(channelOrVersion.version).trim().replace(/^@/, '')
+      : channelOrVersion.suffix
+        ? String(channelOrVersion.suffix).trim().replace(/^@/, '')
+        : ''
+    if (!rawVer || channelOrVersion.channel === 'default') return baseName
+    if (!isValidVersionSegment(rawVer)) {
+      fail(`Invalid version '${rawVer}' for base spec '${baseName}'.`)
+    }
+    return `${baseName}@${rawVer}`
   }
   const normalized = String(channelOrVersion).trim().replace(/^@/, '')
-  return normalized ? `${baseName}@${normalized}` : baseName
+  if (!normalized) return baseName
+  if (!isValidVersionSegment(normalized)) {
+    fail(`Invalid version '${normalized}' for base spec '${baseName}'.`)
+  }
+  return `${baseName}@${normalized}`
 }
 
 export function resolveProjectSpecChannel(projectDir, { repoRoot = ROOT } = {}) {
@@ -72,14 +93,18 @@ export function resolveProjectSpecChannel(projectDir, { repoRoot = ROOT } = {}) 
   ]
   for (const lockPath of lockCandidates) {
     if (existsSync(lockPath) && statSync(lockPath).isFile()) {
+      let lock
       try {
-        const lock = JSON.parse(readFileSync(lockPath, 'utf8'))
-        const ver = String(lock.frameworkVersion || lock.version || '').trim()
-        if (ver) {
-          return { channel: 'versioned', version: ver, suffix: `@${ver}` }
-        }
+        lock = JSON.parse(readFileSync(lockPath, 'utf8'))
       } catch {
-        // Ignore unreadable lockfile and fall through
+        continue
+      }
+      const ver = String(lock.frameworkVersion || lock.version || '').trim()
+      if (ver) {
+        if (!isValidVersionSegment(ver)) {
+          fail(`Invalid frameworkVersion '${ver}' in ${lockPath}.`)
+        }
+        return { channel: 'versioned', version: ver, suffix: `@${ver}` }
       }
     }
   }
@@ -1025,6 +1050,19 @@ function writeSquadSpec({
   for (const name of SHARED_FILES) {
     if (isFile(join(baseDir, name))) bridge(join(baseDir, name), join(targetDir, name), false)
   }
+  if (kind === 'unified' || kind === 'product') {
+    const productBaseDir =
+      useVersionedBase && isDirectory(join(specs, `${BASES.product}${channelInfo.suffix}`))
+        ? join(specs, `${BASES.product}${channelInfo.suffix}`)
+        : isDirectory(join(specs, BASES.product))
+          ? join(specs, BASES.product)
+          : join(ctx.adapterDir, BASES.product)
+    for (const guardFile of ['handoff-guard.mjs', 'handoff.mjs']) {
+      if (isFile(join(productBaseDir, guardFile)) && !lexists(join(targetDir, guardFile))) {
+        bridge(join(productBaseDir, guardFile), join(targetDir, guardFile), false)
+      }
+    }
+  }
   writeFileSync(join(targetDir, 'rig.yaml'), rigText)
   writeFileSync(
     join(targetDir, 'execution-contracts.json'),
@@ -1702,4 +1740,10 @@ export {
   joinParallelVerdicts,
 } from './tier-routing.mjs'
 
-export { resolveWorldSituationProfile, evaluateDormantSeatWake } from './continuity-policy.mjs'
+export {
+  DORMANT_SEATS,
+  resolveWorldSituationProfile,
+  evaluateDormantSeatWake,
+  resolveLineageLedgerPath,
+  appendLineageLedgerEntry,
+} from './continuity-policy.mjs'

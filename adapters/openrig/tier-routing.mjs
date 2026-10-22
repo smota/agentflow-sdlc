@@ -340,7 +340,7 @@ export function joinParallelVerdicts({
 
   const qaSha = qaEnvelope.commitSha ?? qaEnvelope.sha ?? null
   const reviewSha = reviewEnvelope.commitSha ?? reviewEnvelope.sha ?? null
-  if (qaSha && reviewSha && qaSha !== reviewSha) {
+  if ((qaSha || reviewSha) && (!qaSha || !reviewSha || qaSha !== reviewSha)) {
     return {
       ok: false,
       status: 'sha_mismatch',
@@ -350,7 +350,9 @@ export function joinParallelVerdicts({
       commitSha: null,
       qaCommitSha: qaSha,
       reviewCommitSha: reviewSha,
-      reasons: [`commit SHA mismatch between dev.qa (${qaSha}) and rev.review (${reviewSha})`],
+      reasons: [
+        `commit SHA mismatch between dev.qa (${qaSha ?? 'missing'}) and rev.review (${reviewSha ?? 'missing'})`,
+      ],
     }
   }
 

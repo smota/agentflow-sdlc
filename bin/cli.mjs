@@ -1047,7 +1047,7 @@ function positionalArgs(args) {
   return result
 }
 
-const HOLD_COMMANDS = new Set(['deliver', 'list', 'flush', 'release', 'busy', 'step'])
+const HOLD_COMMANDS = new Set(['deliver', 'list', 'flush', 'release', 'busy', 'step', 'capacity'])
 
 async function handleHoldHandoff(rest) {
   const { main } = await import('../adapters/openrig/agentflow-product/handoff.mjs')
@@ -1109,12 +1109,17 @@ function handleSeat(rest, targetDir) {
     const worktree = getFlag(rest, '--worktree', null)
     const ttlRaw = getFlag(rest, '--ttl', null)
     const ttlSeconds = ttlRaw ? Number(ttlRaw) : 3600
+    const force = rest.includes('--force')
+    const allowSupervisory =
+      rest.includes('--allow-supervisory') || process.env.AGENTFLOW_SUPERVISORY_VERIFIED === '1'
     const lease = claimSeatLease(targetDir, {
       seat,
       occupantSession,
       platform,
       worktree,
       ttlSeconds,
+      force,
+      allowSupervisory,
     })
     if (json) process.stdout.write(`${JSON.stringify(lease, null, 2)}\n`)
     else
@@ -1202,6 +1207,13 @@ function handleDispatch(rest, targetDir) {
   const summary = getFlag(rest, '--summary', '')
   const sliceId = getFlag(rest, '--slice', null)
   const issueRef = getFlag(rest, '--issue', null)
+  const id = getFlag(rest, '--id', null)
+  const closesEnvelopeId = getFlag(rest, '--closes', null)
+  const callerSession = getFlag(rest, '--session', process.env.OPENRIG_SESSION_NAME || null)
+  const callerVerified =
+    rest.includes('--supervisory-verified') || process.env.AGENTFLOW_SUPERVISORY_VERIFIED === '1'
+      ? true
+      : undefined
   const openrigActive = rest.includes('--openrig')
     ? true
     : rest.includes('--no-openrig')
@@ -1214,6 +1226,7 @@ function handleDispatch(rest, targetDir) {
   }
 
   const dispatched = dispatchEnvelope(targetDir, {
+    id,
     to,
     from,
     outcome,
@@ -1223,6 +1236,9 @@ function handleDispatch(rest, targetDir) {
     summary,
     sliceId,
     issueRef,
+    closesEnvelopeId,
+    callerSession,
+    callerVerified,
     openrigActive,
   })
 

@@ -168,12 +168,26 @@ export function consultRetiredPredecessor({
   }
 }
 
+const SAFE_SEGMENT_RE = /^[A-Za-z0-9._-]+$/
+
+function validateSafeSegment(value, label) {
+  const str = String(value ?? '').trim()
+  if (!str || str === '.' || str === '..' || str.includes('..') || !SAFE_SEGMENT_RE.test(str)) {
+    throw new Error(`INVALID_${label}: '${value}' must be a safe single path segment`)
+  }
+  return str
+}
+
+export const DORMANT_SEATS = Object.freeze(['dev.qa', 'rev.review', 'eval.tester', 'pm.analyst'])
+
 export function resolveLineageLedgerPath({
   homeDir = os.homedir(),
   rigName = 'default-rig',
   seat = 'orch.arch',
 } = {}) {
-  return path.join(homeDir, '.openrig', 'state', 'agentflow-lineage', rigName, `${seat}.jsonl`)
+  const safeRig = validateSafeSegment(rigName, 'RIG_NAME')
+  const safeSeat = validateSafeSegment(seat, 'SEAT')
+  return path.join(homeDir, '.openrig', 'state', 'agentflow-lineage', safeRig, `${safeSeat}.jsonl`)
 }
 
 export function appendLineageLedgerEntry({

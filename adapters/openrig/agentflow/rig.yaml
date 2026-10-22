@@ -57,8 +57,7 @@ pods:
         effort: medium
         cwd: '.'
       - id: qa
-        # Dormant / wake-on-demand seat
-        lifecycle: dormant-on-demand
+        # Dormant / wake-on-demand seat (lifecycle: dormant-on-demand)
         agent_ref: 'local:agents/agentflow'
         profile: qa-pi
         runtime: pi
@@ -76,8 +75,7 @@ pods:
       dispatches clean-context L2 subagents for P2-P4 deep reasoning.
     members:
       - id: review
-        # Dormant / wake-on-demand seat
-        lifecycle: dormant-on-demand
+        # Dormant / wake-on-demand seat (lifecycle: dormant-on-demand)
         agent_ref: 'local:agents/agentflow'
         profile: reviewer
         runtime: codex
@@ -97,8 +95,7 @@ pods:
       endpoints. Emits backlog findings; never implements or gates PRs.
     members:
       - id: tester
-        # Dormant / wake-on-demand seat
-        lifecycle: dormant-on-demand
+        # Dormant / wake-on-demand seat (lifecycle: dormant-on-demand)
         agent_ref: 'local:agents/agentflow'
         profile: eval-tester-pi
         runtime: pi
@@ -125,8 +122,7 @@ pods:
         effort: medium
         cwd: '.'
       - id: analyst
-        # Dormant / wake-on-demand seat
-        lifecycle: dormant-on-demand
+        # Dormant / wake-on-demand seat (lifecycle: dormant-on-demand)
         agent_ref: 'local:agents/agentflow'
         profile: analyst
         runtime: pi

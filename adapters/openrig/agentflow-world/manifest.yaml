@@ -4,14 +4,17 @@ taxonomy: world
 description: Canonical L1 AgentFlow SDLC framework law, role ontology, path ownership boundaries, and phase handoff invariants.
 atoms:
   - id: operating-model
-    region: identity
-    source: AGENTS.md#operating-model
-    priority: core
+    address: AGENTS.md#operating-model
+    taxonomy: world
+    regions:
+      - identity
     situations:
       - fresh
       - handover
       - post-compaction
-    summary: Single-agent default operating model, role-based phases, and distinct runtime platform vs execution target evidence.
+    purpose: depth
+    order: 10
+    priority: core
     probe:
       prompt: What distinguishes a runtime platform slug from an execution target in AgentFlow?
       expect: Runtime platform names who produced workflow evidence while execution target names how work runs.
@@ -19,13 +22,16 @@ atoms:
         - runtime platform
         - execution target
   - id: guiding-principles
-    region: ontology
-    source: docs/guiding-principles.md#2-the-six-guiding-principles
-    priority: core
+    address: docs/guiding-principles.md#2-the-six-guiding-principles
+    taxonomy: world
+    regions:
+      - ontology
     situations:
       - fresh
       - handover
-    summary: Six guiding principles governing deterministic verification, progressive disclosure, and evidence-backed transitions.
+    purpose: depth
+    order: 20
+    priority: core
     probe:
       prompt: How does AgentFlow treat deterministic CLI verification versus unverified agent claims?
       expect: Deterministic validation and evidence gates take precedence over unverified prose claims.
@@ -33,14 +39,17 @@ atoms:
         - deterministic
         - evidence
   - id: path-ownership-boundaries
-    region: terrain
-    source: AGENTS.md#path-ownership-boundaries
-    priority: core
+    address: AGENTS.md#path-ownership-boundaries
+    taxonomy: world
+    regions:
+      - terrain
     situations:
       - fresh
       - handover
       - post-compaction
-    summary: Strict path ownership boundaries for PM, Steering, Builder, and Test Engineering seats, including oracle custody protection.
+    purpose: depth
+    order: 30
+    priority: core
     probe:
       prompt: Which paths are Builder seats forbidden from modifying and what pin is required before building?
       expect: Builder seats cannot edit tests/oracles/** and require a Phase 3 oracle digest pin.
@@ -48,14 +57,17 @@ atoms:
         - oracles
         - Phase 3
   - id: two-plane-separation
-    region: actors
-    source: AGENTS.md#two-plane-separation
-    priority: core
+    address: AGENTS.md#two-plane-separation
+    taxonomy: world
+    regions:
+      - actors
     situations:
       - fresh
       - handover
       - post-compaction
-    summary: Two-plane separation between the external supervisory steering plane (steer.lead) and worker execution rigs.
+    purpose: depth
+    order: 40
+    priority: core
     probe:
       prompt: Which plane is authorized to govern goals, unfreeze resolutions, and declare goal completion?
       expect: The external supervisory steering plane (steer.lead) or human operator.
@@ -63,14 +75,17 @@ atoms:
         - steer.lead
         - supervisory
   - id: workflow-phases
-    region: laws
-    source: docs/agent-workflow.md#3-workflow-phases
-    priority: core
+    address: docs/agent-workflow.md#3-workflow-phases
+    taxonomy: world
+    regions:
+      - laws
     situations:
       - fresh
       - handover
       - post-compaction
-    summary: Governed role-based delivery phases from framing and requirements through architecture, oracle specification, implementation, QA, and review.
+    purpose: depth
+    order: 50
+    priority: core
     probe:
       prompt: What is the ordered phase sequence in AgentFlow SDLC?
       expect: Framing, requirements, architecture/design, test/oracle specification, implementation, QA, review, and integration.
@@ -78,13 +93,16 @@ atoms:
         - phase
         - implementation
   - id: role-pass-contract
-    region: laws
-    source: docs/agent-workflow.md#4-role-pass-contract
-    priority: recommended
+    address: docs/agent-workflow.md#4-role-pass-contract
+    taxonomy: world
+    regions:
+      - laws
     situations:
       - fresh
       - handover
-    summary: Role-pass evidence contract recording launcher, executor, transport, delegation boundary, and transition outcome.
+    purpose: width
+    order: 60
+    priority: recommended
     probe:
       prompt: What four provenance fields are required on every completed phase role-pass?
       expect: platform/launcher, executor, transport, and delegationBoundary.
@@ -93,13 +111,16 @@ atoms:
         - transport
         - delegationBoundary
   - id: child-work-history
-    region: history
-    source: docs/issue-standards.md#issue-hierarchy
-    priority: recommended
+    address: docs/issue-standards.md#issue-hierarchy
+    taxonomy: world
+    regions:
+      - history
     situations:
       - fresh
       - handover
-    summary: Issue hierarchy and child slice history tracking across durable GitHub issues and local goal ledgers.
+    purpose: width
+    order: 70
+    priority: recommended
     probe:
       prompt: How is child slice progress recorded relative to parent goals?
       expect: Durable issue comments, PR bodies, and synchronized goal ledgers track child slice completion.
@@ -107,14 +128,17 @@ atoms:
         - child
         - issue
   - id: workflow-evidence-state
-    region: state
-    source: docs/agent-workflow.md#5-workflow-evidence-and-local-artifacts
-    priority: core
+    address: docs/agent-workflow.md#5-workflow-evidence-and-local-artifacts
+    taxonomy: world
+    regions:
+      - state
     situations:
       - fresh
       - handover
       - post-compaction
-    summary: Distinction between durable workflow state (issues, PRs, commits, transition envelopes) and ephemeral local scratch state.
+    purpose: depth
+    order: 80
+    priority: core
     probe:
       prompt: Where does durable workflow state live versus scratch execution state?
       expect: Durable state lives in issue comments, PR bodies, commits, and transition envelopes; .agent-runs/ is local scratch.
@@ -122,13 +146,16 @@ atoms:
         - durable
         - .agent-runs
   - id: execution-targets-affordances
-    region: affordances
-    source: docs/execution-targets.md#core-concepts
-    priority: core
+    address: docs/execution-targets.md#core-concepts
+    taxonomy: world
+    regions:
+      - affordances
     situations:
       - fresh
       - handover
-    summary: Execution target adapters, CLI vs session vs subagent transports, and wire-agnostic handoff surfaces.
+    purpose: depth
+    order: 90
+    priority: core
     probe:
       prompt: How should an agent resolve the execution target before launching delegated work?
       expect: From project configuration or an explicit clarifying question, never by silently inheriting the launcher model.
@@ -136,12 +163,15 @@ atoms:
         - project config
         - execution target
   - id: execution-distributions-affordances
-    region: affordances
-    source: docs/execution-distributions.md#select-and-inspect
-    priority: recommended
+    address: docs/execution-distributions.md#select-and-inspect
+    taxonomy: world
+    regions:
+      - affordances
     situations:
       - fresh
-    summary: Pinned executionDistribution inspection and drift verification via agentflow-sdlc distribution inspect.
+    purpose: width
+    order: 100
+    priority: recommended
     probe:
       prompt: Which command inspects the pinned execution distribution before routing work?
       expect: agentflow-sdlc distribution inspect

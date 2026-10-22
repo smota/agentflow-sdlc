@@ -3,9 +3,13 @@
 // is busy. This file is installed with the product base and loaded by the seat's runtime:
 //   - Claude Code: a PreToolUse hook runs it on every Bash call (exit 2 blocks the call).
 //   - Pi: an extension in the seat's own agent directory imports it on every bash tool call.
-// It has no imports, so it keeps working when the product checkout moves.
+// It uses only Node built-ins, so it keeps working when the product checkout moves.
+import { existsSync, readFileSync } from 'node:fs'
 
 const PRODUCT_SEAT = /^pm-[^@\s]+@\S+$/
+const DELIVERY_TARGET_PATTERN =
+  /(?:^|[=\s])(?:orch|dev|rev|eval)[.-](?:arch|build(?:-jr|-sr)?|qa|review|test-eng|tester)(?:@\S+|$)/i
+const PRODUCT_TARGET_PATTERN = /^pm[.-][A-Za-z0-9_-]+(?:@\S+)?$/
 
 const RIG_QUEUE_SENDS = new Set([
   'create',
@@ -228,19 +232,71 @@ export function directSend(command, depth = 0) {
   return null
 }
 
-function hasValidEnvelopeArg(words) {
+function extractEnvelopeArg(words) {
   for (let i = 0; i < words.length; i += 1) {
-    if (words[i].computed) continue
+    if (words[i].computed) return null
     const w = words[i].word
     if (w === '--envelope') {
       const next = words[i + 1]
-      if (next && !next.computed && /^[^\s;&|()]+\.json$/i.test(next.word.trim())) return true
-    } else if (w.startsWith('--envelope=')) {
-      const val = w.slice('--envelope='.length).trim()
-      if (/^[^\s;&|()]+\.json$/i.test(val)) return true
+      if (!next || next.computed) return null
+      const candidate = next.word.trim()
+      if (!candidate.includes('..') && /^[^\s;&|()]+\.json$/i.test(candidate)) return candidate
+      return null
+    }
+    if (w.startsWith('--envelope=')) {
+      const candidate = w.slice('--envelope='.length).trim()
+      if (!candidate.includes('..') && /^[^\s;&|()]+\.json$/i.test(candidate)) return candidate
+      return null
     }
   }
-  return false
+  return null
+}
+
+function extractQueueDestination(words) {
+  for (let i = 0; i < words.length; i += 1) {
+    if (words[i].computed) return { computed: true, destination: null }
+    const w = words[i].word
+    if (DELIVERY_TARGET_PATTERN.test(w)) {
+      return { computed: false, destination: w, isDelivery: true }
+    }
+    if (w === '--to' || w === '--destination') {
+      const next = words[i + 1]
+      if (!next || next.computed) return { computed: true, destination: null }
+      return {
+        computed: false,
+        destination: next.word.trim(),
+        isDelivery: DELIVERY_TARGET_PATTERN.test(next.word.trim()),
+      }
+    }
+    if (w.startsWith('--to=') || w.startsWith('--destination=')) {
+      const val = w.slice(w.indexOf('=') + 1).trim()
+      return {
+        computed: false,
+        destination: val,
+        isDelivery: DELIVERY_TARGET_PATTERN.test(val),
+      }
+    }
+  }
+  return { computed: false, destination: null, isDelivery: false }
+}
+
+function validateEnvelopeFile(envelopePath, env) {
+  if (!envelopePath) return false
+  if (existsSync(envelopePath)) {
+    try {
+      const parsed = JSON.parse(readFileSync(envelopePath, 'utf8'))
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return false
+      const decisionOrOutcome = parsed.decision ?? parsed.outcome
+      if (typeof decisionOrOutcome !== 'string' || !decisionOrOutcome.trim()) return false
+      if (typeof parsed.from !== 'string' || !parsed.from.trim()) return false
+      if (typeof parsed.to !== 'string' || !parsed.to.trim()) return false
+      if (DELIVERY_TARGET_PATTERN.test(parsed.to.trim())) return false
+      return PRODUCT_TARGET_PATTERN.test(parsed.to.trim())
+    } catch {
+      return false
+    }
+  }
+  return env?.AGENTFLOW_VALIDATED_ENVELOPE === '1'
 }
 
 function isSimpleValidatedQueueCmd(words) {
@@ -275,14 +331,17 @@ function isValidatedEnvelopeQueueSend(command, env) {
   }
   const commands = simpleCommands(tokens)
   if (commands.length === 0) return false
-  const envMarker = env?.AGENTFLOW_VALIDATED_ENVELOPE === '1'
   let sawValidatedQueue = false
   for (const words of commands) {
     const hit = structuralHit(words)
     if (hit !== null) {
       if (hit !== 'rig queue create/handoff') return false
       if (!isSimpleValidatedQueueCmd(words)) return false
-      if (!envMarker && !hasValidEnvelopeArg(words)) return false
+      const targetInfo = extractQueueDestination(words)
+      if (targetInfo.computed || targetInfo.isDelivery || !targetInfo.destination) return false
+      if (!PRODUCT_TARGET_PATTERN.test(targetInfo.destination)) return false
+      const envelopePath = extractEnvelopeArg(words)
+      if (!validateEnvelopeFile(envelopePath, env)) return false
       sawValidatedQueue = true
     } else {
       for (const word of words) {

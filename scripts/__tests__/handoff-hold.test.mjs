@@ -896,6 +896,16 @@ describe('advisory capacity inspection and queue-native handoff (#546)', () => {
     expect(hardBlockedReport.hardBlocked).toBe(true)
     expect(hardBlockedReport.free).toBe(false)
     expect(hardBlockedReport.signals.busyLock).toEqual({ reason: 'person hold: finishing 358' })
+
+    const unreadableReport = hold.capacityInspect({
+      busy: null,
+      unreadable: true,
+      seats: [],
+      queue: [],
+      board: [],
+    })
+    expect(unreadableReport.hardBlocked).toBe(true)
+    expect(unreadableReport.free).toBe(false)
   })
 
   it('executes handoff capacity --rig via CLI and returns JSON capacity report', async () => {
@@ -934,7 +944,7 @@ describe('advisory capacity inspection and queue-native handoff (#546)', () => {
     expect(report.signals.wipGoals).toEqual([OTHER])
   })
 
-  it('delivers through OpenRig queue when B2/B3/B4 are busy in advisory mode, but holds on hard person/worktree lock', () => {
+  it('delivers through OpenRig queue when B2/B3/B4 are busy in programmatic advisory mode, but holds on hard person/worktree lock or env bypass attempt', async () => {
     const nodes = idleNodes()
     nodes[1].agentActivity.state = 'working'
     const { deps, sends, state } = fakeDeps({
@@ -950,6 +960,31 @@ describe('advisory capacity inspection and queue-native handoff (#546)', () => {
       wip: [OTHER],
     })
 
+    // Env variable alone must NOT trigger advisory bypass
+    deps.env.AGENTFLOW_CAPACITY_MODE = 'advisory'
+    const envAttempt = hold.deliver(deps, {
+      to: `orch-arch@${RIG}`,
+      body: `Phase 1 analyst pass\nGoal: ${GOAL}`,
+      goal: GOAL,
+      transition: TRANSITION,
+    })
+    expect(envAttempt.status).toBe('held')
+    expect(sends()).toHaveLength(0)
+
+    // CLI --advisory flag on deliver must be rejected (exit 2)
+    const cliOut = []
+    const cliCode = await hold.main(
+      ['deliver', '--to', `orch-arch@${RIG}`, '--body', 'x', '--advisory'],
+      {
+        deps,
+        stdout: { write: (t) => cliOut.push(t) },
+        stderr: { write: (t) => cliOut.push(t) },
+      },
+    )
+    expect(cliCode).toBe(2)
+    expect(cliOut.join('')).toContain('There is no option that sends anyway')
+
+    // Programmatic options.advisory === true delivers when signals are readable and not hard-blocked
     const delivered = hold.deliver(
       deps,
       {
@@ -988,20 +1023,33 @@ describe('advisory capacity inspection and queue-native handoff (#546)', () => {
     expect(sends()).toHaveLength(1)
   })
 
-  it('permits native rig queue handoff/create with validated envelope while blocking raw tmux send-keys and handoff release', () => {
+  it('permits intra-product rig queue handoff/create with a validated envelope file while blocking delivery targets, bare env flags, and chained sends', () => {
+    const dir = tempDir('agentflow-envelope-')
+    const validIntraProductEnvelope = join(dir, 'intra-pm-envelope.json')
+    writeFileSync(
+      validIntraProductEnvelope,
+      JSON.stringify({
+        decision: 'delegate_phase_1',
+        from: 'pm.manager',
+        to: 'pm-analyst@agentflow-pm',
+      }),
+    )
+
+    // 1. Intra-product queue handoff with a valid envelope file on disk is allowed
     expect(
       guardDecision({
         session: MANAGER,
-        command: 'rig queue handoff q1 --to orch-arch@agentflow-dev --envelope /tmp/envelope.json',
+        command: `rig queue handoff q1 --to pm-analyst@agentflow-pm --envelope ${validIntraProductEnvelope}`,
       }),
     ).toEqual({
       block: false,
       validatedEnvelope: true,
     })
 
+    // 2. Intra-product queue create with --envelope and AGENTFLOW_VALIDATED_ENVELOPE='1' in unit test is allowed
     expect(
       guardDecision(
-        'rig queue create --destination orch-arch@agentflow-dev --body-file /tmp/body.txt',
+        'rig queue create --destination pm-analyst@agentflow-pm --envelope /tmp/test-envelope.json --body-file /tmp/body.txt',
         { OPENRIG_SESSION_NAME: MANAGER, AGENTFLOW_VALIDATED_ENVELOPE: '1' },
       ),
     ).toEqual({
@@ -1009,17 +1057,51 @@ describe('advisory capacity inspection and queue-native handoff (#546)', () => {
       validatedEnvelope: true,
     })
 
-    // Chaining raw tmux send-keys or handoff release with a validated envelope is still blocked
+    // 3. Bare AGENTFLOW_VALIDATED_ENVELOPE='1' without --envelope <path.json> is BLOCKED
     expect(
       guardDecision(
-        'rig queue handoff q1 --to orch-arch@agentflow-dev --envelope /tmp/envelope.json && tmux send-keys -t orch-arch@agentflow-dev "go" Enter',
+        'rig queue create --destination pm-analyst@agentflow-pm --body-file /tmp/body.txt',
+        { OPENRIG_SESSION_NAME: MANAGER, AGENTFLOW_VALIDATED_ENVELOPE: '1' },
+      ).block,
+    ).toBe(true)
+
+    // 4. Targeting a delivery seat (orch-arch, dev-build, etc.) is ALWAYS blocked even with a valid envelope or env flag
+    const deliveryEnvelope = join(dir, 'delivery-envelope.json')
+    writeFileSync(
+      deliveryEnvelope,
+      JSON.stringify({
+        decision: 'handoff',
+        from: 'pm.analyst',
+        to: 'orch-arch@agentflow-dev',
+      }),
+    )
+    expect(
+      guardDecision(
+        `rig queue handoff q1 --to orch-arch@agentflow-dev --envelope ${deliveryEnvelope}`,
+        { OPENRIG_SESSION_NAME: MANAGER, AGENTFLOW_VALIDATED_ENVELOPE: '1' },
+      ).block,
+    ).toBe(true)
+
+    // 5. Non-existent or malformed envelope file without AGENTFLOW_VALIDATED_ENVELOPE='1' is blocked
+    expect(
+      guardDecision({
+        session: MANAGER,
+        command:
+          'rig queue handoff q1 --to pm-analyst@agentflow-pm --envelope /tmp/no-such-envelope-file.json',
+      }).block,
+    ).toBe(true)
+
+    // 6. Chaining raw tmux send-keys or handoff release with a validated envelope is still blocked
+    expect(
+      guardDecision(
+        `rig queue handoff q1 --to pm-analyst@agentflow-pm --envelope ${validIntraProductEnvelope} && tmux send-keys -t orch-arch@agentflow-dev "go" Enter`,
         { OPENRIG_SESSION_NAME: MANAGER, AGENTFLOW_VALIDATED_ENVELOPE: '1' },
       ).block,
     ).toBe(true)
 
     expect(
       guardDecision(
-        'rig queue handoff q1 --to orch-arch@agentflow-dev --envelope /tmp/envelope.json; agentflow-sdlc handoff release hold-1',
+        `rig queue handoff q1 --to pm-analyst@agentflow-pm --envelope ${validIntraProductEnvelope}; agentflow-sdlc handoff release hold-1`,
         { OPENRIG_SESSION_NAME: MANAGER, AGENTFLOW_VALIDATED_ENVELOPE: '1' },
       ).block,
     ).toBe(true)
