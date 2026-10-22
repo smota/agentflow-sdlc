@@ -99,7 +99,15 @@ export function resolveProjectSpecChannel(projectDir, { repoRoot = ROOT } = {}) 
       } catch {
         continue
       }
-      const ver = String(lock.frameworkVersion || lock.version || '').trim()
+      const rawVer =
+        lock.frameworkVersion ??
+        lock.packageVersion ??
+        (typeof lock.version === 'string'
+          ? lock.version
+          : typeof lock.version === 'number' && Array.isArray(lock.entries)
+            ? PACKAGE_VERSION
+            : '')
+      const ver = String(rawVer).trim()
       if (ver) {
         if (!isValidVersionSegment(ver)) {
           fail(`Invalid frameworkVersion '${ver}' in ${lockPath}.`)

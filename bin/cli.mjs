@@ -1090,10 +1090,16 @@ function seatPositionalArgs(args) {
   return result
 }
 
-function handleSeat(rest, targetDir) {
+function handleSeat(rest, defaultTargetDir) {
   const json = rest.includes('--json')
-  const [subcommand, positionalSeat] = seatPositionalArgs(rest)
+  const hasExplicitTarget = rest.includes('--target')
+  const [subcommand, positionalSeat, positionalTarget] = seatPositionalArgs(rest)
   const seat = getFlag(rest, '--seat', positionalSeat || null)
+  const targetDir = hasExplicitTarget
+    ? defaultTargetDir
+    : positionalTarget
+      ? resolve(positionalTarget)
+      : defaultTargetDir
 
   if (subcommand === 'claim') {
     if (!seat) {
@@ -1430,8 +1436,15 @@ function requestedHelp(args) {
   return args.includes('--help') || args.includes('-h')
 }
 
-function handleDoctor(rest, targetDir) {
+function handleDoctor(rest, defaultTargetDir) {
   const json = rest.includes('--json')
+  const hasExplicitTarget = rest.includes('--target')
+  const [positionalTarget] = positionalArgs(rest)
+  const targetDir = hasExplicitTarget
+    ? defaultTargetDir
+    : positionalTarget
+      ? resolve(positionalTarget)
+      : defaultTargetDir
   const harness = getFlag(rest, '--harness', 'all')
   const inputs = {}
   const scope = createReadScope()
