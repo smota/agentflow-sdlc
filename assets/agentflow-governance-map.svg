@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="1800" height="1180" viewBox="0 0 1800 1180" role="img" aria-labelledby="map-title map-desc">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="1800" height="1280" viewBox="0 0 1800 1280" role="img" aria-labelledby="map-title map-desc">
 <title id="map-title">AGENTFLOW SDLC · GOVERNED DELIVERY</title>
 <desc id="map-desc">One agent · nine role passes · the record outlives the session. Authority drops at review. Person gates bind to subjects, never to a phase number. Eight return routes are capped at two cycles before human escalation.</desc>
 <defs>
@@ -11,8 +11,8 @@
 text{font-family:'JetBrains Mono','Cascadia Mono',Consolas,monospace}
 .prose{font-family:Inter,'Segoe UI',Helvetica,Arial,sans-serif}
 </style>
-<rect width="1800" height="1180" fill="#f7f9fb"/>
-<rect width="1800" height="1180" fill="url(#grid)" opacity="0.55"/>
+<rect width="1800" height="1280" fill="#f7f9fb"/>
+<rect width="1800" height="1280" fill="url(#grid)" opacity="0.55"/>
 <g id="title-block">
 <rect x="36" y="27" width="150" height="23" rx="10" fill="#ffffff" stroke="#ff674d" />
 <text x="111" y="43" font-size="11" fill="#061943" text-anchor="middle">AGENTFLOW SDLC</text>
@@ -49,13 +49,13 @@ text{font-family:'JetBrains Mono','Cascadia Mono',Consolas,monospace}
 <rect x="544" y="163" width="230" height="22" rx="10" fill="#ffffff" stroke="#ff674d" />
 <text x="659" y="178" font-size="10" fill="#ff674d" text-anchor="middle">agent-escalation</text>
 <text x="659" y="199" font-size="9" fill="#061943" text-anchor="middle">goalRevision · candidateDigest</text>
-<text x="659" y="207" font-size="8" fill="#ff674d" text-anchor="middle">authority-escalation · budget-exhaustion</text>
-<text x="659" y="215" font-size="8" fill="#ff674d" text-anchor="middle">evidence-expiry · independence</text>
+<text x="659" y="207" font-size="8.5" fill="#ff674d" text-anchor="middle">authority-escalation · budget-exhaustion</text>
+<text x="659" y="215" font-size="8.5" fill="#ff674d" text-anchor="middle">evidence-expiry · independence</text>
 <text x="1745" y="170" font-size="10" fill="#061943" text-anchor="end">only decision  agree  from a human-platform reviewer satisfies a gate</text>
 <text x="1745" y="191" font-size="10" fill="#64748b" text-anchor="end">statuses: waiting · agreed · refused · stale</text>
 <line x1="1750" y1="216" x2="1750" y2="224" stroke="#ff674d" stroke-dasharray="3 2"/>
 <circle cx="1750" cy="227" r="3" fill="white" stroke="#ff674d"/>
-<text x="1737" y="227" font-size="8" fill="#64748b" text-anchor="end">subject-bound, phase-agnostic</text>
+<text x="1737" y="227" font-size="8.5" fill="#64748b" text-anchor="end">subject-bound, phase-agnostic</text>
 </g>
 <g id="profile-rail">
 <rect x="36" y="238" width="1728" height="69" rx="10" fill="#ffffff" stroke="#d7dee8" />
@@ -90,7 +90,7 @@ text{font-family:'JetBrains Mono','Cascadia Mono',Consolas,monospace}
 <text x="1550" y="272" font-size="9" fill="#061943" >yes</text>
 <line x1="1218" y1="274" x2="1745" y2="274" stroke="#d7dee8" />
 <circle cx="1654" cy="269" r="2" fill="#ff674d"/>
-<text x="1662" y="272" font-size="8" fill="#ff674d" >default</text>
+<text x="1662" y="272" font-size="8.5" fill="#ff674d" >default</text>
 <text x="1221" y="282" font-size="9" fill="#061943" >delegated</text>
 <text x="1383" y="282" font-size="9" fill="#061943" >open-pr</text>
 <text x="1550" y="282" font-size="9" fill="#061943" >yes</text>
@@ -106,7 +106,7 @@ text{font-family:'JetBrains Mono','Cascadia Mono',Consolas,monospace}
 <line x1="190" y1="354" x2="1578" y2="354" stroke="#d7dee8" />
 <rect x="142" y="338" width="96" height="60" rx="10" fill="#ffffff" stroke="#d7dee8" stroke-dasharray="4 3" data-bootstrap="true"/>
 <text x="190" y="359" font-size="13" fill="#061943" class="prose" text-anchor="middle" font-weight="600">Requester</text>
-<text x="190" y="381" font-size="6.5" fill="#64748b" text-anchor="middle">bootstrap · not numbered</text>
+<text x="190" y="381" font-size="8.5" fill="#64748b" text-anchor="middle">bootstrap · not numbered</text>
 <g class="phase-plate" data-phase="00" data-x="330">
 <rect x="264" y="338" width="132" height="60" rx="10" fill="#ffffff" stroke="#d7dee8" />
 <text x="277" y="357" font-size="13" fill="#061943" class="prose" font-weight="600">Product</text>
@@ -168,137 +168,134 @@ text{font-family:'JetBrains Mono','Cascadia Mono',Consolas,monospace}
 <path d="M1368 333v-5H1644v5" fill="none" stroke="#64748b"/>
 <text x="1506" y="323" font-size="10" fill="#64748b" text-anchor="middle">LAND</text>
 <path d="M866 351v-5a5 5 0 0 1 10 0v5M863 351h16v13h-16z" stroke="#ff674d" fill="#f7f9fb" stroke-width="1.5"/>
-<text x="882" y="375" font-size="6.8" fill="#ff674d" text-anchor="middle">oracle digest pinned</text>
-<text x="882" y="385" font-size="6.8" fill="#ff674d" text-anchor="middle">tests/oracles/** · SHA-256</text>
-<text x="882" y="395" font-size="6.8" fill="#ff674d" text-anchor="middle">builders barred from this path</text>
-<path d="M696 404v6H1212v-6" fill="none" stroke="#159e8f"/>
-<text x="954" y="422" font-size="9" fill="#159e8f" text-anchor="middle">composite pass · P0/P1 only · one turn</text>
-<rect x="1172" y="431" width="93" height="25" rx="10" fill="#ffffff" stroke="#d7dee8" stroke-dasharray="3 3"/>
-<text x="1218" y="442" font-size="11" fill="#061943" class="prose" text-anchor="middle">QA expert</text>
-<text x="1218" y="452" font-size="7" fill="#64748b" text-anchor="middle">sidecar · observe</text>
-<path d="M1146 398V437h26M1265 437h25v-39" fill="none" stroke="#64748b" stroke-dasharray="3 3"/>
-<text x="1145" y="430" font-size="6.8" fill="#64748b" text-anchor="end">exploratory-charter</text>
-<text x="1293" y="430" font-size="6.8" fill="#64748b" >exploratory-findings</text>
+<text x="882" y="412" font-size="8.5" fill="#ff674d" text-anchor="middle">oracle digest pinned</text>
+<text x="882" y="423" font-size="8.5" fill="#ff674d" text-anchor="middle">tests/oracles/** · SHA-256</text>
+<text x="882" y="434" font-size="8.5" fill="#ff674d" text-anchor="middle">builders barred from this path</text>
+<path d="M696 444v6H1150v-6" fill="none" stroke="#159e8f"/>
+<text x="923" y="464" font-size="9" fill="#159e8f" text-anchor="middle">composite pass · P0/P1 only · one turn</text>
+<rect x="1172" y="438" width="93" height="26" rx="10" fill="#ffffff" stroke="#d7dee8" stroke-dasharray="3 3"/>
+<text x="1218" y="462" font-size="11" fill="#061943" class="prose" text-anchor="middle">QA expert</text>
+<text x="1218" y="452" font-size="8.5" fill="#64748b" text-anchor="middle">sidecar · observe</text>
+<path d="M1146 398V451h26M1265 451h25v-53" fill="none" stroke="#64748b" stroke-dasharray="3 3"/>
+<text x="1145" y="444" font-size="8.5" fill="#64748b" text-anchor="end">exploratory-charter</text>
+<text x="1293" y="444" font-size="8.5" fill="#64748b" >exploratory-findings</text>
 </g>
-<g id="lanes">
+<g id="lanes" transform="translate(0,34)">
 <rect x="36" y="460" width="1728" height="43" rx="10" fill="#061943" stroke="none" fill-opacity="0.06"/>
+<line x1="46" y1="460" x2="1754" y2="460" stroke="#061943" stroke-opacity="0.35"/>
 <circle cx="50" cy="479" r="4" fill="#061943"/>
 <text x="63" y="483" font-size="10" fill="#061943" >INTAKE</text>
 <rect x="36" y="507" width="1728" height="43" rx="10" fill="#0b2f61" stroke="none" fill-opacity="0.06"/>
+<line x1="46" y1="507" x2="1754" y2="507" stroke="#0b2f61" stroke-opacity="0.35"/>
 <circle cx="50" cy="526" r="4" fill="#0b2f61"/>
 <text x="63" y="530" font-size="10" fill="#0b2f61" >PRODUCT</text>
 <rect x="36" y="554" width="1728" height="43" rx="10" fill="#0b796f" stroke="none" fill-opacity="0.06"/>
+<line x1="46" y1="554" x2="1754" y2="554" stroke="#0b796f" stroke-opacity="0.35"/>
 <circle cx="50" cy="573" r="4" fill="#0b796f"/>
 <text x="63" y="577" font-size="10" fill="#0b796f" >ANALYSIS</text>
 <rect x="36" y="601" width="1728" height="43" rx="10" fill="#159e8f" stroke="none" fill-opacity="0.06"/>
+<line x1="46" y1="601" x2="1754" y2="601" stroke="#159e8f" stroke-opacity="0.35"/>
 <circle cx="50" cy="620" r="4" fill="#159e8f"/>
 <text x="63" y="624" font-size="10" fill="#159e8f" >ARCHITECTURE</text>
 <rect x="36" y="648" width="1728" height="43" rx="10" fill="#36c7b2" stroke="none" fill-opacity="0.06"/>
+<line x1="46" y1="648" x2="1754" y2="648" stroke="#36c7b2" stroke-opacity="0.35"/>
 <circle cx="50" cy="667" r="4" fill="#36c7b2"/>
 <text x="63" y="671" font-size="10" fill="#36c7b2" >DELIVERY</text>
 <rect x="36" y="695" width="1728" height="43" rx="10" fill="#ff674d" stroke="none" fill-opacity="0.06"/>
+<line x1="46" y1="695" x2="1754" y2="695" stroke="#ff674d" stroke-opacity="0.35"/>
 <circle cx="50" cy="714" r="4" fill="#ff674d"/>
 <text x="63" y="718" font-size="10" fill="#ff674d" >ASSURANCE</text>
 <rect x="36" y="742" width="1728" height="43" rx="10" fill="#0b2f61" stroke="none" fill-opacity="0.06"/>
+<line x1="46" y1="742" x2="1754" y2="742" stroke="#0b2f61" stroke-opacity="0.35"/>
 <circle cx="50" cy="761" r="4" fill="#0b2f61"/>
 <text x="63" y="765" font-size="10" fill="#0b2f61" >DOCUMENTATION</text>
-<g id="ghost-rings" fill="none" stroke="#64748b" opacity="0.3">
-<line x1="762" y1="664" x2="762" y2="706" stroke="#64748b" />
+<g id="ghost-rings" fill="none" stroke="#64748b" opacity="0.45">
+<line x1="762" y1="666" x2="762" y2="702" stroke="#64748b" stroke-dasharray="2 2"/>
 <circle cx="762" cy="706" r="3.5"/>
-<line x1="1063" y1="659" x2="1063" y2="659" stroke="#64748b" />
-<circle cx="1063" cy="659" r="3.5"/>
-<line x1="1207" y1="706" x2="1207" y2="659" stroke="#64748b" />
-<circle cx="1207" cy="659" r="3.5"/>
-<line x1="1351" y1="706" x2="1351" y2="706" stroke="#64748b" />
-<circle cx="1351" cy="706" r="3.5"/>
-<line x1="1495" y1="753" x2="1495" y2="706" stroke="#64748b" />
-<circle cx="1495" cy="706" r="3.5"/>
-<line x1="1639" y1="659" x2="1639" y2="753" stroke="#64748b" />
-<circle cx="1639" cy="753" r="3.5"/>
 </g>
 <path id="evidence-baton" data-lanes="INTAKE PRODUCT ANALYSIS ARCHITECTURE DELIVERY DELIVERY ASSURANCE ASSURANCE DOCUMENTATION DELIVERY" d="M 190 471 H 213 C 262.8 471, 257.2 518, 307 518 H 330 H 353 C 404.88 518, 399.12 565, 451 565 H 474 H 497 C 548.88 565, 543.12 612, 595 612 H 618 H 641 C 692.88 612, 687.12 659, 739 659 H 762 H 785 C 886.8 659, 877.2 659, 979 659 H 1002 H 1025 C 1076.88 659, 1071.12 706, 1123 706 H 1146 H 1169 C 1220.88 706, 1215.12 706, 1267 706 H 1290 H 1313 C 1364.88 706, 1359.12 753, 1411 753 H 1434 H 1457 C 1508.88 753, 1503.12 659, 1555 659 H 1578" fill="none" stroke="url(#baton-gradient)" stroke-width="7" stroke-linecap="round"/>
 <g class="evidence-node" data-column="Requester" data-x="190"><circle cx="190" cy="471" r="6.5" fill="white" stroke="#061943" stroke-width="3"/>
-<text x="190" y="485" font-size="7.4" fill="#061943" text-anchor="middle">intake.request</text>
+<text x="190" y="486" font-size="8.5" fill="#061943" text-anchor="middle">intake.request</text>
 </g>
 <g class="evidence-node" data-column="00" data-x="330"><circle cx="330" cy="518" r="6.5" fill="white" stroke="#0b2f61" stroke-width="3"/>
-<text x="330" y="532" font-size="7.4" fill="#061943" text-anchor="middle">product.problem</text>
-<text x="330" y="541" font-size="7.4" fill="#061943" text-anchor="middle">product.outcome</text>
-<text x="330" y="550" font-size="7.4" fill="#061943" text-anchor="middle">product.release-intent</text>
+<text x="330" y="533" font-size="8.5" fill="#061943" text-anchor="middle">product.problem</text>
+<text x="330" y="544" font-size="8.5" fill="#061943" text-anchor="middle">product.outcome</text>
+<text x="330" y="555" font-size="8.5" fill="#061943" text-anchor="middle">product.release-intent</text>
 </g>
 <g class="evidence-node" data-column="01" data-x="474"><circle cx="474" cy="565" r="6.5" fill="white" stroke="#0b796f" stroke-width="3"/>
-<text x="474" y="579" font-size="7.4" fill="#061943" text-anchor="middle">analysis.requirements</text>
-<text x="474" y="588" font-size="7.4" fill="#061943" text-anchor="middle">analysis.acceptance-criteria</text>
-<text x="474" y="597" font-size="7.4" fill="#061943" text-anchor="middle">analysis.scope</text>
+<text x="474" y="580" font-size="8.5" fill="#061943" text-anchor="middle">analysis.requirements</text>
+<text x="474" y="591" font-size="8.5" fill="#061943" text-anchor="middle">analysis.acceptance-criteria</text>
+<text x="474" y="602" font-size="8.5" fill="#061943" text-anchor="middle">analysis.scope</text>
 </g>
 <g class="evidence-node" data-column="02" data-x="618"><circle cx="618" cy="612" r="6.5" fill="white" stroke="#159e8f" stroke-width="3"/>
-<text x="618" y="626" font-size="7.4" fill="#061943" text-anchor="middle">architecture.design</text>
-<text x="618" y="635" font-size="7.4" fill="#061943" text-anchor="middle">architecture.risk</text>
-<text x="618" y="644" font-size="7.4" fill="#061943" text-anchor="middle">architecture.workflow-profile</text>
+<text x="618" y="627" font-size="8.5" fill="#061943" text-anchor="middle">architecture.design</text>
+<text x="618" y="638" font-size="8.5" fill="#061943" text-anchor="middle">architecture.risk</text>
+<text x="618" y="649" font-size="8.5" fill="#061943" text-anchor="middle">architecture.workflow-profile</text>
 </g>
 <g class="evidence-node" data-column="03" data-x="762"><circle cx="762" cy="659" r="6.5" fill="white" stroke="#36c7b2" stroke-width="3"/>
-<text x="762" y="673" font-size="7.4" fill="#061943" text-anchor="middle">delivery.plan</text>
-<text x="762" y="682" font-size="7.4" fill="#061943" text-anchor="middle">assurance.validation-plan</text>
-<text x="762" y="691" font-size="7.4" fill="#061943" text-anchor="middle">delivery.rollback-plan</text>
+<text x="762" y="674" font-size="8.5" fill="#061943" text-anchor="middle">delivery.plan</text>
+<text x="762" y="685" font-size="8.5" fill="#061943" text-anchor="middle">assurance.validation-plan</text>
+<text x="762" y="696" font-size="8.5" fill="#061943" text-anchor="middle">delivery.rollback-plan</text>
 </g>
 <g class="evidence-node" data-column="04" data-x="1002"><circle cx="1002" cy="659" r="6.5" fill="white" stroke="#36c7b2" stroke-width="3"/>
-<text x="1002" y="673" font-size="7.4" fill="#061943" text-anchor="middle">delivery.implementation</text>
-<text x="1002" y="682" font-size="7.4" fill="#061943" text-anchor="middle">delivery.change-evidence</text>
+<text x="1002" y="674" font-size="8.5" fill="#061943" text-anchor="middle">delivery.implementation</text>
+<text x="1002" y="685" font-size="8.5" fill="#061943" text-anchor="middle">delivery.change-evidence</text>
 </g>
 <g class="evidence-node" data-column="05" data-x="1146"><circle cx="1146" cy="706" r="6.5" fill="white" stroke="#ff674d" stroke-width="3"/>
-<text x="1146" y="720" font-size="7.4" fill="#061943" text-anchor="middle">assurance.test-verdict</text>
-<text x="1146" y="729" font-size="7.4" fill="#061943" text-anchor="middle">assurance.validation-evidence</text>
-<text x="1146" y="738" font-size="7.4" fill="#061943" text-anchor="middle">assurance.coverage-notes</text>
+<text x="1146" y="721" font-size="8.5" fill="#061943" text-anchor="middle">assurance.test-verdict</text>
+<text x="1146" y="732" font-size="8.5" fill="#061943" text-anchor="middle">assurance.validation-evidence</text>
+<text x="1146" y="743" font-size="8.5" fill="#061943" text-anchor="middle">assurance.coverage-notes</text>
 </g>
 <g class="evidence-node" data-column="06" data-x="1290"><circle cx="1290" cy="706" r="6.5" fill="white" stroke="#ff674d" stroke-width="3"/>
-<text x="1290" y="720" font-size="7.4" fill="#061943" text-anchor="middle">assurance.review-verdict</text>
-<text x="1290" y="729" font-size="7.4" fill="#061943" text-anchor="middle">assurance.review-findings</text>
-<text x="1290" y="738" font-size="7.4" fill="#061943" text-anchor="middle">assurance.independence-boundary</text>
+<text x="1290" y="721" font-size="8.5" fill="#061943" text-anchor="middle">assurance.review-verdict</text>
+<text x="1290" y="732" font-size="8.5" fill="#061943" text-anchor="middle">assurance.review-findings</text>
+<text x="1290" y="743" font-size="8.5" fill="#061943" text-anchor="middle">assurance.independence-boundary</text>
 </g>
 <g class="evidence-node" data-column="07" data-x="1434"><circle cx="1434" cy="753" r="6.5" fill="white" stroke="#0b2f61" stroke-width="3"/>
-<text x="1434" y="767" font-size="7.4" fill="#061943" text-anchor="middle">documentation.user-guidance</text>
-<text x="1434" y="776" font-size="7.4" fill="#061943" text-anchor="middle">documentation.onboarding</text>
-<text x="1434" y="785" font-size="7.4" fill="#061943" text-anchor="middle">documentation.release-language</text>
+<text x="1434" y="768" font-size="8.5" fill="#061943" text-anchor="middle">documentation.user-guidance</text>
+<text x="1434" y="779" font-size="8.5" fill="#061943" text-anchor="middle">documentation.onboarding</text>
+<text x="1434" y="790" font-size="8.5" fill="#061943" text-anchor="middle">documentation.release-language</text>
 </g>
 <g class="evidence-node" data-column="08" data-x="1578"><circle cx="1578" cy="659" r="6.5" fill="white" stroke="#36c7b2" stroke-width="3"/>
-<text x="1578" y="673" font-size="7.4" fill="#061943" text-anchor="middle">delivery.pr-manifest</text>
-<text x="1578" y="682" font-size="7.4" fill="#061943" text-anchor="middle">delivery.merge-readiness</text>
-<text x="1578" y="691" font-size="7.4" fill="#061943" text-anchor="middle">delivery.follow-up-status</text>
+<text x="1578" y="674" font-size="8.5" fill="#061943" text-anchor="middle">delivery.pr-manifest</text>
+<text x="1578" y="685" font-size="8.5" fill="#061943" text-anchor="middle">delivery.merge-readiness</text>
+<text x="1578" y="696" font-size="8.5" fill="#061943" text-anchor="middle">delivery.follow-up-status</text>
 </g>
 <text x="1750" y="799" font-size="10" fill="#64748b" text-anchor="end">exclusive-ownership · single-writer · digest-bound hand-offs · authority-may-only-narrow</text>
 </g>
-<g id="returns">
+<g id="returns" transform="translate(0,60)">
 <text x="52" y="823" font-size="11" fill="#061943" >RETURN ROUTES</text>
 <path class="return-arc" data-route="8-4" d="M1578 833 C1566 842 1550 836 1538 836 H1042 C1030 836 1014 842 1002 833" fill="none" stroke="#ff674d" stroke-width="2" stroke-dasharray="4 3" marker-end="url(#return-arrow)"/>
-<text x="1535" y="834" font-size="7" fill="#ff674d" text-anchor="end">readiness-rework</text>
+<text x="1535" y="834" font-size="8.5" fill="#ff674d" text-anchor="end">readiness-rework</text>
 <path class="return-arc" data-route="7-4" d="M1434 841 C1422 850.55 1406 844 1394 844 H1042 C1030 844 1014 850.55 1002 841" fill="none" stroke="#ff674d" stroke-width="2" stroke-dasharray="4 3" marker-end="url(#return-arrow)"/>
-<text x="1391" y="842" font-size="7" fill="#ff674d" text-anchor="end">doc-rework</text>
+<text x="1391" y="842" font-size="8.5" fill="#ff674d" text-anchor="end">doc-rework</text>
 <path class="return-arc" data-route="6-4" d="M1290 849 C1278 859.1 1262 852 1250 852 H1042 C1030 852 1014 859.1 1002 849" fill="none" stroke="#ff674d" stroke-width="2" stroke-dasharray="4 3" marker-end="url(#return-arrow)"/>
-<text x="1247" y="850" font-size="7" fill="#ff674d" text-anchor="end">review-rework</text>
+<text x="1247" y="850" font-size="8.5" fill="#ff674d" text-anchor="end">review-rework</text>
 <path class="return-arc" data-route="4-3" d="M1002 857 C990 867.65 974 860 962 860 H802 C790 860 774 867.65 762 857" fill="none" stroke="#ff674d" stroke-width="2" stroke-dasharray="4 3" marker-end="url(#return-arrow)"/>
-<text x="959" y="858" font-size="7" fill="#ff674d" text-anchor="end">replan</text>
+<text x="959" y="858" font-size="8.5" fill="#ff674d" text-anchor="end">replan</text>
 <path class="return-arc" data-route="4-1" d="M1002 865 C990 876.2 974 868 962 868 H514 C502 868 486 876.2 474 865" fill="none" stroke="#ff674d" stroke-width="2" stroke-dasharray="4 3" marker-end="url(#return-arrow)"/>
-<text x="959" y="866" font-size="7" fill="#ff674d" text-anchor="end">requirements-gap</text>
+<text x="959" y="866" font-size="8.5" fill="#ff674d" text-anchor="end">requirements-gap</text>
 <path class="return-arc" data-route="3-1" d="M762 873 C750 884.75 734 876 722 876 H514 C502 876 486 884.75 474 873" fill="none" stroke="#ff674d" stroke-width="2" stroke-dasharray="4 3" marker-end="url(#return-arrow)"/>
-<text x="719" y="874" font-size="7" fill="#ff674d" text-anchor="end">plan-blocked</text>
+<text x="719" y="874" font-size="8.5" fill="#ff674d" text-anchor="end">plan-blocked</text>
 <path class="return-arc" data-route="2-1" d="M618 881 C606 893.3 590 884 578 884 H514 C502 884 486 893.3 474 881" fill="none" stroke="#ff674d" stroke-width="2" stroke-dasharray="4 3" marker-end="url(#return-arrow)"/>
-<text x="575" y="882" font-size="7" fill="#ff674d" text-anchor="end">design-blocked</text>
+<text x="575" y="882" font-size="8.5" fill="#ff674d" text-anchor="end">design-blocked</text>
 <path class="return-arc" data-route="1-0" d="M474 889 C462 901.85 446 892 434 892 H370 C358 892 342 901.85 330 889" fill="none" stroke="#ff674d" stroke-width="2" stroke-dasharray="4 3" marker-end="url(#return-arrow)"/>
-<text x="431" y="890" font-size="7" fill="#ff674d" text-anchor="end">intent-unclear</text>
+<text x="431" y="890" font-size="8.5" fill="#ff674d" text-anchor="end">intent-unclear</text>
 <rect x="1270" y="878" width="478" height="22" rx="10" fill="#ffffff" stroke="#ff674d" />
 <text x="1509" y="893" font-size="10" fill="#ff674d" text-anchor="middle">MAX_RETURN_CYCLES = 2  →  human escalation required</text>
 </g>
-<g id="authority">
+<g id="authority" transform="translate(0,96)">
 <rect x="36" y="911" width="1728" height="145" rx="10" fill="#ffffff" stroke="#d7dee8" />
 <text x="52" y="931" font-size="11" fill="#061943" >ACTION BOUNDARY · ENFORCED PER PHASE</text>
-<text x="142" y="1036" font-size="8" fill="#64748b" text-anchor="end">observe</text>
+<text x="142" y="1036" font-size="8.5" fill="#64748b" text-anchor="end">observe</text>
 <line x1="152" y1="1033" x2="1639" y2="1033" stroke="#d7dee8" stroke-width="0.6"/>
-<text x="142" y="1015" font-size="8" fill="#64748b" text-anchor="end">propose</text>
+<text x="142" y="1015" font-size="8.5" fill="#64748b" text-anchor="end">propose</text>
 <line x1="152" y1="1012" x2="1639" y2="1012" stroke="#d7dee8" stroke-width="0.6"/>
-<text x="142" y="994" font-size="8" fill="#64748b" text-anchor="end">mutate-worktree</text>
+<text x="142" y="994" font-size="8.5" fill="#64748b" text-anchor="end">mutate-worktree</text>
 <line x1="152" y1="991" x2="1639" y2="991" stroke="#d7dee8" stroke-width="0.6"/>
-<text x="142" y="973" font-size="8" fill="#64748b" text-anchor="end">open-pr</text>
+<text x="142" y="973" font-size="8.5" fill="#64748b" text-anchor="end">open-pr</text>
 <line x1="152" y1="970" x2="1639" y2="970" stroke="#d7dee8" stroke-width="0.6"/>
-<text x="142" y="952" font-size="8" fill="#64748b" text-anchor="end">external-action</text>
+<text x="142" y="952" font-size="8.5" fill="#64748b" text-anchor="end">external-action</text>
 <line x1="152" y1="949" x2="1639" y2="949" stroke="#d7dee8" stroke-width="0.6"/>
 <rect class="authority-step" data-x="190" data-tier="propose" x="152" y="1012" width="108" height="28" fill="#159e8f" fill-opacity="0.18"/>
 <line x1="152" y1="1012" x2="260" y2="1012" stroke="#159e8f" stroke-width="3"/>
@@ -331,13 +328,13 @@ text{font-family:'JetBrains Mono','Cascadia Mono',Consolas,monospace}
 <line x1="1506" y1="991" x2="1506" y2="970" stroke="#159e8f" stroke-width="2"/>
 <path d="M1218 1033v-43h-45" fill="none" stroke="#ff674d"/>
 <text x="1098" y="969" font-size="9" fill="#ff674d" >authority DROPS at review</text>
-<text x="1098" y="981" font-size="7.5" fill="#ff674d" >independence is structural, not optional</text>
+<text x="1098" y="981" font-size="8.5" fill="#ff674d" >independence is structural, not optional</text>
 <rect x="1674" y="949" width="70" height="76" rx="10" fill="none" stroke="#ff674d" stroke-dasharray="4 3"/>
-<text x="1709" y="964" font-size="6.5" fill="#ff674d" text-anchor="middle">external-action</text>
-<text x="1748" y="1034" font-size="7" fill="#ff674d" text-anchor="end">autonomous posture or high-assurance</text>
+<text x="1709" y="964" font-size="8.5" fill="#ff674d" text-anchor="middle">external-action</text>
+<text x="1748" y="1034" font-size="8.5" fill="#ff674d" text-anchor="end">autonomous posture or high-assurance</text>
 <text x="1748" y="1047" font-size="9" fill="#ff674d" text-anchor="end">always a person gate</text>
 </g>
-<g id="foundation">
+<g id="foundation" transform="translate(0,96)">
 <rect x="36" y="1071" width="1728" height="89" rx="10" fill="#ffffff" stroke="#d7dee8" />
 <line x1="468" y1="1071" x2="468" y2="1160" stroke="#d7dee8" />
 <line x1="900" y1="1071" x2="900" y2="1160" stroke="#d7dee8" />

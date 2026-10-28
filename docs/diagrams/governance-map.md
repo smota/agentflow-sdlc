@@ -169,7 +169,7 @@ is written to be executed verbatim.
 
 ### Canvas
 
-Standalone SVG 1.1, `viewBox="0 0 1800 1230"`, `role="img"` with `<title>` and `<desc>`. Prose font
+Standalone SVG 1.1, `viewBox="0 0 1800 1280"`, `role="img"` with `<title>` and `<desc>`. Prose font
 `Inter, 'Segoe UI', Helvetica, Arial, sans-serif`; technical labels
 `'JetBrains Mono', 'Cascadia Mono', Consolas, monospace`. Light paper `#f7f9fb`, white cards,
 hairline `#d7dee8`, muted text `#64748b`. Faint 40px grid `#e8edf3` at 0.5px behind everything.
