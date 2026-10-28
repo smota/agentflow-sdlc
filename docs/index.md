@@ -142,7 +142,7 @@ The [ADR index](adr/) records accepted, proposed, and superseded decisions. ADRs
 The installed CLI exposes these top-level command groups:
 
 ```text
-agentflow-sdlc <init|run|distribution|doctor|doctor-env|config|adopt|providers|adapters|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding|onboarding-prompt|wizard|release-plan|handoff|resume|phase|board|gates|mcp|project|goal|steer>
+agentflow-sdlc <init|run|distribution|doctor|doctor-env|config|adopt|providers|adapters|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding|onboarding-prompt|wizard|release-plan|handoff|resume|phase|board|gates|mcp|project|goal|steer|seat|dispatch|world>
 ```
 
 After the npm installation in [Get started](get-started.md), use the installed command from any directory:
@@ -151,7 +151,7 @@ After the npm installation in [Get started](get-started.md), use the installed c
 agentflow-sdlc <command> --target /path/to/project
 ```
 
-The `sdlc` group includes configuration, issue, role-pass, PR, release, skill, agent, evidence, lifecycle, eval, multi-agent, audit, migration, and metrics commands. `phase append` writes one SDLC transition to the configured medium, and `phase read` shows whether the next phase is allowed. `adapters` installs, updates, and operates an execution adapter, such as OpenRig, without a shell script; see [OpenRig](../OPENRIG.md). `providers` only discovers capabilities. Run an incomplete group command to print its exact usage, for example:
+The `sdlc` group includes configuration, issue, role-pass, PR, release, skill, agent, evidence, lifecycle, eval, multi-agent, audit, migration, and metrics commands. `phase append` writes one SDLC transition to the configured medium, and `phase read` shows whether the next phase is allowed. `adapters` installs, updates, and operates an execution adapter, such as OpenRig, without a shell script; see [OpenRig](../OPENRIG.md). `providers` only discovers capabilities. `seat` claims, primes, inspects, and releases a seat lease. `dispatch` records one wire-agnostic hand-off between two seats with an explicit outcome or decision. `world` scans, refines, applies, and acknowledges world atoms, and `doctor` reports their state as its `world-integrity` dimension. Run an incomplete group command to print its exact usage, for example:
 
 ```bash
 agentflow-sdlc sdlc
