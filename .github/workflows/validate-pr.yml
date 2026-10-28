@@ -1,5 +1,20 @@
 name: Validate PR
 
+# Pull-request validation is tiered by what a check actually depends on, so a pull request pays for
+# the evidence it needs and nothing else:
+#
+#   pr-body   the PR manifest contract. The only job that reacts to `edited`, because editing a
+#             title or body changes the manifest and nothing else.
+#   static    platform-independent checks: formatting, the catalog and config validators, workflow
+#             and eval contracts. Cheap, and correct to run exactly once.
+#   test      the suites with genuine platform sensitivity. Skipped when a pull request changes only
+#             documentation and assets.
+#   package   packaging parity and the smoke suites, on one runner.
+#
+# Exhaustive cross-platform coverage is not dropped, only moved: nightly-full-matrix.yml runs the
+# complete `pnpm validate:release` across every supported operating system and Node major. A
+# platform-specific regression is caught within a day instead of on every push.
+
 on:
   pull_request:
     branches:
@@ -11,15 +26,162 @@ on:
 permissions:
   contents: read
 
+# A newer push supersedes an in-flight run for the same ref. Without this, successive pushes stack
+# and the matrix is paid once per push rather than once per state worth validating.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  validate-product:
-    name: Product (${{ matrix.os }}, Node ${{ matrix.node }})
+  pr-body:
+    name: Validate PR body
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Check PR manifest contract
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          printf '%s' "$PR_BODY" > /tmp/pr-body.md
+          node scripts/validate-pr-manifest.mjs --path /tmp/pr-body.md
+
+  changes:
+    name: Classify changes
+    # `edited` carries no new commits, so the code tiers have nothing to re-validate.
+    if: github.event.action != 'edited'
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.classify.outputs.code }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Classify changed paths
+        id: classify
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          base="$(git merge-base "$BASE_SHA" "$HEAD_SHA")"
+          files="$(git diff --name-only "$base" "$HEAD_SHA")"
+          printf 'changed files:\n%s\n' "$files"
+          # Anything outside docs/, assets/ and root-level Markdown counts as code. Product source
+          # that happens to be Markdown, such as skills/**/SKILL.md, is deliberately code.
+          # An empty diff is treated as code on purpose: if the change set cannot be determined,
+          # the conservative answer is to run the full tiers rather than skip them.
+          if [ -z "$files" ]; then
+            echo 'code=true' >> "$GITHUB_OUTPUT"
+            echo 'classified as: code (empty diff, running tiers conservatively)'
+          elif printf '%s\n' "$files" | grep -qvE '^(docs/|assets/|[^/]*\.md$)'; then
+            echo 'code=true' >> "$GITHUB_OUTPUT"
+            echo 'classified as: code'
+          else
+            echo 'code=false' >> "$GITHUB_OUTPUT"
+            echo 'classified as: documentation and assets only'
+          fi
+
+  static:
+    name: Static validation
+    if: github.event.action != 'edited'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # validate:paths inspects branch commits against the base, which needs real history.
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.6.0
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Every check below runs even after an earlier one fails, so a single run reports every
+      # static problem at once. The serial `&&` chain in validate:release reports only the first.
+      - name: Formatting
+        if: ${{ !cancelled() }}
+        run: pnpm format:check
+
+      - name: Execution distribution
+        if: ${{ !cancelled() }}
+        run: pnpm validate:distribution
+
+      - name: Config authority
+        if: ${{ !cancelled() }}
+        run: pnpm validate:authority
+
+      - name: Extension packs
+        if: ${{ !cancelled() }}
+        run: pnpm validate:extensions
+
+      - name: Skill catalog
+        if: ${{ !cancelled() }}
+        run: pnpm validate:skills
+
+      - name: Role catalog
+        if: ${{ !cancelled() }}
+        run: pnpm validate:roles
+
+      - name: Path ownership
+        if: ${{ !cancelled() }}
+        run: pnpm validate:paths
+
+      - name: Documentation
+        if: ${{ !cancelled() }}
+        run: pnpm validate:docs
+
+      - name: Reachability
+        if: ${{ !cancelled() }}
+        run: pnpm validate:reachability
+
+      - name: Workflow contract
+        if: ${{ !cancelled() }}
+        run: pnpm test:workflow
+
+      - name: Agent evals
+        if: ${{ !cancelled() }}
+        run: pnpm test:evals
+
+      - name: Role collaboration
+        if: ${{ !cancelled() }}
+        run: pnpm test:collaboration
+
+      - name: npm package contents
+        if: ${{ !cancelled() }}
+        run: pnpm validate:npm
+
+  test:
+    name: Tests (${{ matrix.os }}, Node ${{ matrix.node }})
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
+      # Three operating systems on the supported baseline, plus the newest Node major on Linux.
+      # The full cross-product is covered nightly.
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        node: [20, 24]
+        include:
+          - os: ubuntu-latest
+            node: 20
+          - os: ubuntu-latest
+            node: 24
+          - os: windows-latest
+            node: 20
+          - os: macos-latest
+            node: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -36,22 +198,41 @@ jobs:
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
-      - run: node scripts/audit-reachability.mjs
-      - run: pnpm validate:release
 
-  validate-pr-body:
-    name: Validate PR body
+      - name: Unit and contract suites
+        run: pnpm test
+
+      - name: Repository hooks
+        if: ${{ !cancelled() }}
+        run: pnpm test:hooks
+
+  package:
+    name: Packaging and smokes
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.6.0
+          run_install: false
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: pnpm
 
-      - name: Check PR manifest contract
-        env:
-          PR_BODY: ${{ github.event.pull_request.body }}
-        run: |
-          printf '%s' "$PR_BODY" > /tmp/pr-body.md
-          node scripts/validate-pr-manifest.mjs --path /tmp/pr-body.md
+      - run: pnpm install --frozen-lockfile
+
+      - name: Package parity
+        run: pnpm test:package
+
+      - name: SDLC sandbox smoke
+        if: ${{ !cancelled() }}
+        run: node scripts/sdlc-sandbox-smoke.mjs
+
+      - name: Cockpit smoke
+        if: ${{ !cancelled() }}
+        run: node scripts/cockpit-smoke.mjs
