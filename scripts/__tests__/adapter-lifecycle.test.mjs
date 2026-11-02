@@ -194,12 +194,13 @@ describe('adapter lifecycle surface (AC1, AC2)', () => {
   it('lists the adapter operations in help and keeps providers to discovery', () => {
     const root = ok(cli(['--help']))
     expect(root.stdout).toContain(
-      'adapters <install|update|squads provision|squads update|squads list|squads remove>',
+      'adapters <install|update|catalog|squads provision|squads update|squads list|squads remove>',
     )
     const help = ok(cli(['adapters', '--help']))
     for (const op of [
       'install',
       'update',
+      'catalog',
       'squads provision',
       'squads update',
       'squads list',

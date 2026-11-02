@@ -105,9 +105,13 @@ the local upstream candidate, unsupported live observation, and preflight admiss
 
 ### Adopting another repository
 
-A second repository joins an existing spec. The delivery, product, and steer planes stay separate specs, and `steer.lead` keeps no write paths. Add a workspace catalog entry (see `examples/workspace.yaml`) that names the rig id, then launch that same spec under a rig name in the adopter checkout:
+A second repository joins an existing spec. The delivery, product, and steer planes stay separate specs, and `steer.lead` keeps no write paths. Add a workspace catalog entry (see `examples/workspace.yaml`) that names the rig id, then launch that same spec under a rig name in the adopter checkout.
+
+OpenRig itself is installed separately by the operator. This command does not install OpenRig and does not copy a rig. Preview the two catalog documents, write them, then start the existing spec:
 
 ```bash
+agentflow-sdlc adapters catalog openrig --preview --cwd /path/to/adopter-repo
+agentflow-sdlc adapters catalog openrig --write --cwd /path/to/adopter-repo
 rig up <spec> --name <rig> --cwd <repo>
 rig up agentflow --name agentflow-adopter --cwd /path/to/adopter-repo
 ```
