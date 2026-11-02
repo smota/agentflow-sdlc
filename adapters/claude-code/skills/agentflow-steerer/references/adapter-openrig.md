@@ -14,16 +14,16 @@ This document maps the provider-neutral 6-verb steering interface (`steer.lead`)
 
 The steering plane communicates exclusively across rig boundaries to designated entry seats. Direct communication with internal delivery execution seats is strictly prohibited:
 
-| Target Seat    | Canonical Session Pattern                 | Allowed Verbs                | Purpose                                                                                 |
-| :------------- | :---------------------------------------- | :--------------------------- | :-------------------------------------------------------------------------------------- |
-| `pm.manager`   | `manager@<project>-product`, `pm-manager` | `assign`, `nudge`, `observe` | Ingestion of customer jobs, goal framing, macro DAG alignment.                          |
-| `orch.arch`    | `architect@<project>`, `orch-arch`        | `observe`, `nudge`, `read`   | Cross-rig synchronization, unfreeze resolutions, merge-check readiness.                 |
+| Target Seat    | Canonical Session Pattern                 | Allowed Verbs                | Purpose                                                                                                                                                                                                     |
+| :------------- | :---------------------------------------- | :--------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pm.manager`   | `manager@<project>-product`, `pm-manager` | `assign`, `nudge`, `observe` | Ingestion of customer jobs, goal framing, macro DAG alignment.                                                                                                                                              |
+| `orch.arch`    | `architect@<project>`, `orch-arch`        | `observe`, `nudge`, `read`   | Cross-rig synchronization, unfreeze resolutions, merge-check readiness.                                                                                                                                     |
 | `human`        | `<entityId>@external`                     | `escalate`, `queue create`   | Registered person for release gates, person-waivers, abandonment approvals, and quota/security escalations. `human` is not an address. `rig send` does not reach a person. A shared channel cannot approve. |
-| `dev.build*`   | `builder*@<project>`                      | **PROHIBITED**               | In-rig builder seats. Steerer must never assign, nudge, or dispatch to builders.        |
-| `dev.qa`       | `qa@<project>`                            | **PROHIBITED**               | In-rig verification seat. Verification is owned within the delivery squad.              |
-| `dev.test-eng` | `test-eng@<project>`                      | **PROHIBITED**               | In-rig test authoring seat. Steerer must not interfere with test authoring.             |
-| `rev.review`   | `reviewer@<project>`                      | **PROHIBITED**               | In-rig peer review seat. Independent review must remain uninfluenced by steering.       |
-| `pm.analyst`   | `analyst@<project>-product`               | **PROHIBITED**               | In-rig product analysis seat. Communication flows through `pm.manager`.                 |
+| `dev.build*`   | `builder*@<project>`                      | **PROHIBITED**               | In-rig builder seats. Steerer must never assign, nudge, or dispatch to builders.                                                                                                                            |
+| `dev.qa`       | `qa@<project>`                            | **PROHIBITED**               | In-rig verification seat. Verification is owned within the delivery squad.                                                                                                                                  |
+| `dev.test-eng` | `test-eng@<project>`                      | **PROHIBITED**               | In-rig test authoring seat. Steerer must not interfere with test authoring.                                                                                                                                 |
+| `rev.review`   | `reviewer@<project>`                      | **PROHIBITED**               | In-rig peer review seat. Independent review must remain uninfluenced by steering.                                                                                                                           |
+| `pm.analyst`   | `analyst@<project>-product`               | **PROHIBITED**               | In-rig product analysis seat. Communication flows through `pm.manager`.                                                                                                                                     |
 
 ---
 

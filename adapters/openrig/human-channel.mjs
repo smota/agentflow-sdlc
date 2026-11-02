@@ -41,8 +41,7 @@ export function resolveHumanDestination(record) {
     return { ok: false, reason: NO_PERSON }
   }
 
-  const defaultId =
-    record.default && typeof record.default.id === 'string' ? record.default.id : ''
+  const defaultId = record.default && typeof record.default.id === 'string' ? record.default.id : ''
   if (defaultId !== '') {
     const person = people.find((candidate) => candidate.id === defaultId)
     if (!person) {

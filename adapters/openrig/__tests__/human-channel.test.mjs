@@ -51,7 +51,11 @@ describe('resolveHumanDestination', () => {
   it('returns the default person when several people are registered', () => {
     expect(
       resolveHumanDestination(
-        participantsRecord([person('sam'), person('ada', { isDefault: true })], 'ada', 'configured'),
+        participantsRecord(
+          [person('sam'), person('ada', { isDefault: true })],
+          'ada',
+          'configured',
+        ),
       ),
     ).toEqual({
       ok: true,
@@ -65,7 +69,8 @@ describe('resolveHumanDestination', () => {
       resolveHumanDestination(participantsRecord([person('sam'), person('ada')], null, 'unset')),
     ).toEqual({
       ok: false,
-      reason: 'Several people are registered and no default is set. Run `rig gateway default <id>`.',
+      reason:
+        'Several people are registered and no default is set. Run `rig gateway default <id>`.',
     })
   })
 

@@ -40,17 +40,12 @@ const PROHIBITED_TARGET_SEATS = [
   /\b(?:builder-jr|builder-sr|build|test-eng-pi|builder-pi)\b/i,
 ]
 
-const ALLOWED_TARGET_SEATS = [
-  /\b(?:pm-manager|manager)@/i,
-  /\b(?:orch-arch|architect)@/i,
-]
+const ALLOWED_TARGET_SEATS = [/\b(?:pm-manager|manager)@/i, /\b(?:orch-arch|architect)@/i]
 
 const EXTERNAL_DESTINATION = /^[A-Za-z0-9][A-Za-z0-9._-]*@external$/
 
 function flagValue(command, flag) {
-  const match = new RegExp(`${flag}(?:\\s+|=)\\s*(?:"([^"]*)"|'([^']*)'|([^\\s"']+))`).exec(
-    command,
-  )
+  const match = new RegExp(`${flag}(?:\\s+|=)\\s*(?:"([^"]*)"|'([^']*)'|([^\\s"']+))`).exec(command)
   if (!match) return ''
   const value = match[1] ?? match[2] ?? match[3] ?? ''
   if (!value || value.startsWith('--')) return ''
