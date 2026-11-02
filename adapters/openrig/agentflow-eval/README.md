@@ -18,3 +18,5 @@ rig ps --nodes --rig agentflow-eval
 # Provision a per-project squad
 agentflow-sdlc adapters squads provision openrig --kind eval <project> <path>
 ```
+
+A repository joins the existing evaluation spec with a workspace catalog entry and `rig up <spec> --name <rig> --cwd <repo>`. Eval provisioning uses the existing `agentflow-eval` base rather than a new topology per repository. The provision command above stays available.

@@ -28,7 +28,8 @@
     "rig down agentflow --snapshot",
     "rig up agentflow --existing",
     "rig ps --nodes --rig agentflow",
-    "rig up agentflow-<project> --cwd <path>"
+    "rig up agentflow-<project> --cwd <path>",
+    "rig up <spec> --name <rig> --cwd <repo>"
   ],
   "lifecycle": {
     "module": "lifecycle.mjs"
