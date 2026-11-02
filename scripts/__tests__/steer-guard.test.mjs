@@ -119,12 +119,12 @@ describe('agentflow-steer base rig and session guard (Issue #481)', () => {
           command: 'rig send architect@myproject "Unfreeze packet available"',
         }),
       ).toEqual({ block: false })
-      expect(
-        guardDecision({
-          session,
-          command: 'rig queue create --destination human --summary "Release gate"',
-        }),
-      ).toEqual({ block: false })
+      const humanToken = guardDecision({
+        session,
+        command: 'rig queue create --destination human --summary "Release gate"',
+      })
+      expect(humanToken.block).toBe(true)
+      expect(humanToken.reason).toContain('not a gateway address')
       expect(
         guardDecision({
           session,
@@ -156,6 +156,31 @@ describe('agentflow-steer base rig and session guard (Issue #481)', () => {
         expect(queueDecision.block).toBe(true)
         expect(queueDecision.reason).toContain('Target Routing Allowlist')
       }
+    })
+
+    it('allows a registered external person only on an evidenced human queue create', () => {
+      expect(
+        guardDecision({
+          session,
+          command:
+            'rig queue create --destination sam@external --human-intent decision --evidence-ref evidence:554 --summary "Release gate"',
+        }),
+      ).toEqual({ block: false })
+
+      const missingEvidence = guardDecision({
+        session,
+        command:
+          'rig queue create --destination sam@external --human-intent decision --summary "Release gate"',
+      })
+      expect(missingEvidence.block).toBe(true)
+      expect(missingEvidence.reason).toContain('requires --human-intent')
+
+      expect(
+        guardDecision({
+          session,
+          command: 'rig send sam@external "approve"',
+        }).block,
+      ).toBe(true)
     })
   })
 

@@ -43,8 +43,26 @@ const PROHIBITED_TARGET_SEATS = [
 const ALLOWED_TARGET_SEATS = [
   /\b(?:pm-manager|manager)@/i,
   /\b(?:orch-arch|architect)@/i,
-  /\bhuman\b/i,
 ]
+
+const EXTERNAL_DESTINATION = /^[A-Za-z0-9][A-Za-z0-9._-]*@external$/
+
+function flagValue(command, flag) {
+  const match = new RegExp(`${flag}(?:\\s+|=)\\s*(?:"([^"]*)"|'([^']*)'|([^\\s"']+))`).exec(
+    command,
+  )
+  if (!match) return ''
+  const value = match[1] ?? match[2] ?? match[3] ?? ''
+  if (!value || value.startsWith('--')) return ''
+  return value
+}
+
+function externalQueueViolation(command, target) {
+  const evidenceRef = flagValue(command, '--evidence-ref')
+  const humanIntent = flagValue(command, '--human-intent')
+  if (evidenceRef && (humanIntent === 'decision' || humanIntent === 'update')) return null
+  return `'${target}' requires --human-intent decision or update and --evidence-ref`
+}
 
 export function isSteerSeat(session) {
   if (typeof session !== 'string') return false
@@ -57,6 +75,11 @@ export function checkTargetRouting(command) {
   const isRigSend = /\brig\s+send\s+([^\s"']+)/.exec(command)
   if (isRigSend) {
     const target = isRigSend[1]
+    if (/^human$/i.test(target)) return `'${target}' is not a gateway address`
+    // `rig send` reaches an agent terminal. It never delivers to a person.
+    if (EXTERNAL_DESTINATION.test(target)) {
+      return `rig send to unrecognized target '${target}'`
+    }
     if (ALLOWED_TARGET_SEATS.some((re) => re.test(target))) return null
     if (PROHIBITED_TARGET_SEATS.some((re) => re.test(target))) {
       return `rig send to in-rig squad member '${target}'`
@@ -69,6 +92,8 @@ export function checkTargetRouting(command) {
   )
   if (isQueueCreate) {
     const target = isQueueCreate[1]
+    if (/^human$/i.test(target)) return `'${target}' is not a gateway address`
+    if (EXTERNAL_DESTINATION.test(target)) return externalQueueViolation(command, target)
     if (ALLOWED_TARGET_SEATS.some((re) => re.test(target))) return null
     if (PROHIBITED_TARGET_SEATS.some((re) => re.test(target))) {
       return `rig queue create to in-rig squad member '${target}'`
@@ -135,7 +160,7 @@ export function guardDecision({ session, command = '', toolName = '' } = {}) {
   if (routeViolation) {
     return {
       block: true,
-      reason: `Blocked for steering seat ${session}: ${routeViolation} violates the Target Routing Allowlist. Steering seats communicate exclusively with 'pm.manager' (goal intake), 'orch.arch' (delivery sync/unfreeze), or 'human' (gates). Direct communication with builders or testers is prohibited.`,
+      reason: `Blocked for steering seat ${session}: ${routeViolation} violates the Target Routing Allowlist. Steering seats communicate exclusively with 'pm.manager' (goal intake), 'orch.arch' (delivery sync/unfreeze), or a registered '<entityId>@external' address (gates). Direct communication with builders or testers is prohibited.`,
     }
   }
 
