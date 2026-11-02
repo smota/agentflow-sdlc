@@ -24,6 +24,8 @@ upgrade preservation and temporary quota selection. Generated configurations sel
 
 ## Operating Instructions
 
+OpenRig skills come from the managed loadout. Run `rig skill loadout --seat` to see which OpenRig skills this seat has, and `rig context get` to read one. AgentFlow skills stay in this adapter.
+
 ### Launching on a Project
 
 Launch the squad attached to any project directory with `--cwd`:

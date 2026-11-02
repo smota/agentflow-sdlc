@@ -66,7 +66,9 @@ describe('adapters/openrig - Autonomous Exploratory Dogfood Seat (Issue #486)', 
       expect(agentText).toContain('name: agentflow-eval-seat')
       expect(agentText).toContain('eval-tester:')
       expect(agentText).toContain('guidance/role.md')
-      expect(agentText).toContain('openrig-user')
+      expect(agentText).not.toContain('skills/writing-for-agents')
+      expect(agentText).not.toContain('skills/openrig-user')
+      expect(agentText).not.toContain('skills/messaging-the-human')
 
       const roleGuidance = readYamlFile(
         join(EVAL_RIG_DIR, 'agents', 'agentflow-eval', 'guidance', 'role.md'),
