@@ -2,6 +2,8 @@
 
 Generic product base for one project. `agentflow-sdlc adapters install openrig` copies it to the OpenRig spec library. `agentflow-sdlc adapters squads provision openrig --kind product` makes the per-project copy.
 
+A second repository joins the existing product spec with a workspace catalog entry and `rig up <spec> --name <rig> --cwd <repo>`. `squads provision --kind product` remains available when a project wants its own squad name. Delivery, product, and steer stay separate specs.
+
 Seats:
 
 | Seat         | Role            | Phase |
