@@ -19,6 +19,7 @@
     "agentflow-sdlc adapters squads plan openrig [--kind delivery|product|steer|all] [--preset <name>] <project> [path] --json",
     "agentflow-sdlc adapters squads preflight openrig [--kind delivery|product|steer|all] [--preset <name>] <project> [path] --json",
     "agentflow-sdlc adapters install openrig [--preset <name>] [repo]",
+    "agentflow-sdlc adapters catalog openrig [--preview] [--write] [--cwd <repo>] [--id <id>] [--rig <rig>]",
     "agentflow-sdlc adapters update openrig",
     "agentflow-sdlc adapters squads provision openrig [--kind delivery|product|steer|eval|all] [--sibling <rig>] [--product <rig>] [--delivery <rig>] [--steer <rig>] [--eval <rig>] <project> [path]",
     "agentflow-sdlc adapters squads update openrig <project>",

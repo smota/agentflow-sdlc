@@ -22,8 +22,9 @@ import {
   writeFileSync,
 } from 'node:fs'
 import { homedir } from 'node:os'
-import { delimiter, dirname, join, relative, resolve } from 'node:path'
+import { basename, delimiter, dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { parse, stringify } from 'yaml'
 import { loadAuthoritativeConfigs, validateConfigAuthority } from '../../lib/config/authority.mjs'
 import { executionDocument, parseExecutionYaml, planRigExecution } from './execution-plan.mjs'
 import { normalizeContractModel } from '../../lib/config/execution-contract.mjs'
@@ -717,6 +718,118 @@ export function update(ctx) {
   out('==> 2. Syncing OpenRig spec library...')
   syncSpecLibrary(ctx)
   out('==> AgentFlow SDLC bases updated. OpenRig itself was not changed.')
+  return 0
+}
+
+const PROJECT_SCHEMA = 'openrig.project/v0alpha1'
+const WORKSPACE_SCHEMA = 'openrig.workspace/v0alpha1'
+const CATALOG_NAME_RE = /^[A-Za-z0-9][A-Za-z0-9._-]*$/
+
+// Catalog ids match OpenRig path tokens. Strip characters the token cannot hold, then
+// drop leading or trailing punctuation so the result can start with a letter or digit.
+function sanitizeCatalogToken(value, label) {
+  const sanitized = String(value ?? '')
+    .replace(/[^A-Za-z0-9._-]/g, '-')
+    .replace(/^[^A-Za-z0-9]+/, '')
+    .replace(/[^A-Za-z0-9]+$/, '')
+  if (!CATALOG_NAME_RE.test(sanitized)) {
+    fail(
+      `'${value}' is not a valid catalog ${label}. Use a name that starts with a letter or digit and contains only letters, digits, '.', '_', or '-'.`,
+    )
+  }
+  return sanitized
+}
+
+function readYamlMapping(filePath) {
+  let value
+  try {
+    value = parse(readFileSync(filePath, 'utf8'))
+  } catch (error) {
+    fail(`Cannot parse '${filePath}': ${error.message}`)
+  }
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    fail(`'${filePath}' is not a YAML mapping.`)
+  }
+  return value
+}
+
+function printDocument(out, text) {
+  const normalized = text.endsWith('\n') ? text.slice(0, -1) : text
+  for (const line of normalized.split('\n')) out(line)
+}
+
+// Seed project.yaml and one workspace.yaml project for an adopting repository.
+// Refusal checks finish before the first write. This does not install OpenRig or copy a rig.
+export function catalog(ctx) {
+  const { options = {}, cwd, out } = ctx
+  if (options.preview === true && options.write === true) {
+    fail('Pass only one of --preview or --write.')
+  }
+  const repoDir = resolve(cwd, options.cwd ?? '.')
+  if (!isDirectory(repoDir)) fail(`Repository directory '${repoDir}' does not exist.`)
+
+  const fallback = basename(repoDir)
+  const id = sanitizeCatalogToken(options.id ?? fallback, 'id')
+  const rig = sanitizeCatalogToken(options.rig ?? fallback, 'rig')
+  const projectPath = join(repoDir, 'project.yaml')
+  const workspacePath = join(repoDir, 'workspace.yaml')
+  const projectExists = isFile(projectPath)
+  const workspaceExists = isFile(workspacePath)
+  if (existsSync(projectPath) && !projectExists) fail(`'${projectPath}' is not a file.`)
+  if (existsSync(workspacePath) && !workspaceExists) fail(`'${workspacePath}' is not a file.`)
+
+  let projectDoc = null
+  if (projectExists) {
+    projectDoc = readYamlMapping(projectPath)
+    if (projectDoc.schema !== PROJECT_SCHEMA) {
+      fail(
+        `project.yaml at ${projectPath} has schema '${projectDoc.schema ?? ''}', expected ${PROJECT_SCHEMA}.`,
+      )
+    }
+  }
+
+  let workspaceDoc = null
+  let workspaceHasId = false
+  if (workspaceExists) {
+    workspaceDoc = readYamlMapping(workspacePath)
+    if (workspaceDoc.schema !== WORKSPACE_SCHEMA) {
+      fail(
+        `workspace.yaml at ${workspacePath} has schema '${workspaceDoc.schema ?? ''}', expected ${WORKSPACE_SCHEMA}.`,
+      )
+    }
+    if (workspaceDoc.projects !== undefined && !Array.isArray(workspaceDoc.projects)) {
+      fail(`workspace.yaml at ${workspacePath} has a projects field that is not a list.`)
+    }
+    const projects = Array.isArray(workspaceDoc.projects) ? workspaceDoc.projects : []
+    workspaceHasId = projects.some((entry) => entry && typeof entry === 'object' && entry.id === id)
+  }
+
+  const projectEntry = { id, root: '.', rigs: [rig] }
+  let nextWorkspaceText = null
+  if (!workspaceExists) {
+    nextWorkspaceText = stringify({ schema: WORKSPACE_SCHEMA, projects: [projectEntry] })
+  } else if (!workspaceHasId) {
+    const projects = Array.isArray(workspaceDoc.projects) ? workspaceDoc.projects.slice() : []
+    projects.push(projectEntry)
+    nextWorkspaceText = stringify({ ...workspaceDoc, projects })
+  }
+
+  // An existing workspace id is a no-op, including when project.yaml is still absent.
+  if (options.write === true) {
+    if (workspaceHasId) return 0
+    if (!projectExists) {
+      writeFileSync(projectPath, readFileSync(join(ctx.adapterDir, 'examples', 'project.yaml')))
+    }
+    writeFileSync(workspacePath, nextWorkspaceText)
+    return 0
+  }
+
+  const projectText = projectExists
+    ? readFileSync(projectPath, 'utf8')
+    : readFileSync(join(ctx.adapterDir, 'examples', 'project.yaml'), 'utf8')
+  const workspaceText = workspaceHasId ? readFileSync(workspacePath, 'utf8') : nextWorkspaceText
+  printDocument(out, projectText)
+  printDocument(out, workspaceText)
   return 0
 }
 
