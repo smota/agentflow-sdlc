@@ -283,7 +283,7 @@ describe('agentflow-steer base rig and session guard (Issue #481)', () => {
       expect(existsSync(agentPath)).toBe(true)
       const content = readFileSync(agentPath, 'utf8')
       expect(content).toContain('name: agentflow-steer-seat')
-      expect(content).toContain('agentflow-steerer')
+      expect(content).not.toContain('skills/agentflow-steerer')
       expect(content).toContain('steer-guard-claude')
       expect(content).toContain('steer-guard-codex')
       expect(content).not.toContain('agentflow-orchestrator')
