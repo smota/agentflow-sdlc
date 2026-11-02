@@ -39,9 +39,9 @@ import {
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const PACKAGE_VERSION = (() => {
   try {
-    return JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).version || '1.10.0'
+    return JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).version || '1.11.0'
   } catch {
-    return '1.10.0'
+    return '1.11.0'
   }
 })()
 
