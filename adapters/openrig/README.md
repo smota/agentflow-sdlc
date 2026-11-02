@@ -103,6 +103,17 @@ agentflow-sdlc adapters squads remove openrig [--purge] my-project
 See [Pi runtime observation compatibility](../../docs/openrig-runtime-compatibility.md) for
 the local upstream candidate, unsupported live observation, and preflight admission limits.
 
+### Adopting another repository
+
+A second repository joins an existing spec. The delivery, product, and steer planes stay separate specs, and `steer.lead` keeps no write paths. Add a workspace catalog entry (see `examples/workspace.yaml`) that names the rig id, then launch that same spec under a rig name in the adopter checkout:
+
+```bash
+rig up <spec> --name <rig> --cwd <repo>
+rig up agentflow --name agentflow-adopter --cwd /path/to/adopter-repo
+```
+
+The adopter adds a workspace catalog entry instead of a new topology. `examples/project.yaml` selects intent, context, and the stable skill ids `agentflow-orchestrator` and `agentflow-steerer`.
+
 ## Versioned distribution
 
 [Execution distributions](../../docs/execution-distributions.md) own the selected role/model/client/effort matrix and both fallbacks. The generated default is `subscription-balanced-v1`. Project selections and overrides survive software updates; policy migrations require their own explicit preview/confirmation. Legacy fallback tables apply only without a selected distribution.
