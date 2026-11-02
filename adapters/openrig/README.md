@@ -41,6 +41,10 @@ agentflow-sdlc adapters install openrig [--preset <name>] [/path/to/project]
 Run it again to recover. After upgrading AgentFlow, refresh the installed bases with
 `agentflow-sdlc adapters update openrig`. That does not install or upgrade OpenRig itself.
 
+### Required OpenRig version
+
+This adapter requires OpenRig CLI and daemon 0.7.6 or newer (`rig --version`). The floor is `compatibility` in `adapters/openrig/agentflow/bundle.yaml`. AgentFlow does not install or upgrade OpenRig.
+
 Or add the rig spec directly to your OpenRig user library:
 
 ```bash

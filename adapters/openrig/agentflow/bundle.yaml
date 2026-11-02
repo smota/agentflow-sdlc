@@ -1,6 +1,6 @@
 compatibility:
-  min_cli_version: '0.6.6'
-  min_daemon_version: '0.6.6'
+  min_cli_version: '0.7.6'
+  min_daemon_version: '0.7.6'
 
 preconditions:
   - name: 'Install and run the rig as your normal user, not root: Claude Code refuses to bypass permissions as root or under sudo.'
