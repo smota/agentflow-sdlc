@@ -117,3 +117,15 @@ The adopter adds a workspace catalog entry instead of a new topology. `examples/
 ## Versioned distribution
 
 [Execution distributions](../../docs/execution-distributions.md) own the selected role/model/client/effort matrix and both fallbacks. The generated default is `subscription-balanced-v1`. Project selections and overrides survive software updates; policy migrations require their own explicit preview/confirmation. Legacy fallback tables apply only without a selected distribution.
+
+## Connectors
+
+`rig gateway` is the human connector. Human decisions go to a registered `<entityId>@external` address. `rig send` reaches an agent terminal only.
+
+`rig mcp serve` is optional and off in this adapter. Setup does not start it.
+
+A listed MCP tool is not a grant.
+
+Hosted members are experimental and unsupported. This adapter does not enable them.
+
+`extensions/` does not contain an OpenRig plugin.
