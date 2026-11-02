@@ -35,6 +35,9 @@ profiles:
         - path: guidance/architect.md
           delivery_hint: send_text
           required: true
+        - path: guidance/seat-authority.md
+          delivery_hint: send_text
+          required: true
       actions: []
 
   architect-pi:
@@ -46,6 +49,9 @@ profiles:
     startup:
       files:
         - path: guidance/architect.md
+          delivery_hint: send_text
+          required: true
+        - path: guidance/seat-authority.md
           delivery_hint: send_text
           required: true
       actions: []
@@ -62,6 +68,9 @@ profiles:
         - path: guidance/builder-jr.md
           delivery_hint: send_text
           required: true
+        - path: guidance/seat-authority.md
+          delivery_hint: send_text
+          required: true
       actions: []
 
   builder-jr-pi:
@@ -73,6 +82,9 @@ profiles:
     startup:
       files:
         - path: guidance/builder-jr.md
+          delivery_hint: send_text
+          required: true
+        - path: guidance/seat-authority.md
           delivery_hint: send_text
           required: true
       actions: []
@@ -89,6 +101,9 @@ profiles:
         - path: guidance/builder.md
           delivery_hint: send_text
           required: true
+        - path: guidance/seat-authority.md
+          delivery_hint: send_text
+          required: true
       actions: []
 
   builder-pi:
@@ -100,6 +115,9 @@ profiles:
     startup:
       files:
         - path: guidance/builder.md
+          delivery_hint: send_text
+          required: true
+        - path: guidance/seat-authority.md
           delivery_hint: send_text
           required: true
       actions: []
@@ -116,6 +134,9 @@ profiles:
         - path: guidance/builder-sr.md
           delivery_hint: send_text
           required: true
+        - path: guidance/seat-authority.md
+          delivery_hint: send_text
+          required: true
       actions: []
 
   builder-sr-pi:
@@ -127,6 +148,9 @@ profiles:
     startup:
       files:
         - path: guidance/builder-sr.md
+          delivery_hint: send_text
+          required: true
+        - path: guidance/seat-authority.md
           delivery_hint: send_text
           required: true
       actions: []
@@ -143,6 +167,9 @@ profiles:
         - path: guidance/qa.md
           delivery_hint: send_text
           required: true
+        - path: guidance/seat-authority.md
+          delivery_hint: send_text
+          required: true
       actions: []
 
   qa-pi:
@@ -154,6 +181,9 @@ profiles:
     startup:
       files:
         - path: guidance/qa.md
+          delivery_hint: send_text
+          required: true
+        - path: guidance/seat-authority.md
           delivery_hint: send_text
           required: true
       actions: []
@@ -170,6 +200,9 @@ profiles:
         - path: guidance/test-eng.md
           delivery_hint: send_text
           required: true
+        - path: guidance/seat-authority.md
+          delivery_hint: send_text
+          required: true
       actions: []
 
   test-eng-claude:
@@ -184,6 +217,9 @@ profiles:
         - path: guidance/test-eng.md
           delivery_hint: send_text
           required: true
+        - path: guidance/seat-authority.md
+          delivery_hint: send_text
+          required: true
       actions: []
 
   test-eng-pi:
@@ -195,6 +231,9 @@ profiles:
     startup:
       files:
         - path: guidance/test-eng.md
+          delivery_hint: send_text
+          required: true
+        - path: guidance/seat-authority.md
           delivery_hint: send_text
           required: true
       actions: []
@@ -211,6 +250,9 @@ profiles:
         - path: guidance/reviewer.md
           delivery_hint: send_text
           required: true
+        - path: guidance/seat-authority.md
+          delivery_hint: send_text
+          required: true
       actions: []
 
   reviewer-pi:
@@ -222,6 +264,9 @@ profiles:
     startup:
       files:
         - path: guidance/reviewer.md
+          delivery_hint: send_text
+          required: true
+        - path: guidance/seat-authority.md
           delivery_hint: send_text
           required: true
       actions: []
@@ -238,6 +283,9 @@ profiles:
         - path: guidance/eval-tester.md
           delivery_hint: send_text
           required: true
+        - path: guidance/seat-authority.md
+          delivery_hint: send_text
+          required: true
       actions: []
 
   eval-tester-pi:
@@ -250,6 +298,9 @@ profiles:
     startup:
       files:
         - path: guidance/eval-tester.md
+          delivery_hint: send_text
+          required: true
+        - path: guidance/seat-authority.md
           delivery_hint: send_text
           required: true
       actions: []
