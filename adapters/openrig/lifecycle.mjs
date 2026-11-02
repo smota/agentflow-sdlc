@@ -1,5 +1,6 @@
-// OpenRig execution adapter lifecycle: install or recover the two generic bases, refresh them from
-// this product, and provision, update, list, or remove per-project squads. Called through
+// OpenRig execution adapter lifecycle: install or recover the plane bases, refresh them from
+// this product, and provision, update, list, or remove per-project squads. Eval provision uses the
+// existing agentflow-eval base and does not copy a topology per repository. Called through
 // `agentflow-sdlc adapters ...`; core dispatches here by adapter id and knows nothing below.
 // It calls `rig` only for status, stop, and spec sync, as an argument array without a shell.
 import { createHash } from 'node:crypto'
@@ -44,8 +45,20 @@ const PACKAGE_VERSION = (() => {
 })()
 
 const ADAPTER_ID = 'openrig'
-const BASES = { delivery: 'agentflow', product: 'agentflow-product', steer: 'agentflow-steer' }
+const PLANE_BASES = {
+  delivery: 'agentflow',
+  product: 'agentflow-product',
+  steer: 'agentflow-steer',
+}
+// Kinds provision accepts. `--kind all` iterates the plane bases only. Eval is the existing
+// agentflow-eval base, not a new seat and not a merged rig.
+export const BASES = { ...PLANE_BASES, eval: 'agentflow-eval' }
 const BASE_NAMES = Object.values(BASES)
+const PLANE_NAMES = Object.values(PLANE_BASES)
+
+function topologyKinds() {
+  return Object.keys(PLANE_BASES)
+}
 
 const SAFE_VERSION_RE = /^[A-Za-z0-9._-]+$/
 
@@ -550,7 +563,7 @@ function writeBaseInstance(sourceDir, targetDir, rigText, preset, bundle) {
 function writeBases(home, plan, out) {
   const { specs } = locations(home)
   out('==> 1. Syncing AgentFlow delivery, product, and steer bases to the OpenRig user library...')
-  for (const [kind, name] of Object.entries(BASES)) {
+  for (const [kind, name] of Object.entries(PLANE_BASES)) {
     const bundle = parseExecutionYaml(
       readFileSync(join(plan.sources[kind], 'configurations.yaml'), 'utf8'),
       'bundle',
@@ -621,7 +634,7 @@ export function install(ctx) {
   out('    Product base:  rig up agentflow-product --cwd /path/to/project')
   out('    Steer base:    rig up agentflow-steer --cwd /path/to/project')
   out(
-    `    Per-project squad: agentflow-sdlc adapters squads provision ${ADAPTER_ID} --kind delivery|product|steer|all <project> <path>`,
+    `    Per-project squad: agentflow-sdlc adapters squads provision ${ADAPTER_ID} --kind delivery|product|steer|eval|all <project> <path>`,
   )
   return 0
 }
@@ -629,7 +642,7 @@ export function install(ctx) {
 export function update(ctx) {
   const { adapterDir, home, out } = ctx
   const { specs } = locations(home)
-  const missing = BASE_NAMES.filter((name) => !isFile(join(specs, name, 'rig.yaml')))
+  const missing = PLANE_NAMES.filter((name) => !isFile(join(specs, name, 'rig.yaml')))
   if (missing.length > 0) {
     fail(
       `The ${ADAPTER_ID} adapter is not installed in ${specs} (missing ${missing.join(', ')}). ` +
@@ -645,7 +658,7 @@ export function update(ctx) {
   const productSourceConfigText = isFile(productSourceConfigPath)
     ? readFileSync(productSourceConfigPath, 'utf8')
     : ''
-  for (const [kind, name] of Object.entries(BASES)) {
+  for (const [kind, name] of Object.entries(PLANE_BASES)) {
     const target = join(specs, name)
     const selectionFile = join(target, 'execution-distribution.json')
     if (isFile(selectionFile)) {
@@ -674,7 +687,7 @@ export function update(ctx) {
   }
   out('==> 1. Refreshing AgentFlow delivery, product, and steer bases from this product...')
   const extras = []
-  for (const [kind, name] of Object.entries(BASES)) {
+  for (const [kind, name] of Object.entries(PLANE_BASES)) {
     const kept = refreshTree(join(adapterDir, BASES[kind]), join(specs, name), { exact })
     writeFileSync(join(specs, name, 'rig.yaml'), preserved[kind].rigText)
     if (preserved[kind].selection)
@@ -779,6 +792,25 @@ export function siblingRecord(kind, rigName, sibling, extra = {}) {
   const siblingStr = typeof sibling === 'string' ? sibling : ''
   const steer = options.steer || ''
 
+  const finish = (lines) => {
+    if (options.eval) lines.push('', `Evaluation rig: \`${options.eval}\`.`)
+    return `${lines.join('\n')}\n`
+  }
+
+  if (kind === 'eval') {
+    const lines = [
+      '# Evaluation squad',
+      '',
+      `This copy is the evaluation squad \`${rigName}\` provisioned from the \`${BASES.eval}\` base.`,
+      'It exercises shipped artifacts out of band and does not author delivery code.',
+    ]
+    if (options.product) lines.push(`The product squad for this project is \`${options.product}\`.`)
+    if (options.delivery)
+      lines.push(`The delivery squad for this project is \`${options.delivery}\`.`)
+    if (options.steer) lines.push(`Supervisory steering plane: \`${options.steer}\`.`)
+    return finish(lines)
+  }
+
   if (kind === 'steer') {
     const product = options.product || (siblingStr && !options.delivery ? siblingStr : '')
     const delivery = options.delivery || ''
@@ -802,7 +834,7 @@ export function siblingRecord(kind, rigName, sibling, extra = {}) {
         'Supervisory steering operates out-of-rig without git worktrees or code-authoring permissions.',
       )
     }
-    return `${lines.join('\n')}\n`
+    return finish(lines)
   }
 
   if (kind === 'unified') {
@@ -821,7 +853,7 @@ export function siblingRecord(kind, rigName, sibling, extra = {}) {
         `- steer-lead@${steer} (supervisory steering plane; escalation only for unfreeze / deadlock resolution)`,
       )
     }
-    return `${lines.join('\n')}\n`
+    return finish(lines)
   }
 
   const deliveryOrProductSibling =
@@ -882,7 +914,7 @@ export function siblingRecord(kind, rigName, sibling, extra = {}) {
       `\`rig queue handoff --to pm-analyst@${deliveryOrProductSibling} --goal <goal-uri> --from-phase <current> --reason "Defect return to phase 1"\``,
     )
   }
-  return `${lines.join('\n')}\n`
+  return finish(lines)
 }
 
 function ensureSteerDir(home, rigName) {
@@ -950,13 +982,19 @@ function prepareSquadExecution(ctx, kind, projectCwd) {
       ? mergeProductIntoDeliveryConfig(rawConfigText, readFileSync(productConfigCandidate, 'utf8'))
       : rawConfigText
 
+  let preset =
+    ctx.options.preset ??
+    config.executionDistribution?.profile ??
+    config.adapters?.openrig?.executionPolicy?.preset
+  // The eval base ships its own preset catalog. A delivery distribution profile is not one of them.
+  if (baseKind === 'eval' && !ctx.options.preset) {
+    preset = parseExecutionYaml(rawConfigText, 'bundle configurations').recommended
+  }
+
   const desired = {
     rigText: readFileSync(join(baseDir, 'rig.yaml'), 'utf8'),
     configText,
-    preset:
-      ctx.options.preset ??
-      config.executionDistribution?.profile ??
-      config.adapters?.openrig?.executionPolicy?.preset,
+    preset,
     config,
   }
   const plan = planRigExecution(desired)
@@ -1007,6 +1045,35 @@ function requireActiveExecution(plan) {
     fail('Execution policy activation is held; desired preview only, no installed writes permitted')
 }
 
+function ensureEvalBase(ctx) {
+  const source = join(ctx.adapterDir, BASES.eval)
+  const configText = readFileSync(join(source, 'configurations.yaml'), 'utf8')
+  const bundle = parseExecutionYaml(configText, 'bundle')
+  const preset = ctx.options.preset || bundle.recommended
+  const plan = planRigExecution({
+    rigText: readFileSync(join(source, 'rig.yaml'), 'utf8'),
+    configText,
+    preset,
+  })
+  if (!plan.ok)
+    fail(
+      plan.diagnostics
+        .filter((item) => item.severity === 'error')
+        .map((item) => `${item.seat}: ${item.message}`)
+        .join('; '),
+    )
+  const { specs } = locations(ctx.home)
+  for (const name of [
+    BASES.eval,
+    versionedBaseName(BASES.eval, PACKAGE_VERSION),
+    versionedBaseName(BASES.eval, 'dev'),
+  ]) {
+    const target = join(specs, name)
+    if (!isFile(join(target, 'rig.yaml')))
+      writeBaseInstance(source, target, plan.rigText, preset, bundle)
+  }
+}
+
 function writeSquadSpec({
   ctx,
   kind,
@@ -1035,10 +1102,15 @@ function writeSquadSpec({
     !isFile(join(defaultBaseDir, 'rig.yaml')) &&
     (!versionedBaseDir || !isFile(join(versionedBaseDir, 'rig.yaml')))
   ) {
-    out(
-      `==> Base spec not found in ${defaultBaseDir}. Installing the ${ADAPTER_ID} adapter first...`,
-    )
-    installBases(ctx, options.preset, null)
+    if (baseKind === 'eval') {
+      out(`==> Base spec not found in ${defaultBaseDir}. Installing the ${BASES.eval} base...`)
+      ensureEvalBase(ctx)
+    } else {
+      out(
+        `==> Base spec not found in ${defaultBaseDir}. Installing the ${ADAPTER_ID} adapter first...`,
+      )
+      installBases(ctx, options.preset, null)
+    }
   }
   const useVersionedBase = Boolean(versionedBaseDir && isFile(join(versionedBaseDir, 'rig.yaml')))
   const baseDir = useVersionedBase ? versionedBaseDir : defaultBaseDir
@@ -1087,7 +1159,12 @@ function writeSquadSpec({
     )}\n`,
   )
 
-  const siblingContent = siblingRecord(kind, rigName, sibling, { steer, product, delivery })
+  const siblingContent = siblingRecord(kind, rigName, sibling, {
+    steer,
+    product,
+    delivery,
+    eval: options.eval,
+  })
   if (kind === 'steer') {
     writeFileSync(join(targetDir, 'steering.md'), siblingContent)
     writeFileSync(join(targetDir, 'sibling.md'), siblingContent)
@@ -1154,11 +1231,11 @@ function provisionAll(ctx) {
 
   // Preflight all three desired rigs before installing even the first missing base.
   const executionPlans = Object.fromEntries(
-    Object.keys(BASES).map((kind) => [kind, prepareSquadExecution(ctx, kind, projectCwd)]),
+    topologyKinds().map((kind) => [kind, prepareSquadExecution(ctx, kind, projectCwd)]),
   )
   validateTopologySeats(Object.values(executionPlans))
   for (const plan of Object.values(executionPlans)) requireActiveExecution(plan)
-  for (const base of Object.values(BASES)) {
+  for (const base of Object.values(PLANE_BASES)) {
     if (!isFile(join(specs, base, 'rig.yaml'))) {
       out(
         `==> Base spec not found in ${join(specs, base)}. Installing the ${ADAPTER_ID} adapter first...`,
@@ -1258,9 +1335,10 @@ function writeSquad(ctx, isUpdate) {
     kind !== 'product' &&
     kind !== 'steer' &&
     kind !== 'unified' &&
+    kind !== 'eval' &&
     kind !== 'all'
   ) {
-    fail(`--kind must be delivery, product, steer, unified, or all, not '${kind}'.`)
+    fail(`--kind must be delivery, product, steer, eval, unified, or all, not '${kind}'.`)
   }
 
   if (kind === 'all') {
@@ -1344,7 +1422,7 @@ export function squadPlan(ctx) {
   squadRigName(ctx.operands[0])
   const projectCwd = resolve(ctx.cwd, ctx.operands[1] ?? '.')
   if (!isDirectory(projectCwd)) fail('Project directory does not exist')
-  const kinds = kind === 'all' ? Object.keys(BASES) : [kind]
+  const kinds = kind === 'all' ? topologyKinds() : [kind]
   const plans = kinds.map((item) => ({
     kind: item,
     ...prepareSquadExecution(ctx, item, projectCwd),
@@ -1485,7 +1563,7 @@ export function squadMutationPlan(ctx) {
   squadRigName(project)
   const projectCwd = resolve(ctx.cwd, ctx.operands[1] ?? '.')
   if (!isDirectory(projectCwd)) fail('Project directory does not exist')
-  const kinds = kind === 'all' ? Object.keys(BASES) : [kind]
+  const kinds = kind === 'all' ? topologyKinds() : [kind]
   const prepared = kinds.map((item) => ({
     kind: item,
     ...prepareSquadExecution(ctx, item, projectCwd),
@@ -1546,7 +1624,7 @@ export function squadPreflight(ctx) {
   squadRigName(project)
   const projectCwd = resolve(ctx.cwd, ctx.operands[1] ?? '.')
   if (!isDirectory(projectCwd)) fail('Project directory does not exist')
-  const kinds = kind === 'all' ? Object.keys(BASES) : [kind]
+  const kinds = kind === 'all' ? topologyKinds() : [kind]
   const plans = kinds.map((item) => ({
     kind: item,
     ...prepareSquadExecution(ctx, item, projectCwd),
