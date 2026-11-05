@@ -31,7 +31,7 @@ function filesUnder(dir) {
 
 function startupFileLists(yaml) {
   const lists = []
-  const re = /^    startup:\n      files:\n([\s\S]*?)\n      actions:/gm
+  const re = /^    startup:\r?\n      files:\r?\n([\s\S]*?)\r?\n      actions:/gm
   for (const match of yaml.matchAll(re)) lists.push(match[1])
   return lists
 }
@@ -50,15 +50,21 @@ describe('seat authority (#558)', () => {
     }
   })
 
-  it('loads guidance/seat-authority.md on every agentflow profile startup', () => {
-    const yaml = readFileSync(join(adapterRoot, 'agentflow/agents/agentflow/agent.yaml'), 'utf8')
-    const lists = startupFileLists(yaml)
-    expect(lists.length).toBeGreaterThan(0)
-    expect(lists.length).toBe((yaml.match(/^    startup:/gm) ?? []).length)
-    for (const list of lists) {
-      expect(list.includes('guidance/seat-authority.md')).toBe(true)
-    }
-  })
+  it.each(['\n', '\r\n'])(
+    'loads guidance/seat-authority.md on every agentflow profile startup with %j line endings',
+    (lineEnding) => {
+      const yaml = readFileSync(
+        join(adapterRoot, 'agentflow/agents/agentflow/agent.yaml'),
+        'utf8',
+      ).replace(/\r?\n/g, lineEnding)
+      const lists = startupFileLists(yaml)
+      expect(lists.length).toBeGreaterThan(0)
+      expect(lists.length).toBe((yaml.match(/^    startup:/gm) ?? []).length)
+      for (const list of lists) {
+        expect(list.includes('guidance/seat-authority.md')).toBe(true)
+      }
+    },
+  )
 
   it('keeps account homes out of rig.yaml', () => {
     const rigs = filesUnder(adapterRoot).filter((file) => file.endsWith(`${sep}rig.yaml`))

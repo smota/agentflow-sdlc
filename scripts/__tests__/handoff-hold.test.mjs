@@ -21,6 +21,7 @@ import {
   HOOK_COMMAND,
   guardDecision,
   runHook,
+  shellTokens,
 } from '../../adapters/openrig/agentflow-product/handoff-guard.mjs'
 
 const CLI = resolve('bin/cli.mjs')
@@ -1023,6 +1024,14 @@ describe('advisory capacity inspection and queue-native handoff (#546)', () => {
     expect(sends()).toHaveLength(1)
   })
 
+  it('preserves quoted Windows envelope paths without changing shell escape semantics', () => {
+    const windowsPath = String.raw`C:\Users\runner name\Temp\envelope.json`
+    const command = 'rig queue handoff q1 --to pm-analyst@agentflow-pm --envelope '
+    const quoted = shellTokens(command + "'" + windowsPath + "'")
+    expect(quoted.at(-1)).toEqual({ word: windowsPath, computed: false })
+    expect(shellTokens(command + windowsPath).at(-1).word).not.toBe(windowsPath)
+  })
+
   it('permits intra-product rig queue handoff/create with a validated envelope file while blocking delivery targets, bare env flags, and chained sends', () => {
     const dir = tempDir('agentflow-envelope-')
     const validIntraProductEnvelope = join(dir, 'intra-pm-envelope.json')
@@ -1039,7 +1048,7 @@ describe('advisory capacity inspection and queue-native handoff (#546)', () => {
     expect(
       guardDecision({
         session: MANAGER,
-        command: `rig queue handoff q1 --to pm-analyst@agentflow-pm --envelope ${validIntraProductEnvelope}`,
+        command: `rig queue handoff q1 --to pm-analyst@agentflow-pm --envelope '${validIntraProductEnvelope}'`,
       }),
     ).toEqual({
       block: false,
@@ -1077,7 +1086,7 @@ describe('advisory capacity inspection and queue-native handoff (#546)', () => {
     )
     expect(
       guardDecision(
-        `rig queue handoff q1 --to orch-arch@agentflow-dev --envelope ${deliveryEnvelope}`,
+        `rig queue handoff q1 --to orch-arch@agentflow-dev --envelope '${deliveryEnvelope}'`,
         { OPENRIG_SESSION_NAME: MANAGER, AGENTFLOW_VALIDATED_ENVELOPE: '1' },
       ).block,
     ).toBe(true)
@@ -1094,14 +1103,14 @@ describe('advisory capacity inspection and queue-native handoff (#546)', () => {
     // 6. Chaining raw tmux send-keys or handoff release with a validated envelope is still blocked
     expect(
       guardDecision(
-        `rig queue handoff q1 --to pm-analyst@agentflow-pm --envelope ${validIntraProductEnvelope} && tmux send-keys -t orch-arch@agentflow-dev "go" Enter`,
+        `rig queue handoff q1 --to pm-analyst@agentflow-pm --envelope '${validIntraProductEnvelope}' && tmux send-keys -t orch-arch@agentflow-dev "go" Enter`,
         { OPENRIG_SESSION_NAME: MANAGER, AGENTFLOW_VALIDATED_ENVELOPE: '1' },
       ).block,
     ).toBe(true)
 
     expect(
       guardDecision(
-        `rig queue handoff q1 --to pm-analyst@agentflow-pm --envelope ${validIntraProductEnvelope}; agentflow-sdlc handoff release hold-1`,
+        `rig queue handoff q1 --to pm-analyst@agentflow-pm --envelope '${validIntraProductEnvelope}'; agentflow-sdlc handoff release hold-1`,
         { OPENRIG_SESSION_NAME: MANAGER, AGENTFLOW_VALIDATED_ENVELOPE: '1' },
       ).block,
     ).toBe(true)
