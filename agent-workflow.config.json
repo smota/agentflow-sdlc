@@ -503,5 +503,12 @@
       "grantsPublicationOrMergePower": false
     },
     "confirmedDigest": "8f2cd9876b4fe817c31c75fb507d1ff21ab8ffbcbb4c7a9fa1eb970c0779ed1e"
+  },
+  "observability": {
+    "enabled": true,
+    "offline": false,
+    "otlpEndpoint": "http://127.0.0.1:24318",
+    "serviceName": "agentflow-sdlc-delivery",
+    "maxQueueSize": 256
   }
 }
