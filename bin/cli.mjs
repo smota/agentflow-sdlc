@@ -69,9 +69,9 @@ import {
   listSeatLeases,
   readSeatLease,
   releaseSeatLease,
-} from '../lib/core/seat-lease.mjs'
-import { primeSeat } from '../lib/core/seat-prime.mjs'
-import { dispatchEnvelope } from '../lib/core/dispatch.mjs'
+} from '../lib/runtime/seat-lease.mjs'
+import { primeSeat } from '../lib/runtime/seat-prime.mjs'
+import { dispatchEnvelope } from '../lib/runtime/dispatch.mjs'
 import { ackWorld, applyWorld, refineWorld, scanWorld } from '../lib/world/world-builder.mjs'
 import os from 'node:os'
 
