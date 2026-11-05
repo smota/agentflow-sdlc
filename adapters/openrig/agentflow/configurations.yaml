@@ -131,6 +131,12 @@ presets:
     rev.review: claude-code
 
   all-codex:
+    pm.manager:
+      runtime: codex
+      profile: product-manager
+    pm.analyst:
+      runtime: codex
+      profile: analyst
     eval.tester: codex
     orch.arch: codex
     dev.build-jr: codex
