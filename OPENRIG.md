@@ -88,7 +88,7 @@ agentflow-sdlc adapters squads provision openrig --kind unified my-project /path
 
 `agentflow-sdlc adapters install openrig` writes three base spec channels under `~/.openrig/specs/`:
 
-- **Version-pinned (`agentflow@<version>`, `agentflow-product@<version>`, `agentflow-steer@<version>`):** Consuming repositories with `agent-framework-lock.json` (or `.agentflow/adoption-lock.json`) bind their squad symlinks to the exact pinned release (`agentflow@1.11.0`).
+- **Version-pinned (`agentflow@<version>`, `agentflow-product@<version>`, `agentflow-steer@<version>`):** Consuming repositories with `agent-framework-lock.json` (or `.agentflow/adoption-lock.json`) bind their squad symlinks to the exact pinned release (`agentflow@1.12.0`).
 - **Dogfood channel (`agentflow@dev`):** The `agentflow-sdlc` dogfood repository binds to `@dev` so local framework iterations never mutate or break concurrently running adopter squads.
 - **Default channel (`agentflow`):** Unversioned fallback for ad-hoc `rig up agentflow` invocations.
 

@@ -131,7 +131,7 @@ Cockpit is optional. CLI and GitHub evidence remain authoritative without it.
 | [Release versioning](release-versioning.md) | Plan versions, tags, approval, and closeout evidence |
 | [Release publishing](release-publishing.md) | Run the maintained publication gate                  |
 
-The current release is [v1.11.0](releases/v1.11.0.md). Published history is intentionally retained as an archive: [v1.10.0](releases/v1.10.0.md), [v1.9.0](releases/v1.9.0.md), [v1.8.0](releases/v1.8.0.md), [v1.7.0](releases/v1.7.0.md), [v1.6.0](releases/v1.6.0.md), [v1.5.0](releases/v1.5.0.md), [v1.4.1](releases/v1.4.1.md), [v1.4.0](releases/v1.4.0.md), [v1.3.0](releases/v1.3.0.md), [v1.2.0](releases/v1.2.0.md), [v1.1.0](releases/v1.1.0.md), [v1.0.0](releases/v1.0.0.md), [v0.7.0](releases/v0.7.0.md), [v0.6.0](releases/v0.6.0.md), [v0.5.0](releases/v0.5.0.md), [v0.4.1](releases/v0.4.1.md), and [v0.4.0](releases/v0.4.0.md).
+The current release is [v1.12.0](releases/v1.12.0.md). Release history is intentionally retained as an archive: [v1.11.0](releases/v1.11.0.md), [v1.10.0](releases/v1.10.0.md), [v1.9.0](releases/v1.9.0.md), [v1.8.0](releases/v1.8.0.md), [v1.7.0](releases/v1.7.0.md), [v1.6.0](releases/v1.6.0.md), [v1.5.0](releases/v1.5.0.md), [v1.4.1](releases/v1.4.1.md), [v1.4.0](releases/v1.4.0.md), [v1.3.0](releases/v1.3.0.md), [v1.2.0](releases/v1.2.0.md), [v1.1.0](releases/v1.1.0.md), [v1.0.0](releases/v1.0.0.md), [v0.7.0](releases/v0.7.0.md), [v0.6.0](releases/v0.6.0.md), [v0.5.0](releases/v0.5.0.md), [v0.4.1](releases/v0.4.1.md), and [v0.4.0](releases/v0.4.0.md).
 
 ## Architecture decisions
 

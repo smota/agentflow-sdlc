@@ -222,8 +222,8 @@ of hidden TODOs.
 
 ## Release status
 
-The current release line is **1.11.0** and requires Node.js 20 or newer. Read the
-[release notes](docs/releases/v1.11.0.md) for the most recently documented capabilities and
+The current release line is **1.12.0** and requires Node.js 20 or newer. Read the
+[release notes](docs/releases/v1.12.0.md) for the most recently documented capabilities and
 qualification limits. No `agentflow-sdlc` package is currently published on npm, so install directly
 from GitHub using npm as shown above; no manual clone is required. The release badge always resolves
 to the newest published GitHub release.
