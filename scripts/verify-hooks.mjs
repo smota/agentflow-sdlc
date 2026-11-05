@@ -155,6 +155,11 @@ try {
   // have wired it yet. Only assert its contents when it exists.
   if (existsSync(codexHooksPath)) {
     const codexHooks = JSON.parse(readFileSync(codexHooksPath, 'utf8'))
+    assert.deepEqual(
+      Object.keys(codexHooks).filter((key) => !['description', 'hooks'].includes(key)),
+      [],
+      'Codex hooks configuration only accepts description and hooks at the root',
+    )
     const preToolUseCommand = codexHooks.hooks?.PreToolUse?.[0]?.hooks?.[0]?.command ?? ''
     assert.match(preToolUseCommand, /check-issue-branch\.mjs/)
     assert.doesNotMatch(preToolUseCommand, /bash -lc/)

@@ -38,6 +38,9 @@ const KNOWN_CLI_COMMANDS = new Set([
   'project',
   'goal',
   'steer',
+  'seat',
+  'dispatch',
+  'world',
 ])
 
 function markdownFiles(root) {

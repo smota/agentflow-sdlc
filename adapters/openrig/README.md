@@ -41,6 +41,10 @@ agentflow-sdlc adapters install openrig [--preset <name>] [/path/to/project]
 Run it again to recover. After upgrading AgentFlow, refresh the installed bases with
 `agentflow-sdlc adapters update openrig`. That does not install or upgrade OpenRig itself.
 
+### Required OpenRig version
+
+This adapter requires OpenRig CLI and daemon 0.7.6 or newer (`rig --version`). The floor is `compatibility` in `adapters/openrig/agentflow/bundle.yaml`. AgentFlow does not install or upgrade OpenRig.
+
 Or add the rig spec directly to your OpenRig user library:
 
 ```bash
@@ -99,6 +103,33 @@ agentflow-sdlc adapters squads remove openrig [--purge] my-project
 See [Pi runtime observation compatibility](../../docs/openrig-runtime-compatibility.md) for
 the local upstream candidate, unsupported live observation, and preflight admission limits.
 
+### Adopting another repository
+
+A second repository joins an existing spec. The delivery, product, and steer planes stay separate specs, and `steer.lead` keeps no write paths. Add a workspace catalog entry (see `examples/workspace.yaml`) that names the rig id, then launch that same spec under a rig name in the adopter checkout.
+
+OpenRig itself is installed separately by the operator. This command does not install OpenRig and does not copy a rig. Preview the two catalog documents, write them, then start the existing spec:
+
+```bash
+agentflow-sdlc adapters catalog openrig --preview --cwd /path/to/adopter-repo
+agentflow-sdlc adapters catalog openrig --write --cwd /path/to/adopter-repo
+rig up <spec> --name <rig> --cwd <repo>
+rig up agentflow --name agentflow-adopter --cwd /path/to/adopter-repo
+```
+
+The adopter adds a workspace catalog entry instead of a new topology. `examples/project.yaml` selects intent, context, and the stable skill ids `agentflow-orchestrator` and `agentflow-steerer`.
+
 ## Versioned distribution
 
 [Execution distributions](../../docs/execution-distributions.md) own the selected role/model/client/effort matrix and both fallbacks. The generated default is `subscription-balanced-v1`. Project selections and overrides survive software updates; policy migrations require their own explicit preview/confirmation. Legacy fallback tables apply only without a selected distribution.
+
+## Connectors
+
+`rig gateway` is the human connector. Human decisions go to a registered `<entityId>@external` address. `rig send` reaches an agent terminal only.
+
+`rig mcp serve` is optional and off in this adapter. Setup does not start it.
+
+A listed MCP tool is not a grant.
+
+Hosted members are experimental and unsupported. This adapter does not enable them.
+
+`extensions/` does not contain an OpenRig plugin.

@@ -3,6 +3,7 @@ import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
 import { planRigExecution } from '../execution-plan.mjs'
+import { defaultDistributionSelection } from '../../../lib/config/execution-distribution.mjs'
 
 const rigText = `# keep this rig comment
 name: fixture
@@ -107,8 +108,37 @@ describe('execution-plan consumer contract (#517)', () => {
             effort: c.effort,
           })
         }
-      if (base === 'agentflow')
+      if (base === 'agentflow') {
         expect(result.contracts.some((c) => c.seat === 'eval.tester')).toBe(true)
+        for (const [seat, profile] of [
+          ['pm.manager', 'product-manager'],
+          ['pm.analyst', 'analyst'],
+        ]) {
+          const contract = result.contracts.find((c) => c.seat === seat)
+          expect(contract).toMatchObject({ runtime: 'codex', profile })
+          expect(contract.provenance.runtime.source).toBe('preset.all-codex')
+          expect(contract.provenance.profile.source).toBe('preset.all-codex')
+        }
+      }
     }
+  })
+
+  it('keeps a selected distribution authoritative over the legacy all-codex preset', () => {
+    const root = resolve('adapters/openrig/agentflow')
+    const args = {
+      rigText: readFileSync(resolve(root, 'rig.yaml'), 'utf8'),
+      configText: readFileSync(resolve(root, 'configurations.yaml'), 'utf8'),
+      config: { executionDistribution: defaultDistributionSelection() },
+    }
+    const pinned = planRigExecution(args)
+    expect(pinned.ok, JSON.stringify(pinned.diagnostics)).toBe(true)
+    expect(pinned.contracts.find((c) => c.seat === 'pm.manager').runtime).toBe('pi')
+    expect(pinned.contracts.find((c) => c.seat === 'pm.analyst').runtime).toBe('pi')
+    const override = planRigExecution({ ...args, preset: 'all-codex' })
+    expect(override.ok).toBe(false)
+    expect(override.rigText).toBeUndefined()
+    expect(override.diagnostics.some((d) => d.code === 'DISTRIBUTION_POLICY_CHANGE_REQUIRED')).toBe(
+      true,
+    )
   })
 })

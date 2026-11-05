@@ -1,0 +1,9 @@
+schema: openrig.project/v0alpha1
+kind: project
+install:
+  intent: SPEC.md
+  context:
+    - docs/guiding-principles.md
+  skills:
+    - agentflow-orchestrator
+    - agentflow-steerer

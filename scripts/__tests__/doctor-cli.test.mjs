@@ -56,7 +56,7 @@ describe('CLI doctor actual consumer', () => {
     expect(json.status).toBe(data.summary.exitCode)
     expect(plain.status).toBe(json.status)
     expect(data.schemaVersion).toBe(1)
-    expect(Object.keys(data.dimensions)).toHaveLength(4)
+    expect(Object.keys(data.dimensions)).toHaveLength(5)
     expect(data.dimensions['adapter-bindings'].map((f) => f.id)).toEqual([
       'adapters.pi',
       'adapters.codex',

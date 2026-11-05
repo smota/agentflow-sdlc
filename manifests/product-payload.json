@@ -537,8 +537,8 @@
       "ownership": "managed"
     },
     {
-      "source": "lib/core/dispatch.mjs",
-      "target": "lib/core/dispatch.mjs",
+      "source": "lib/runtime/dispatch.mjs",
+      "target": "lib/runtime/dispatch.mjs",
       "ownership": "managed"
     },
     {
@@ -547,13 +547,28 @@
       "ownership": "managed"
     },
     {
+      "source": "lib/core/seat-claim.mjs",
+      "target": "lib/core/seat-claim.mjs",
+      "ownership": "managed"
+    },
+    {
       "source": "lib/core/seat-lease.mjs",
       "target": "lib/core/seat-lease.mjs",
       "ownership": "managed"
     },
     {
-      "source": "lib/core/seat-prime.mjs",
-      "target": "lib/core/seat-prime.mjs",
+      "source": "lib/runtime/seat-claim.mjs",
+      "target": "lib/runtime/seat-claim.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/runtime/seat-lease.mjs",
+      "target": "lib/runtime/seat-lease.mjs",
+      "ownership": "managed"
+    },
+    {
+      "source": "lib/runtime/seat-prime.mjs",
+      "target": "lib/runtime/seat-prime.mjs",
       "ownership": "managed"
     },
     {

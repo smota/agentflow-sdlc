@@ -17,31 +17,11 @@ profiles:
           required: true
       actions: []
     uses:
-      skills:
-        - agentflow-steerer
-        - agentflow-collaborator
-        - agentflow-scanner
-        - agentflow-designer
-        - agentflow-maintainer
-        - openrig-user
-        - applying-a-permission-policy
-        - messaging-the-human
-        - writing-for-agents
       runtime_resources:
         - steer-guard-claude
         - steer-guard-codex
 
 resources:
-  skills:
-    - { id: agentflow-steerer, path: skills/agentflow-steerer }
-    - { id: agentflow-collaborator, path: skills/agentflow-collaborator }
-    - { id: agentflow-scanner, path: skills/agentflow-scanner }
-    - { id: agentflow-designer, path: skills/agentflow-designer }
-    - { id: agentflow-maintainer, path: skills/agentflow-maintainer }
-    - { id: openrig-user, path: skills/openrig-user }
-    - { id: applying-a-permission-policy, path: skills/applying-a-permission-policy }
-    - { id: messaging-the-human, path: skills/messaging-the-human }
-    - { id: writing-for-agents, path: skills/writing-for-agents }
   runtime_resources:
     - id: steer-guard-claude
       path: runtime/steer-guard.claude.json

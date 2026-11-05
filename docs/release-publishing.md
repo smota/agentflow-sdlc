@@ -50,7 +50,7 @@ agentflow-sdlc settings merge --harness all --dry-run
 agentflow-sdlc settings status --harness all --json
 ```
 
-The merge engine preserves project-owned keys and only injects the `agentflowSdlc` managed object from `manifests/harness-settings.json`.
+The merge engine preserves project-owned keys and injects the `agentflowSdlc` managed object from `manifests/harness-settings.json` for Claude Code, Agy, and Pi. Codex accepts only `description` and `hooks` at the root of `.codex/hooks.json`, so no custom metadata is injected there. A settings merge removes legacy `agentflowSdlc` metadata only when its `managedBy` value is `agentflow-sdlc`, preserving existing hook definitions and descriptions.
 
 ## Cockpit gate
 

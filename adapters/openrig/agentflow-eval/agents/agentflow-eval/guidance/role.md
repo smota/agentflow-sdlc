@@ -16,6 +16,8 @@ The dogfood tester operates strictly **out-of-band**:
 3. It emits empirical intake findings into the backlog intake queue (`.agentflow/intake/finding-<id>.json`).
 4. It provides empirical push forces to the Product Manager and Architect without gate contamination.
 
+OpenRig skills come from the managed loadout. Run `rig skill loadout --seat` to see which OpenRig skills this seat has, and `rig context get` to read one. AgentFlow skills stay in this adapter, in the delivery seat tree and in the repository `skills/` directory. This eval spec does not vendor a second copy.
+
 ---
 
 ## Core Execution Discipline

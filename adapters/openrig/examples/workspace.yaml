@@ -1,0 +1,8 @@
+schema: openrig.workspace/v0alpha1
+projects:
+  - id: agentflow
+    root: .
+  - id: adopter
+    root: projects/adopter
+    rigs:
+      - agentflow

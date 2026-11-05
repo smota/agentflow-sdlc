@@ -24,15 +24,7 @@
     },
     "codex": {
       "path": ".codex/hooks.json",
-      "merge": {
-        "agentflowSdlc": {
-          "managedBy": "agentflow-sdlc",
-          "commands": [
-            "agentflow-sdlc sdlc validate",
-            "agentflow-sdlc skills status --harness codex"
-          ]
-        }
-      }
+      "merge": {}
     },
     "pi": {
       "path": ".pi/settings.json",

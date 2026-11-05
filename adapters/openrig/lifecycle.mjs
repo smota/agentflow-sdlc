@@ -1,5 +1,6 @@
-// OpenRig execution adapter lifecycle: install or recover the two generic bases, refresh them from
-// this product, and provision, update, list, or remove per-project squads. Called through
+// OpenRig execution adapter lifecycle: install or recover the plane bases, refresh them from
+// this product, and provision, update, list, or remove per-project squads. Eval provision uses the
+// existing agentflow-eval base and does not copy a topology per repository. Called through
 // `agentflow-sdlc adapters ...`; core dispatches here by adapter id and knows nothing below.
 // It calls `rig` only for status, stop, and spec sync, as an argument array without a shell.
 import { createHash } from 'node:crypto'
@@ -21,8 +22,9 @@ import {
   writeFileSync,
 } from 'node:fs'
 import { homedir } from 'node:os'
-import { delimiter, dirname, join, relative, resolve } from 'node:path'
+import { basename, delimiter, dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { parse, stringify } from 'yaml'
 import { loadAuthoritativeConfigs, validateConfigAuthority } from '../../lib/config/authority.mjs'
 import { executionDocument, parseExecutionYaml, planRigExecution } from './execution-plan.mjs'
 import { normalizeContractModel } from '../../lib/config/execution-contract.mjs'
@@ -37,15 +39,27 @@ import {
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const PACKAGE_VERSION = (() => {
   try {
-    return JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).version || '1.10.0'
+    return JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).version || '1.12.0'
   } catch {
-    return '1.10.0'
+    return '1.12.0'
   }
 })()
 
 const ADAPTER_ID = 'openrig'
-const BASES = { delivery: 'agentflow', product: 'agentflow-product', steer: 'agentflow-steer' }
+const PLANE_BASES = {
+  delivery: 'agentflow',
+  product: 'agentflow-product',
+  steer: 'agentflow-steer',
+}
+// Kinds provision accepts. `--kind all` iterates the plane bases only. Eval is the existing
+// agentflow-eval base, not a new seat and not a merged rig.
+export const BASES = { ...PLANE_BASES, eval: 'agentflow-eval' }
 const BASE_NAMES = Object.values(BASES)
+const PLANE_NAMES = Object.values(PLANE_BASES)
+
+function topologyKinds() {
+  return Object.keys(PLANE_BASES)
+}
 
 const SAFE_VERSION_RE = /^[A-Za-z0-9._-]+$/
 
@@ -550,7 +564,7 @@ function writeBaseInstance(sourceDir, targetDir, rigText, preset, bundle) {
 function writeBases(home, plan, out) {
   const { specs } = locations(home)
   out('==> 1. Syncing AgentFlow delivery, product, and steer bases to the OpenRig user library...')
-  for (const [kind, name] of Object.entries(BASES)) {
+  for (const [kind, name] of Object.entries(PLANE_BASES)) {
     const bundle = parseExecutionYaml(
       readFileSync(join(plan.sources[kind], 'configurations.yaml'), 'utf8'),
       'bundle',
@@ -621,7 +635,7 @@ export function install(ctx) {
   out('    Product base:  rig up agentflow-product --cwd /path/to/project')
   out('    Steer base:    rig up agentflow-steer --cwd /path/to/project')
   out(
-    `    Per-project squad: agentflow-sdlc adapters squads provision ${ADAPTER_ID} --kind delivery|product|steer|all <project> <path>`,
+    `    Per-project squad: agentflow-sdlc adapters squads provision ${ADAPTER_ID} --kind delivery|product|steer|eval|all <project> <path>`,
   )
   return 0
 }
@@ -629,7 +643,7 @@ export function install(ctx) {
 export function update(ctx) {
   const { adapterDir, home, out } = ctx
   const { specs } = locations(home)
-  const missing = BASE_NAMES.filter((name) => !isFile(join(specs, name, 'rig.yaml')))
+  const missing = PLANE_NAMES.filter((name) => !isFile(join(specs, name, 'rig.yaml')))
   if (missing.length > 0) {
     fail(
       `The ${ADAPTER_ID} adapter is not installed in ${specs} (missing ${missing.join(', ')}). ` +
@@ -645,7 +659,7 @@ export function update(ctx) {
   const productSourceConfigText = isFile(productSourceConfigPath)
     ? readFileSync(productSourceConfigPath, 'utf8')
     : ''
-  for (const [kind, name] of Object.entries(BASES)) {
+  for (const [kind, name] of Object.entries(PLANE_BASES)) {
     const target = join(specs, name)
     const selectionFile = join(target, 'execution-distribution.json')
     if (isFile(selectionFile)) {
@@ -674,7 +688,7 @@ export function update(ctx) {
   }
   out('==> 1. Refreshing AgentFlow delivery, product, and steer bases from this product...')
   const extras = []
-  for (const [kind, name] of Object.entries(BASES)) {
+  for (const [kind, name] of Object.entries(PLANE_BASES)) {
     const kept = refreshTree(join(adapterDir, BASES[kind]), join(specs, name), { exact })
     writeFileSync(join(specs, name, 'rig.yaml'), preserved[kind].rigText)
     if (preserved[kind].selection)
@@ -704,6 +718,118 @@ export function update(ctx) {
   out('==> 2. Syncing OpenRig spec library...')
   syncSpecLibrary(ctx)
   out('==> AgentFlow SDLC bases updated. OpenRig itself was not changed.')
+  return 0
+}
+
+const PROJECT_SCHEMA = 'openrig.project/v0alpha1'
+const WORKSPACE_SCHEMA = 'openrig.workspace/v0alpha1'
+const CATALOG_NAME_RE = /^[A-Za-z0-9][A-Za-z0-9._-]*$/
+
+// Catalog ids match OpenRig path tokens. Strip characters the token cannot hold, then
+// drop leading or trailing punctuation so the result can start with a letter or digit.
+function sanitizeCatalogToken(value, label) {
+  const sanitized = String(value ?? '')
+    .replace(/[^A-Za-z0-9._-]/g, '-')
+    .replace(/^[^A-Za-z0-9]+/, '')
+    .replace(/[^A-Za-z0-9]+$/, '')
+  if (!CATALOG_NAME_RE.test(sanitized)) {
+    fail(
+      `'${value}' is not a valid catalog ${label}. Use a name that starts with a letter or digit and contains only letters, digits, '.', '_', or '-'.`,
+    )
+  }
+  return sanitized
+}
+
+function readYamlMapping(filePath) {
+  let value
+  try {
+    value = parse(readFileSync(filePath, 'utf8'))
+  } catch (error) {
+    fail(`Cannot parse '${filePath}': ${error.message}`)
+  }
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    fail(`'${filePath}' is not a YAML mapping.`)
+  }
+  return value
+}
+
+function printDocument(out, text) {
+  const normalized = text.endsWith('\n') ? text.slice(0, -1) : text
+  for (const line of normalized.split('\n')) out(line)
+}
+
+// Seed project.yaml and one workspace.yaml project for an adopting repository.
+// Refusal checks finish before the first write. This does not install OpenRig or copy a rig.
+export function catalog(ctx) {
+  const { options = {}, cwd, out } = ctx
+  if (options.preview === true && options.write === true) {
+    fail('Pass only one of --preview or --write.')
+  }
+  const repoDir = resolve(cwd, options.cwd ?? '.')
+  if (!isDirectory(repoDir)) fail(`Repository directory '${repoDir}' does not exist.`)
+
+  const fallback = basename(repoDir)
+  const id = sanitizeCatalogToken(options.id ?? fallback, 'id')
+  const rig = sanitizeCatalogToken(options.rig ?? fallback, 'rig')
+  const projectPath = join(repoDir, 'project.yaml')
+  const workspacePath = join(repoDir, 'workspace.yaml')
+  const projectExists = isFile(projectPath)
+  const workspaceExists = isFile(workspacePath)
+  if (existsSync(projectPath) && !projectExists) fail(`'${projectPath}' is not a file.`)
+  if (existsSync(workspacePath) && !workspaceExists) fail(`'${workspacePath}' is not a file.`)
+
+  let projectDoc = null
+  if (projectExists) {
+    projectDoc = readYamlMapping(projectPath)
+    if (projectDoc.schema !== PROJECT_SCHEMA) {
+      fail(
+        `project.yaml at ${projectPath} has schema '${projectDoc.schema ?? ''}', expected ${PROJECT_SCHEMA}.`,
+      )
+    }
+  }
+
+  let workspaceDoc = null
+  let workspaceHasId = false
+  if (workspaceExists) {
+    workspaceDoc = readYamlMapping(workspacePath)
+    if (workspaceDoc.schema !== WORKSPACE_SCHEMA) {
+      fail(
+        `workspace.yaml at ${workspacePath} has schema '${workspaceDoc.schema ?? ''}', expected ${WORKSPACE_SCHEMA}.`,
+      )
+    }
+    if (workspaceDoc.projects !== undefined && !Array.isArray(workspaceDoc.projects)) {
+      fail(`workspace.yaml at ${workspacePath} has a projects field that is not a list.`)
+    }
+    const projects = Array.isArray(workspaceDoc.projects) ? workspaceDoc.projects : []
+    workspaceHasId = projects.some((entry) => entry && typeof entry === 'object' && entry.id === id)
+  }
+
+  const projectEntry = { id, root: '.', rigs: [rig] }
+  let nextWorkspaceText = null
+  if (!workspaceExists) {
+    nextWorkspaceText = stringify({ schema: WORKSPACE_SCHEMA, projects: [projectEntry] })
+  } else if (!workspaceHasId) {
+    const projects = Array.isArray(workspaceDoc.projects) ? workspaceDoc.projects.slice() : []
+    projects.push(projectEntry)
+    nextWorkspaceText = stringify({ ...workspaceDoc, projects })
+  }
+
+  // An existing workspace id is a no-op, including when project.yaml is still absent.
+  if (options.write === true) {
+    if (workspaceHasId) return 0
+    if (!projectExists) {
+      writeFileSync(projectPath, readFileSync(join(ctx.adapterDir, 'examples', 'project.yaml')))
+    }
+    writeFileSync(workspacePath, nextWorkspaceText)
+    return 0
+  }
+
+  const projectText = projectExists
+    ? readFileSync(projectPath, 'utf8')
+    : readFileSync(join(ctx.adapterDir, 'examples', 'project.yaml'), 'utf8')
+  const workspaceText = workspaceHasId ? readFileSync(workspacePath, 'utf8') : nextWorkspaceText
+  printDocument(out, projectText)
+  printDocument(out, workspaceText)
   return 0
 }
 
@@ -779,6 +905,25 @@ export function siblingRecord(kind, rigName, sibling, extra = {}) {
   const siblingStr = typeof sibling === 'string' ? sibling : ''
   const steer = options.steer || ''
 
+  const finish = (lines) => {
+    if (options.eval) lines.push('', `Evaluation rig: \`${options.eval}\`.`)
+    return `${lines.join('\n')}\n`
+  }
+
+  if (kind === 'eval') {
+    const lines = [
+      '# Evaluation squad',
+      '',
+      `This copy is the evaluation squad \`${rigName}\` provisioned from the \`${BASES.eval}\` base.`,
+      'It exercises shipped artifacts out of band and does not author delivery code.',
+    ]
+    if (options.product) lines.push(`The product squad for this project is \`${options.product}\`.`)
+    if (options.delivery)
+      lines.push(`The delivery squad for this project is \`${options.delivery}\`.`)
+    if (options.steer) lines.push(`Supervisory steering plane: \`${options.steer}\`.`)
+    return finish(lines)
+  }
+
   if (kind === 'steer') {
     const product = options.product || (siblingStr && !options.delivery ? siblingStr : '')
     const delivery = options.delivery || ''
@@ -802,7 +947,7 @@ export function siblingRecord(kind, rigName, sibling, extra = {}) {
         'Supervisory steering operates out-of-rig without git worktrees or code-authoring permissions.',
       )
     }
-    return `${lines.join('\n')}\n`
+    return finish(lines)
   }
 
   if (kind === 'unified') {
@@ -821,7 +966,7 @@ export function siblingRecord(kind, rigName, sibling, extra = {}) {
         `- steer-lead@${steer} (supervisory steering plane; escalation only for unfreeze / deadlock resolution)`,
       )
     }
-    return `${lines.join('\n')}\n`
+    return finish(lines)
   }
 
   const deliveryOrProductSibling =
@@ -882,7 +1027,7 @@ export function siblingRecord(kind, rigName, sibling, extra = {}) {
       `\`rig queue handoff --to pm-analyst@${deliveryOrProductSibling} --goal <goal-uri> --from-phase <current> --reason "Defect return to phase 1"\``,
     )
   }
-  return `${lines.join('\n')}\n`
+  return finish(lines)
 }
 
 function ensureSteerDir(home, rigName) {
@@ -950,13 +1095,19 @@ function prepareSquadExecution(ctx, kind, projectCwd) {
       ? mergeProductIntoDeliveryConfig(rawConfigText, readFileSync(productConfigCandidate, 'utf8'))
       : rawConfigText
 
+  let preset =
+    ctx.options.preset ??
+    config.executionDistribution?.profile ??
+    config.adapters?.openrig?.executionPolicy?.preset
+  // The eval base ships its own preset catalog. A delivery distribution profile is not one of them.
+  if (baseKind === 'eval' && !ctx.options.preset) {
+    preset = parseExecutionYaml(rawConfigText, 'bundle configurations').recommended
+  }
+
   const desired = {
     rigText: readFileSync(join(baseDir, 'rig.yaml'), 'utf8'),
     configText,
-    preset:
-      ctx.options.preset ??
-      config.executionDistribution?.profile ??
-      config.adapters?.openrig?.executionPolicy?.preset,
+    preset,
     config,
   }
   const plan = planRigExecution(desired)
@@ -1007,6 +1158,35 @@ function requireActiveExecution(plan) {
     fail('Execution policy activation is held; desired preview only, no installed writes permitted')
 }
 
+function ensureEvalBase(ctx) {
+  const source = join(ctx.adapterDir, BASES.eval)
+  const configText = readFileSync(join(source, 'configurations.yaml'), 'utf8')
+  const bundle = parseExecutionYaml(configText, 'bundle')
+  const preset = ctx.options.preset || bundle.recommended
+  const plan = planRigExecution({
+    rigText: readFileSync(join(source, 'rig.yaml'), 'utf8'),
+    configText,
+    preset,
+  })
+  if (!plan.ok)
+    fail(
+      plan.diagnostics
+        .filter((item) => item.severity === 'error')
+        .map((item) => `${item.seat}: ${item.message}`)
+        .join('; '),
+    )
+  const { specs } = locations(ctx.home)
+  for (const name of [
+    BASES.eval,
+    versionedBaseName(BASES.eval, PACKAGE_VERSION),
+    versionedBaseName(BASES.eval, 'dev'),
+  ]) {
+    const target = join(specs, name)
+    if (!isFile(join(target, 'rig.yaml')))
+      writeBaseInstance(source, target, plan.rigText, preset, bundle)
+  }
+}
+
 function writeSquadSpec({
   ctx,
   kind,
@@ -1035,10 +1215,15 @@ function writeSquadSpec({
     !isFile(join(defaultBaseDir, 'rig.yaml')) &&
     (!versionedBaseDir || !isFile(join(versionedBaseDir, 'rig.yaml')))
   ) {
-    out(
-      `==> Base spec not found in ${defaultBaseDir}. Installing the ${ADAPTER_ID} adapter first...`,
-    )
-    installBases(ctx, options.preset, null)
+    if (baseKind === 'eval') {
+      out(`==> Base spec not found in ${defaultBaseDir}. Installing the ${BASES.eval} base...`)
+      ensureEvalBase(ctx)
+    } else {
+      out(
+        `==> Base spec not found in ${defaultBaseDir}. Installing the ${ADAPTER_ID} adapter first...`,
+      )
+      installBases(ctx, options.preset, null)
+    }
   }
   const useVersionedBase = Boolean(versionedBaseDir && isFile(join(versionedBaseDir, 'rig.yaml')))
   const baseDir = useVersionedBase ? versionedBaseDir : defaultBaseDir
@@ -1087,7 +1272,12 @@ function writeSquadSpec({
     )}\n`,
   )
 
-  const siblingContent = siblingRecord(kind, rigName, sibling, { steer, product, delivery })
+  const siblingContent = siblingRecord(kind, rigName, sibling, {
+    steer,
+    product,
+    delivery,
+    eval: options.eval,
+  })
   if (kind === 'steer') {
     writeFileSync(join(targetDir, 'steering.md'), siblingContent)
     writeFileSync(join(targetDir, 'sibling.md'), siblingContent)
@@ -1154,11 +1344,11 @@ function provisionAll(ctx) {
 
   // Preflight all three desired rigs before installing even the first missing base.
   const executionPlans = Object.fromEntries(
-    Object.keys(BASES).map((kind) => [kind, prepareSquadExecution(ctx, kind, projectCwd)]),
+    topologyKinds().map((kind) => [kind, prepareSquadExecution(ctx, kind, projectCwd)]),
   )
   validateTopologySeats(Object.values(executionPlans))
   for (const plan of Object.values(executionPlans)) requireActiveExecution(plan)
-  for (const base of Object.values(BASES)) {
+  for (const base of Object.values(PLANE_BASES)) {
     if (!isFile(join(specs, base, 'rig.yaml'))) {
       out(
         `==> Base spec not found in ${join(specs, base)}. Installing the ${ADAPTER_ID} adapter first...`,
@@ -1258,9 +1448,10 @@ function writeSquad(ctx, isUpdate) {
     kind !== 'product' &&
     kind !== 'steer' &&
     kind !== 'unified' &&
+    kind !== 'eval' &&
     kind !== 'all'
   ) {
-    fail(`--kind must be delivery, product, steer, unified, or all, not '${kind}'.`)
+    fail(`--kind must be delivery, product, steer, eval, unified, or all, not '${kind}'.`)
   }
 
   if (kind === 'all') {
@@ -1344,7 +1535,7 @@ export function squadPlan(ctx) {
   squadRigName(ctx.operands[0])
   const projectCwd = resolve(ctx.cwd, ctx.operands[1] ?? '.')
   if (!isDirectory(projectCwd)) fail('Project directory does not exist')
-  const kinds = kind === 'all' ? Object.keys(BASES) : [kind]
+  const kinds = kind === 'all' ? topologyKinds() : [kind]
   const plans = kinds.map((item) => ({
     kind: item,
     ...prepareSquadExecution(ctx, item, projectCwd),
@@ -1485,7 +1676,7 @@ export function squadMutationPlan(ctx) {
   squadRigName(project)
   const projectCwd = resolve(ctx.cwd, ctx.operands[1] ?? '.')
   if (!isDirectory(projectCwd)) fail('Project directory does not exist')
-  const kinds = kind === 'all' ? Object.keys(BASES) : [kind]
+  const kinds = kind === 'all' ? topologyKinds() : [kind]
   const prepared = kinds.map((item) => ({
     kind: item,
     ...prepareSquadExecution(ctx, item, projectCwd),
@@ -1546,7 +1737,7 @@ export function squadPreflight(ctx) {
   squadRigName(project)
   const projectCwd = resolve(ctx.cwd, ctx.operands[1] ?? '.')
   if (!isDirectory(projectCwd)) fail('Project directory does not exist')
-  const kinds = kind === 'all' ? Object.keys(BASES) : [kind]
+  const kinds = kind === 'all' ? topologyKinds() : [kind]
   const plans = kinds.map((item) => ({
     kind: item,
     ...prepareSquadExecution(ctx, item, projectCwd),
