@@ -22,6 +22,28 @@ for a promoted digest or restores the prior digest. Unknown drift and live concu
 closed. Stale-lock reclamation holds a separate exclusive recovery guard, preventing another
 process from reclaiming or deleting the new writer lease during the handoff.
 
+## Readiness, evidence and humans (#581)
+
+The REST adapter declares `ready-predicates` and `resolve-humans` and answers `label` and
+`lifecycle` predicates; GitHub has no status field, so `status` predicates report unsupported. It
+does not yet declare `claim` or `watch`; callers see `capability-absent`.
+
+- `toReference({ system: 'github', scope, id })` accepts only the adapter's own `owner/repo` scope.
+- `readWorkItem` and `listWorkItems` return the shared WorkItem shape. The `revision` is a content
+  digest over title, body (without the gate block), lifecycle, sorted labels and a null status, never
+  `updated_at`, so a landing comment does not stale a mutation plan. The legacy `readArtifact`
+  revision is unchanged. Mutation plans use the same content digest.
+- Lifecycle is `open`, `closed`, or `merged` (a closed pull request with `merged_at`). A listing
+  skips open and unmerged pull requests, and pages 100 at a time.
+- Role-pass evidence is an `add-comment` mutation whose body comes from `formatRolePassComment`;
+  `parameters.reference.number` or `parameters.number` names the issue. Transitions are read back
+  with the comment author as the writer. `openGates` counts waiting gates in the issue's gate block;
+  an unreadable block counts as one open gate (fail closed).
+- `resolveHumans` maps a writer to `{ system: 'github', login }` in lower case.
+
+Tests run against `lib/__tests__/fixtures/fake-github.mjs`, an in-memory client; none touch the
+network.
+
 Cockpit reuses the GitHub source client through a thin compatibility facade. Cockpit can be absent
 without affecting the source contract, CLI workflow, validators, adoption, or role execution.
 
