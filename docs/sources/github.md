@@ -41,6 +41,14 @@ does not yet declare `claim` or `watch`; callers see `capability-absent`.
   an unreadable block counts as one open gate (fail closed).
 - `resolveHumans` maps a writer to `{ system: 'github', login }` in lower case.
 
+The revision excludes the gate block, so `openGates` can change without a revision change. A
+work item with no readable `state`, an unreadable or non-object `agentflow-work` marker, or an
+unknown `changeClass` is unreadable and `readWorkItem` throws; it is never read as open or as a lower
+class. `partOf` is the number from a `Part of #N` line only. Transitions are claims by their author:
+consumers must filter them by trusted writer, and records with a non-integer phase are dropped. A
+gate block with no record, no end, a non-array log or validation findings counts as one open gate.
+Paged reads throw rather than truncate past 100 pages.
+
 Tests run against `lib/__tests__/fixtures/fake-github.mjs`, an in-memory client; none touch the
 network.
 
