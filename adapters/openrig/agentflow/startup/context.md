@@ -63,5 +63,9 @@
    - Advancing in a workflow: when the slice runs under the `agentflow-delivery` workflow spec,
      finish a step with `rig workflow project --exit handoff` (or `waiting` while a review or merge
      is pending). A defect return is `--exit failed`: the spec routes it to the phase that owns the
-     fix. On the third return of one loop, do not project `failed` again; escalate to the person.
+     fix. On the third return of one loop, do not project `failed` again; escalate to the person
+     (the `agentflow-sdlc bridge escalate` command exists once the bridge is installed). A packet
+     that is parked or overdue at the cap also reaches the person (`stuck_overdue: human_only`).
+     To pick the builder rung, hand off with `--next-owner dev-build-jr@<rig>` (P0),
+     `dev-build@<rig>` (P1, the default) or `dev-build-sr@<rig>` (P2-P3).
    - Idle seats are fine; never start unrequested tasks.

@@ -17,7 +17,7 @@ import {
 import { loadSeatTable } from '../lib/seat-table-io.mjs'
 
 export const SPEC_PATH = 'adapters/openrig/agentflow/workflows/agentflow-delivery.workflow.yaml'
-const DAEMON_DOWN = /ECONNREFUSED|daemon|not running|unreachable/i
+const DAEMON_DOWN = /ECONNREFUSED|daemon (is )?(not|un)|not running|unreachable/i
 
 function flag(args, name) {
   const index = args.indexOf(name)
@@ -46,17 +46,52 @@ export function collectWorkflowErrors(root) {
   return errors
 }
 
+const MIN_RIG = [0, 7, 6]
+const parseVersion = (text) =>
+  String(text)
+    .match(/(\d+)\.(\d+)\.(\d+)/)
+    ?.slice(1)
+    .map(Number) ?? null
+const olderThan = (a, b) =>
+  (a.find((n, i) => n !== b[i]) ?? 0) < (b.find((n, i) => n !== a[i]) ?? 0)
+const failureText = (error) => `${error?.stderr ?? ''}${error?.stdout ?? ''}`.trim()
+
 /** `rig workflow validate`; `execFile` is injected so tests never run a real rig. */
 export async function rigValidate(root, execFile) {
+  let version
+  try {
+    const { stdout } = await execFile('rig', ['--version'])
+    version = parseVersion(stdout)
+  } catch (error) {
+    if (error?.code === 'ENOENT') return { status: 'skipped', detail: 'rig not available' }
+    if (DAEMON_DOWN.test(failureText(error))) {
+      return { status: 'skipped', detail: 'rig daemon not reachable' }
+    }
+    return { status: 'failed', detail: failureText(error) || 'rig --version failed' }
+  }
+  if (!version) return { status: 'failed', detail: 'cannot read the rig version' }
+  if (olderThan(version, MIN_RIG)) {
+    return { status: 'skipped', detail: `rig ${version.join('.')} < ${MIN_RIG.join('.')}` }
+  }
   const args = ['workflow', 'validate', join(root, SPEC_PATH), '--json']
   try {
     const { stdout } = await execFile('rig', args)
-    return { status: 'ok', detail: String(stdout ?? '').trim() }
+    // The daemon answers semantic errors with HTTP 200 and { ok: false, issues }, and the CLI exits 0.
+    let reply
+    try {
+      reply = JSON.parse(String(stdout ?? ''))
+    } catch {
+      return { status: 'failed', detail: `rig returned non-JSON output: ${String(stdout).trim()}` }
+    }
+    if (reply?.ok !== true) {
+      return { status: 'failed', detail: JSON.stringify(reply?.issues ?? reply) }
+    }
+    return { status: 'ok', detail: '' }
   } catch (error) {
-    const detail = `${error?.stderr ?? ''}${error?.stdout ?? ''}${error?.message ?? ''}`.trim()
     if (error?.code === 'ENOENT') return { status: 'skipped', detail: 'rig not available' }
+    const detail = failureText(error)
     if (DAEMON_DOWN.test(detail)) return { status: 'skipped', detail: 'rig daemon not reachable' }
-    return { status: 'failed', detail }
+    return { status: 'failed', detail: detail || String(error?.message ?? 'rig failed') }
   }
 }
 

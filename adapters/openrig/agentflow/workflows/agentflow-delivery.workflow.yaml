@@ -14,8 +14,8 @@ workflow:
         - orch-arch@{rig}
     builder:
       preferred_targets:
-        - dev-build-jr@{rig}
         - dev-build@{rig}
+        - dev-build-jr@{rig}
         - dev-build-sr@{rig}
     tester:
       preferred_targets:
@@ -33,18 +33,27 @@ workflow:
     - id: p2-architect
       actor_role: architect
       objective: Phase 2 architect
+      allowed_exits:
+        - handoff
+        - failed
       next_hop:
         on:
           failed: p1-analyst
     - id: p3-planner
       actor_role: architect
       objective: Phase 3 implementation planner
+      allowed_exits:
+        - handoff
+        - failed
       next_hop:
         on:
           failed: p1-analyst
     - id: p4-developer
       actor_role: builder
       objective: Phase 4 developer
+      allowed_exits:
+        - handoff
+        - failed
       next_hop:
         on:
           failed: p3-planner
@@ -67,6 +76,9 @@ workflow:
     - id: p7-writer
       actor_role: architect
       objective: Phase 7 technical writer
+      allowed_exits:
+        - handoff
+        - failed
       next_hop:
         on:
           failed: p4-developer
@@ -86,10 +98,12 @@ workflow:
       allowed_exits:
         - done
         - waiting
+        - failed
   loop_guards:
-    max_hops: 46
+    max_hops: 56
   exception_routing:
     default: orchestrator
     orchestrator_role: architect
     classes:
       unmapped_failed: human_only
+      stuck_overdue: human_only

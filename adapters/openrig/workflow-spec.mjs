@@ -5,8 +5,9 @@ import YAML from 'yaml'
 import { MAX_RETURN_CYCLES, PHASES, RETURNS } from '../../lib/core/phase-graph.mjs'
 import { canonicalSeat } from '../../lib/core/seat-table.mjs'
 
-// Key sets of the OpenRig workflow parser, copied from OpenRig 0.7.x (bundle requires >= 0.7.6).
-// This is a local mirror for CI. `rig workflow validate` (the --rig check) stays the authority.
+// A deliberate strict subset of the OpenRig workflow parser keys (checked against 0.7.1; the bundle
+// requires >= 0.7.6). Keys this spec does not use are left out so they cannot slip in unreviewed.
+// `rig workflow validate` (the --rig check) stays the authority.
 export const OPENRIG_WORKFLOW_KEYS = Object.freeze({
   top: [
     'id',
@@ -75,10 +76,15 @@ const STEP_OBJECTIVE = Object.freeze({
 })
 const STEP_EXITS = Object.freeze({
   1: ['handoff', 'failed'],
+  2: ['handoff', 'failed'],
+  3: ['handoff', 'failed'],
+  4: ['handoff', 'failed'],
   5: ['handoff', 'failed'],
   6: ['handoff', 'waiting', 'failed'],
+  7: ['handoff', 'failed'],
   8: ['handoff', 'waiting', 'failed'],
 })
+const CLEANUP_EXITS = Object.freeze(['done', 'waiting', 'failed'])
 
 const stepId = (phase) => `p${phase.phase}-${STEP_SLUG[phase.role]}`
 const seatsOf = (phase) => phase.seats ?? [phase.seat]
@@ -100,12 +106,27 @@ export function mappedReturns(returns = RETURNS) {
 }
 
 /** Instance backstop: forward hops plus the worst case of `maxReturnCycles` per mapped loop. */
-export function expectedMaxHops({ phases = PHASES, mapped, maxReturnCycles = MAX_RETURN_CYCLES }) {
-  const loops = Object.entries(mapped ?? mappedReturns()).reduce(
+export function expectedMaxHops({
+  phases = PHASES,
+  returns = RETURNS,
+  mapped = mappedReturns(returns),
+  maxReturnCycles = MAX_RETURN_CYCLES,
+}) {
+  const loops = Object.entries(mapped).reduce(
     (sum, [from, to]) => sum + (Number(from) - Number(to) + 1),
     0,
   )
-  return workflowPhases(phases).length + maxReturnCycles * loops
+  // A legal return with no step edge (4 -> 1) still happens when the planner's rework is sent past
+  // the planner: 4 -> 3 -> 1, then 1, 2, 3, 4 again. Count the extra hop of the detour too.
+  const detours = Object.entries(returns).reduce((sum, [from, targets]) => {
+    return (
+      sum +
+      targets
+        .filter((to) => to >= 1 && to !== mapped[from])
+        .reduce((total, to) => total + (Number(from) - to + 2), 0)
+    )
+  }, 0)
+  return workflowPhases(phases).length + maxReturnCycles * (loops + detours)
 }
 
 export function buildDeliveryWorkflowSpec({
@@ -117,7 +138,9 @@ export function buildDeliveryWorkflowSpec({
   const flow = workflowPhases(phases)
   const roles = {}
   for (const phase of flow) {
-    const seats = seatsOf(phase).map((seat) => canonicalSeat(seatTable, seat) ?? seat)
+    const seats = seatsOf(phase)
+      .map((seat) => canonicalSeat(seatTable, seat) ?? seat)
+      .sort((a, b) => (a === 'dev.build' ? -1 : b === 'dev.build' ? 1 : 0))
     roles[WORKFLOW_ROLE[phase.role]] = { preferred_targets: seats.map(targetOf) }
   }
   const mapped = mappedReturns(returns)
@@ -127,7 +150,7 @@ export function buildDeliveryWorkflowSpec({
       actor_role: WORKFLOW_ROLE[phase.role],
       objective: STEP_OBJECTIVE[phase.role] ?? `Phase ${phase.phase} ${phase.role}`,
     }
-    if (STEP_EXITS[phase.phase]) step.allowed_exits = STEP_EXITS[phase.phase]
+    step.allowed_exits = [...STEP_EXITS[phase.phase]]
     const to = mapped[phase.phase]
     if (to !== undefined) {
       step.next_hop = { on: { failed: stepId(phases.find((item) => item.phase === to)) } }
@@ -138,7 +161,7 @@ export function buildDeliveryWorkflowSpec({
     id: 'cleanup',
     actor_role: 'architect',
     objective: 'Remove the slice worktree and release the claim (agentflow-sdlc bridge cleanup)',
-    allowed_exits: ['done', 'waiting'],
+    allowed_exits: [...CLEANUP_EXITS],
   })
   return {
     workflow: {
@@ -148,11 +171,11 @@ export function buildDeliveryWorkflowSpec({
       entry: { role: WORKFLOW_ROLE[flow[0].role] },
       roles,
       steps,
-      loop_guards: { max_hops: expectedMaxHops({ phases, mapped, maxReturnCycles }) },
+      loop_guards: { max_hops: expectedMaxHops({ phases, returns, mapped, maxReturnCycles }) },
       exception_routing: {
         default: 'orchestrator',
         orchestrator_role: 'architect',
-        classes: { unmapped_failed: 'human_only' },
+        classes: { unmapped_failed: 'human_only', stuck_overdue: 'human_only' },
       },
     },
   }
@@ -234,6 +257,19 @@ export function workflowStructureProblems(doc) {
       }
     }
   }
+  problems.push(...unknownKeys(wf.loop_guards, ['max_hops'], 'loop_guards'))
+  problems.push(
+    ...unknownKeys(
+      wf.exception_routing,
+      ['default', 'orchestrator_role', 'classes'],
+      'exception_routing',
+    ),
+    ...unknownKeys(
+      wf.exception_routing?.classes,
+      ['unmapped_failed', 'stuck_overdue'],
+      'exception_routing.classes',
+    ),
+  )
   if (steps.length > 0 && hasCycle(steps)) {
     const hops = wf.loop_guards?.max_hops
     if (!Number.isInteger(hops) || hops < 1) {
@@ -291,12 +327,49 @@ export function workflowSpecProblems(
     }
   }
 
-  const want = expectedMaxHops({ phases, mapped, maxReturnCycles })
+  const want = expectedMaxHops({ phases, returns, mapped, maxReturnCycles })
   if (wf.loop_guards?.max_hops !== want) {
     problems.push(`loop_guards.max_hops is ${wf.loop_guards?.max_hops}, expected ${want}`)
   }
-  if (wf.exception_routing?.classes?.unmapped_failed !== 'human_only') {
-    problems.push('exception_routing.classes.unmapped_failed must be human_only')
+  // Literal checks, independent of the generator helpers above.
+  const route = wf.exception_routing
+  if (!route?.default) problems.push('exception_routing.default is required')
+  for (const name of ['unmapped_failed', 'stuck_overdue']) {
+    if (route?.classes?.[name] !== 'human_only') {
+      problems.push(`exception_routing.classes.${name} must be human_only`)
+    }
+  }
+  const all = wf.steps ?? []
+  const cleanup = all.filter((step) => step.id === 'cleanup')
+  if (cleanup.length !== 1 || all.at(-1)?.id !== 'cleanup') {
+    problems.push('cleanup must be the single, last step')
+  }
+  if (cleanup[0]?.actor_role !== 'architect') problems.push('cleanup must be owned by architect')
+  for (const exit of ['failed']) {
+    if (cleanup[0] && !(cleanup[0].allowed_exits ?? []).includes(exit)) {
+      problems.push(`cleanup must allow ${exit}`)
+    }
+  }
+  if (wf.entry?.role !== all[0]?.actor_role) {
+    problems.push(`entry.role "${wf.entry?.role}" must equal the first step's actor_role`)
+  }
+  for (const step of all) {
+    const exits = step.allowed_exits
+    if (step.id === 'cleanup') continue
+    if (!Array.isArray(exits) || exits.length === 0) {
+      problems.push(`step ${step.id}: allowed_exits must be explicit`)
+    } else if (exits.includes('done')) {
+      problems.push(`step ${step.id}: only cleanup may allow done`)
+    }
+    for (const on of Object.keys(step.next_hop?.on ?? {})) {
+      if (on !== 'failed') problems.push(`step ${step.id}: next_hop.on.${on} is not a legal route`)
+    }
+    if (step.next_hop?.on?.failed && !(exits ?? []).includes('failed')) {
+      problems.push(`step ${step.id}: allowed_exits must include failed`)
+    }
+  }
+  if (!(all.find((step) => step.id === 'p6-reviewer')?.allowed_exits ?? []).includes('failed')) {
+    problems.push('step p6-reviewer must allow failed')
   }
 
   // A review can never be owned by a seat that built the item.
