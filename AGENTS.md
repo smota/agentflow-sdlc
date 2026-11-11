@@ -78,10 +78,14 @@ Before issue work, architecture proposals, file writes, commits, or gate decisio
 
 ## Path ownership boundaries
 
+- Seat names are defined once in `manifests/seats.json` (`pod.member`); rig specs use canonical ids, and legacy aliases (`pm.lead`, `arch.lead`, `orch.lead`, `rev.gate`, `steer.po`) resolve to them. `node scripts/validate-seats.mjs` checks every seat list against that table.
 - PM seats (`pm.manager`, `pm.analyst`, `pm.lead` / `pm.*`) write only `.agentflow/**` and `goals/**` (`defaultDeny: true`). Commits modifying code, libraries, or test fixtures are rejected.
 - Steering seats (`steer.lead` / `steer.*`) have no file write permissions (`allow: []`, `defaultDeny: true`). Commits authored under steering identities are rejected.
 - Builder seats (`dev.build`, `dev.build-jr`, `dev.build-sr`) cannot edit `tests/oracles/**` or `tests/**/oracles/**` and require a Phase 3 oracle digest pin before building starts.
 - Test engineering seat (`dev.test-eng`) is allowed `tests/**`, `lib/__tests__/**`, `scripts/__tests__/**`, and `guidance/**`, with `src/**` denied explicitly (`defaultDeny: true`).
+- Tester and reviewer seats (`dev.qa`, `rev.review`) are read-only by role guidance; path rules deny only oracle edits (`tests/oracles/**`, `tests/**/oracles/**`; `review-oracle-guard`), not a general write ban. `rev.gate` is a legacy alias of `rev.review`.
+- Eval seat (`eval.tester`) writes only `.agentflow/intake/**` (`defaultDeny: true`).
+- Architect seat (`orch.arch`; legacy `arch.lead`, `orch.lead`) has no path restriction beyond the governance files.
 
 ## Two-Plane Separation
 

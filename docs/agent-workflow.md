@@ -667,7 +667,7 @@ The workflow is divided into two strictly isolated operating planes:
    - Operates outside worker execution rigs via CLI orchestration, direct session interaction, or external supervisory runtimes.
    - Owns high-level goal decomposition, workstream prioritization, unfreeze resolution, pragmatic defect triage (`accept_and_register`), and merge verbs.
    - Barred from writing production code, authoring test oracles, or fabricating self-approvals.
-2. **Internal Execution Worker Squads** (`dev.build*`, `dev.test-eng`, `pm.*`, `rev.gate`, `orch.arch`):
+2. **Internal Execution Worker Squads** (`dev.build*`, `dev.test-eng`, `pm.*`, `rev.review`, `orch.arch`):
    - Execute strictly inside dedicated git worktrees (`.worktrees/<branch-name>`).
    - Own Phase 0–8 delivery artifacts, code authoring, and test execution.
    - Barred from granting merge verbs, modifying external steering state, or unfreezing deadlocked worktrees without external unfreeze resolutions.
@@ -684,6 +684,9 @@ The workflow is divided into two strictly isolated operating planes:
 
 - **PM Allowlist**: Product management seats (`pm.manager`, `pm.analyst`, `pm.lead` / `pm.*`) write only to `.agentflow/**` and `goals/**` (`defaultDeny: true`). Commits touching code, libraries, or test fixtures (`src/**`, `lib/**`, `tests/**`) are rejected.
 - **Steering Write Guard**: Steering seats (`steer.lead` / `steer.*`) have no file write permissions (`allow: []`, `defaultDeny: true`). Commits authored under steering identities are rejected mechanically.
+- **Review Oracle Guard**: Tester and reviewer seats (`dev.qa`, `rev.review`) are read-only by role guidance; path rules deny only oracle edits (`tests/oracles/**`, `tests/**/oracles/**`; `review-oracle-guard`), not a general write ban. `rev.gate` is a legacy alias of `rev.review`.
+- **Eval Write Guard**: The eval seat (`eval.tester`) writes only `.agentflow/intake/**` (`defaultDeny: true`).
+- **Canonical Seat Table**: Seat names are defined once in `manifests/seats.json`; `node scripts/validate-seats.mjs` checks rig specs, presets, policy text, distributions and `manifests/path-ownership.json` against it.
 - **Governance Protection**: All agent seats are barred from modifying governance files (`manifests/path-ownership.json`, `scripts/validate-path-ownership.mjs`).
 - **Enforcement**: Path ownership is validated deterministically in CI via `node scripts/validate-path-ownership.mjs` (and `pnpm validate:release`) on pull requests into integration branches (`development`, `staging`, `main`) for commits bearing seat attribution.
 
