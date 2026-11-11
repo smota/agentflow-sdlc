@@ -47,10 +47,19 @@ describe('committed workflow spec', () => {
     expect(check(committed())).toEqual([])
   })
 
-  it('computes max_hops as 8 + cap x loop sizes = 46', () => {
+  it('computes max_hops as 8 + cap x loop sizes = 56', () => {
     expect(mappedReturns()).toEqual({ 2: 1, 3: 1, 4: 3, 6: 4, 7: 4, 8: 4 })
-    expect(committed().workflow.loop_guards.max_hops).toBe(46)
-    expect(expectedMaxHops({ mapped: mappedReturns(), maxReturnCycles: 3 })).toBe(65)
+    expect(committed().workflow.loop_guards.max_hops).toBe(56)
+    expect(expectedMaxHops({ mapped: mappedReturns(), maxReturnCycles: 3 })).toBe(80)
+  })
+
+  it('matches an explicit worst-case path', () => {
+    // 8 forward hops, then per allowed cycle (2): each mapped loop in full, plus the 4 -> 3 -> 1 detour.
+    const loop = (from, to) => from - to + 1 // 1 return hop + (from - to) forward hops
+    const mappedLoops = [loop(2, 1), loop(3, 1), loop(4, 3), loop(6, 4), loop(7, 4), loop(8, 4)]
+    const detour = 1 + 1 + 3 // 4 -> 3, 3 -> 1, then 1 -> 2 -> 3 -> 4
+    const worst = 8 + 2 * (mappedLoops.reduce((a, b) => a + b, 0) + detour)
+    expect(worst).toBe(expectedMaxHops({ mapped: mappedReturns() }))
   })
 })
 
@@ -87,8 +96,83 @@ describe('spec and phase graph disagreement', () => {
   it('flags a wrong max_hops and a changed cap', () => {
     const doc = committed()
     doc.workflow.loop_guards.max_hops = 12
-    expect(check(doc).join('\n')).toMatch(/max_hops is 12, expected 46/)
-    expect(check(committed(), { maxReturnCycles: 3 }).join('\n')).toMatch(/expected 65/)
+    expect(check(doc).join('\n')).toMatch(/max_hops is 12, expected 56/)
+    expect(check(committed(), { maxReturnCycles: 3 }).join('\n')).toMatch(/expected 80/)
+  })
+
+  it('flags stuck_overdue and a missing default', () => {
+    const doc = committed()
+    delete doc.workflow.exception_routing.classes.stuck_overdue
+    delete doc.workflow.exception_routing.default
+    const text = check(doc).join('\n')
+    expect(text).toMatch(/stuck_overdue must be human_only/)
+    expect(text).toMatch(/exception_routing.default is required/)
+  })
+
+  it.each([
+    [
+      'extra on.handoff',
+      (d) => (d.workflow.steps[3].next_hop.on.handoff = 'p7-writer'),
+      /on.handoff is not a legal/,
+    ],
+    [
+      'done on p4',
+      (d) => d.workflow.steps[3].allowed_exits.push('done'),
+      /only cleanup may allow done/,
+    ],
+    [
+      'no exits on p4',
+      (d) => delete d.workflow.steps[3].allowed_exits,
+      /allowed_exits must be explicit/,
+    ],
+    [
+      'p6 without failed',
+      (d) => (d.workflow.steps[5].allowed_exits = ['handoff']),
+      /p6-reviewer must allow failed/,
+    ],
+    ['cleanup removed', (d) => d.workflow.steps.pop(), /cleanup must be the single, last step/],
+    [
+      'cleanup moved',
+      (d) => d.workflow.steps.unshift(d.workflow.steps.pop()),
+      /cleanup must be the single, last/,
+    ],
+    [
+      'cleanup role',
+      (d) => (d.workflow.steps.at(-1).actor_role = 'builder'),
+      /cleanup must be owned by architect/,
+    ],
+    [
+      'cleanup no failed',
+      (d) => (d.workflow.steps.at(-1).allowed_exits = ['done']),
+      /cleanup must allow failed/,
+    ],
+    [
+      'entry mismatch',
+      (d) => (d.workflow.entry.role = 'architect'),
+      /entry.role "architect" must equal/,
+    ],
+  ])('mutation: %s', (_name, mutate, pattern) => {
+    const doc = committed()
+    mutate(doc)
+    expect(check(doc).join('\n')).toMatch(pattern)
+  })
+
+  it('flags unknown keys under loop_guards and exception_routing.classes', () => {
+    const doc = committed()
+    doc.workflow.loop_guards.extra = 1
+    doc.workflow.exception_routing.classes.other = 'x'
+    const text = workflowStructureProblems(doc).join('\n')
+    expect(text).toMatch(/loop_guards: unknown key "extra"/)
+    expect(text).toMatch(/exception_routing.classes: unknown key "other"/)
+  })
+
+  it('every phase step has explicit exits without done; builder lists dev-build first', () => {
+    const wf = committed().workflow
+    for (const step of wf.steps.filter((s) => s.id !== 'cleanup')) {
+      expect(step.allowed_exits.length).toBeGreaterThan(0)
+      expect(step.allowed_exits).not.toContain('done')
+    }
+    expect(wf.roles.builder.preferred_targets[0]).toBe('dev-build@{rig}')
   })
 
   it('flags unmapped_failed not routed to a person', () => {
