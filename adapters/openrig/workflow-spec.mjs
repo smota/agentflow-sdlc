@@ -364,6 +364,10 @@ export function workflowSpecProblems(
     for (const on of Object.keys(step.next_hop?.on ?? {})) {
       if (on !== 'failed') problems.push(`step ${step.id}: next_hop.on.${on} is not a legal route`)
     }
+    const waitingOk = ['p6-reviewer', 'p8-readiness']
+    if (exits?.includes('waiting') && !waitingOk.includes(step.id)) {
+      problems.push(`step ${step.id}: waiting is allowed only on p6, p8 and cleanup`)
+    }
     if (step.next_hop?.on?.failed && !(exits ?? []).includes('failed')) {
       problems.push(`step ${step.id}: allowed_exits must include failed`)
     }

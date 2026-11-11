@@ -66,6 +66,8 @@
      fix. On the third return of one loop, do not project `failed` again; escalate to the person
      (the `agentflow-sdlc bridge escalate` command exists once the bridge is installed). A packet
      that is parked or overdue at the cap also reaches the person (`stuck_overdue: human_only`).
+     Steps p1 and p4 cannot project `waiting`; a wait there is a queue-level block
+     (`rig queue block <id> --on external:<ref>`).
      To pick the builder rung, hand off with `--next-owner dev-build-jr@<rig>` (P0),
      `dev-build@<rig>` (P1, the default) or `dev-build-sr@<rig>` (P2-P3).
    - Idle seats are fine; never start unrequested tasks.

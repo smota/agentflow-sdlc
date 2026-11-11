@@ -103,7 +103,7 @@ AgentFlow keeps the per-loop rework cap (`MAX_RETURN_CYCLES`). `loop_guards.max_
 for the whole instance, and `unmapped_failed` goes to a person (`human_only`).
 
 OpenRig 0.7.6 or later, with its daemon running, checks the spec itself:
-`node scripts/validate-openrig-workflow.mjs --rig`. CI skips that sub-check when `rig` is missing.
+`node scripts/validate-openrig-workflow.mjs --rig`. CI skips that sub-check when `rig` is missing. The version gate reads the CLI version, not the daemon's: run it against a daemon of the same version.
 
 ---
 
