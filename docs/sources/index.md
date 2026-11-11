@@ -120,6 +120,11 @@ adapter. Filesystem specifics:
 - **Each writer keeps its own receipt store** (`receipts-<writer>.json`). A claim or comment is
   committed when its log line, which carries the idempotency key, is written; a failed receipt flush
   after that does not fail the call.
-- **A crash leaves no permanent damage.** An item lock held by a process that is gone is removed,
-  and a torn last log line is skipped and cut before the next append. A malformed line before the
+- **A source root is used from a single host.** Lock recovery checks whether the lock's process is
+  alive, which is only known within one host's process namespace. A lock records its host and is
+  never removed by another host; do not share a root over a network filesystem.
+- **A crash leaves no permanent damage on its host.** An item lock held by a process that is gone is
+  removed. An item lock with no readable owner, or a lock recovery guard, is removed once it is older
+  than `lockStaleMs` (default 30 seconds). A lock that still cannot be taken fails with
+  `source-lock-held`, naming the lock file to delete. A torn last log line is skipped and cut before the next append. A malformed line before the
   end is corruption and fails the read.
