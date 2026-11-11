@@ -99,6 +99,9 @@
           "status": {
             "type": ["string", "null"]
           },
+          "reason": {
+            "type": ["string", "null"]
+          },
           "seat": {
             "type": ["string", "null"]
           },
