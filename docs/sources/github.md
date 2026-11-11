@@ -67,20 +67,28 @@ required. Every claim, release and mirror write is planned under `claimBoundary`
   log order. The earliest trusted claim wins, only the holder's release frees the item, and a claim
   appends nothing only when the resolved holder already equals the owner, so a past losing claim
   never blocks a later claim on a free item. A stale plan (the issue content changed) is re-planned
-  up to three times. Only `append-claim-entry` writes entries: `add-comment` refuses a body whose
-  first line mentions `agentflow-claim:`, so evidence or prose cannot be posted as a bot-written
-  entry.
+  up to three times. Only `append-claim-entry` writes entries: `add-comment` refuses a body that
+  contains `agentflow-claim:` anywhere, so evidence or prose cannot be posted as a bot-written entry.
+- **Write recovery trusts authors.** After a restart, a write is treated as already made only when
+  its `agentflow-idempotency` marker is in an unedited comment written by a claim writer or by the
+  token's own login (`GET /user`; an App installation token adds none). Keys can be predicted, so a
+  marker anyone else posts never stands in for the write.
 - **Edited entries do not count.** A collaborator with write access can edit the bot's comment
   while GitHub keeps the bot as its author. A claim comment whose `updated_at` differs from its
   `created_at` is ignored (reason `edited-entry`), whether it was a claim before or was edited into
   one. **Residual risk:** a write-access user can also delete a comment, and a deleted entry leaves
-  no trace in the comment list, so deleting the holder's claim frees the item. Restrict write access
-  to people trusted with the claim ledger; detecting deletions needs the issue timeline and is not
-  attempted.
+  no trace in the comment list, so deleting the holder's claim frees the item. In the same trust
+  class: REST timestamps have one-second precision, so a scripted edit within the second the comment
+  was created is not detected; and any detected edit drops the entry, so editing away a release can
+  bring an earlier holder back. Restrict write access to people trusted with the claim ledger.
+  Detecting deletions needs the issue timeline, and GraphQL `lastEditedAt` is a possible future edit
+  signal; neither is used today.
 - **Trust list.** Only comments written by a login in `claimWriters` count (compared case
   insensitively). The comment author comes from GitHub; nothing inside the entry names its writer.
   Any trusted writer may claim or release for any owner, so every rig on the project must use the
-  same list.
+  same list. A claim writer MUST be a dedicated bot login used by nothing else: any other AgentFlow
+  comment writer on that login (cockpit actions, publication) could post a marker-shaped comment
+  that would count as an entry.
 - **Bot identity.** The recommended setup is one bot account (or GitHub App) per project: it writes
   every entry and is the `mirrorAssignee`. The rig (and host) is named inside the entry, so
   `readClaim` returns the specific rig although every comment and the assignee are the bot. Rigs
@@ -108,7 +116,9 @@ required. Every claim, release and mirror write is planned under `claimBoundary`
   it returns `not-applicable`; with an in-sync mirror, `in-sync`. Both entries take their `claimId`
   and `at` from the event, so concurrent or repeated calls plan the same entries (a duplicate comment
   is the same entry and resolves as ignored), and a call that finds a mirror-change release without
-  its person claim (a crash between the two) appends the claim and finishes the adoption.
+  its person claim (a crash between the two) appends the claim and finishes the adoption, but only while that release is still the last
+  trusted entry and the event's assignee is still assigned. When another rig claims between the
+  release and the person claim, the result is `lost` and the mirror is set to match the log.
 
 The client adds `issueEvents(repo, number)` (all pages), `addAssignees` and `removeAssignees`.
 
