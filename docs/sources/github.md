@@ -26,7 +26,8 @@ process from reclaiming or deleting the new writer lease during the handoff.
 
 The REST adapter declares `ready-predicates` and `resolve-humans` and answers `label` and
 `lifecycle` predicates; GitHub has no status field, so `status` predicates report unsupported. It
-does not yet declare `claim` or `watch`; callers see `capability-absent`.
+does not declare `watch`, and declares `claim` only when claim writers are configured (see below);
+callers see `capability-absent` otherwise.
 
 - `toReference({ system: 'github', scope, id })` accepts only the adapter's own `owner/repo` scope.
 - `readWorkItem` and `listWorkItems` return the shared WorkItem shape. The `revision` is a content
@@ -51,6 +52,48 @@ gate block with no record, no end, a non-array log or validation findings counts
 `onUnreadable({ reference, error })` for each, so one poisoned issue cannot stop a repository-wide
 listing; transport failures and truncation still throw.
 Paged reads throw rather than truncate past 100 pages.
+
+## Claims (#581)
+
+`createGitHubSourceAdapter({ repo, client, receiptStore, claimWriters, mirrorAssignee,
+claimBoundary })` declares `claim`, `mutate-comments` (the log) and `mutate-lifecycle` (the
+mirror), with `claimMirror: 'assignee'`, when `claimWriters` is non-empty. `mirrorAssignee` is then
+required. Every claim, release and mirror write is planned under `claimBoundary` through
+`previewMutation`/`applyMutation` and refused unless its effective boundary is `open-pr` or
+`external-action`; it needs a receipt store like any other mutation.
+
+- **Claim ledger.** Each claim or release is an issue comment whose first line is
+  `<!-- agentflow-claim:{json} -->` (operation `append-claim-entry`). Comment order (comment id) is
+  log order. The earliest trusted claim wins, only the holder's release frees the item, and a claim
+  appends nothing only when the resolved holder already equals the owner, so a past losing claim
+  never blocks a later claim on a free item. A stale plan (the issue content changed) is re-planned
+  up to three times.
+- **Trust list.** Only comments written by a login in `claimWriters` count (compared case
+  insensitively). The comment author comes from GitHub; nothing inside the entry names its writer.
+  Any trusted writer may claim or release for any owner, so every rig on the project must use the
+  same list.
+- **Bot identity.** The recommended setup is one bot account (or GitHub App) per project: it writes
+  every entry and is the `mirrorAssignee`. The rig (and host) is named inside the entry, so
+  `readClaim` returns the specific rig although every comment and the assignee are the bot. Rigs
+  sharing the bot are one trust domain. Moving to per-rig accounts later only changes `claimWriters`.
+- **Assignee mirror.** When a rig wins, the assignees are set to the bot alone; when the holder
+  releases, the bot is removed and other assignees stay. A losing claim or ignored release leaves the
+  assignees alone. `readClaim` reports `mirror: { value: { assignees }, diverged }`: a rig holder
+  expects exactly the bot, a person holder anyone but the bot, a free item no bot. The assignees are
+  never read back to decide the holder.
+- **Reassignment in the GitHub UI.** A person changing the assignee is input, not truth: `readClaim`
+  reports it as `mirror.diverged`. `adoptMirrorChange(reference, { personFor })` looks for the latest
+  `assigned` issue event after the rig's claim, made by a login outside `claimWriters`, whose assignee
+  is still assigned. `personFor(login)` returns a roster person id (or `{ id }`) or null. When both
+  the event's actor and the new assignee resolve, it appends a `release` for the rig and a `claim`
+  for `{ kind: 'person', id }`, both with `cause: { kind: 'mirror-change', actor, eventId }`, and sets
+  the assignees to that person (`status: 'adopted'`). Otherwise it restores the bot as the only
+  assignee, appends nothing and returns `status: 'ignored'` with a `reason`
+  (`actor-not-a-person`, `assignee-not-a-person`, `no-reassignment-event`). If another writer claims
+  between the release and the person's claim, the log decides (`status: 'lost'`). With no rig holder
+  it returns `not-applicable`; with an in-sync mirror, `in-sync`.
+
+The client adds `issueEvents(repo, number)` (all pages), `addAssignees` and `removeAssignees`.
 
 Tests run against `lib/__tests__/fixtures/fake-github.mjs`, an in-memory client; none touch the
 network.
