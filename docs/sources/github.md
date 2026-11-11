@@ -47,6 +47,9 @@ unknown `changeClass` is unreadable and `readWorkItem` throws; it is never read 
 class. `partOf` is the number from a `Part of #N` line only. Transitions are claims by their author:
 consumers must filter them by trusted writer, and records with a non-integer phase are dropped. A
 gate block with no record, no end, a non-array log or validation findings counts as one open gate.
+`listWorkItems({ lifecycle, onUnreadable })` skips an unreadable item and calls the optional
+`onUnreadable({ reference, error })` for each, so one poisoned issue cannot stop a repository-wide
+listing; transport failures and truncation still throw.
 Paged reads throw rather than truncate past 100 pages.
 
 Tests run against `lib/__tests__/fixtures/fake-github.mjs`, an in-memory client; none touch the
