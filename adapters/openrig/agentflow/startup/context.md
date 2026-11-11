@@ -60,4 +60,8 @@
    - Builders work only in `.worktrees/<branch-name>`, and only after phase 3
      is on the medium. `dev.qa` runs after phase 4. `rev.review` runs after
      phase 5. They do not accept in parallel.
+   - Advancing in a workflow: when the slice runs under the `agentflow-delivery` workflow spec,
+     finish a step with `rig workflow project --exit handoff` (or `waiting` while a review or merge
+     is pending). A defect return is `--exit failed`: the spec routes it to the phase that owns the
+     fix. On the third return of one loop, do not project `failed` again; escalate to the person.
    - Idle seats are fine; never start unrequested tasks.
