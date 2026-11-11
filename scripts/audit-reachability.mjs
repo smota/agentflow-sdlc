@@ -195,6 +195,39 @@ const OFF_PATH_EXEMPTIONS = new Map([
     "documented host-facing API (docs/run-operations.md) against the adopter's own deployment " +
       'provider; this repo has no deployment automation of its own',
   ],
+  // #580 ships the optional source contract (claim, ready predicates, role-pass evidence,
+  // reference strings) before its consumer: the rig bridge (#582, scripts/bridge.mjs routed from
+  // bin/cli.mjs) is the caller and removes these exemptions. None of them gates anything yet.
+  ...Object.entries({
+    'lib/core/source-adapter.mjs': ['callSourceCapability', 'describeSourceLimits'],
+    'lib/core/source-ref.mjs': ['parseSourceRef', 'formatSourceRef'],
+    'lib/core/ready-predicate.mjs': [
+      'readyPredicateProblems',
+      'predicateKinds',
+      'evaluateReadyPredicate',
+    ],
+    'lib/core/source-claim.mjs': [
+      'claimEntryProblems',
+      'claimEntry',
+      'releaseEntry',
+      'formatClaimMarker',
+      'parseClaimMarker',
+      'ownersEqual',
+      'resolveClaim',
+      'claimOrYield',
+    ],
+    'lib/core/role-pass-evidence.mjs': [
+      'rolePassIdempotencyKey',
+      'formatRolePassComment',
+      'parseRolePassComment',
+    ],
+  }).flatMap(([module, names]) =>
+    names.map((name) => [
+      `${module}#${name}`,
+      'optional source contract (#580) consumed first by the rig bridge (#582), which removes ' +
+        'this exemption; exercised by lib/__tests__/source-contract-suite.mjs and its unit tests',
+    ]),
+  ),
 ])
 const SCAN_ROOTS = ['lib', 'scripts', 'bin']
 const SKIP_DIR_NAMES = new Set(['node_modules', '__tests__', 'fixtures', '.git'])

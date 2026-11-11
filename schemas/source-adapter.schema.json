@@ -5,8 +5,13 @@
   "type": "object",
   "required": ["version", "id", "capabilities"],
   "properties": {
-    "version": { "const": 1 },
-    "id": { "type": "string", "minLength": 1 },
+    "version": {
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
     "capabilities": {
       "type": "array",
       "items": {
@@ -15,10 +20,26 @@
           "read-lifecycle",
           "mutate-comments",
           "mutate-artifacts",
-          "mutate-lifecycle"
+          "mutate-lifecycle",
+          "claim",
+          "ready-predicates",
+          "watch",
+          "resolve-humans"
         ]
       },
       "uniqueItems": true
+    },
+    "readyPredicateKinds": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "enum": ["label", "status", "lifecycle"]
+      },
+      "uniqueItems": true
+    },
+    "claimMirror": {
+      "type": "string",
+      "minLength": 1
     }
   },
   "additionalProperties": false

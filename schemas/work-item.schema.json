@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentflow.dev/schemas/work-item.schema.json",
+  "title": "AgentFlow source WorkItem",
+  "description": "A source work item as returned by readWorkItem/listWorkItems (ready-predicates capability). revision is recordDigest over {title, body, lifecycle, labels (sorted), status}.",
+  "type": "object",
+  "required": [
+    "version",
+    "ref",
+    "system",
+    "scope",
+    "id",
+    "kind",
+    "title",
+    "lifecycle",
+    "labels",
+    "status",
+    "partOf",
+    "changeClass",
+    "revision",
+    "transitions",
+    "openGates"
+  ],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "ref": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*:[^\\s#]+#[^\\s#]+$"
+    },
+    "system": {
+      "type": "string",
+      "minLength": 1
+    },
+    "scope": {
+      "type": "string",
+      "minLength": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "kind": {
+      "type": "string",
+      "minLength": 1
+    },
+    "title": {
+      "type": "string"
+    },
+    "lifecycle": {
+      "enum": ["open", "closed", "merged"]
+    },
+    "labels": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "status": {
+      "type": ["string", "null"]
+    },
+    "partOf": {
+      "type": ["string", "null"]
+    },
+    "changeClass": {
+      "type": ["string", "null"]
+    },
+    "revision": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "transitions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "phase",
+          "status",
+          "seat",
+          "role",
+          "idempotencyKey",
+          "uri",
+          "writer",
+          "executedBy",
+          "launcher",
+          "executor",
+          "transport",
+          "delegationBoundary",
+          "model"
+        ],
+        "properties": {
+          "phase": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "status": {
+            "type": ["string", "null"]
+          },
+          "seat": {
+            "type": ["string", "null"]
+          },
+          "role": {
+            "type": ["string", "null"]
+          },
+          "idempotencyKey": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uri": {
+            "type": ["string", "null"]
+          },
+          "writer": {
+            "type": ["string", "null"]
+          },
+          "executedBy": {
+            "type": ["string", "null"]
+          },
+          "launcher": {
+            "type": ["string", "null"]
+          },
+          "executor": {
+            "type": ["string", "null"]
+          },
+          "transport": {
+            "type": ["string", "null"]
+          },
+          "delegationBoundary": {
+            "type": ["string", "null"]
+          },
+          "model": {
+            "type": ["string", "null"]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "openGates": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "additionalProperties": false
+}
