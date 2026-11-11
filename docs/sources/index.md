@@ -66,6 +66,8 @@ and `lib/core/source-claim.mjs`.
   system or scope.
 - **Unsupported is checked first.** `evaluateReadyPredicate` returns `unsupported` with the kinds the
   adapter does not declare before evaluating anything, so a partial answer never reads as ready.
+  Callers MUST pass the adapter's `readyPredicateKinds` as `supportedKinds`; the default of every
+  kind is only correct for an adapter that declares all three.
 - **Readiness is evaluated from a fresh read.** A caller decides readiness from `readWorkItem`, never
   from a copy held in a queue.
 
@@ -83,8 +85,12 @@ and `lib/core/source-claim.mjs`.
 - **The earliest trusted claim wins.** `resolveClaim` walks entries in log order: a claim while free
   takes the item, a claim while held is ignored, and only a release by the holder's owner frees it.
   Releases by anyone else are ignored.
-- **Claiming is idempotent per owner.** When an owner's latest trusted entry is a claim, `claim`
-  appends nothing.
+- **Claiming is idempotent per owner.** When the resolved holder is already the owner, `claim`
+  appends nothing. In every other state it appends, so an owner whose earlier claim lost (and
+  never yielded) gets a new entry, and the item, once free.
+- **The trusted writer list is the authority.** Every writer on a source MUST resolve claims with
+  the same trusted writer list. The owner is a field of the entry, so any trusted writer can claim or
+  release on behalf of any owner; trust a writer only if it may act for every owner.
 - **The mirror is written, never read back as truth.** The native mirror (lock file, assignee) is
   updated after each claim or release for people to see. `readClaim` reports it with `diverged`, but
   `status` and `holder` come from the log alone, so a hand-edited mirror changes nothing.
@@ -105,4 +111,15 @@ and `lib/core/source-claim.mjs`.
 The filesystem source adapter (`lib/sources/filesystem-source.mjs`) declares every optional
 capability, uses `claim.lock` as its claim mirror, and runs the reusable contract suite
 (`lib/__tests__/source-contract-suite.mjs`). The single-goal filesystem medium is not a source
-adapter.
+adapter. Filesystem specifics:
+
+- **`trustedWriters` is required.** There is no default, because two writers that each trust only
+  themselves would both win the same item.
+- **The filesystem writer is self-declared.** Any process that can write the root can claim to be
+  any writer, so filesystem permissions on the root are the only protection.
+- **Each writer keeps its own receipt store** (`receipts-<writer>.json`). A claim or comment is
+  committed when its log line, which carries the idempotency key, is written; a failed receipt flush
+  after that does not fail the call.
+- **A crash leaves no permanent damage.** An item lock held by a process that is gone is removed,
+  and a torn last log line is skipped and cut before the next append. A malformed line before the
+  end is corruption and fails the read.
