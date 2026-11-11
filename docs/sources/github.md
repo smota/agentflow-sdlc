@@ -67,7 +67,16 @@ required. Every claim, release and mirror write is planned under `claimBoundary`
   log order. The earliest trusted claim wins, only the holder's release frees the item, and a claim
   appends nothing only when the resolved holder already equals the owner, so a past losing claim
   never blocks a later claim on a free item. A stale plan (the issue content changed) is re-planned
-  up to three times.
+  up to three times. Only `append-claim-entry` writes entries: `add-comment` refuses a body whose
+  first line mentions `agentflow-claim:`, so evidence or prose cannot be posted as a bot-written
+  entry.
+- **Edited entries do not count.** A collaborator with write access can edit the bot's comment
+  while GitHub keeps the bot as its author. A claim comment whose `updated_at` differs from its
+  `created_at` is ignored (reason `edited-entry`), whether it was a claim before or was edited into
+  one. **Residual risk:** a write-access user can also delete a comment, and a deleted entry leaves
+  no trace in the comment list, so deleting the holder's claim frees the item. Restrict write access
+  to people trusted with the claim ledger; detecting deletions needs the issue timeline and is not
+  attempted.
 - **Trust list.** Only comments written by a login in `claimWriters` count (compared case
   insensitively). The comment author comes from GitHub; nothing inside the entry names its writer.
   Any trusted writer may claim or release for any owner, so every rig on the project must use the
@@ -78,20 +87,28 @@ required. Every claim, release and mirror write is planned under `claimBoundary`
   sharing the bot are one trust domain. Moving to per-rig accounts later only changes `claimWriters`.
 - **Assignee mirror.** When a rig wins, the assignees are set to the bot alone; when the holder
   releases, the bot is removed and other assignees stay. A losing claim or ignored release leaves the
-  assignees alone. `readClaim` reports `mirror: { value: { assignees }, diverged }`: a rig holder
-  expects exactly the bot, a person holder anyone but the bot, a free item no bot. The assignees are
-  never read back to decide the holder.
+  assignees alone. Each mirror write computes the wanted assignees from a fresh read, so a retry
+  never replays an old list. `readClaim` reports `mirror: { value: { assignees }, diverged }`: a rig
+  holder expects exactly the bot; a person holder and a free item expect no bot (a person holder
+  with no assignees is consistent). The assignees are never read back to decide the holder: if a
+  mirror write fails, the log still decides, and `adoptMirrorChange` repairs the mirror.
 - **Reassignment in the GitHub UI.** A person changing the assignee is input, not truth: `readClaim`
-  reports it as `mirror.diverged`. `adoptMirrorChange(reference, { personFor })` looks for the latest
-  `assigned` issue event after the rig's claim, made by a login outside `claimWriters`, whose assignee
-  is still assigned. `personFor(login)` returns a roster person id (or `{ id }`) or null. When both
+  reports it as `mirror.diverged`. `adoptMirrorChange(reference, { personFor })` acts only when the
+  bot is no longer assigned; a co-assignee added next to the bot is not a reassignment (`ignored`,
+  reason `bot-still-assigned`, the rig keeps its claim and nothing is written). It looks, in event
+  order, for the latest `assigned` issue event after the bot's own latest assignment, made by a login
+  outside `claimWriters`, whose assignee is still assigned and which no entry names as its cause.
+  `personFor(login)` returns a roster person id (or `{ id }`) or null. When both
   the event's actor and the new assignee resolve, it appends a `release` for the rig and a `claim`
   for `{ kind: 'person', id }`, both with `cause: { kind: 'mirror-change', actor, eventId }`, and sets
   the assignees to that person (`status: 'adopted'`). Otherwise it restores the bot as the only
   assignee, appends nothing and returns `status: 'ignored'` with a `reason`
   (`actor-not-a-person`, `assignee-not-a-person`, `no-reassignment-event`). If another writer claims
   between the release and the person's claim, the log decides (`status: 'lost'`). With no rig holder
-  it returns `not-applicable`; with an in-sync mirror, `in-sync`.
+  it returns `not-applicable`; with an in-sync mirror, `in-sync`. Both entries take their `claimId`
+  and `at` from the event, so concurrent or repeated calls plan the same entries (a duplicate comment
+  is the same entry and resolves as ignored), and a call that finds a mirror-change release without
+  its person claim (a crash between the two) appends the claim and finishes the adoption.
 
 The client adds `issueEvents(repo, number)` (all pages), `addAssignees` and `removeAssignees`.
 
