@@ -93,7 +93,10 @@
       "roles": ["tester"],
       "phases": [5],
       "plane": "delivery",
-      "writes": { "rule": "review-readonly-guard", "allow": [], "defaultDeny": true }
+      "writes": {
+        "rule": "review-oracle-guard",
+        "deny": ["tests/oracles/**", "tests/**/oracles/**"]
+      }
     },
     {
       "id": "rev.review",
@@ -102,7 +105,10 @@
       "roles": ["reviewer"],
       "phases": [6],
       "plane": "delivery",
-      "writes": { "rule": "review-readonly-guard", "allow": [], "defaultDeny": true }
+      "writes": {
+        "rule": "review-oracle-guard",
+        "deny": ["tests/oracles/**", "tests/**/oracles/**"]
+      }
     },
     {
       "id": "eval.tester",

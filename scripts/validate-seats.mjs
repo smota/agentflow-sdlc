@@ -3,6 +3,7 @@
 // Exit 0 READY, exit 1 BLOCKED with `file: seat ...` errors.
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
+import Ajv2020 from 'ajv/dist/2020.js'
 import YAML from 'yaml'
 import {
   checkPathOwnershipAgainstTable,
@@ -63,6 +64,13 @@ function rigBundles(root) {
 export function collectSeatErrors(root) {
   const errors = []
   const table = loadSeatTable(root)
+  const schema = JSON.parse(readFileSync(join(root, 'schemas/seats.schema.json'), 'utf8'))
+  const validateSchema = new Ajv2020({ strict: false, allErrors: true }).compile(schema)
+  if (!validateSchema(table)) {
+    return validateSchema.errors.map(
+      (error) => `manifests/seats.json: schema ${error.instancePath || '/'} ${error.message}`,
+    )
+  }
   const tableCheck = validateSeatTable(table)
   if (!tableCheck.ok) return tableCheck.errors.map((error) => `manifests/seats.json: ${error}`)
 
@@ -89,7 +97,13 @@ export function collectSeatErrors(root) {
   for (const file of listFiles(root, 'manifests/execution-distributions', '.json')) {
     const text = readText(root, file, errors)
     if (text === null) continue
-    const distribution = JSON.parse(text)
+    let distribution
+    try {
+      distribution = JSON.parse(text)
+    } catch (error) {
+      errors.push(`${file}: invalid JSON (${error.message})`)
+      continue
+    }
     // Distribution role keys mix seats (`pod.member`) with plain role names; only seats are checked.
     const keys = [
       ...Object.keys(distribution.roles ?? {}),

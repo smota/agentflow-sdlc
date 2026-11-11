@@ -14,6 +14,7 @@ function fixture() {
   dirs.push(root)
   for (const file of [
     'manifests/seats.json',
+    'schemas/seats.schema.json',
     'manifests/path-ownership.json',
     'AGENTS.md',
     'defaults/AGENTS.md',
@@ -128,6 +129,26 @@ describe('validate-seats', () => {
     expect(out).toContain(
       'manifests/seats.json: alias arch.lead names a canonical seat that does not exist',
     )
+  })
+
+  it('fails a seat table that violates the schema', () => {
+    const root = fixture()
+    edit(root, 'manifests/seats.json', (text) =>
+      text.replace('"plane": "eval"', '"plane": "nowhere"'),
+    )
+    const { code, out } = run(root)
+    expect(code).toBe(1)
+    expect(out).toMatch(/manifests\/seats\.json: schema \/seats\/\d+\/plane/)
+  })
+
+  it('reports malformed distribution JSON against that file', () => {
+    const root = fixture()
+    const file = 'manifests/execution-distributions/subscription-balanced-v1.json'
+    edit(root, file, (text) => `${text.slice(0, -10)}`)
+    const { code, out } = run(root)
+    expect(code).toBe(1)
+    expect(out).toContain(`${file}: invalid JSON`)
+    expect(out).not.toContain('manifests/seats.json')
   })
 
   it('prints machine-readable output with --json', () => {

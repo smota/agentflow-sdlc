@@ -684,7 +684,7 @@ The workflow is divided into two strictly isolated operating planes:
 
 - **PM Allowlist**: Product management seats (`pm.manager`, `pm.analyst`, `pm.lead` / `pm.*`) write only to `.agentflow/**` and `goals/**` (`defaultDeny: true`). Commits touching code, libraries, or test fixtures (`src/**`, `lib/**`, `tests/**`) are rejected.
 - **Steering Write Guard**: Steering seats (`steer.lead` / `steer.*`) have no file write permissions (`allow: []`, `defaultDeny: true`). Commits authored under steering identities are rejected mechanically.
-- **Read-only Review Guard**: Tester and reviewer seats (`dev.qa`, `rev.review`) have no file write permissions (`allow: []`, `defaultDeny: true`). `rev.gate` is a legacy alias of `rev.review`.
+- **Review Oracle Guard**: Tester and reviewer seats (`dev.qa`, `rev.review`) are read-only by role guidance; path rules deny only oracle edits (`tests/oracles/**`, `tests/**/oracles/**`; `review-oracle-guard`), not a general write ban. `rev.gate` is a legacy alias of `rev.review`.
 - **Eval Write Guard**: The eval seat (`eval.tester`) writes only `.agentflow/intake/**` (`defaultDeny: true`).
 - **Canonical Seat Table**: Seat names are defined once in `manifests/seats.json`; `node scripts/validate-seats.mjs` checks rig specs, presets, policy text, distributions and `manifests/path-ownership.json` against it.
 - **Governance Protection**: All agent seats are barred from modifying governance files (`manifests/path-ownership.json`, `scripts/validate-path-ownership.mjs`).

@@ -638,13 +638,27 @@ describe('path ownership', () => {
     expect(DEFAULT_KNOWN_SEATS).toContain('steer.po')
   })
 
-  it('applies the review-readonly-guard to dev.qa, rev.review and the legacy rev.gate', () => {
+  it('denies oracle edits to dev.qa, rev.review and the legacy rev.gate (review-oracle-guard)', () => {
     for (const seat of ['dev.qa', 'rev.review', 'rev.gate']) {
-      for (const path of ['lib/x.mjs', 'docs/a.md', '.agentflow/x.json']) {
+      for (const path of ['tests/oracles/x.json']) {
         const result = checkPathOwnership({ seat, paths: [path], manifest })
-        expect(result.ok, `${seat} ${path}`).toBe(false)
-        expect(result.errors).toContain(`${seat} cannot write ${path} (review-readonly-guard)`)
+        expect(result.errors, `${seat} ${path}`).toEqual([
+          `${seat} cannot write ${path} (review-oracle-guard)`,
+        ])
       }
+    }
+  })
+
+  it('does not blame review seats for ordinary branch diffs (seat mode regression)', () => {
+    for (const seat of ['dev.qa', 'rev.review', 'rev.gate']) {
+      const ok = checkPathOwnership({
+        seat,
+        paths: ['AGENTS.md', 'lib/x.mjs', 'docs/a.md', '.agentflow/x.json'],
+        manifest,
+      })
+      expect(ok).toEqual({ ok: true, errors: [] })
+      const mixed = checkPathOwnership({ seat, paths: ['AGENTS.md', 'tests/oracles/x'], manifest })
+      expect(mixed.errors).toEqual([`${seat} cannot write tests/oracles/x (review-oracle-guard)`])
     }
   })
 
