@@ -47,14 +47,17 @@ export function collectWorkflowErrors(root) {
 }
 
 const MIN_RIG = [0, 7, 6]
-const parseVersion = (text) =>
-  String(text)
-    .match(/(\d+)\.(\d+)\.(\d+)/)
-    ?.slice(1)
-    .map(Number) ?? null
-const olderThan = (a, b) =>
-  (a.find((n, i) => n !== b[i]) ?? 0) < (b.find((n, i) => n !== a[i]) ?? 0)
+const parseVersion = (text) => {
+  const match = String(text).match(/(\d+)\.(\d+)\.(\d+)(-[0-9A-Za-z.-]+)?/)
+  return match ? { numbers: match.slice(1, 4).map(Number), pre: match[4] ?? '' } : null
+}
+const olderThan = ({ numbers, pre }, min) => {
+  const i = numbers.findIndex((n, k) => n !== min[k])
+  if (i === -1) return pre !== '' // a pre-release of the minimum is below it
+  return numbers[i] < min[i]
+}
 const failureText = (error) => `${error?.stderr ?? ''}${error?.stdout ?? ''}`.trim()
+const stderrText = (error) => String(error?.stderr ?? '').trim()
 
 /** `rig workflow validate`; `execFile` is injected so tests never run a real rig. */
 export async function rigValidate(root, execFile) {
@@ -64,14 +67,17 @@ export async function rigValidate(root, execFile) {
     version = parseVersion(stdout)
   } catch (error) {
     if (error?.code === 'ENOENT') return { status: 'skipped', detail: 'rig not available' }
-    if (DAEMON_DOWN.test(failureText(error))) {
+    if (DAEMON_DOWN.test(stderrText(error))) {
       return { status: 'skipped', detail: 'rig daemon not reachable' }
     }
     return { status: 'failed', detail: failureText(error) || 'rig --version failed' }
   }
   if (!version) return { status: 'failed', detail: 'cannot read the rig version' }
   if (olderThan(version, MIN_RIG)) {
-    return { status: 'skipped', detail: `rig ${version.join('.')} < ${MIN_RIG.join('.')}` }
+    return {
+      status: 'skipped',
+      detail: `rig ${version.numbers.join('.')}${version.pre} < ${MIN_RIG.join('.')}`,
+    }
   }
   const args = ['workflow', 'validate', join(root, SPEC_PATH), '--json']
   try {
@@ -90,7 +96,8 @@ export async function rigValidate(root, execFile) {
   } catch (error) {
     if (error?.code === 'ENOENT') return { status: 'skipped', detail: 'rig not available' }
     const detail = failureText(error)
-    if (DAEMON_DOWN.test(detail)) return { status: 'skipped', detail: 'rig daemon not reachable' }
+    if (DAEMON_DOWN.test(stderrText(error)))
+      return { status: 'skipped', detail: 'rig daemon not reachable' }
     return { status: 'failed', detail: detail || String(error?.message ?? 'rig failed') }
   }
 }

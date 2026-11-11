@@ -116,4 +116,22 @@ describe('validate-openrig-workflow', () => {
     const { code } = await run(['--root', repo, '--rig'], fakeRig('0.7.6', error).exec)
     expect(code).toBe(1)
   })
+
+  it('a JSON rejection on stdout mentioning "not running" is failed, not skipped', async () => {
+    const error = Object.assign(new Error('exit 1'), {
+      stdout: '{"ok":false,"error":"step not running: unreachable"}',
+      stderr: '',
+    })
+    const { code, out } = await run(['--root', repo, '--rig'], fakeRig('0.7.6', error).exec)
+    expect(code).toBe(1)
+    expect(out).toMatch(/BLOCKED/)
+  })
+
+  it('a pre-release of the minimum version is below it', async () => {
+    const { exec, calls } = fakeRig('0.7.6-rc.1', '{"ok":true}')
+    const { code, out } = await run(['--root', repo, '--rig'], exec)
+    expect(code).toBe(0)
+    expect(out).toMatch(/skipped: rig 0\.7\.6-rc\.1 < 0\.7\.6/)
+    expect(calls).toHaveLength(1)
+  })
 })
