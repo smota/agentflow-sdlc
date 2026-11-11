@@ -45,6 +45,7 @@ const FAILURE_STATUSES = new Set([
   'capability-absent',
   'refused',
   'failed',
+  'reconciled-with-errors',
 ])
 
 class UsageError extends Error {}

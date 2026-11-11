@@ -89,18 +89,11 @@ Every decision the bridge takes from role-pass evidence (the resume phase, which
 whether review is done, whether a call is a retry, and whether a transition is legal) uses only
 evidence written by a trusted evidence writer: the source-provided author of the comment or log
 line, never a field inside it. Configure them with `source.evidenceWriters`; they default to
-`source.claimWriters`. With neither configured no evidence counts: items start at the entry phase,
-nothing is replayed, review never resolves, and every command reports
-`evidenceTrust: no-evidence-writers-configured`. Include the bridge's own writer when the bridge
-writes evidence.
+`source.claimWriters`. List the bridge's own writer, because the bridge writes evidence too.
 
-### Exit codes
-
-| Code | Meaning                                                                                              |
-| :--- | :--------------------------------------------------------------------------------------------------- |
-| 0    | Done, no rig configured, not ready, deferred, or already queued                                      |
-| 1    | Source, rig or configuration failure; a ready predicate the source cannot evaluate; refused evidence |
-| 2    | Usage                                                                                                |
+With neither key set, no evidence could ever count and no item could get past its first phase, so
+the configuration is refused: with a rig configured, every `bridge` command exits 1 with
+`invalid-config` naming `adapters.openrig.bridge.source.evidenceWriters`.
 
 ## Ids
 
@@ -157,8 +150,13 @@ their vocabularies. It records them as separate fields. `seatVerified` is true o
 caller's OpenRig session holds the seat it names.
 
 Phase 6 (review) pass evidence needs a reviewer. It is refused unless the caller's OpenRig session
-is given, holds the review seat (`rev-review@<rig>` for `rev.review`), and is not the seat or session
-of any trusted phase 4 transition.
+is given, holds the review seat (`rev-review@<rig>` for `rev.review`) and is on the configured rig.
+The phase graph already gives phase 4 only to builder seats, so a session holding the review seat
+can never be the session that recorded the build.
+
+Residual risk: the caller session is self-asserted through `OPENRIG_SESSION_NAME`, exactly like
+seat claims. Anyone who can run the command with that variable set can claim the review seat; the
+boundary is who can run commands on the rig's host, not the bridge.
 
 ## Reconcile
 
@@ -176,11 +174,17 @@ of any trusted phase 4 transition.
 
 After the queue is emptied, `reconcile` restores one intake row for every open ready item.
 
+Reconcile reads the workflow list once per run. An item that fails (for example, the queue times
+out) is reported under `failed`; the rest are still handled, and the run ends with status
+`reconciled-with-errors` and exit 1.
+
 ### Live work
 
 An item has live work when a row of its intake chain is pending, in progress or blocked, or a
 workflow instance tagged `af:<stable id>` is active or waiting. The intake chain is the stable id
-and its generation ids, read one at a time with `rig queue show`; liveness never comes from
+and its generation ids, read one at a time with `rig queue show`. OpenRig retention may erase
+closed rows, and an erased id cannot be reused, so the scan steps past missing ids (up to 16 in a
+row) and a new row always takes the generation after the highest one found; liveness never comes from
 `rig queue list`, whose output is bounded (100 rows by default, newest first). Escalation and
 notice rows carry the tag `af-notice:<stable id>` and are not work.
 
@@ -194,9 +198,19 @@ smoke against OpenRig 0.7.6 or later.
 
 If OpenRig refuses a replay, or the source lacks trusted evidence for a phase in between, `start`
 aborts the half-replayed workflow instance, parks the intake row with
-`rig queue block --on external:reconcile-replay:<stable id>`, and tells a person. Fix the cause,
-then run `bridge start <qitemId>` again: it claims the parked row and starts a fresh instance. To
-give up, cancel the row.
+`rig queue block --on external:reconcile-replay:<stable id>`, and tells a person. If the abort
+itself fails, the row is still parked and the person is told to abort the instance by hand. Fix
+the cause, then run `bridge start <qitemId>` again: it claims the parked row and starts a fresh
+instance. To give up, cancel the row.
+
+### A start that fails
+
+`start` claims the intake row first. If anything fails before a workflow instance exists (the
+source cannot be read, the source claim or worktree preparation fails, instantiation fails), the
+row is unclaimed and returns to pending, so the next `start` simply retries. If it fails after the
+instance exists, the row is parked on `external:start-failed:<stable id>` and a person is told.
+A row parked by a failed start or replay never adopts a still-live instance: `start` stays parked
+until that instance is aborted.
 
 ## Extension points
 

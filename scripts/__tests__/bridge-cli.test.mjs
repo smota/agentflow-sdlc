@@ -140,7 +140,7 @@ describe('bridge CLI with a rig (#582)', () => {
   function configured(extra = {}) {
     const dir = project({
       rig: 'agentflow-p',
-      source: { adapter: 'filesystem', root: 'work' },
+      source: { adapter: 'filesystem', root: 'work', claimWriters: ['agentflow-bridge'] },
       ...extra,
     })
     mkdirSync(join(dir, 'work'))
@@ -283,6 +283,25 @@ describe('bridge CLI with a rig (#582)', () => {
       limits: { maxDeliveryRigs: null },
       rigs: { control: 'agentflow-p', delivery: ['agentflow-p'] },
       queue: { ok: true },
+    })
+  })
+
+  it('refuses up front when no evidence writers are configured', async () => {
+    const dir = project({ rig: 'agentflow-p', source: { adapter: 'filesystem', root: 'work' } })
+    const stdout = sink()
+    let touched = false
+    const code = await main(['intake', 'filesystem:local#a', '--target', dir, '--json'], {
+      execFile: async () => {
+        touched = true
+      },
+      stdout,
+      stderr: sink(),
+    })
+    expect(code).toBe(1)
+    expect(touched).toBe(false)
+    expect(JSON.parse(stdout.text())).toMatchObject({
+      status: 'invalid-config',
+      problems: [expect.stringContaining('adapters.openrig.bridge.source.evidenceWriters')],
     })
   })
 })
