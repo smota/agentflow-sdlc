@@ -34,7 +34,7 @@ This team delivers production-grade software in the repository given as its work
 6. **Two-Plane Separation**:
    - The external supervisory steering plane (`steer.lead`) operates out-of-rig via CLI orchestration, direct session interaction, or external supervisory runtimes.
    - External steering owns high-level goal decomposition, unfreeze resolutions, defect triage (`accept_and_register`), and merge verbs.
-   - Internal execution squads (`dev.build*`, `dev.test-eng`, `pm.*`, `rev.gate`, `orch.arch`) execute inside isolated git worktrees and cannot modify external steering state or grant self-approvals.
+   - Internal execution squads (`dev.build*`, `dev.test-eng`, `pm.*`, `rev.review`, `orch.arch`) execute inside isolated git worktrees and cannot modify external steering state or grant self-approvals.
 
 7. **Path Ownership & Oracle Pinning**:
    - PM seats (`pm.manager`, `pm.analyst`, `pm.lead` / `pm.*`) write only `.agentflow/**` and `goals/**` (`defaultDeny: true`). Commits touching code, libraries, or test fixtures are rejected.

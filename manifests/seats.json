@@ -1,0 +1,137 @@
+{
+  "version": 1,
+  "seats": [
+    {
+      "id": "pm.manager",
+      "pod": "pm",
+      "member": "manager",
+      "roles": ["product-manager"],
+      "phases": [0],
+      "plane": "product",
+      "writes": {
+        "rule": "pm-write-guard",
+        "allow": [".agentflow/**", "goals/**"],
+        "defaultDeny": true
+      }
+    },
+    {
+      "id": "pm.analyst",
+      "pod": "pm",
+      "member": "analyst",
+      "roles": ["analyst"],
+      "phases": [1],
+      "plane": "product",
+      "writes": {
+        "rule": "pm-write-guard",
+        "allow": [".agentflow/**", "goals/**"],
+        "defaultDeny": true
+      }
+    },
+    {
+      "id": "orch.arch",
+      "pod": "orch",
+      "member": "arch",
+      "roles": ["architect", "implementation-planner", "technical-writer", "pr-readiness"],
+      "phases": [2, 3, 7, 8],
+      "plane": "delivery",
+      "writes": { "rule": "arch-write-scope", "deny": [] }
+    },
+    {
+      "id": "dev.build",
+      "pod": "dev",
+      "member": "build",
+      "roles": ["developer"],
+      "phases": [4],
+      "plane": "delivery",
+      "writes": {
+        "rule": "builder-oracle-guard",
+        "deny": ["tests/oracles/**", "tests/**/oracles/**"]
+      }
+    },
+    {
+      "id": "dev.build-jr",
+      "pod": "dev",
+      "member": "build-jr",
+      "roles": ["developer"],
+      "phases": [4],
+      "plane": "delivery",
+      "writes": {
+        "rule": "builder-oracle-guard",
+        "deny": ["tests/oracles/**", "tests/**/oracles/**"]
+      }
+    },
+    {
+      "id": "dev.build-sr",
+      "pod": "dev",
+      "member": "build-sr",
+      "roles": ["developer"],
+      "phases": [4],
+      "plane": "delivery",
+      "writes": {
+        "rule": "builder-oracle-guard",
+        "deny": ["tests/oracles/**", "tests/**/oracles/**"]
+      }
+    },
+    {
+      "id": "dev.test-eng",
+      "pod": "dev",
+      "member": "test-eng",
+      "roles": ["test-engineer"],
+      "phases": [],
+      "plane": "delivery",
+      "writes": {
+        "rule": "test-eng-source-guard",
+        "allow": ["tests/**", "lib/__tests__/**", "scripts/__tests__/**", "guidance/**"],
+        "deny": ["src/**"],
+        "defaultDeny": true
+      }
+    },
+    {
+      "id": "dev.qa",
+      "pod": "dev",
+      "member": "qa",
+      "roles": ["tester"],
+      "phases": [5],
+      "plane": "delivery",
+      "writes": { "rule": "review-readonly-guard", "allow": [], "defaultDeny": true }
+    },
+    {
+      "id": "rev.review",
+      "pod": "rev",
+      "member": "review",
+      "roles": ["reviewer"],
+      "phases": [6],
+      "plane": "delivery",
+      "writes": { "rule": "review-readonly-guard", "allow": [], "defaultDeny": true }
+    },
+    {
+      "id": "eval.tester",
+      "pod": "eval",
+      "member": "tester",
+      "roles": ["eval-tester"],
+      "phases": [],
+      "plane": "eval",
+      "writes": {
+        "rule": "eval-write-guard",
+        "allow": [".agentflow/intake/**"],
+        "defaultDeny": true
+      }
+    },
+    {
+      "id": "steer.lead",
+      "pod": "steer",
+      "member": "lead",
+      "roles": ["steerer"],
+      "phases": [],
+      "plane": "steer",
+      "writes": { "rule": "steer-write-guard", "allow": [], "defaultDeny": true }
+    }
+  ],
+  "aliases": [
+    { "id": "pm.lead", "canonical": "pm.manager", "status": "legacy" },
+    { "id": "arch.lead", "canonical": "orch.arch", "status": "legacy" },
+    { "id": "orch.lead", "canonical": "orch.arch", "status": "legacy" },
+    { "id": "rev.gate", "canonical": "rev.review", "status": "legacy" },
+    { "id": "steer.po", "canonical": "steer.lead", "status": "legacy" }
+  ]
+}

@@ -10,6 +10,7 @@ import {
   verifyRoleAdvance,
 } from '../../lib/core/role-collaboration.mjs'
 import {
+  DEFAULT_KNOWN_SEATS,
   checkBranchCommits,
   checkPathOwnership,
   computeOracleDigest,
@@ -592,6 +593,8 @@ describe('path ownership', () => {
       'rev.review',
       'orch.lead',
       'steer.lead',
+      'steer.po',
+      'eval.tester',
       'orch.arch',
     ]) {
       expect(
@@ -626,6 +629,41 @@ describe('path ownership', () => {
         expect(result.ok).toBe(false)
         expect(result.errors).toContain(`${seat} cannot write ${path} (steer-write-guard)`)
       }
+    }
+  })
+
+  it('derives the known seats from the canonical seat table', () => {
+    expect([...DEFAULT_KNOWN_SEATS].sort()).toEqual([...manifest.knownSeats].sort())
+    expect(DEFAULT_KNOWN_SEATS).toContain('eval.tester')
+    expect(DEFAULT_KNOWN_SEATS).toContain('steer.po')
+  })
+
+  it('applies the review-readonly-guard to dev.qa, rev.review and the legacy rev.gate', () => {
+    for (const seat of ['dev.qa', 'rev.review', 'rev.gate']) {
+      for (const path of ['lib/x.mjs', 'docs/a.md', '.agentflow/x.json']) {
+        const result = checkPathOwnership({ seat, paths: [path], manifest })
+        expect(result.ok, `${seat} ${path}`).toBe(false)
+        expect(result.errors).toContain(`${seat} cannot write ${path} (review-readonly-guard)`)
+      }
+    }
+  })
+
+  it('lets eval.tester write only .agentflow/intake/** (eval-write-guard)', () => {
+    expect(
+      checkPathOwnership({ seat: 'eval.tester', paths: ['.agentflow/intake/f.json'], manifest }),
+    ).toEqual({ ok: true, errors: [] })
+    for (const path of ['lib/x.mjs', '.agentflow/PRODUCT.md', 'goals/a.md']) {
+      expect(checkPathOwnership({ seat: 'eval.tester', paths: [path], manifest }).errors).toEqual([
+        `eval.tester cannot write ${path} (eval-write-guard)`,
+      ])
+    }
+  })
+
+  it('leaves orch.arch and its legacy aliases unrestricted except for governance files', () => {
+    for (const seat of ['orch.arch', 'arch.lead', 'orch.lead']) {
+      expect(checkPathOwnership({ seat, paths: ['lib/x.mjs', 'docs/a.md'], manifest }).ok).toBe(
+        true,
+      )
     }
   })
 
