@@ -207,6 +207,11 @@
             "rig": {
               "type": "object"
             },
+            "bridge": {
+              "type": "object",
+              "description": "Optional rig bridge (docs/openrig-bridge.md). Absent, or with no rig, every bridge command is a no-op.",
+              "additionalProperties": true
+            },
             "executionPolicy": {
               "type": "object",
               "properties": {
