@@ -10,7 +10,7 @@ boundaries, idempotency, and mutation receipts.
 See [GitHub](github.md) and the [modular architecture](../modular-architecture.md).
 
 The [OpenRig bridge](../openrig-bridge.md) is the consumer of the optional capabilities below
-(`claim`, `ready-predicates`, `watch`): it speaks only this contract, never GitHub directly. See the
+(`claim`, `ready-predicates`, `watch`, `log-entries`): it speaks only this contract, never GitHub directly. See the
 [execution layer guide](../openrig-execution-layer.md) for how a source adapter plugs into a rig, and
 [GitHub claims](github.md#claims-581) for the GitHub claim ledger and bot identity.
 
@@ -113,6 +113,24 @@ and `lib/core/source-claim.mjs`.
 - **Handles identify, they do not authorize.** Authority for a gate decision comes from the team
   roster and the source writer identity, not from the handle alone.
 
+### `log-entries`
+
+- **Method:** `readLogEntries(reference)` returns the item's comment records, oldest first, as
+  `[{ writer, body, uri, edited, createdAt, updatedAt }]`. Roster review gates (#585) and the bridge
+  (#586) read decisions from it.
+- **Entries are the source's own records.** `writer` is the source-authenticated author (comment
+  author, log `writer`), never a field inside the body. `uri` identifies the record. `createdAt` and
+  `updatedAt` are the source's timestamps, or `null` when it did not give one.
+- **`edited` is advisory evidence from the source:** `true` when the record changed after it was
+  created, `false` when the source can show it did not, and `null` when that is unknown (a timestamp
+  is missing). Unknown is never reported as `false`. A consumer on a high-assurance gate refuses
+  edited and unknown entries; this contract only reports the state.
+- **Every author is returned.** The adapter does not filter by trust: untrusted writers, bots and
+  claim comments are entries too. Deciding whose entry counts (the roster) is the consumer's job.
+- **A later comment never alters an earlier entry.** An entry changes only when its record is edited.
+- **Absence is an answer.** An adapter without the capability reports `capability-absent`, and a gate
+  that needs a decision entry stays open. A real read failure still throws.
+
 The filesystem source adapter (`lib/sources/filesystem-source.mjs`) declares every optional
 capability, uses `claim.lock` as its claim mirror, and runs the reusable contract suite
 (`lib/__tests__/source-contract-suite.mjs`). The single-goal filesystem medium is not a source
@@ -122,6 +140,9 @@ adapter. Filesystem specifics:
   themselves would both win the same item.
 - **The filesystem writer is self-declared.** Any process that can write the root can claim to be
   any writer, so filesystem permissions on the root are the only protection.
+- **`log-entries` returns comment rows only.** The log is append-only, so an entry is `edited: false`
+  and `createdAt` equals `updatedAt` (the time it was appended). Claim and release rows are
+  structured entries, not comment text, and are not returned.
 - **Each writer keeps its own receipt store** (`receipts-<writer>.json`). A claim or comment is
   committed when its log line, which carries the idempotency key, is written; a failed receipt flush
   after that does not fail the call.
