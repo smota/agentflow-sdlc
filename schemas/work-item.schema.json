@@ -143,6 +143,11 @@
     "openGates": {
       "type": "integer",
       "minimum": 0
+    },
+    "mergedHead": {
+      "description": "Optional. The head commit of the branch a merged pull request delivered, as the source reports it (readWorkItem only; listings omit it). Null when the source has none. Never part of the revision.",
+      "type": ["string", "null"],
+      "pattern": "^([a-f0-9]{40}|[a-f0-9]{64})$"
     }
   },
   "additionalProperties": false

@@ -36,6 +36,15 @@ callers see `capability-absent` otherwise.
   revision is unchanged. Mutation plans use the same content digest.
 - Lifecycle is `open`, `closed`, or `merged` (a closed pull request with `merged_at`). A listing
   skips open and unmerged pull requests, and pages 100 at a time.
+- `readWorkItem` of a merged pull request also returns `mergedHead`: the pull request's head commit,
+  for the bridge's squash-merge worktree cleanup (#584). A squash commit does not contain the
+  branch's commits, so the head is the only tie between the branch and its merge. It is read from the
+  pull request resource (one more request) and only when GitHub reports `merged: true` and a
+  well-formed sha; an issue, an open pull request and a closed unmerged one get `null`, and nothing
+  is guessed (GitHub has no link from an issue to its merging pull request, so the reference must
+  name the pull request). `listWorkItems` does not read it and omits the key. It is not part of the
+  `revision`: it derives from the merge state that `lifecycle` already holds, and a head that moves
+  after the merge is not a content change a mutation plan must go stale on.
 - Role-pass evidence is an `add-comment` mutation whose body comes from `formatRolePassComment`;
   `parameters.reference.number` or `parameters.number` names the issue. Transitions are read back
   with the comment author as the writer. `openGates` counts waiting gates in the issue's gate block;

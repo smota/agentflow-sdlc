@@ -236,7 +236,7 @@ only when all of these hold:
   uncommitted work);
 - it has no commits ahead of its upstream, when it has one;
 - its HEAD is an ancestor of `<remote>/<integration>`, or equals the merged head the source reports
-  for the item (`mergedHead`, for squash merges);
+  for the item (`mergedHead`, for squash merges: see Known gaps below for what supplies it);
 - the integration branch was fetched in this run. A fetch that fails means the merged state is
   unknown, and a stale ref keeps the worktree.
 
@@ -268,8 +268,15 @@ repository makes every worktree hook do nothing.
 - The startup instruction of the seats must tell them to work only inside `worktree_path` and never
   `cd` back to the primary checkout to edit. That one-line change to
   `adapters/openrig/agentflow/startup/context.md` is pending #583 and is not made here.
-- Squash-merge removal needs the source to report the merged head (`mergedHead` on the work item).
-  Until an adapter does, a squash-merged worktree is kept and a person is told.
+- Squash-merge cleanup is matched by slice. A squash commit does not contain the branch's commits,
+  so the worktree is removed only when the adapter reports the head of the merged pull request
+  (`mergedHead`, read through the adapter on every decision, never taken from a pushed payload)
+  and it equals the worktree's HEAD. The GitHub adapter reports it only for a merged pull request.
+  GitHub has no link from an issue to the pull request that closed it, so the `merged` event,
+  `bridge cleanup` and reconcile must name the pull request reference, and the slice
+  (`github-<number>`) must have been queued from that same reference. A slice queued from an issue
+  and delivered by a differently numbered pull request finds no worktree under the pull request's
+  slice, and its own worktree is kept and reported until a person removes it.
 
 ## Assumption about replaying phases
 
