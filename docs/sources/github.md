@@ -55,8 +55,11 @@ callers see `capability-absent` otherwise.
   (comment id order), as `{ writer, body, uri, edited, createdAt, updatedAt }`: `writer` is
   `comment.user.login` (case kept), `uri` is the comment's `html_url`, and the timestamps are the
   API's `created_at` and `updated_at`. `edited` is `updated_at !== created_at`; when either
-  timestamp is missing it is `null` (unknown, never `false`) and the timestamp is `null`. It pages
-  every comment (no truncation past 100 pages). Every author is returned, untrusted writers, the bot
+  timestamp is missing or unparseable it is `null` (unknown, never `false`) and that timestamp is
+  `null`. A comment with neither `html_url` nor `id` has `uri: null`. It pages every comment and
+  throws rather than truncate past 100 pages. Entries come only from issue and pull-request
+  conversation comments: PR review submissions (APPROVE, REQUEST_CHANGES) and inline review
+  comments are not entries, so a decision must be posted as a comment. Every author is returned, untrusted writers, the bot
   and claim comments included: the consumer filters by writer, and a roster review gate refuses
   edited and unknown entries. Edit detection has the one-second limit described under Edited entries
   below (an edit in the second the comment was created is not seen), so `edited: false` is evidence,
