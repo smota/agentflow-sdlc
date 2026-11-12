@@ -61,7 +61,7 @@ describe('validate-seats', () => {
   it('fails a rig spec that names an alias, naming file and seat', () => {
     const root = fixture()
     edit(root, 'adapters/openrig/agentflow/rig.yaml', (text) =>
-      text.replace('- id: review\n', '- id: gate\n'),
+      text.replace(/- id: review(\r?\n)/, '- id: gate$1'),
     )
     const { code, out } = run(root)
     expect(code).toBe(1)
@@ -74,13 +74,35 @@ describe('validate-seats', () => {
     const root = fixture()
     edit(root, 'adapters/openrig/agentflow/configurations.yaml', (text) =>
       text
-        .replace('  rev.review:\n    runtimes', '  rev.gate:\n    runtimes')
-        .replace('    rev.review: pi\n', '    rev.gate: pi\n'),
+        .replace(/ {2}rev\.review:(\r?\n {4}runtimes)/, '  rev.gate:$1')
+        .replace(/ {4}rev\.review: pi(\r?\n)/, '    rev.gate: pi$1'),
     )
     const { code, out } = run(root)
     expect(code).toBe(1)
     expect(out).toContain('configurations.yaml: seat rev.gate is a legacy alias, use rev.review')
     expect(out).toContain('(preset balanced-grok-lead): seat rev.gate is a legacy alias')
+  })
+
+  it('behaves the same on CRLF checkouts (Windows autocrlf)', () => {
+    const root = fixture()
+    for (const file of [
+      'adapters/openrig/agentflow/rig.yaml',
+      'adapters/openrig/agentflow/configurations.yaml',
+      'OPENRIG.md',
+      'manifests/path-ownership.json',
+      'manifests/seats.json',
+    ]) {
+      edit(root, file, (text) => text.replace(/\r?\n/g, '\r\n'))
+    }
+    expect(run(root)).toEqual({ code: 0, out: 'READY\n' })
+    edit(root, 'adapters/openrig/agentflow/rig.yaml', (text) =>
+      text.replace(/- id: review(\r?\n)/, '- id: gate$1'),
+    )
+    edit(root, 'OPENRIG.md', (text) => `${text}\r\nAlso \`dev.ghost\`.\r\n`)
+    const { code, out } = run(root)
+    expect(code).toBe(1)
+    expect(out).toContain('rig.yaml: seat rev.gate is a legacy alias, use rev.review')
+    expect(out).toMatch(/OPENRIG\.md:\d+: seat dev\.ghost is not in/)
   })
 
   it('fails a policy doc that names an unknown seat', () => {
