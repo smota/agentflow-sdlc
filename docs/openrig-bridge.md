@@ -8,6 +8,9 @@ The source stays the truth. The bridge re-reads the source on every command, and
 only a source reference and ids derived from it, never the item's title or body. The bridge has no
 polling loop: something pushes ("look at this reference"), or a person runs `bridge reconcile`.
 
+For adoption levels, a single-rig walkthrough and the reference pusher, see the
+[execution layer guide](openrig-execution-layer.md).
+
 The bridge works only through the [source adapter contract](sources/index.md) and an injected queue
 port, so it does not depend on any one source system. Configured source adapters are built by
 `lib/sources/registry.mjs`.

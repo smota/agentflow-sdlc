@@ -93,6 +93,7 @@ flowchart LR
 | [Intelligent collaboration](intelligent-collaboration.md) | Choose the smallest sufficient collaboration mode and enforce the Effort-Degradation Guard    |
 | [Role collaboration](role-collaboration.md)               | Define deterministic handover acceptance, rework, and councils                                |
 | [OpenRig harness integration](../OPENRIG.md)              | Operate the `S2` Lean 4-Seat OpenRig squad (`orch.arch`, `dev.build`, `dev.qa`, `rev.review`) |
+| [OpenRig execution layer](openrig-execution-layer.md)     | Adoption levels, a single-rig walkthrough, the reference pusher and what is not supported     |
 | [OpenRig bridge](openrig-bridge.md)                       | Push ready source work into a rig's queue and return phase evidence to the source             |
 
 Runtime-specific references:

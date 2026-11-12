@@ -121,6 +121,19 @@ agentflow-sdlc adapters squads update openrig my-project
 agentflow-sdlc adapters squads remove openrig [--purge] my-project
 ```
 
+## Execution layer: ready work in, evidence out
+
+Beyond seats, AgentFlow can feed a rig from its source system. The [bridge](docs/openrig-bridge.md)
+takes a pushed reference such as `github:owner/repo#12`, re-reads the item, queues one intake row,
+creates the slice's worktree, claims the item so no other rig takes it, and writes each phase's
+evidence back to the source. The source stays the truth, so a lost rig is rebuilt with
+`agentflow-sdlc bridge reconcile`. The layer is optional and has four adoption levels (none, seats,
+workflow, full); a team without a rig loses nothing. See the
+[execution layer guide](docs/openrig-execution-layer.md) for the levels, a single-rig walkthrough,
+the [reference pusher](adapters/openrig/examples/github-rig-push.yml) and what is not supported
+(Pi seats inside a rig, long non-Claude seats, changes to OpenRig, source adapters beyond GitHub and
+filesystem), and [ADR 016](docs/adr/016-optional-openrig-execution-layer.md) for the decisions.
+
 ## Product-to-delivery handoffs
 
 A product seat (`pm.manager`, `pm.analyst`) sends work to delivery only with

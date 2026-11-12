@@ -9,6 +9,11 @@ boundaries, idempotency, and mutation receipts.
 
 See [GitHub](github.md) and the [modular architecture](../modular-architecture.md).
 
+The [OpenRig bridge](../openrig-bridge.md) is the consumer of the optional capabilities below
+(`claim`, `ready-predicates`, `watch`): it speaks only this contract, never GitHub directly. See the
+[execution layer guide](../openrig-execution-layer.md) for how a source adapter plugs into a rig, and
+[GitHub claims](github.md#claims-581) for the GitHub claim ledger and bot identity.
+
 ## Source adapter invariants
 
 Any adapter, GitHub or otherwise, must satisfy:
