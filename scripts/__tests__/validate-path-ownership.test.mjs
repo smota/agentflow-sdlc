@@ -767,6 +767,34 @@ describe('path ownership', () => {
       }
     })
 
+    it('rejects case variants of protected files for every seat', () => {
+      const variants = [
+        '.AgentFlow/team-roster.json',
+        '.agentflow/Team-Roster.json',
+        '.AGENTFLOW/TEAM-ROSTER.LOCAL.JSON',
+        'schemas/Team-Roster.schema.json',
+        'Schemas/team-roster-overlay.schema.json',
+        'Manifests/Path-Ownership.json',
+        'scripts/Validate-Path-Ownership.mjs',
+        './.AgentFlow/../.agentflow/Team-Roster.json',
+      ]
+      for (const seat of seatIds(loadSeatTable(repoRoot))) {
+        for (const path of variants) {
+          expect(checkPathOwnership({ seat, paths: [path], manifest }).ok, `${seat} ${path}`).toBe(
+            false,
+          )
+        }
+      }
+      expect(
+        matchOwnedPath('.agentflow/team-roster.json', '.AgentFlow/team-roster.json', {
+          caseInsensitive: true,
+        }),
+      ).toBe(true)
+      expect(matchOwnedPath('.agentflow/team-roster.json', '.AgentFlow/team-roster.json')).toBe(
+        false,
+      )
+    })
+
     it('rejects a manifest whose governance guard stops denying a roster path', () => {
       for (const path of rosterPaths) {
         const weakened = structuredClone(manifest)

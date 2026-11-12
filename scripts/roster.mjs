@@ -7,13 +7,22 @@ import { GATE_TYPES, TIERS, TeamRosterError, loadTeamRoster } from '../lib/roste
 import { NO_ROSTER_MESSAGE, renderReport, teamRosterReport } from './validate-team-roster.mjs'
 
 export const ROSTER_USAGE = `Usage: agentflow-sdlc roster <validate|route> [options] [--target <dir>] [--json]
-  roster validate                                   check the roster, the overlay and that the overlay is gitignored
-  roster route --gate <type> [--paths a,b] [--tier <tier>] [--id <gate id>]
+  roster validate [--ref <ref>] [--overlay <file>]  check the committed roster, the overlay, and the in-repo overlay name
+  roster route --gate <type> [--paths a,b] [--tier <tier>] [--id <gate id>] [--ref <ref>]
                                                     explain who a gate goes to, by roster id
+The roster is read from a commit (default HEAD of the primary checkout); uncommitted edits have no effect.
 Gate types: ${GATE_TYPES.join(', ')}. Tiers: ${TIERS.join(', ')} (default standard).
 Exit: 0 valid, routed, unmatched or no roster; 1 invalid roster; 2 usage.
 `
-const VALUE_FLAGS = new Set(['--gate', '--paths', '--tier', '--id', '--target'])
+const VALUE_FLAGS = new Set([
+  '--gate',
+  '--paths',
+  '--tier',
+  '--id',
+  '--target',
+  '--ref',
+  '--overlay',
+])
 
 class UsageError extends Error {}
 
@@ -58,6 +67,8 @@ export async function main(
     stderr = process.stderr,
     cwd = process.cwd(),
     clock = () => new Date(),
+    env = process.env,
+    home,
     git,
   } = {},
 ) {
@@ -78,6 +89,13 @@ export async function main(
     return 2
   }
   const json = flags.json === true
+  const reportOptions = {
+    ...(git ? { git } : {}),
+    ref: typeof flags.ref === 'string' ? flags.ref : 'HEAD',
+    overlayPath: typeof flags.overlay === 'string' ? flags.overlay : null,
+    env,
+    home,
+  }
   const target = resolve(cwd, typeof flags.target === 'string' ? flags.target : '.')
   const emit = (value, text, code) => {
     stdout.write(json ? `${JSON.stringify(value, null, 2)}\n` : text)
@@ -85,7 +103,7 @@ export async function main(
   }
 
   if (subcommand === 'validate') {
-    const report = teamRosterReport(target, git ? { git } : {})
+    const report = teamRosterReport(target, reportOptions)
     return emit(report, renderReport(report), report.ok ? 0 : 1)
   }
 
@@ -111,7 +129,7 @@ export async function main(
   }
   let team
   try {
-    team = loadTeamRoster(target)
+    team = loadTeamRoster(target, { ...reportOptions, overlay: false })
   } catch (error) {
     if (!(error instanceof TeamRosterError)) throw error
     return emit(
@@ -126,7 +144,7 @@ export async function main(
       `${NO_ROSTER_MESSAGE}\n`,
       0,
     )
-  const report = teamRosterReport(target, git ? { git } : {})
+  const report = teamRosterReport(target, reportOptions)
   if (!report.ok) return emit(report, renderReport(report), 1)
   const now = clock()
   // Routing reads the roster only; the overlay's channels are never consulted here.
