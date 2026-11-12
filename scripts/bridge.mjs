@@ -13,18 +13,20 @@ import { createRigCliQueuePort } from '../lib/bridge/queue-port.mjs'
 import { loadTeamRoster } from '../lib/roster/team-roster.mjs'
 import { createSourceAdapter } from '../lib/sources/registry.mjs'
 
-export const BRIDGE_USAGE = `Usage: agentflow-sdlc bridge <intake|start|evidence|reconcile|escalate|status> [options] [--target <dir>] [--json]
-  bridge intake <ref> [--event ready|review-done|merged|closed] [--payload-file <json>]
-  bridge start <qitemId> [--session <seat@rig>]            (defaults to OPENRIG_SESSION_NAME)
+export const BRIDGE_USAGE = `Usage: agentflow-sdlc bridge <intake|start|evidence|reconcile|release|escalate|status> [options] [--target <dir>] [--json]
+  bridge intake <ref> [--event ready|review-done|merged|closed] [--payload-file <json>] [--session <name@rig>]
+  bridge start <qitemId> [--session <seat@rig>] [--resume]  (session defaults to OPENRIG_SESSION_NAME)
   bridge evidence <ref> --phase <n> --status pass|skipped --seat <id> [--reason <text>] --body-file <file>
       --executed-by <slug> --launcher <slug> --executor <target> --transport <t> --delegation-boundary <b> [--model <m>]
-  bridge reconcile [--dry-run]
+  bridge reconcile [--dry-run] [--session <name@rig>]
+  bridge release <ref> [--session <name@rig>]
+  review-done, merged, closed, reconcile and release need a named caller outside the delivery rigs.
   bridge escalate <ref> --reason <text>
   bridge status
 Exit: 0 done, no rig, not ready, deferred or already queued; 1 source, rig or config failure,
 unsupported predicate or refused evidence; 2 usage.
 `
-const SUBCOMMANDS = ['intake', 'start', 'evidence', 'reconcile', 'escalate', 'status']
+const SUBCOMMANDS = ['intake', 'start', 'evidence', 'reconcile', 'release', 'escalate', 'status']
 const VALUE_FLAGS = new Set([
   '--event',
   '--payload-file',
@@ -93,18 +95,22 @@ function render(result) {
 }
 
 async function run(bridge, { subcommand, args, flags }, { env, cwd }) {
+  const caller =
+    typeof flags.session === 'string' ? flags.session : (env.OPENRIG_SESSION_NAME ?? null)
   if (subcommand === 'intake') {
     const ref = need(args[0], '<ref>')
     const pushed = flags['payload-file'] ? JSON.parse(readFile(cwd, flags['payload-file'])) : null
     return bridge.intake(ref, {
       event: flags.event ?? 'ready',
       pushed,
-      session: env.OPENRIG_SESSION_NAME ?? null,
+      session: caller,
     })
   }
   if (subcommand === 'start') {
-    const session = flags.session ?? env.OPENRIG_SESSION_NAME
-    return bridge.start(need(args[0], '<qitemId>'), { session: need(session, '--session') })
+    return bridge.start(need(args[0], '<qitemId>'), {
+      session: need(caller, '--session'),
+      resume: flags.resume === true,
+    })
   }
   if (subcommand === 'evidence') {
     const phase = Number(need(flags.phase, '--phase'))
@@ -125,10 +131,10 @@ async function run(bridge, { subcommand, args, flags }, { env, cwd }) {
     })
   }
   if (subcommand === 'reconcile') {
-    return bridge.reconcile({
-      dryRun: flags['dry-run'] === true,
-      session: env.OPENRIG_SESSION_NAME ?? null,
-    })
+    return bridge.reconcile({ dryRun: flags['dry-run'] === true, session: caller })
+  }
+  if (subcommand === 'release') {
+    return bridge.release(need(args[0], '<ref>'), { session: caller })
   }
   if (subcommand === 'escalate') {
     return bridge.escalate(need(args[0], '<ref>'), { reason: need(flags.reason, '--reason') })
@@ -191,7 +197,30 @@ export async function main(
       roster,
       maxOpenGates: loaded.config.maxOpenGates ?? undefined,
     })
-    const bridge = createBridge({ source, queue, config: loaded.config, admission, roster })
+    // The candidate under review is the slice branch head (#584 worktrees), read with git.
+    const prefix = loaded.config.worktrees?.branchPrefix ?? 'work/'
+    const candidateHead = async ({ workItem, slice }) => {
+      if (typeof workItem?.candidateHead === 'string' && workItem.candidateHead)
+        return workItem.candidateHead
+      try {
+        const { stdout } = await execFile(
+          'git',
+          ['rev-parse', '--verify', '--quiet', `refs/heads/${prefix}${slice}`],
+          { cwd: target, encoding: 'utf8' },
+        )
+        return String(stdout).trim() || null
+      } catch {
+        return null
+      }
+    }
+    const bridge = createBridge({
+      source,
+      queue,
+      config: loaded.config,
+      admission,
+      roster,
+      candidateHead,
+    })
     if (parsed.subcommand !== 'status') {
       const available = await queue.available()
       if (!available.ok)

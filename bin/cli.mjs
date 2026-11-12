@@ -1385,7 +1385,7 @@ const ROOT_USAGE =
 
 const COMMAND_USAGE = {
   bridge:
-    'Usage: agentflow-sdlc bridge <intake|start|evidence|reconcile|escalate|status> [options] [--target <dir>] [--json]\nPush ready source work into the OpenRig queue and return evidence. With no rig configured it does nothing and exits 0. See docs/openrig-bridge.md.\n',
+    'Usage: agentflow-sdlc bridge <intake|start|evidence|reconcile|release|escalate|status> [options] [--target <dir>] [--json]\nPush ready source work into the OpenRig queue and return evidence. With no rig configured it does nothing and exits 0. See docs/openrig-bridge.md.\n',
   roster:
     'Usage: agentflow-sdlc roster <validate|route> [options] [--target <dir>] [--json]\nCheck the team roster and explain who a gate goes to, by roster id. With no roster, gates use the single-person path. See docs/team-roster.md.\n',
   world:
