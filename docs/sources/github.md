@@ -24,7 +24,7 @@ process from reclaiming or deleting the new writer lease during the handoff.
 
 ## Readiness, evidence and humans (#581)
 
-The REST adapter declares `ready-predicates` and `resolve-humans` and answers `label` and
+The REST adapter declares `ready-predicates`, `resolve-humans` and `log-entries` and answers `label` and
 `lifecycle` predicates; GitHub has no status field, so `status` predicates report unsupported. It
 does not declare `watch`, and declares `claim` only when claim writers are configured (see below);
 callers see `capability-absent` otherwise.
@@ -51,6 +51,17 @@ callers see `capability-absent` otherwise.
   `parameters.reference.number` or `parameters.number` names the issue. Transitions are read back
   with the comment author as the writer. `openGates` counts waiting gates in the issue's gate block;
   an unreadable block counts as one open gate (fail closed).
+- `readLogEntries(reference)` (#602) returns the issue's or pull request's comments, oldest first
+  (comment id order), as `{ writer, body, uri, edited, createdAt, updatedAt }`: `writer` is
+  `comment.user.login` (case kept), `uri` is the comment's `html_url`, and the timestamps are the
+  API's `created_at` and `updated_at`. `edited` is `updated_at !== created_at`; when either
+  timestamp is missing it is `null` (unknown, never `false`) and the timestamp is `null`. It pages
+  every comment (no truncation past 100 pages). Every author is returned, untrusted writers, the bot
+  and claim comments included: the consumer filters by writer, and a roster review gate refuses
+  edited and unknown entries. Edit detection has the one-second limit described under Edited entries
+  below (an edit in the second the comment was created is not seen), so `edited: false` is evidence,
+  not proof, and deleted comments are invisible here too. The adapter built on the `gh` CLI does not
+  declare `log-entries`.
 - `resolveHumans` maps a writer to `{ system: 'github', login }` in lower case.
 
 The revision excludes the gate block, so `openGates` can change without a revision change. A

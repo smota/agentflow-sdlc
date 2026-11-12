@@ -24,7 +24,8 @@
           "claim",
           "ready-predicates",
           "watch",
-          "resolve-humans"
+          "resolve-humans",
+          "log-entries"
         ]
       },
       "uniqueItems": true
