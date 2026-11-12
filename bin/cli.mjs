@@ -1380,12 +1380,14 @@ function handleWorld(rest, defaultTargetDir) {
 }
 
 const ROOT_USAGE =
-  'Usage: agentflow-sdlc <init|run|distribution|doctor|doctor-env|config|adopt|providers|adapters|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding|onboarding-prompt|wizard|release-plan|handoff|resume|phase|board|gates|mcp|project|goal|steer|seat|dispatch|world|bridge> [path] [--target <dir>] [--json]\n' +
+  'Usage: agentflow-sdlc <init|run|distribution|doctor|doctor-env|config|adopt|providers|adapters|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding|onboarding-prompt|wizard|release-plan|handoff|resume|phase|board|gates|mcp|project|goal|steer|seat|dispatch|world|bridge|roster> [path] [--target <dir>] [--json]\n' +
   'Execution adapters: agentflow-sdlc adapters <install|update|catalog|squads provision|squads update|squads list|squads remove> <id> (see agentflow-sdlc adapters --help)\n'
 
 const COMMAND_USAGE = {
   bridge:
     'Usage: agentflow-sdlc bridge <intake|start|evidence|reconcile|escalate|status> [options] [--target <dir>] [--json]\nPush ready source work into the OpenRig queue and return evidence. With no rig configured it does nothing and exits 0. See docs/openrig-bridge.md.\n',
+  roster:
+    'Usage: agentflow-sdlc roster <validate|route> [options] [--target <dir>] [--json]\nCheck the team roster and explain who a gate goes to, by roster id. With no roster, gates use the single-person path. See docs/team-roster.md.\n',
   world:
     'Usage: agentflow-sdlc world <scan|refine|apply|ack> [atom-id] [target-dir] [--target <dir>] [--stub-gaps] [--allow-stubs] [--confirm <digest>] [--all] [--json]\n',
   seat: 'Usage: agentflow-sdlc seat <claim|prime|status|release> [seat] [--seat <id>] [--session <id>] [--situation <fresh|handover|post-compaction|reviewer>] [--slice <id>] [--issue <ref>] [--target <dir>] [--json]\n',
@@ -1748,6 +1750,7 @@ function main() {
   }
 
   if (command === 'bridge') return runScript('scripts/bridge.mjs', rest, targetDir)
+  if (command === 'roster') return runScript('scripts/roster.mjs', rest, targetDir)
 
   if (command === 'world') {
     try {

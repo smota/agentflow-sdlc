@@ -17,3 +17,5 @@ pnpm-workspace.yaml
 .agentflow/roles/
 .agentflow/role-catalog.json
 .agentflow/method-catalog.json
+# Team roster overlay: private channel addresses, never committed (#585)
+.agentflow/team-roster.local.json

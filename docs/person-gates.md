@@ -40,6 +40,11 @@ appears on the item. Answering it records that gate.
 Who must answer is the gate's required role on the registered human platform, plus a named person
 when the project names one. An agent is never the who, even an agent that holds the role.
 
+With a [team roster](team-roster.md), each gate goes to the roster person whose scope covers its
+type, paths and tier, and to their backup after the timeout. Only a decision recorded in the source
+by an in-scope roster person counts. A high-assurance gate needs both a security review and an
+acceptance review. Without a roster, the single-person path above is unchanged.
+
 An agent action under a delegation grant is recorded as **on behalf**: the person is the principal,
 the agent platform and executor are the actor, with the grant reference, action, and subject. It is
 an agent action. It never satisfies a gate.
