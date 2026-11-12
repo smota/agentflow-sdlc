@@ -29,7 +29,7 @@ export function collectWorkflowErrors(root) {
   const expected = renderWorkflowSpecYaml(buildDeliveryWorkflowSpec({ seatTable }))
   const path = join(root, SPEC_PATH)
   if (!existsSync(path)) return [`${SPEC_PATH}: file is missing (run with --write)`]
-  const text = readFileSync(path, 'utf8')
+  const text = readFileSync(path, 'utf8').replace(/\r\n/g, '\n')
   let doc
   try {
     doc = YAML.parse(text)

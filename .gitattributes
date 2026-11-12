@@ -11,3 +11,6 @@
 .github/hooks/pre-push text eol=lf
 .github/hooks/post-checkout text eol=lf
 .github/hooks/post-merge text eol=lf
+
+# Generated workflow spec is compared byte-for-byte with the generator output
+*.workflow.yaml text eol=lf

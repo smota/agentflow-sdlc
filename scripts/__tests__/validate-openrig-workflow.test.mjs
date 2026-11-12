@@ -32,6 +32,15 @@ describe('validate-openrig-workflow', () => {
     expect(out).toBe('READY\n')
   })
 
+  it('reports READY for a CRLF checkout of the committed spec', async () => {
+    const root = fixture()
+    const file = join(root, SPEC_PATH)
+    writeFileSync(file, readFileSync(file, 'utf8').replace(/\n/g, '\r\n'))
+    const { code, out } = await run(['--root', root])
+    expect(out).toBe('READY\n')
+    expect(code).toBe(0)
+  })
+
   it('exits 1 when the spec drifts from the generator', async () => {
     const root = fixture()
     const file = join(root, SPEC_PATH)
