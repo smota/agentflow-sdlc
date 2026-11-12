@@ -2,6 +2,9 @@
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { posix, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { seatIds } from '../lib/core/seat-table.mjs'
+import { loadSeatTable } from '../lib/seat-table-io.mjs'
 
 const REQUIRED_RULES = [
   'pm-write-guard',
@@ -9,24 +12,15 @@ const REQUIRED_RULES = [
   'builder-oracle-guard',
   'test-eng-source-guard',
   'governance-files-guard',
+  'arch-write-scope',
+  'review-oracle-guard',
+  'eval-write-guard',
 ]
 
-export const DEFAULT_KNOWN_SEATS = Object.freeze([
-  'pm.manager',
-  'pm.analyst',
-  'pm.lead',
-  'dev.build',
-  'dev.build-jr',
-  'dev.build-sr',
-  'dev.test-eng',
-  'dev.qa',
-  'arch.lead',
-  'rev.gate',
-  'rev.review',
-  'orch.lead',
-  'steer.lead',
-  'orch.arch',
-])
+// Canonical seats and legacy aliases come from manifests/seats.json (see lib/core/seat-table.mjs).
+export const DEFAULT_KNOWN_SEATS = Object.freeze(
+  seatIds(loadSeatTable(fileURLToPath(new URL('..', import.meta.url)))),
+)
 
 export function matchOwnedPath(pattern, filePath) {
   const normalized = posix.normalize(String(filePath).replace(/\\/g, '/')).replace(/^\.\//, '')

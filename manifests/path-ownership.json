@@ -14,7 +14,9 @@
     "rev.review",
     "orch.lead",
     "steer.lead",
-    "orch.arch"
+    "orch.arch",
+    "eval.tester",
+    "steer.po"
   ],
   "rules": [
     {
@@ -33,7 +35,9 @@
         "rev.review",
         "orch.lead",
         "steer.lead",
-        "orch.arch"
+        "orch.arch",
+        "eval.tester",
+        "steer.po"
       ],
       "deny": ["manifests/path-ownership.json", "scripts/validate-path-ownership.mjs"]
     },
@@ -46,7 +50,7 @@
     },
     {
       "id": "steer-write-guard",
-      "seats": ["steer.lead"],
+      "seats": ["steer.lead", "steer.po"],
       "seatPrefixes": ["steer."],
       "allow": [],
       "defaultDeny": true
@@ -61,6 +65,22 @@
       "seats": ["dev.test-eng"],
       "allow": ["tests/**", "lib/__tests__/**", "scripts/__tests__/**", "guidance/**"],
       "deny": ["src/**"],
+      "defaultDeny": true
+    },
+    {
+      "id": "arch-write-scope",
+      "seats": ["orch.arch", "arch.lead", "orch.lead"],
+      "deny": []
+    },
+    {
+      "id": "review-oracle-guard",
+      "seats": ["dev.qa", "rev.review", "rev.gate"],
+      "deny": ["tests/oracles/**", "tests/**/oracles/**"]
+    },
+    {
+      "id": "eval-write-guard",
+      "seats": ["eval.tester"],
+      "allow": [".agentflow/intake/**"],
       "defaultDeny": true
     }
   ]
