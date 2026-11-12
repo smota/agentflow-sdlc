@@ -26,7 +26,7 @@ New decisions get the next available number.
 | [ADR 013](013-remove-optional-meshloop-adapter.md)                               | Remove the optional Meshloop adapter                                                      | Accepted by explicit maintainer direction on 2026-10-09; supersedes ADR 012 decision 12 only | 2026-10-09 |
 | [ADR 014](014-remove-optional-ai-foundry-desk-provider.md)                       | Remove the optional AI Foundry Desk provider                                              | Accepted by explicit maintainer direction on 2026-10-10; amends ADR 004 decision only        | 2026-10-10 |
 | [ADR 015](015-remove-pi-cli-provider.md)                                         | Remove the pi-cli provider                                                                | Accepted under the standard admission on #371 on 2026-10-10                                  | 2026-10-10 |
-| [ADR 016](016-optional-openrig-execution-layer.md)                               | Run AgentFlow delivery on an optional OpenRig execution layer                             | Accepted for merged decisions; roster, multi-rig, seat table and workflow spec pending       | 2026-11-11 |
+| [ADR 016](016-optional-openrig-execution-layer.md)                               | Run AgentFlow delivery on an optional OpenRig execution layer                             | Accepted for decisions in merged parts (#580, #581); the rest as their pull requests merge   | 2026-11-11 |
 
 ---
 

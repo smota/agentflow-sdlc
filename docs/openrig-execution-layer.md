@@ -178,10 +178,17 @@ path to your workstation or server, so a plain `ubuntu-latest` job cannot call `
 
 [`adapters/openrig/examples/github-rig-push.yml`](../adapters/openrig/examples/github-rig-push.yml)
 is a GitHub Actions job for a self-hosted runner. Copy it to `.github/workflows/`, label the runner
-`rig-host`, and set the repository variable `AGENTFLOW_TARGET` to the project path on that machine.
+`rig-host`, and set the repository variable `AGENTFLOW_TARGET` to the project path on that machine. That `--target` is the local path of the project on the rig host, not source content.
 It sends only `github:<owner>/<repo>#<number>` and the event kind: `ready` when an issue is
-labeled, `closed` when an issue or pull request is closed, `merged` when a pull request is merged
-and `review-done` when a review is submitted. It never sends the title, body, labels or comments,
+labeled, `closed` when an issue or pull request is closed and `merged` when a pull request is
+merged. `review-done` is not pushed by this job: push it by hand or from a relay you run.
+
+**Warning: never run this on a self-hosted runner for a repository that accepts fork pull requests
+unless workflows from outside collaborators require approval.** A runner on the rig host runs what
+a workflow says. The job uses `pull_request_target` (the workflow comes from the base branch, so a
+fork cannot change it), has `permissions: {}` and no checkout, so it runs no pull request code. Do
+not add `pull_request` or `pull_request_review` triggers or a checkout step; the test fails if you
+do. It never sends the title, body, labels or comments,
 uses no secrets and asks GitHub for no token permission; the bridge reads GitHub with the
 credential on the rig host. A test (`adapters/openrig/__tests__/reference-pusher.test.mjs`) keeps
 it that way.

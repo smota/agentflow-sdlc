@@ -4,6 +4,14 @@
 # title, body, labels or comments: the bridge re-reads the item from GitHub and decides from that.
 # See docs/openrig-execution-layer.md.
 #
+# SECURITY: never run this on a self-hosted runner for a repository that accepts fork pull requests
+# unless workflows from outside collaborators require approval. A runner on the rig host runs whatever
+# a workflow says. This file therefore uses `pull_request_target` (the workflow comes from the base
+# branch, so a fork cannot edit it), has `permissions: {}`, and has no checkout step: it runs no code
+# from the pull request. Do not add `pull_request` or `pull_request_review` triggers (they run the
+# workflow from the pull request) and do not add a checkout. `review-done` is pushed by hand or by a
+# relay you run (docs/openrig-execution-layer.md).
+#
 # Copy this file to .github/workflows/ of the project repository.
 #
 # A GitHub-hosted runner cannot reach a rig on a private machine, so this job must run on a
@@ -16,10 +24,8 @@ name: Push to rig
 on:
   issues:
     types: [labeled, closed]
-  pull_request:
+  pull_request_target:
     types: [closed]
-  pull_request_review:
-    types: [submitted]
 
 # The job needs no GitHub token. The bridge reads GitHub with its own credentials on the rig host.
 permissions: {}
@@ -48,9 +54,8 @@ jobs:
           case "$EVENT_NAME:$ACTION" in
             issues:labeled) kind=ready ;;
             issues:closed) kind=closed ;;
-            pull_request:closed)
+            pull_request_target:closed)
               if [ "$MERGED" = "true" ]; then kind=merged; else kind=closed; fi ;;
-            pull_request_review:submitted) kind=review-done ;;
             *) echo "no push for $EVENT_NAME:$ACTION"; exit 0 ;;
           esac
           agentflow-sdlc bridge intake "github:${REPO}#${NUMBER}" --event "$kind" --target "$TARGET"

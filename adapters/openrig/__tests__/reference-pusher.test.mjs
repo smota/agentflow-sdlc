@@ -48,6 +48,16 @@ describe('reference pusher (#587)', () => {
     expect(JSON.stringify(job)).not.toMatch(/GITHUB_TOKEN/)
   })
 
+  it('cannot run a workflow definition taken from a pull request', () => {
+    const triggers = Object.keys(workflow.on)
+    expect(triggers).not.toContain('pull_request')
+    expect(triggers).not.toContain('pull_request_review')
+    expect(triggers).toContain('pull_request_target')
+    expect(JSON.stringify(workflow)).not.toMatch(/actions\/checkout/)
+    expect(job.steps.every((step) => !step.uses)).toBe(true)
+    expect(workflow.permissions).toEqual({})
+  })
+
   it('runs on a self-hosted runner, since a hosted one cannot reach a private rig', () => {
     expect(job['runs-on']).toContain('self-hosted')
   })
@@ -63,7 +73,7 @@ describe('reference pusher (#587)', () => {
     expect(parsed.args[0]).toBe('github:${REPO}#${NUMBER}')
     expect(parsed.flags.event).toBe('$kind')
     const kinds = [...run.matchAll(/kind=([a-z-]+)/g)].map((match) => match[1])
-    expect(new Set(kinds)).toEqual(new Set(['ready', 'closed', 'merged', 'review-done']))
+    expect(new Set(kinds)).toEqual(new Set(['ready', 'closed', 'merged']))
     for (const kind of kinds) expect(BRIDGE_USAGE).toContain(kind)
   })
 })

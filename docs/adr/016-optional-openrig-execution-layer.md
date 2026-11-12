@@ -1,9 +1,8 @@
 # ADR 016 — Run AgentFlow delivery on an optional OpenRig execution layer
 
-**Status:** Accepted for the decisions that are merged (1 to 5 and 8, the pusher guidance and the
-documentation, #580 to #582, #584, #587). Decisions 6, 7 and 9 and the supporting seat table and
-workflow spec are built in separate pull requests (#585, #586, #579, #583) and are Accepted when those
-merge; each is marked below. The high-assurance review of the team roster (#585) is awaiting a person.
+**Status:** Accepted for decisions delivered by merged parts (#580, #581); each remaining decision is
+marked with its pull request and becomes Accepted when it merges. The high-assurance review of the
+team roster (#585) is awaiting a person.
 **Date:** 2026-11-11
 
 ## Context
@@ -21,14 +20,14 @@ stay optional: a team without it loses nothing.
 
 ## Decision
 
-1. **The source is the truth; the rig queue is a projection.** Queue rows carry a reference and
+1. **The source is the truth; the rig queue is a projection.** _(Bridge #582, pending merge.)_ Queue rows carry a reference and
    derived ids, never artifact content. A lost rig loses nothing: `agentflow-sdlc bridge reconcile`
    rebuilds the queue from the source on demand.
-2. **The bridge speaks the source adapter contract, never GitHub directly.** The bridge lives in
+2. **The bridge speaks the source adapter contract, never GitHub directly.** _(Contract #580 merged; bridge #582 pending merge.)_ The bridge lives in
    `lib/bridge/` and takes an injected `SourceAdapter` and an injected rig queue port; GitHub code stays
    in `lib/sources/github*.mjs`, and adapter construction lives in `lib/sources/registry.mjs`. GitHub
    is the first adapter; a filesystem source adapter serves tests and local use.
-3. **Intake is pushed, not polled.** Something outside the rig (a CI job on a self-hosted runner, a
+3. **Intake is pushed, not polled.** _(Bridge #582 and pusher #587, pending merge.)_ Something outside the rig (a CI job on a self-hosted runner, a
    relay, a person) sends a reference such as `github:org/repo#582`. The bridge re-reads the item through
    the adapter and ignores any pushed content. The same push path carries `review-done`, `merged` and
    `closed`. There is no polling loop; `reconcile` repairs a lost push when someone runs it. A reference
@@ -38,7 +37,7 @@ stay optional: a team without it loses nothing.
    `all`/`any`. Each adapter declares the kinds it can evaluate; a predicate using an undeclared kind
    is a configuration error, distinct from "not ready". GitHub declares `label` and `lifecycle` (it has no
    status field).
-5. **A claim is one capability with system-specific storage.** The source contract gains optional
+5. **A claim is one capability with system-specific storage.** _(#580 and #581, merged.)_ The source contract gains optional
    `claim`, `ready-predicates`, `watch` and `resolve-humans` capabilities and a non-throwing
    "capability absent" result that callers can tell apart from a failed call. A claim is an
    append-only log entry; the entry's writer identity, checked against trusted writers, is the
@@ -61,7 +60,7 @@ stay optional: a team without it loses nothing.
 control`, `--kind delivery --replica <n>`). Rigs coordinate only through source claims: an item may
    be offered to several delivery rigs and the claim decides who works it. A partition key (mission or
    area label) narrows offers. New work stops being projected while open gates reach roster capacity.
-8. **Worktrees stay in AgentFlow.** `bridge start` creates `.worktrees/<slice>` on its own branch and
+8. **Worktrees stay in AgentFlow.** _(#584, pending merge.)_ `bridge start` creates `.worktrees/<slice>` on its own branch and
    points the seat at it with the `worktree_path=` line; the workflow's final cleanup step removes it
    after merge and releases the claim. A worktree is removed only under a safety rule: no uncommitted, untracked,
    ignored (other than disposable such as `node_modules`), unpushed or unmerged work, and its head is
@@ -69,7 +68,7 @@ control`, `--kind delivery --replica <n>`). Rigs coordinate only through source 
    (`mergedHead`) and the branch it merged into (`mergedInto`), both read through the adapter. Otherwise
    the worktree and the claim stay and a person is told. OpenRig is not changed (an upstream idea is open at
    mvschwarz/openrig discussion 2974; nothing depends on it).
-9. **Steering stays outside the rig.** _(Evidence side merged in #582; gate resolution in #586, pending.)_ Workers cannot approve their own work: the review step's seat
+9. **Steering stays outside the rig.** _(Evidence side in #582, pending merge; gate resolution in #586, pending.)_ Workers cannot approve their own work: the review step's seat
    cannot be the build seat, gate rows are resolved only by the out-of-rig bridge, and gate-resolving
    commands refuse a delivery-seat session.
 
