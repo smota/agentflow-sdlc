@@ -44,27 +44,27 @@ Add `adapters.openrig.bridge` to `agent-workflow.config.json` (or `agentflow.con
 }
 ```
 
-| Key                      | Meaning                                                                                               | Default                                                 |
-| :----------------------- | :---------------------------------------------------------------------------------------------------- | :------------------------------------------------------ |
-| `rig`                    | The delivery rig. Shorthand for `rigs: { control: rig, delivery: [rig] }`                             | none: no rig means the bridge is off                    |
-| `rigs.control`           | The rig that runs the bridge and the product seats                                                    | the first delivery rig                                  |
-| `rigs.delivery`          | The delivery rigs offered work ([Several delivery rigs](#several-delivery-rigs))                      | `[rig]`                                                 |
-| `project`                | The project id in the bridge's queue session `agentflow-bridge@<project>`                             | `rigs.control` without a `-control` suffix              |
-| `partition`              | Narrows which delivery rigs an item is offered to, by mission or area label                           | none: every delivery rig                                |
-| `maxOpenGates`           | Open person gates at which intake stops, when the project has no team roster                          | 3                                                       |
-| `source.adapter`         | A registered source adapter (`filesystem`, or a hosted source when its adapter declares readiness)    | required                                                |
-| `source.claimWriters`    | Writers whose claim entries the source trusts                                                         | the bridge's own writer                                 |
-| `source.evidenceWriters` | Writers whose role-pass evidence counts for any bridge decision                                       | `source.claimWriters`; with neither, no evidence counts |
-| `ready`                  | The [ready predicate](sources/index.md): `label`, `status` and `lifecycle` leaves under `all` / `any` | the `agentflow:ready` label on an open item             |
-| `entrySeat`              | The seat that receives intake rows; its phase is where fresh work starts                              | `pm.analyst`                                            |
-| `workflowSpec`           | The OpenRig workflow spec each item runs as                                                           | the AgentFlow delivery workflow                         |
-| `escalateTo`             | The session that receives person escalations                                                          | `human@<rig>` of the rig whose queue carries the ask    |
-| `worktrees`              | Slice worktrees ([below](#slice-worktrees)): `false` or `{ enabled: false }` turns them off           | on                                                      |
-| `worktrees.dir`          | Where slice worktrees live, relative to the repository root                                           | `.worktrees`                                            |
-| `worktrees.branchPrefix` | Prefix of each slice's branch                                                                         | `work/`                                                 |
-| `worktrees.integration`  | The branch whose merged state decides removal                                                         | the remote's default branch, else `development`         |
-| `worktrees.remote`       | The remote whose integration branch is fetched                                                        | `origin`                                                |
-| `worktrees.disposable`   | Ignored paths that may be deleted with a worktree (all other ignored files keep it)                   | `["node_modules"]`                                      |
+| Key                      | Meaning                                                                                                            | Default                                                 |
+| :----------------------- | :----------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------ |
+| `rig`                    | The delivery rig. Shorthand for `rigs: { control: rig, delivery: [rig] }`                                          | none: no rig means the bridge is off                    |
+| `rigs.control`           | The rig that runs the bridge and the product seats                                                                 | the first delivery rig                                  |
+| `rigs.delivery`          | The delivery rigs offered work ([Several delivery rigs](#several-delivery-rigs))                                   | `[rig]`                                                 |
+| `project`                | The project id in the bridge's queue session `agentflow-bridge@<project>-<source hash>`; unique per OpenRig daemon | `rigs.control` without a `-control` suffix              |
+| `partition`              | Narrows which delivery rigs an item is offered to, by mission or area label                                        | none: every delivery rig                                |
+| `maxOpenGates`           | Open person gates at which intake stops, when the project has no team roster                                       | 3                                                       |
+| `source.adapter`         | A registered source adapter (`filesystem`, or a hosted source when its adapter declares readiness)                 | required                                                |
+| `source.claimWriters`    | Writers whose claim entries the source trusts                                                                      | the bridge's own writer                                 |
+| `source.evidenceWriters` | Writers whose role-pass evidence counts for any bridge decision                                                    | `source.claimWriters`; with neither, no evidence counts |
+| `ready`                  | The [ready predicate](sources/index.md): `label`, `status` and `lifecycle` leaves under `all` / `any`              | the `agentflow:ready` label on an open item             |
+| `entrySeat`              | The seat that receives intake rows; its phase is where fresh work starts                                           | `pm.analyst`                                            |
+| `workflowSpec`           | The OpenRig workflow spec each item runs as                                                                        | the AgentFlow delivery workflow                         |
+| `escalateTo`             | The session that receives person escalations                                                                       | `human@<rig>` of the rig whose queue carries the ask    |
+| `worktrees`              | Slice worktrees ([below](#slice-worktrees)): `false` or `{ enabled: false }` turns them off                        | on                                                      |
+| `worktrees.dir`          | Where slice worktrees live, relative to the repository root                                                        | `.worktrees`                                            |
+| `worktrees.branchPrefix` | Prefix of each slice's branch                                                                                      | `work/`                                                 |
+| `worktrees.integration`  | The branch whose merged state decides removal                                                                      | the remote's default branch, else `development`         |
+| `worktrees.remote`       | The remote whose integration branch is fetched                                                                     | `origin`                                                |
+| `worktrees.disposable`   | Ignored paths that may be deleted with a worktree (all other ignored files keep it)                                | `["node_modules"]`                                      |
 
 "No rig configured" means `bridge` is absent, or both `rig` and `rigs.delivery` are empty.
 
@@ -74,7 +74,7 @@ The `bridge` key is never projected into `adapters/openrig/rig.yaml`.
 
 ```bash
 agentflow-sdlc bridge intake <ref> [--event ready|review-done|merged|closed] [--payload-file <json>] [--session <name@rig>] [--json]
-agentflow-sdlc bridge start <qitemId> [--session <seat@rig>] [--resume] [--json]
+agentflow-sdlc bridge start <qitemId> [--session <seat@rig>] [--resume | --force-resume <dead session>] [--json]
 agentflow-sdlc bridge evidence <ref> --phase <n> --status pass|skipped --seat <id> --body-file <file> --executed-by <slug> --launcher <slug> --executor <target> --transport <t> --delegation-boundary <b> [--model <m>] [--reason <text>] [--json]
 agentflow-sdlc bridge reconcile [--dry-run] [--session <name@rig>] [--json]
 agentflow-sdlc bridge cleanup <ref> [--session <seat@rig>] [--json]
@@ -215,15 +215,24 @@ rig's queue:
 
 - by listing the bridge's own live rows (`rig queue list --source <session> --state
 pending,in-progress,blocked --limit 10000`; a full page is an error, never a smaller answer) and
-  reading each row's intake body. The sessions listed are the stable `agentflow-bridge@<project>`
-  and the legacy `agentflow-bridge@<rig>` of every configured rig, so rows created before a
-  single-to-multi upgrade or under an earlier control rig name stay visible;
+  reading each row's intake body. The bridge creates rows under
+  `agentflow-bridge@<project>-<source hash>`: the project id and the first 8 hex of a hash of the
+  source's identity (adapter, scope, and a filesystem source's resolved root), so two projects on
+  one daemon never share a listing even when their ids match. It also reads the sessions of earlier
+  versions, `agentflow-bridge@<project>` and `agentflow-bridge@<rig>` of every configured rig, so
+  rows from before an upgrade stay visible. Keep `project` unique per OpenRig daemon: rows of an
+  earlier version under a shared legacy session cannot be told apart by project;
 - by reading the ids the current configuration uses (each rig's offer id and the stable id, and
   their generations) one at a time with `rig queue show`. OpenRig retention may erase closed rows,
   and an erased id cannot be reused, so the scan steps past missing ids (up to 16 in a row) and a new
   row always takes the generation after the highest one found.
 
 Escalation and notice rows carry the tag `af-notice:<stable id>` and are not work.
+
+Cost: on every port, each `intake` and `reconcile` makes one `rig queue list` call per listed
+session (the current one plus 1 + _N_ legacy sessions for _N_ configured rigs), then one
+`rig queue show` per id read, per item. A listing that returns a full page of 10000 rows stops the
+command with an error rather than miss a row (fail closed); `reconcile` reports it.
 
 ## Slice worktrees
 
@@ -410,10 +419,11 @@ A project with one delivery rig `agentflow-<project>` (bridge `rig: agentflow-<p
 
 1. Provision the control rig (`--kind control`) and the replicas you want (`--replica 1`, …).
 2. Set `rigs: { control: "agentflow-<project>-control", delivery: ["agentflow-<project>", "agentflow-<project>-d1"] }`
-   and drop the `rig` key. The existing rig is now one delivery rig. The bridge's queue session
-   stays `agentflow-bridge@agentflow-<project>` (the control rig's name without `-control`), so its
-   rows stay visible to intake, cancellation, stray settling and gate markers; nothing is queued
-   twice. Set `project` explicitly if the control rig is named otherwise.
+   and drop the `rig` key. The existing rig is now one delivery rig. The project id stays
+   `agentflow-<project>` (the control rig's name without `-control`), so the bridge's queue session
+   is unchanged and its rows stay visible to intake, cancellation, stray settling and gate markers;
+   nothing is queued twice. Set `project` to the old id if the control rig is named otherwise, or
+   when you rename it.
 3. To retire `agentflow-<project>` later, remove it from `rigs.delivery` once it has finished its
    claimed work (see below).
 
@@ -426,18 +436,26 @@ offer made to it. Its claims stay in the source until released:
   worktree is gone, when worktrees are on), when a start parks its row on a refused replay or the
   return-cycle limit, and when a start fails before it creates a workflow instance (the row goes back
   to pending), so another rig may take the item.
-- For a rig removed while it held a claim, a person runs
-  `agentflow-sdlc bridge release <ref> --session <name@control rig>`, then cancels the removed rig's
-  live rows (`rig queue update <id> --state done --closure-reason canceled`) and pushes the item
-  again. A claim held by a rig still in `rigs.delivery` is released only for a roster person:
-  `--person <roster id>`.
-- Every start records a lease on its row (a queue note with its session and the time). If a start
-  process died after it claimed the row and the item but before the workflow instance, the row stays
-  in progress. Once that start's lease is older than 15 minutes, the entry seat of the same rig runs
-  `bridge start <qitemId> --resume`: it refuses while the lease is fresh, and two resumes race on the
-  queue's atomic claim, so only one proceeds. It also refuses when an instance or another start of
-  the item exists. This relies on `rig queue show` returning row notes; where it does not, the lease
-  cannot be read and only the atomic claim protects a resume.
+- For a rig removed while it held a claim, a person first aborts its workflow and cancels its live
+  rows (`rig queue update <id> --state done --closure-reason canceled`), then runs
+  `agentflow-sdlc bridge release <ref> --session <name@control rig>` and pushes the item again.
+  `release` refuses while a workflow instance or an in-progress row exists for the item. A claim
+  held by a rig still in `rigs.delivery` is released only for a roster person: `--person <roster id>`.
+  Every release is recorded in the source first, as a comment
+  `<!-- agentflow-claim-release:{"v":1,"holder":…,"session":…,"person":…,"at":…} -->`. The session
+  and the person are self-asserted: the record says who asked, not that they may. A release is
+  authorised by a person only when a source decision by that person backs it.
+- A start's lease on its row is the queue's own claim time (`claimedAt`, which OpenRig sets
+  atomically on `rig queue claim` and returns from `rig queue show --json`). If a start process
+  died after it claimed the row and the item but before the workflow instance, the row stays in
+  progress. Once the claim is older than 15 minutes, the entry seat of the same rig runs
+  `bridge start <qitemId> --resume`; it refuses while the claim is fresher, because a start may
+  still be running. When the queue does not report the claim time, `--resume` refuses (fail
+  closed); a person who knows the start is gone runs `--force-resume <its session>`, which must name
+  a session on the same rig and is noted on the row. Two resumes that both pass these checks race on
+  the queue's atomic claim, so only one proceeds; that race is not a lease and does not stop a
+  resume of a start that is still running. `--resume` also refuses when an instance or another start
+  of the item exists.
 
 ### Backpressure
 

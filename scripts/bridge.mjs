@@ -18,7 +18,8 @@ import { createSourceAdapter } from '../lib/sources/registry.mjs'
 
 export const BRIDGE_USAGE = `Usage: agentflow-sdlc bridge <intake|start|evidence|reconcile|cleanup|release|escalate|status> [options] [--target <dir>] [--json]
   bridge intake <ref> [--event ready|review-done|merged|closed] [--payload-file <json>] [--session <name@rig>]
-  bridge start <qitemId> [--session <seat@rig>] [--resume]  (session defaults to OPENRIG_SESSION_NAME)
+  bridge start <qitemId> [--session <seat@rig>] [--resume | --force-resume <dead session>]
+                                                           (session defaults to OPENRIG_SESSION_NAME)
   bridge evidence <ref> --phase <n> --status pass|skipped --seat <id> [--reason <text>] --body-file <file>
       --executed-by <slug> --launcher <slug> --executor <target> --transport <t> --delegation-boundary <b> [--model <m>]
   bridge reconcile [--dry-run] [--session <name@rig>]
@@ -56,6 +57,7 @@ const VALUE_FLAGS = new Set([
   '--delegation-boundary',
   '--model',
   '--person',
+  '--force-resume',
   '--target',
 ])
 const FAILURE_STATUSES = new Set([
@@ -121,6 +123,7 @@ async function run(bridge, { subcommand, args, flags }, { env, cwd }) {
     return bridge.start(need(args[0], '<qitemId>'), {
       session: need(caller, '--session'),
       resume: flags.resume === true,
+      forceResume: typeof flags['force-resume'] === 'string' ? flags['force-resume'] : null,
     })
   }
   if (subcommand === 'evidence') {
