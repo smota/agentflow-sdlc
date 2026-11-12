@@ -195,6 +195,15 @@ const OFF_PATH_EXEMPTIONS = new Map([
     "documented host-facing API (docs/run-operations.md) against the adopter's own deployment " +
       'provider; this repo has no deployment automation of its own',
   ],
+  // #580 shipped the optional source contract before its consumer; the rig bridge (#582,
+  // scripts/bridge.mjs routed from bin/cli.mjs) now calls the rest of it. These two still have no
+  // caller: they render and read the claim log entry inside a comment, which only a comment-based
+  // source (the GitHub claim ledger, #581b) needs. The filesystem source keeps entries as JSON lines.
+  ...['formatClaimMarker', 'parseClaimMarker'].map((name) => [
+    `lib/core/source-claim.mjs#${name}`,
+    'claim-log comment marker for comment-based sources; first caller is the GitHub claim ledger ' +
+      '(#581b), which removes this exemption; exercised by lib/__tests__/source-claim.test.mjs',
+  ]),
 ])
 const SCAN_ROOTS = ['lib', 'scripts', 'bin']
 const SKIP_DIR_NAMES = new Set(['node_modules', '__tests__', 'fixtures', '.git'])

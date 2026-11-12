@@ -1,0 +1,219 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentflow.dev/schemas/ready-predicate.schema.json",
+  "title": "AgentFlow source ready predicate",
+  "description": "Readiness rule for source work items. Leaves label (has|lacks), status (in), lifecycle (state); combinators all and any nest at most four deep. Evaluated by lib/core/ready-predicate.mjs.",
+  "$ref": "#/$defs/level1",
+  "$defs": {
+    "label": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "kind": {
+          "const": "label"
+        },
+        "has": {
+          "type": "string",
+          "minLength": 1
+        },
+        "lacks": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "oneOf": [
+        {
+          "required": ["has"]
+        },
+        {
+          "required": ["lacks"]
+        }
+      ],
+      "additionalProperties": false
+    },
+    "status": {
+      "type": "object",
+      "required": ["kind", "in"],
+      "properties": {
+        "kind": {
+          "const": "status"
+        },
+        "in": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "lifecycle": {
+      "type": "object",
+      "required": ["kind", "state"],
+      "properties": {
+        "kind": {
+          "const": "lifecycle"
+        },
+        "state": {
+          "enum": ["open", "closed", "merged"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "leaf": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/label"
+        },
+        {
+          "$ref": "#/$defs/status"
+        },
+        {
+          "$ref": "#/$defs/lifecycle"
+        }
+      ]
+    },
+    "level1": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/leaf"
+        },
+        {
+          "type": "object",
+          "required": ["all"],
+          "properties": {
+            "all": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/level2"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["any"],
+          "properties": {
+            "any": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/level2"
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "level2": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/leaf"
+        },
+        {
+          "type": "object",
+          "required": ["all"],
+          "properties": {
+            "all": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/level3"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["any"],
+          "properties": {
+            "any": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/level3"
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "level3": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/leaf"
+        },
+        {
+          "type": "object",
+          "required": ["all"],
+          "properties": {
+            "all": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/level4"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["any"],
+          "properties": {
+            "any": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/level4"
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "level4": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/leaf"
+        },
+        {
+          "type": "object",
+          "required": ["all"],
+          "properties": {
+            "all": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/leaf"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["any"],
+          "properties": {
+            "any": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/leaf"
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}
