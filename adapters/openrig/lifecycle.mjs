@@ -873,14 +873,17 @@ export function catalog(ctx) {
 }
 
 // A project name becomes a directory and a rig name, so it is one plain path segment.
-// Several delivery rigs (#586): the control rig is `agentflow-<project>`; delivery replica n is
-// `agentflow-<project>-d<n>`. Without a replica the name is unchanged.
-export function squadRigName(project, _kind = 'delivery', replica = undefined) {
+// Several delivery rigs (#586): the control rig is `agentflow-<project>-control`; delivery replica
+// n is `agentflow-<project>-d<n>`. Neither collides with the single delivery rig
+// `agentflow-<project>`, which keeps its name.
+export const RESERVED_PROJECT_SUFFIX = /-(?:d[0-9]+|control)$/
+export function squadRigName(project, kind = 'delivery', replica = undefined) {
   if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(project)) {
     fail(`'${project}' is not a valid project name. Use letters, digits, '.', '_', or '-'.`)
   }
   const base =
     project === 'agentflow' || project.startsWith('agentflow-') ? project : `agentflow-${project}`
+  if (kind === 'control') return `${base}-control`
   if (replica === undefined || replica === null) return base
   const n = Number(replica)
   if (!/^[1-9][0-9]*$/.test(String(replica)) || !Number.isSafeInteger(n)) {
@@ -1560,6 +1563,13 @@ function writeSquad(ctx, isUpdate) {
   }
 
   const project = operands[0]
+  // `-d<n>` and `-control` name the rigs of a multi-rig project; a project id with them would
+  // collide with another project's rigs.
+  if (RESERVED_PROJECT_SUFFIX.test(String(project ?? ''))) {
+    fail(
+      `'${project}' ends in -d<n> or -control, which name the rigs of a multi-rig project. Pass the project id with --kind control or --replica <n>.`,
+    )
+  }
   const rigName = squadRigName(project, kind, replica)
   if (BASE_NAMES.includes(rigName)) {
     fail(`'${rigName}' is a generic base name. Pass a project copy name, such as dev or pm.`)
@@ -1603,7 +1613,7 @@ function writeSquad(ctx, isUpdate) {
     product,
     delivery,
     isUpdate,
-    control: replica === undefined ? '' : squadRigName(project),
+    control: replica === undefined ? '' : squadRigName(project, 'control'),
     replica,
   })
 
