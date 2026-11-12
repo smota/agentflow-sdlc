@@ -91,6 +91,22 @@ selects the workflow profile in phase 2 by AgentFlow's path rules; the rung does
 
 ---
 
+## Workflow spec
+
+`workflows/agentflow-delivery.workflow.yaml` runs phases 1-8 as an OpenRig workflow: one step per
+phase, the seats from `manifests/seats.json`, one `failed` return per step, and a `cleanup` step.
+It is generated, not edited. Regenerate with `node scripts/validate-openrig-workflow.mjs --write`.
+
+`node scripts/validate-openrig-workflow.mjs` (CI) fails when the file differs from the generator, when
+steps or seats disagree with `lib/core/phase-graph.mjs`, or when a seat owns both phase 4 and phase 6.
+AgentFlow keeps the per-loop rework cap (`MAX_RETURN_CYCLES`). `loop_guards.max_hops` is the backstop
+for the whole instance, and `unmapped_failed` goes to a person (`human_only`).
+
+OpenRig 0.7.6 or later, with its daemon running, checks the spec itself:
+`node scripts/validate-openrig-workflow.mjs --rig`. CI skips that sub-check when `rig` is missing. The version gate reads the CLI version, not the daemon's: run it against a daemon of the same version.
+
+---
+
 ## Seat authority
 
 Claude tool rules for a member are `claude_permissions` with allow and deny lists in the rig spec, or `rig seat set-permissions <seat> --rules <file.json> --reason "<why>"` for an existing seat. OpenRig never writes those rules into the project's Claude settings.
