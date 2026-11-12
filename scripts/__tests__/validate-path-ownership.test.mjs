@@ -804,6 +804,9 @@ describe('path ownership', () => {
         'manifests./path-ownership.json',
         join(repoRoot, '.agentflow/team-roster.json'),
         '/some/other/checkout/.agentflow/team-roster.local.json',
+        '.agentflow/team-roster.json/',
+        '.agentflow/team-roster.json::$DATA',
+        '.agentflow/TEAM-R~1.JSO',
         'C:\\work\\repo\\.agentflow\\team-roster.json',
       ]
       for (const seat of ['dev.build', 'pm.analyst', 'orch.arch', 'eval.tester']) {

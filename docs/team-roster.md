@@ -15,20 +15,38 @@ the OpenRig queue carries the gate to that person's channel.
 | `${XDG_CONFIG_HOME:-~/.config}/agentflow/<project-id>/team-roster.local.json` | never     | Private channel addresses, by roster person id            |
 
 **The roster is read from a protected ref**, never from the working tree or a worktree's `HEAD`:
-`git --git-dir=<shared git directory> show <ref>:.agentflow/team-roster.json`. The ref is
-`origin/<integration branch>`, or `refs/heads/<integration branch>` when there is no such remote
-branch; the integration branch is `branching.integration` (default `development`). `--ref <ref>`
-names another ref. A ref that does not resolve is refused, never read as "no roster". The shared
-git directory is the one every worktree reads, including a bare repository with worktrees, so an
-uncommitted edit or a commit on a seat's own branch changes nothing. `roster validate` names the ref
-and commit it read and says when the working tree differs. AgentFlow refuses a committed symlink at
-the roster path and any case variant of it (for example `.AgentFlow/team-roster.json`).
+`git --no-replace-objects --git-dir=<shared git directory> show <ref>:.agentflow/team-roster.json`.
+The shared git directory is the one every worktree reads, including a bare repository with
+worktrees, and `git replace` cannot substitute the roster. The ref is:
+
+1. `origin/<integration branch>`, else
+2. `refs/heads/<integration branch>`, unless that branch is checked out in the worktree AgentFlow
+   runs in (its commits would move it).
+
+The integration branch is `branching.integration` (default `development`) from the configuration
+committed at `origin/HEAD`, else at the shared git directory's own `HEAD` (the main worktree, or
+the bare repository) — never from the target worktree's `agent-workflow.config.json`. A branch name
+that looks like a work branch (`feature/`, `work/`, `fix/` and the other configured prefixes) is
+refused. So an uncommitted edit, or a commit of the roster or the configuration on a seat's own
+branch, changes nothing.
+
+With no resolvable ref the project has no roster and keeps the single-person path, unless the
+target's `HEAD` holds a roster file: then AgentFlow refuses rather than guess. A repository with
+only a local integration branch that is checked out where AgentFlow runs therefore needs an `origin`
+remote, or the person passes `--ref refs/heads/<integration branch>` from their own process.
+`--ref <ref>` names another protected ref; one that does not resolve is refused, never read as "no
+roster". **`--ref` must only come from the person or from configuration a seat cannot write; a
+caller must never pass a seat-supplied ref.** Fetch before reading (`git fetch origin`): a stale
+`origin/<integration branch>` may still list a person who was removed. `roster validate` names the
+ref and commit it read and says when the working tree differs. AgentFlow refuses a committed
+symlink at the roster path and any case variant of it (for example `.AgentFlow/team-roster.json`).
 
 **No rig seat may write the roster or the schemas** (`schemas/team-roster.schema.json`,
 `schemas/team-roster-overlay.schema.json`). They are in the `governance-files-guard` deny list of
 `manifests/path-ownership.json`. The guard matches paths made relative to the repository root,
-Unicode case-folded, with trailing dots and spaces dropped from each folder and file name, and an
-absolute path outside the root that ends in a protected path. So `validate:paths` rejects any
+Unicode case-folded, with trailing slashes, NTFS stream suffixes (`::$DATA`) and trailing dots and
+spaces dropped from each folder and file name, and an absolute path outside the root that ends in a
+protected path. It also denies any Windows 8.3 short name (`TEAM-R~1.JSO`) to every seat. So `validate:paths` rejects any
 seat's commit that changes them or a spelling variant of them. A person edits the roster.
 
 **The overlay lives outside the repository**, in the person's configuration directory. The
@@ -160,8 +178,8 @@ nothing until the person records it in the source.
 or `blocked` from any in-scope person holds the gate (or the high-assurance review) until that same
 person agrees on the current digest or posts `withdrawn`. Another person's agreement does not
 override it, and neither does a new digest: a refusal given for an earlier digest of the same gate
-(same source ref and gate name) carries forward. _This rule is a decision for the person to
-confirm._
+(same source ref and gate name) carries forward, and an agreement given for an earlier digest does
+not release a refusal on a newer one. _Both rules are decisions for the person to confirm._
 
 A high-assurance gate records `security-review` and `acceptance-review` separately. It opens only
 when both reviews have an agreement from a person in scope and no standing refusal. One person may
@@ -199,6 +217,13 @@ roster for high-assurance work.
   access can delete a later `changes-requested` comment so that an earlier agreement of the same
   person counts again. Keep write access to the source narrow; the source's audit log shows
   deletions.
+- **A refusal can be erased by an edit.** An edited refusal still blocks while it still reads as a
+  refusal, but anyone with write access can edit it into text that is no longer a decision marker,
+  and then it is ignored. This is the same trust class as a deletion.
+- **A seat in the main worktree.** In the normal layout the shared git directory's `HEAD` is the
+  main worktree's `HEAD`. A seat that works in the main worktree itself (not in its own linked
+  worktree) can change which configuration is read when there is no `origin/HEAD`. Set it with
+  `git remote set-head origin --auto`.
 
 ## Commands
 
