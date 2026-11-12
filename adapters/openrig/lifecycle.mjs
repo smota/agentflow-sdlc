@@ -761,6 +761,10 @@ function printDocument(out, text) {
 
 // Seed project.yaml and one workspace.yaml project for an adopting repository.
 // Refusal checks finish before the first write. This does not install OpenRig or copy a rig.
+// The workspace is a catalogue of projects, each listing its own rigs (#553). A rig's cwd is one
+// project, so a rig name appears under at most one project (#586, goal #578 decision 7): a new rig
+// for an existing project id is appended to that project's rigs, and a rig already listed under
+// another project is refused.
 export function catalog(ctx) {
   const { options = {}, cwd, out } = ctx
   if (options.preview === true && options.write === true) {
@@ -803,21 +807,54 @@ export function catalog(ctx) {
     }
     const projects = Array.isArray(workspaceDoc.projects) ? workspaceDoc.projects : []
     workspaceHasId = projects.some((entry) => entry && typeof entry === 'object' && entry.id === id)
+    const owner = projects.find(
+      (entry) =>
+        entry &&
+        typeof entry === 'object' &&
+        entry.id !== id &&
+        Array.isArray(entry.rigs) &&
+        entry.rigs.includes(rig),
+    )
+    if (owner) {
+      fail(
+        `Rig '${rig}' is already attached to project '${owner.id}' in ${workspacePath}. A rig points at one project; name a new rig for '${id}'.`,
+      )
+    }
   }
 
   const projectEntry = { id, root: '.', rigs: [rig] }
   let nextWorkspaceText = null
+  let rigAppended = false
   if (!workspaceExists) {
     nextWorkspaceText = stringify({ schema: WORKSPACE_SCHEMA, projects: [projectEntry] })
   } else if (!workspaceHasId) {
     const projects = Array.isArray(workspaceDoc.projects) ? workspaceDoc.projects.slice() : []
     projects.push(projectEntry)
     nextWorkspaceText = stringify({ ...workspaceDoc, projects })
+  } else {
+    const entry = workspaceDoc.projects.find(
+      (item) => item && typeof item === 'object' && item.id === id,
+    )
+    if (entry.rigs !== undefined && !Array.isArray(entry.rigs)) {
+      fail(`workspace.yaml at ${workspacePath} has project '${id}' with rigs that are not a list.`)
+    }
+    const rigs = Array.isArray(entry.rigs) ? entry.rigs : []
+    if (!rigs.includes(rig)) {
+      rigAppended = true
+      const projects = workspaceDoc.projects.map((item) =>
+        item === entry ? { ...item, rigs: [...rigs, rig] } : item,
+      )
+      nextWorkspaceText = stringify({ ...workspaceDoc, projects })
+    }
   }
 
-  // An existing workspace id is a no-op, including when project.yaml is still absent.
+  // An existing workspace id with this rig is a no-op, including when project.yaml is still
+  // absent. A new rig for an existing id rewrites only workspace.yaml.
   if (options.write === true) {
-    if (workspaceHasId) return 0
+    if (workspaceHasId) {
+      if (rigAppended) writeFileSync(workspacePath, nextWorkspaceText)
+      return 0
+    }
     if (!projectExists) {
       writeFileSync(projectPath, readFileSync(join(ctx.adapterDir, 'examples', 'project.yaml')))
     }
@@ -828,19 +865,36 @@ export function catalog(ctx) {
   const projectText = projectExists
     ? readFileSync(projectPath, 'utf8')
     : readFileSync(join(ctx.adapterDir, 'examples', 'project.yaml'), 'utf8')
-  const workspaceText = workspaceHasId ? readFileSync(workspacePath, 'utf8') : nextWorkspaceText
+  const workspaceText =
+    workspaceHasId && !rigAppended ? readFileSync(workspacePath, 'utf8') : nextWorkspaceText
   printDocument(out, projectText)
   printDocument(out, workspaceText)
   return 0
 }
 
 // A project name becomes a directory and a rig name, so it is one plain path segment.
-export function squadRigName(project, _kind = 'delivery') {
+// Several delivery rigs (#586): the control rig is `agentflow-<project>`; delivery replica n is
+// `agentflow-<project>-d<n>`. Without a replica the name is unchanged.
+export function squadRigName(project, _kind = 'delivery', replica = undefined) {
   if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(project)) {
     fail(`'${project}' is not a valid project name. Use letters, digits, '.', '_', or '-'.`)
   }
-  if (project === 'agentflow' || project.startsWith('agentflow-')) return project
-  return `agentflow-${project}`
+  const base =
+    project === 'agentflow' || project.startsWith('agentflow-') ? project : `agentflow-${project}`
+  if (replica === undefined || replica === null) return base
+  const n = Number(replica)
+  if (!/^[1-9][0-9]*$/.test(String(replica)) || !Number.isSafeInteger(n)) {
+    fail(`--replica must be a positive integer, not '${replica}'.`)
+  }
+  return `${base}-d${n}`
+}
+
+// The base a squad kind is copied from. A control rig is a product-base copy that also runs the
+// bridge (#586); a unified squad is a delivery-base copy.
+function baseKindFor(kind) {
+  if (kind === 'unified') return 'delivery'
+  if (kind === 'control') return 'product'
+  return kind
 }
 
 function detectKind(rigName, targetDir) {
@@ -851,6 +905,7 @@ function detectKind(rigName, targetDir) {
     const text = readFileSync(siblingPath, 'utf8')
     if (text.includes('steering squad') || text.includes('Supervisory Steering')) return 'steer'
     if (text.includes('This copy is the product squad')) return 'product'
+    if (text.includes('This copy is the control rig')) return 'product'
   }
   const rigPath = join(targetDir, 'rig.yaml')
   const rigText = isFile(rigPath) ? readFileSync(rigPath, 'utf8') : ''
@@ -948,6 +1003,39 @@ export function siblingRecord(kind, rigName, sibling, extra = {}) {
         'Supervisory steering operates out-of-rig without git worktrees or code-authoring permissions.',
       )
     }
+    return finish(lines)
+  }
+
+  if (kind === 'control') {
+    const lines = [
+      '# Control rig',
+      '',
+      `This copy is the control rig \`${rigName}\` for this project, provisioned from the \`${BASES.product}\` base.`,
+      'It runs the AgentFlow bridge (`agentflow-sdlc bridge intake`, `bridge reconcile`) and the product seats.',
+      'Delivery rigs are listed in the project configuration (`adapters.openrig.bridge.rigs.delivery`), not in this file, so adding a delivery rig changes nothing here.',
+      'Delivery rigs coordinate through the source only: the bridge offers an item to each delivery rig the partition names, and the source claim decides which rig works it.',
+      'The bridge stops offering new work while open person gates reach the team roster capacity.',
+      'Gate rows are resolved only outside the rig; no rig seat approves its own work.',
+    ]
+    if (steer) lines.push('', `Supervisory steering plane: \`steer-lead@${steer}\`.`)
+    return finish(lines)
+  }
+
+  if (kind === 'delivery' && options.replica !== undefined && options.replica !== null) {
+    const lines = [
+      '# Delivery rig',
+      '',
+      `This copy is delivery rig \`${rigName}\` (replica ${options.replica}) for this project, provisioned from the \`${BASES.delivery}\` base.`,
+    ]
+    if (options.control) lines.push(`The control rig for this project is \`${options.control}\`.`)
+    lines.push(
+      '',
+      'Work arrives as offer rows from the bridge. The entry seat runs `agentflow-sdlc bridge start <qitemId>`, which claims the item in the source before any work.',
+      'When another delivery rig already holds the claim, the offer closes and nothing is created here: no worktree, no workflow instance.',
+      'Other delivery rigs are not named here. Coordinate with them only through the source.',
+      'If the control rig stops, finish the work this rig has claimed, then idle.',
+    )
+    if (steer) lines.push('', `Supervisory steering plane: \`steer-lead@${steer}\`.`)
     return finish(lines)
   }
 
@@ -1055,7 +1143,7 @@ function squadPiSeats(kind, rigName, rigText) {
 }
 
 function prepareSquadExecution(ctx, kind, projectCwd) {
-  const baseKind = kind === 'unified' ? 'delivery' : kind
+  const baseKind = baseKindFor(kind)
   const channelInfo = resolveProjectSpecChannel(projectCwd)
   const { specs } = locations(ctx.home)
   const versionedInstalled = channelInfo.suffix
@@ -1199,6 +1287,8 @@ function writeSquadSpec({
   delivery,
   isUpdate,
   executionPlan,
+  control = '',
+  replica = undefined,
 }) {
   const { home, options, env, out } = ctx
   const { specs, piState } = locations(home)
@@ -1206,7 +1296,7 @@ function writeSquadSpec({
   const plan = executionPlan ?? prepareSquadExecution(ctx, kind, projectCwd)
   requireActiveExecution(plan)
   requireFreshSquadTargets(ctx, [rigName])
-  const baseKind = kind === 'unified' ? 'delivery' : kind
+  const baseKind = baseKindFor(kind)
   const channelInfo = plan.channelInfo ?? resolveProjectSpecChannel(projectCwd)
   const defaultBaseDir = join(specs, BASES[baseKind])
   const versionedBaseDir = channelInfo.suffix
@@ -1244,7 +1334,7 @@ function writeSquadSpec({
   for (const name of SHARED_FILES) {
     if (isFile(join(baseDir, name))) bridge(join(baseDir, name), join(targetDir, name), false)
   }
-  if (kind === 'unified' || kind === 'product') {
+  if (kind === 'unified' || kind === 'product' || kind === 'control') {
     const productBaseDir =
       useVersionedBase && isDirectory(join(specs, `${BASES.product}${channelInfo.suffix}`))
         ? join(specs, `${BASES.product}${channelInfo.suffix}`)
@@ -1278,6 +1368,8 @@ function writeSquadSpec({
     product,
     delivery,
     eval: options.eval,
+    control,
+    replica,
   })
   if (kind === 'steer') {
     writeFileSync(join(targetDir, 'steering.md'), siblingContent)
@@ -1450,9 +1542,14 @@ function writeSquad(ctx, isUpdate) {
     kind !== 'steer' &&
     kind !== 'unified' &&
     kind !== 'eval' &&
+    kind !== 'control' &&
     kind !== 'all'
   ) {
-    fail(`--kind must be delivery, product, steer, eval, unified, or all, not '${kind}'.`)
+    fail(`--kind must be delivery, control, product, steer, eval, unified, or all, not '${kind}'.`)
+  }
+  const replica = options.replica
+  if (replica !== undefined && (kind ?? 'delivery') !== 'delivery') {
+    fail('--replica applies to --kind delivery only.')
   }
 
   if (kind === 'all') {
@@ -1463,7 +1560,7 @@ function writeSquad(ctx, isUpdate) {
   }
 
   const project = operands[0]
-  const rigName = squadRigName(project)
+  const rigName = squadRigName(project, kind, replica)
   if (BASE_NAMES.includes(rigName)) {
     fail(`'${rigName}' is a generic base name. Pass a project copy name, such as dev or pm.`)
   }
@@ -1506,6 +1603,8 @@ function writeSquad(ctx, isUpdate) {
     product,
     delivery,
     isUpdate,
+    control: replica === undefined ? '' : squadRigName(project),
+    replica,
   })
 
   out('')
@@ -1516,7 +1615,14 @@ function writeSquad(ctx, isUpdate) {
   out(`  Monitor: rig ps --nodes --rig ${rigName}`)
   out(`  Freeze:  rig down ${rigName} --snapshot`)
   out(`  Resume:  rig up ${rigName} --existing`)
-  out(`  Remove:  agentflow-sdlc adapters squads remove ${ADAPTER_ID} ${project}`)
+  out(
+    `  Remove:  agentflow-sdlc adapters squads remove ${ADAPTER_ID} ${replica === undefined ? project : rigName}`,
+  )
+  if (kind === 'control' || replica !== undefined) {
+    out(
+      `  Bridge:  list ${rigName} in adapters.openrig.bridge.${kind === 'control' ? 'rigs.control' : 'rigs.delivery'}; no running rig changes`,
+    )
+  }
   return 0
 }
 

@@ -102,4 +102,65 @@ describe('openrig catalog seed (#567)', () => {
       expect(readFileSync(workspacePath, 'utf8')).toBe(workspaceBody)
     })
   })
+
+  it('appends a rig to an existing project and keeps an existing rig a no-op (#586)', () => {
+    withRepo((repo) => {
+      expect(runCatalog(repo, { write: true, id: 'adopter', rig: 'agentflow-adopter' }).code).toBe(
+        0,
+      )
+      const projectPath = join(repo, 'project.yaml')
+      const workspacePath = join(repo, 'workspace.yaml')
+      const projectBytes = readFileSync(projectPath)
+      for (const rig of ['agentflow-adopter-d1', 'agentflow-adopter-d2']) {
+        expect(runCatalog(repo, { write: true, id: 'adopter', rig }).code).toBe(0)
+      }
+      expect(parse(readFileSync(workspacePath, 'utf8')).projects).toEqual([
+        {
+          id: 'adopter',
+          root: '.',
+          rigs: ['agentflow-adopter', 'agentflow-adopter-d1', 'agentflow-adopter-d2'],
+        },
+      ])
+      expect(readFileSync(projectPath)).toEqual(projectBytes)
+      const workspaceBytes = readFileSync(workspacePath)
+      expect(
+        runCatalog(repo, { write: true, id: 'adopter', rig: 'agentflow-adopter-d1' }).code,
+      ).toBe(0)
+      expect(readFileSync(workspacePath)).toEqual(workspaceBytes)
+    })
+  })
+
+  it('previews the appended rig without writing', () => {
+    withRepo((repo) => {
+      runCatalog(repo, { write: true, id: 'adopter', rig: 'agentflow-adopter' })
+      const before = readFileSync(join(repo, 'workspace.yaml'))
+      const { stdout } = runCatalog(repo, { id: 'adopter', rig: 'agentflow-adopter-d1' })
+      const workspace = parse(stdout.slice(stdout.indexOf('schema: openrig.workspace/v0alpha1')))
+      expect(workspace.projects[0].rigs).toEqual(['agentflow-adopter', 'agentflow-adopter-d1'])
+      expect(readFileSync(join(repo, 'workspace.yaml'))).toEqual(before)
+    })
+  })
+
+  it('refuses a rig already attached to another project and writes nothing (#586)', () => {
+    withRepo((repo) => {
+      const workspacePath = join(repo, 'workspace.yaml')
+      const workspaceBody = [
+        'schema: openrig.workspace/v0alpha1',
+        'projects:',
+        '  - id: other',
+        '    root: projects/other',
+        '    rigs:',
+        '      - agentflow-shared',
+        '',
+      ].join('\n')
+      writeFileSync(workspacePath, workspaceBody)
+      for (const id of ['adopter', 'fresh']) {
+        expect(() => runCatalog(repo, { write: true, id, rig: 'agentflow-shared' })).toThrow(
+          /already attached to project 'other'/,
+        )
+      }
+      expect(readFileSync(workspacePath, 'utf8')).toBe(workspaceBody)
+      expect(existsSync(join(repo, 'project.yaml'))).toBe(false)
+    })
+  })
 })
