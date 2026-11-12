@@ -14,19 +14,25 @@ the OpenRig queue carries the gate to that person's channel.
 | `.agentflow/team-roster.json`                                                 | yes       | People, source handles, scopes, backup, timeout, capacity |
 | `${XDG_CONFIG_HOME:-~/.config}/agentflow/<project-id>/team-roster.local.json` | never     | Private channel addresses, by roster person id            |
 
-**The roster is read from a commit**, never from the working tree: `git show
-<ref>:.agentflow/team-roster.json` in the primary checkout (the main worktree), with `<ref>`
-defaulting to `HEAD`. An uncommitted edit, or a commit on a seat's own worktree branch, changes
-nothing. `roster validate` says so when the working tree differs. AgentFlow refuses a committed
-symlink at the roster path and any case variant of it (for example `.AgentFlow/team-roster.json`).
+**The roster is read from a protected ref**, never from the working tree or a worktree's `HEAD`:
+`git --git-dir=<shared git directory> show <ref>:.agentflow/team-roster.json`. The ref is
+`origin/<integration branch>`, or `refs/heads/<integration branch>` when there is no such remote
+branch; the integration branch is `branching.integration` (default `development`). `--ref <ref>`
+names another ref. A ref that does not resolve is refused, never read as "no roster". The shared
+git directory is the one every worktree reads, including a bare repository with worktrees, so an
+uncommitted edit or a commit on a seat's own branch changes nothing. `roster validate` names the ref
+and commit it read and says when the working tree differs. AgentFlow refuses a committed symlink at
+the roster path and any case variant of it (for example `.AgentFlow/team-roster.json`).
 
 **No rig seat may write the roster or the schemas** (`schemas/team-roster.schema.json`,
 `schemas/team-roster-overlay.schema.json`). They are in the `governance-files-guard` deny list of
-`manifests/path-ownership.json`, matched case-insensitively on normalised paths, so `validate:paths`
-rejects any seat's commit that changes them or a case variant of them. A person edits the roster.
+`manifests/path-ownership.json`. The guard matches paths made relative to the repository root,
+Unicode case-folded, with trailing dots and spaces dropped from each folder and file name, and an
+absolute path outside the root that ends in a protected path. So `validate:paths` rejects any
+seat's commit that changes them or a spelling variant of them. A person edits the roster.
 
 **The overlay lives outside the repository**, in the person's configuration directory. The
-`<project-id>` is the primary checkout's folder name plus the first 8 hex characters of the SHA-256
+`<project-id>` is the main worktree's folder name (or the bare repository's) plus the first 8 hex characters of the SHA-256
 of its real path. Only the person's own process may point elsewhere, with
 `AGENTFLOW_TEAM_ROSTER_OVERLAY=<file>` or `--overlay <file>`. No seat environment should be able to
 read that directory or carry that variable. The old in-repo name `.agentflow/team-roster.local.json`
@@ -112,9 +118,12 @@ otherwise the next person in scope. Each delivery is one queue row per gate and 
 ## Who may answer a gate
 
 A gate id binds the subject it asks about: `<source ref>:<gate name>:<digest>`, where the digest is
-the current evidence or candidate digest (12 to 64 lowercase hex characters), for example
-`github:org/repo#12:release:3f9a…`. A new round of changes has a new digest, so an agreement given
-in round 1 is `stale-gate` in round 2. A gate without a digest admits nothing (`gate-unbound`).
+the current evidence or candidate digest: 64 lowercase hex characters for a high-assurance gate,
+32 to 64 otherwise, for example `github:org/repo#12:release:3f9a…`. A new round of changes has a new
+digest, so an agreement given in round 1 is `stale-gate` in round 2. A refusal or a withdrawal
+given in round 1 carries forward (see below). A gate without a valid digest admits nothing
+(`gate-unbound`). The caller computes the digest from the source itself, never from a pushed value
+or a comment.
 
 A decision is a comment in the source whose first line is the decision marker:
 
@@ -132,8 +141,9 @@ author. The source adapter's `resolve-humans` capability turns the writer into a
 must match the ASCII handle pattern, and it finds the roster person. A decision counts only when:
 
 - the entry has not been edited. The adapter supplies `edited`, or `createdAt` and `updatedAt`. An
-  edited entry is `edited-entry`. On a high-assurance gate an entry without edit state is
-  `edit-state-unknown`;
+  edited agreement or withdrawal is `edited-entry`. On a high-assurance gate an entry without edit
+  state is `edit-state-unknown`. An edited or unknown-state refusal still counts as a refusal,
+  because blocking is the safe direction;
 - the gate id carries the current digest;
 - the writer is a roster person, in scope for the gate (for a high-assurance review, in scope for
   that review);
@@ -148,20 +158,47 @@ nothing until the person records it in the source.
 
 **A refusal stands.** Each person's latest decision is what they stand on. A `changes-requested`
 or `blocked` from any in-scope person holds the gate (or the high-assurance review) until that same
-person agrees or posts `withdrawn`. Another person's agreement does not override it. _This rule is
-a decision for the person to confirm._
+person agrees on the current digest or posts `withdrawn`. Another person's agreement does not
+override it, and neither does a new digest: a refusal given for an earlier digest of the same gate
+(same source ref and gate name) carries forward. _This rule is a decision for the person to
+confirm._
 
 A high-assurance gate records `security-review` and `acceptance-review` separately. It opens only
 when both reviews have an agreement from a person in scope and no standing refusal. One person may
 give both reviews, unless `highAssurance.distinctReviewers` is `true`.
 
-Limits:
+The filesystem source reports its comment entries with `readLogEntries(reference)`, each with
+`edited: false` and equal `createdAt` and `updatedAt`, because its log is append-only through the
+adapter.
 
-- Identity is only as strong as the source account. A seat must never hold a person's source
-  credentials: a comment written with a person's account counts as that person.
-- An edit is detected, a deletion is not. An account with write access can delete a later
-  `changes-requested` comment so that an earlier agreement of the same person counts again. Keep
-  write access to the source narrow; the source's audit log shows deletions.
+## Structural limits
+
+These limits come from where seats run, not from this code. Review them before relying on the
+roster for high-assurance work.
+
+- **Same-user seats.** Rig seats run as the person's operating-system user with the project as
+  their working directory. Such a seat can write the person's configuration directory (the overlay),
+  set `AGENTFLOW_TEAM_ROSTER_OVERLAY` in its own environment, rewrite local git refs (including
+  `refs/heads/<integration branch>` and `refs/remotes/origin/…`), edit the working-tree
+  `agent-workflow.config.json` that names the integration branch, and append entries with any
+  writer name to a filesystem source. The protections here stop a seat's commits and working-tree
+  edits from taking effect; they do not stop a process that deliberately rewrites the person's
+  files or refs. Run seats as a separate user, or fetch the protected ref from a remote the seat
+  cannot push to, when that matters.
+- **Self-declared writers.** A filesystem source writer is whatever the writing process says it
+  is. That is why `filesystem` handles cannot answer high-assurance gates unless the roster opts in.
+- **Identity is the source account.** A seat must never hold a person's source credentials: a
+  comment written with a person's account counts as that person.
+- **The digest is the caller's.** The gate id binds whatever digest the caller passes. The caller
+  (the bridge, #586) must compute it from the source independently; a wrong digest makes an old
+  agreement count for new changes.
+- **Decision markers are invisible.** The marker is an HTML comment, so a rendered issue or pull
+  request page does not show it. A person reading the page sees only the text around it; check the
+  raw comment when a decision matters.
+- **Deletions are not detected.** An edit is detected, a deletion is not. An account with write
+  access can delete a later `changes-requested` comment so that an earlier agreement of the same
+  person counts again. Keep write access to the source narrow; the source's audit log shows
+  deletions.
 
 ## Commands
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Validates the team roster (#585): .agentflow/team-roster.json as committed at a ref (default HEAD
-// of the primary checkout), the person's overlay outside the repository against the roster, and
+// Validates the team roster (#585): .agentflow/team-roster.json as committed at the protected ref
+// (default origin/<integration branch>, else the local integration branch), the person's overlay outside the repository against the roster, and
 // that the old in-repo overlay name can never be committed. With no committed roster the project
 // uses the single-person path and this exits 0. Output names roster ids and JSON paths only, never
 // an overlay key or value.
@@ -15,7 +15,7 @@ import {
   TEAM_ROSTER_PATH,
   TeamRosterError,
   loadTeamRoster,
-  primaryCheckout,
+  repositoryOf,
   validateRosterOverlay,
   validateTeamRoster,
 } from '../lib/roster/team-roster.mjs'
@@ -71,14 +71,14 @@ function workingTreeNotes(targetDir, roster, ref) {
 // options: ref, overlayPath, env, home, git.
 export function teamRosterReport(
   targetDir,
-  { git = defaultGit, ref = 'HEAD', overlayPath = null, env = process.env, home } = {},
+  { git = defaultGit, ref = null, overlayPath = null, env = process.env, home } = {},
 ) {
   const notes = []
   if (existsSync(join(targetDir, TEAM_ROSTER_OVERLAY_PATH)))
     notes.push(
       `${TEAM_ROSTER_OVERLAY_PATH} is not read; the overlay lives outside the repository (see docs/team-roster.md)`,
     )
-  if (!primaryCheckout(targetDir, git)) {
+  if (!repositoryOf(targetDir, git)) {
     if (existsSync(join(targetDir, TEAM_ROSTER_PATH)))
       notes.push(`not a git checkout: ${TEAM_ROSTER_PATH} is read only from a commit`)
     return { ok: true, status: 'no-roster', message: NO_ROSTER_MESSAGE, errors: [], notes }
@@ -93,7 +93,7 @@ export function teamRosterReport(
   }
   const exposure = overlayExposure(targetDir, git)
   if (!loaded) {
-    notes.push(...workingTreeNotes(targetDir, undefined, ref))
+    notes.push(...workingTreeNotes(targetDir, undefined, ref ?? 'the protected roster ref'))
     return {
       ok: exposure.length === 0,
       status: exposure.length ? 'invalid' : 'no-roster',
@@ -102,7 +102,7 @@ export function teamRosterReport(
       notes,
     }
   }
-  notes.push(...workingTreeNotes(targetDir, loaded.roster, ref))
+  notes.push(...workingTreeNotes(targetDir, loaded.roster, loaded.ref))
   const errors = [
     ...validateTeamRoster(loaded.roster, { botWriters: bridgeBotWriters(targetDir) }).errors,
   ]
@@ -118,7 +118,8 @@ export function teamRosterReport(
   return {
     ok: errors.length === 0,
     status: errors.length === 0 ? 'valid' : 'invalid',
-    ref,
+    ref: loaded.ref,
+    commit: loaded.commit,
     people: peopleIds,
     overlay: loaded.overlay === null ? 'absent' : 'present',
     overlaySource: overlayPath ? 'flag' : env[OVERLAY_ENV] ? 'environment' : 'config-home',
@@ -154,7 +155,7 @@ export function main(
   const target = resolve(cwd, flag(argv, '--target') ?? '.')
   const report = teamRosterReport(target, {
     ...(git ? { git } : {}),
-    ref: flag(argv, '--ref') || 'HEAD',
+    ref: flag(argv, '--ref') || null,
     overlayPath: flag(argv, '--overlay') || null,
     env,
     home,

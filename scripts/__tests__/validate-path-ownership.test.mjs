@@ -795,6 +795,35 @@ describe('path ownership', () => {
       )
     })
 
+    it('rejects Unicode-folded, trailing dot or space, and absolute spellings of protected files', () => {
+      const variants = [
+        '\u017fchemas/team-roster.schema.json',
+        '.agentflow/team-roster.json.',
+        '.agentflow/team-roster.json ',
+        '.agentflow /team-roster.json',
+        'manifests./path-ownership.json',
+        join(repoRoot, '.agentflow/team-roster.json'),
+        '/some/other/checkout/.agentflow/team-roster.local.json',
+        'C:\\work\\repo\\.agentflow\\team-roster.json',
+      ]
+      for (const seat of ['dev.build', 'pm.analyst', 'orch.arch', 'eval.tester']) {
+        for (const path of variants) {
+          const result = checkPathOwnership({ seat, paths: [path], manifest, root: repoRoot })
+          expect(result.ok, `${seat} ${JSON.stringify(path)}`).toBe(false)
+        }
+      }
+      for (const path of [
+        'lib/roster/team-roster.mjs',
+        'docs/team-roster.md',
+        join(repoRoot, 'lib/x.mjs'),
+      ]) {
+        expect(
+          checkPathOwnership({ seat: 'dev.build', paths: [path], manifest, root: repoRoot }).ok,
+          path,
+        ).toBe(true)
+      }
+    })
+
     it('rejects a manifest whose governance guard stops denying a roster path', () => {
       for (const path of rosterPaths) {
         const weakened = structuredClone(manifest)

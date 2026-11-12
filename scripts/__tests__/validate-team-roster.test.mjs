@@ -70,7 +70,7 @@ describe('validate-team-roster', () => {
     expect(JSON.parse(text)).toMatchObject({
       ok: true,
       status: 'valid',
-      ref: 'HEAD',
+      ref: 'refs/heads/development',
       people: ['sam', 'ana'],
       reachable: ['sam', 'ana'],
       overlaySource: 'config-home',
@@ -89,10 +89,11 @@ describe('validate-team-roster', () => {
     const report = JSON.parse(text)
     expect(report.people).toEqual(['sam', 'ana'])
     expect(report.notes).toContain(
-      `the working tree ${TEAM_ROSTER_PATH} differs from HEAD; uncommitted changes have no effect`,
+      `the working tree ${TEAM_ROSTER_PATH} differs from refs/heads/development; uncommitted changes have no effect`,
     )
     const uncommitted = rosterProject(temp, { roster: sampleRoster(), commit: false })
-    expect(validate([], uncommitted).text).toContain('uncommitted changes have no effect')
+    expect(validate([], uncommitted)).toMatchObject({ code: 1 })
+    expect(validate([], uncommitted).text).toContain('cannot resolve the roster ref')
   })
 
   it('blocks the old in-repo overlay name when it is not gitignored or is tracked', () => {
@@ -194,6 +195,18 @@ describe('agentflow-sdlc roster', () => {
     expect(JSON.parse(before.stdout)).toMatchObject({ status: 'no-match' })
     const now = await roster(['route', '--gate', 'merge', '--paths', 'lib/a', '--json'], fx)
     expect(JSON.parse(now.stdout)).toMatchObject({ status: 'routed', primary: 'sam' })
+  })
+
+  it('refuses an explicit --ref that does not resolve instead of reporting no roster', async () => {
+    const fx = rosterProject(temp, { roster: sampleRoster() })
+    for (const argv of [
+      ['validate', '--ref', 'nope'],
+      ['route', '--gate', 'merge', '--ref', 'nope'],
+    ]) {
+      const result = await roster(argv, fx)
+      expect(result.code).toBe(1)
+      expect(result.stdout).toContain('cannot resolve the roster ref (nope)')
+    }
   })
 
   it('refuses usage errors with exit 2', async () => {

@@ -10,7 +10,8 @@ export const ROSTER_USAGE = `Usage: agentflow-sdlc roster <validate|route> [opti
   roster validate [--ref <ref>] [--overlay <file>]  check the committed roster, the overlay, and the in-repo overlay name
   roster route --gate <type> [--paths a,b] [--tier <tier>] [--id <gate id>] [--ref <ref>]
                                                     explain who a gate goes to, by roster id
-The roster is read from a commit (default HEAD of the primary checkout); uncommitted edits have no effect.
+The roster is read from a protected ref (default origin/<integration branch>, else the local integration
+branch); working-tree edits and commits on other branches have no effect.
 Gate types: ${GATE_TYPES.join(', ')}. Tiers: ${TIERS.join(', ')} (default standard).
 Exit: 0 valid, routed, unmatched or no roster; 1 invalid roster; 2 usage.
 `
@@ -91,7 +92,7 @@ export async function main(
   const json = flags.json === true
   const reportOptions = {
     ...(git ? { git } : {}),
-    ref: typeof flags.ref === 'string' ? flags.ref : 'HEAD',
+    ref: typeof flags.ref === 'string' ? flags.ref : null,
     overlayPath: typeof flags.overlay === 'string' ? flags.overlay : null,
     env,
     home,
