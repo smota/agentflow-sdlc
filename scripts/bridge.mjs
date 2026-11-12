@@ -10,6 +10,7 @@ import { BridgeError, createBridge } from '../lib/bridge/bridge.mjs'
 import { NO_RIG_MESSAGE, loadBridgeConfig } from '../lib/bridge/config.mjs'
 import { createRigCliQueuePort } from '../lib/bridge/queue-port.mjs'
 import { createWorktreesPort } from '../lib/bridge/worktrees-port.mjs'
+import { nativePath } from '../lib/runtime/path-identity.mjs'
 import { defaultGit } from '../lib/runtime/slice-worktrees.mjs'
 import { createSourceAdapter } from '../lib/sources/registry.mjs'
 
@@ -145,7 +146,7 @@ export function worktreesFor(config, { target, git }) {
       const common = git(['rev-parse', '--path-format=absolute', '--git-common-dir'], {
         cwd: target,
       }).trim()
-      return basename(common) === '.git' ? dirname(common) : null
+      return basename(common) === '.git' ? nativePath(dirname(common)) : null
     },
   })
 }
