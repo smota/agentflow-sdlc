@@ -1,31 +1,37 @@
 # Team roster
 
 A team roster sends each gate to the person responsible for it and decides who may answer it. It
-is optional. With no roster file, every gate keeps the single-person path: the OpenRig human
-gateway default (`rig gateway participants --json`) and today's `human:<login>` identities.
+is optional. With no committed roster file, every gate keeps the single-person path: the OpenRig
+human gateway default (`rig gateway participants --json`) and the existing person gate answers.
 
 The roster stays in AgentFlow. OpenRig is only the delivery pipe: AgentFlow picks the person, and
 the OpenRig queue carries the gate to that person's channel.
 
 ## Files
 
-| File                                | Committed | Holds                                                     |
-| ----------------------------------- | --------- | --------------------------------------------------------- |
-| `.agentflow/team-roster.json`       | yes       | People, source handles, scopes, backup, timeout, capacity |
-| `.agentflow/team-roster.local.json` | never     | Private channel addresses, by roster person id            |
+| File                                                                          | Committed | Holds                                                     |
+| ----------------------------------------------------------------------------- | --------- | --------------------------------------------------------- |
+| `.agentflow/team-roster.json`                                                 | yes       | People, source handles, scopes, backup, timeout, capacity |
+| `${XDG_CONFIG_HOME:-~/.config}/agentflow/<project-id>/team-roster.local.json` | never     | Private channel addresses, by roster person id            |
 
-No rig seat may write either file or their schemas (`schemas/team-roster.schema.json`,
+**The roster is read from a commit**, never from the working tree: `git show
+<ref>:.agentflow/team-roster.json` in the primary checkout (the main worktree), with `<ref>`
+defaulting to `HEAD`. An uncommitted edit, or a commit on a seat's own worktree branch, changes
+nothing. `roster validate` says so when the working tree differs. AgentFlow refuses a committed
+symlink at the roster path and any case variant of it (for example `.AgentFlow/team-roster.json`).
+
+**No rig seat may write the roster or the schemas** (`schemas/team-roster.schema.json`,
 `schemas/team-roster-overlay.schema.json`). They are in the `governance-files-guard` deny list of
-`manifests/path-ownership.json`, so `validate:paths` rejects any seat's commit that changes them.
-A person edits the roster. AgentFlow refuses to read a roster or overlay reached through a symlink.
+`manifests/path-ownership.json`, matched case-insensitively on normalised paths, so `validate:paths`
+rejects any seat's commit that changes them or a case variant of them. A person edits the roster.
 
-The overlay is in `.gitignore` and in the git excludes the OpenRig adapter writes. `roster
-validate` fails when the overlay is tracked or not ignored. Add the line to your project's
-`.gitignore`:
-
-```text
-.agentflow/team-roster.local.json
-```
+**The overlay lives outside the repository**, in the person's configuration directory. The
+`<project-id>` is the primary checkout's folder name plus the first 8 hex characters of the SHA-256
+of its real path. Only the person's own process may point elsewhere, with
+`AGENTFLOW_TEAM_ROSTER_OVERLAY=<file>` or `--overlay <file>`. No seat environment should be able to
+read that directory or carry that variable. The old in-repo name `.agentflow/team-roster.local.json`
+is never read. It stays in `.gitignore` and in the git excludes the OpenRig adapter writes, and
+`roster validate` fails when it is tracked or not ignored.
 
 ## The roster
 
@@ -60,8 +66,8 @@ validate` fails when the overlay is tracked or not ignored. Add the line to your
 ```
 
 - `id`: the roster id. Logs, evidence, CLI output and queue bodies name people by this id only.
-- `handles`: the person's login per source system. A handle identifies who wrote a source entry. It
-  is not an address and grants nothing by itself.
+- `handles`: the person's login per source system (ASCII letters, digits, `.`, `_`, `-`). A handle
+  identifies who wrote a source entry. It is not an address and grants nothing by itself.
 - `scopes`: what the person may answer. `gates` are gate types: `adequacy-of-intent`,
   `release-of-candidate`, `agent-escalation`, `security-review`, `acceptance-review`, `merge`.
   `tiers` are change classes: `bounded`, `standard`, `high-assurance`. `paths` are repository
@@ -71,6 +77,9 @@ validate` fails when the overlay is tracked or not ignored. Add the line to your
 - `capacity`: how many open gates the person takes before routing skips them (default 3).
 - `highAssurance.distinctReviewers`: when `true`, one person cannot give both high-assurance
   reviews.
+- `highAssurance.allowSelfDeclaredWriters`: when `true`, a `filesystem` handle may answer a
+  high-assurance gate. Default `false`, because a filesystem writer is declared by whoever writes
+  the log.
 
 The roster has no channel field. The validator rejects any value shaped like an e-mail address or
 an OpenRig `@external` address, two people with the same handle, a missing backup, and a handle
@@ -83,9 +92,10 @@ that is one of the bridge's own writers (claim writers, evidence writers, the as
 ```
 
 Each key is a roster id. The value is the person's OpenRig human gateway address. The overlay is
-read only when a gate is delivered. Its values are never written to an issue, a source entry, a
-queue body or summary, a log, or CLI output. Validation errors name the roster id and the field,
-never the value.
+validated (schema and roster ids) when it is loaded and again before every delivery; an invalid
+overlay delivers nothing. Its keys and values are never written to an issue, a source entry, a
+queue body or summary, a log, or CLI output. Validation errors name roster ids and fields only; a
+key that is not a roster id is counted, never printed.
 
 ## Routing
 
@@ -101,51 +111,90 @@ otherwise the next person in scope. Each delivery is one queue row per gate and 
 
 ## Who may answer a gate
 
+A gate id binds the subject it asks about: `<source ref>:<gate name>:<digest>`, where the digest is
+the current evidence or candidate digest (12 to 64 lowercase hex characters), for example
+`github:org/repo#12:release:3f9a…`. A new round of changes has a new digest, so an agreement given
+in round 1 is `stale-gate` in round 2. A gate without a digest admits nothing (`gate-unbound`).
+
 A decision is a comment in the source whose first line is the decision marker:
 
 ```text
 <!-- agentflow-gate-decision:{"v":1,"gate":"<gate id>","decision":"agree"} -->
 ```
 
-`decision` is `agree`, `changes-requested`, or `blocked`. A high-assurance gate also names the
-review: `"review":"security-review"` or `"review":"acceptance-review"`. The marker has no person
-field. A marker with any other field is not a decision.
+`decision` is `agree`, `changes-requested`, `blocked`, or `withdrawn`. A high-assurance gate also
+names the review: `"review":"security-review"` or `"review":"acceptance-review"`. The marker has no
+person field. A marker with any other field is not a decision. A trailing carriage return (CRLF) is
+accepted.
 
 The writer of the decision is the source's own record of who wrote the entry, such as the comment
-author. The source adapter's `resolve-humans` capability turns the writer into a handle, and the
-handle finds the roster person. A decision counts only when:
+author. The source adapter's `resolve-humans` capability turns the writer into a handle, the handle
+must match the ASCII handle pattern, and it finds the roster person. A decision counts only when:
 
-- the writer is a roster person, and
-- that person is in scope for the gate (for a high-assurance review, in scope for that review), and
-- the writer is not the bridge, the source adapter's writer, or a configured bridge writer.
+- the entry has not been edited. The adapter supplies `edited`, or `createdAt` and `updatedAt`. An
+  edited entry is `edited-entry`. On a high-assurance gate an entry without edit state is
+  `edit-state-unknown`;
+- the gate id carries the current digest;
+- the writer is a roster person, in scope for the gate (for a high-assurance review, in scope for
+  that review);
+- the writer is not the bridge, the source adapter's writer, or a configured bridge writer;
+- for a high-assurance gate, the handle is not a `filesystem` handle, unless the roster opts in.
 
 Anything else is recorded and opens no gate, with a reason: `writer-not-on-roster`, `out-of-scope`,
-`bot-writer`, `resolve-humans-absent`, `invalid-roster`, `no-roster`. A decision given in chat or on
-a queue row is not a source entry and counts for nothing until the person records it in the
-source.
+`bot-writer`, `invalid-handle`, `self-declared-writer`, `resolve-humans-absent`, `invalid-roster`,
+`no-roster`, `edited-entry`, `edit-state-unknown`, `stale-gate`, `gate-unbound`, `other-gate`,
+`not-a-decision`. A decision given in chat or on a queue row is not a source entry and counts for
+nothing until the person records it in the source.
+
+**A refusal stands.** Each person's latest decision is what they stand on. A `changes-requested`
+or `blocked` from any in-scope person holds the gate (or the high-assurance review) until that same
+person agrees or posts `withdrawn`. Another person's agreement does not override it. _This rule is
+a decision for the person to confirm._
 
 A high-assurance gate records `security-review` and `acceptance-review` separately. It opens only
-when both reviews have an agreement from a person in scope. The latest decision in each review
-counts, so a later `changes-requested` or `blocked` withdraws it. One person may give both reviews,
-unless `highAssurance.distinctReviewers` is `true`.
+when both reviews have an agreement from a person in scope and no standing refusal. One person may
+give both reviews, unless `highAssurance.distinctReviewers` is `true`.
 
-Identity is only as strong as the source account. A seat must never hold a person's source
-credentials: a comment written with a person's account counts as that person.
+Limits:
+
+- Identity is only as strong as the source account. A seat must never hold a person's source
+  credentials: a comment written with a person's account counts as that person.
+- An edit is detected, a deletion is not. An account with write access can delete a later
+  `changes-requested` comment so that an earlier agreement of the same person counts again. Keep
+  write access to the source narrow; the source's audit log shows deletions.
 
 ## Commands
 
 ```bash
-agentflow-sdlc roster validate [--json]
-agentflow-sdlc roster route --gate <type> [--paths a,b] [--tier <tier>] [--json]
-node scripts/validate-team-roster.mjs [--json]
+agentflow-sdlc roster validate [--ref <ref>] [--overlay <file>] [--json]
+agentflow-sdlc roster route --gate <type> [--paths a,b] [--tier <tier>] [--ref <ref>] [--json]
+node scripts/validate-team-roster.mjs [--ref <ref>] [--overlay <file>] [--json]
 ```
 
-`roster validate` checks the roster, the overlay, and that the overlay cannot be committed.
-`roster route` explains who a gate goes to and why, by roster id. Neither command delivers or
-resolves a gate. With no roster both print
+`roster validate` checks the committed roster, the overlay, and that the old in-repo overlay name
+cannot be committed. `roster route` explains who a gate goes to and why, by roster id; it does not
+read the overlay. Neither command delivers or resolves a gate. With no roster both print
 `No team roster (.agentflow/team-roster.json); gates use the single-person path.` and exit 0.
 
 The library is `lib/roster/`: `team-roster.mjs` (load, validate, handle lookup), `gate-router.mjs`
 (`routeGate`, `nextRecipient`, `deliverGate`, `createQueueNotifier`) and `authority.mjs`
-(`authorizeWriter`, `admitGateDecision`, `gateDecisionState`, `highAssuranceGateState`). See also
-[Person gates](person-gates.md) and [OpenRig bridge](openrig-bridge.md).
+(`authorizeWriter`, `admitGateDecision`, `gateDecisionState`, `highAssuranceGateState`,
+`formatGateId`).
+
+## Where this differs from the design
+
+These choices differ from the solution design for #585 and are recorded here for review:
+
+- **Every path, not any path.** A scope covers a gate only when it covers every gate path. Matching
+  any one path would let a person scoped to one folder approve changes to another.
+- **Notifier location.** The OpenRig notifier is `createQueueNotifier` in `lib/roster/gate-router.mjs`,
+  not in `scripts/roster.mjs`, so the bridge can import it without importing a script.
+- **No `human:<login>` fallback.** With no roster, the roster functions admit nothing
+  (`no-roster`) and the existing single-person path decides, unchanged. Writers are not treated as
+  `human:<login>` identities.
+- **Bridge wiring is in #586.** This change provides the router, the authority check and the
+  notifier. Calling them from the bridge, reading decision entries with their edit state through
+  the source adapter, and refusing gate resolution from a delivery seat's session (decision 9)
+  belong to #586.
+
+See also [Person gates](person-gates.md) and [OpenRig bridge](openrig-bridge.md).
