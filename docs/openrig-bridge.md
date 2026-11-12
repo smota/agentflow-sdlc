@@ -51,6 +51,12 @@ Add `adapters.openrig.bridge` to `agent-workflow.config.json` (or `agentflow.con
 | `entrySeat`              | The seat that receives intake rows; its phase is where fresh work starts                              | `pm.analyst`                                            |
 | `workflowSpec`           | The OpenRig workflow spec each item runs as                                                           | the AgentFlow delivery workflow                         |
 | `escalateTo`             | The session that receives person escalations                                                          | `human@<rig>`                                           |
+| `worktrees`              | Slice worktrees ([below](#slice-worktrees)): `false` or `{ enabled: false }` turns them off           | on                                                      |
+| `worktrees.dir`          | Where slice worktrees live, relative to the repository root                                           | `.worktrees`                                            |
+| `worktrees.branchPrefix` | Prefix of each slice's branch                                                                         | `work/`                                                 |
+| `worktrees.integration`  | The branch whose merged state decides removal                                                         | the remote's default branch, else `development`         |
+| `worktrees.remote`       | The remote whose integration branch is fetched                                                        | `origin`                                                |
+| `worktrees.disposable`   | Ignored paths that may be deleted with a worktree (all other ignored files keep it)                   | `["node_modules"]`                                      |
 
 "No rig configured" means `bridge` is absent, or both `rig` and `rigs.delivery` are empty. One
 delivery rig is supported; several delivery rigs on one project arrive with multi-rig delivery.
@@ -64,6 +70,7 @@ agentflow-sdlc bridge intake <ref> [--event ready|review-done|merged|closed] [--
 agentflow-sdlc bridge start <qitemId> [--session <seat@rig>] [--json]
 agentflow-sdlc bridge evidence <ref> --phase <n> --status pass|skipped --seat <id> --body-file <file> --executed-by <slug> --launcher <slug> --executor <target> --transport <t> --delegation-boundary <b> [--model <m>] [--reason <text>] [--json]
 agentflow-sdlc bridge reconcile [--dry-run] [--json]
+agentflow-sdlc bridge cleanup <ref> [--json]
 agentflow-sdlc bridge escalate <ref> --reason <text> [--json]
 agentflow-sdlc bridge status [--json]
 ```
@@ -77,6 +84,7 @@ Every command accepts `--target <dir>`. A reference is `<system>:<scope>#<id>`, 
 | `start`     | Run by the entry seat on a pending intake row. Claims the row in the queue (so only one start proceeds), re-reads the item, claims it in the source, starts one workflow instance and hands the row off to it. Do not `rig queue claim` the row first |
 | `evidence`  | Writes one role-pass comment to the source. A retry with the same inputs writes nothing                                                                                                                                                               |
 | `reconcile` | Rebuilds the queue from the source in one pass                                                                                                                                                                                                        |
+| `cleanup`   | Removes the slice worktree of a merged item when it is safe, and releases the claim. Keeps it and tells a person otherwise ([Slice worktrees](#slice-worktrees))                                                                                      |
 | `escalate`  | Asks a person through the queue                                                                                                                                                                                                                       |
 | `status`    | Shows the rigs, the source, its limits, the ready predicate and whether `rig` is usable                                                                                                                                                               |
 
@@ -124,7 +132,11 @@ slice=filesystem-item-7
 resume_phase=1
 tier=routine
 workflow=adapters/openrig/agentflow/workflows/agentflow-delivery.workflow.yaml
+worktree_path=.worktrees/filesystem-item-7
 ```
+
+`worktree_path` is present only when slice worktrees are on. It is the OpenRig `worktree_path=`
+convention: the path, relative to the repository root, where the seats for this slice work.
 
 ## Pushed content
 
@@ -134,12 +146,12 @@ the source and lists any pushed field that disagrees (`title`, `labels`, `state`
 
 ## Events
 
-| Event         | Requires                                              | Effect                                                                |
-| :------------ | :---------------------------------------------------- | :-------------------------------------------------------------------- |
-| `ready`       | The ready predicate holds                             | One intake row, or `not-ready` with reasons, or `deferred`            |
-| `review-done` | A phase 6 pass recorded after the latest phase 4 pass | Resolves rows parked on `external:review:<id>` with the evidence link |
-| `merged`      | The item's lifecycle is `merged`                      | Resolves rows parked on `external:merge:<id>`                         |
-| `closed`      | The item's lifecycle is `closed`                      | Aborts live workflow instances and cancels live rows for the item     |
+| Event         | Requires                                              | Effect                                                                           |
+| :------------ | :---------------------------------------------------- | :------------------------------------------------------------------------------- |
+| `ready`       | The ready predicate holds                             | One intake row, or `not-ready` with reasons, or `deferred`                       |
+| `review-done` | A phase 6 pass recorded after the latest phase 4 pass | Resolves rows parked on `external:review:<id>` with the evidence link            |
+| `merged`      | The item's lifecycle is `merged`                      | Resolves rows parked on `external:merge:<id>`, then cleans up the slice worktree |
+| `closed`      | The item's lifecycle is `closed`                      | Aborts live workflow instances and cancels live rows for the item                |
 
 ## Evidence
 
@@ -172,6 +184,9 @@ boundary is who can run commands on the rig's host, not the bridge.
    an orphan. This step lists rows by the bridge's source session with an explicit limit; a full
    page is an error, not a smaller answer.
 
+4. Sweeps slice worktrees ([below](#slice-worktrees)): removes those of closed or merged items
+   under the safety rule, and lists worktrees that belong to no item in the source as orphans.
+
 After the queue is emptied, `reconcile` restores one intake row for every open ready item.
 
 Reconcile reads the workflow list once per run. An item that fails (for example, the queue times
@@ -187,6 +202,92 @@ closed rows, and an erased id cannot be reused, so the scan steps past missing i
 row) and a new row always takes the generation after the highest one found; liveness never comes from
 `rig queue list`, whose output is bounded (100 rows by default, newest first). Escalation and
 notice rows carry the tag `af-notice:<stable id>` and are not work.
+
+## Slice worktrees
+
+With a rig configured, every slice gets its own git worktree, so two seats on two slices never
+share a working directory. The setting is on by default; `worktrees: false` turns it off, and with
+no rig configured nothing here runs and git is never called. The bridge may run from the primary
+checkout or from inside a slice worktree: it always resolves the primary checkout. The code is
+`lib/bridge/worktrees-port.mjs` over `lib/runtime/slice-worktrees.mjs`.
+
+| Moment                             | What happens                                                                                                                                                                                                                                                                                    |
+| :--------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `intake`                           | The intake body names `worktree_path=<dir>/<slice>`. Nothing is created yet                                                                                                                                                                                                                     |
+| `start`                            | After the claims and before the workflow instance exists, creates `<dir>/<slice>` on branch `<branchPrefix><slice>` from the freshly fetched `<remote>/<integration>`, or reuses it. The instance's root objective also carries `worktree_path=`. If creation fails, the row returns to pending |
+| `intake --event merged`, `cleanup` | Fetches the integration branch, removes the worktree only under the safety rule, then releases the rig's claim on the item. A worktree that is already gone also releases the claim                                                                                                             |
+| `reconcile`                        | Does the same for every worktree whose item is closed or merged in the source. An open item's worktree is kept. A worktree whose slice no item has is listed under `worktrees.orphans` and never removed                                                                                        |
+
+Seats must work only inside `worktree_path` and never `cd` back to the primary checkout to edit.
+OpenRig cannot move a running seat's working directory, so the path reaches the seat through the
+`worktree_path=` line and the seat's startup instruction.
+
+The safety rule. A worktree is removed (with `git worktree remove`, never `--force`, never `rm`)
+only when all of these hold:
+
+- the slice path is not a symlink; the worktree is registered, lives under the worktrees directory,
+  is not locked, and is on the expected branch `<branchPrefix><slice>` (a detached HEAD is refused);
+- it has no modified, staged or untracked files, and no merge, rebase, cherry-pick or revert in progress;
+- it has no ignored files that removal would delete. Git ignores things such as `.agent-runs/`
+  evidence and `.env`, and `git worktree remove` deletes them. Only the paths in
+  `worktrees.disposable` (default `node_modules`, including a symlink of that name) may go with
+  it. A name without a slash matches that directory anywhere, so a monorepo's
+  `packages/*/node_modules` counts; a name with a slash (`build/cache`) matches from the worktree
+  root. Everything beneath a disposable path is deleted with it, including a repository nested
+  there: that is the meaning of listing it. The reasons name the blocking paths, relative to the
+  worktree;
+- no other registered worktree lives inside it (a nested worktree would be deleted with its
+  uncommitted work);
+- it has no commits ahead of its upstream, when it has one;
+- its HEAD is an ancestor of `<remote>/<integration>`, or equals the merged head the source reports
+  for the item (`mergedHead`, for squash merges). The source must also report the branch it merged
+  into (`mergedInto`), and it must be the integration branch; a head merged into any other branch
+  is ignored. See Known gaps below for what supplies it;
+- the integration branch was fetched in this run. A fetch that fails means the merged state is
+  unknown, and a stale ref keeps the worktree.
+
+Inspection and removal are not one atomic step. Before removing, the worktree is locked with a
+reason, inspected again under the lock (ignored files, nested worktrees, HEAD, status), and unlocked
+only to be removed at once; any failure unlocks and keeps. A file git itself would refuse
+(modified, untracked) cannot slip through; an ignored file written in the last instant between
+unlock and removal can, and that residual window is accepted. The branch is deleted last and only if its tip is
+still the inspected commit (`git update-ref -d refs/heads/<branch> <inspected commit>`). A commit made in
+between keeps the branch, and the result carries a `branchNote`. Only the expected branch is ever
+deleted, never whatever is checked out. The reflog and stashes are not consulted: a stash is
+shared by the whole repository and is not removed with a worktree.
+
+When removal is refused the worktree stays, the claim stays, and a person is told through the
+notifier (kind `worktree-kept`) with every reason. Telling again about the same reasons is a
+re-delivery, not a new row. What a person is told is scrubbed: paths are relative to the repository
+root, the home directory and a Windows user profile are `~`, and remote URLs, `user:secret@host`
+credentials, bare GitHub-style tokens and Authorization headers are replaced. Orphans are
+listed in the reconcile report and not sent to a person.
+
+`reconcile --dry-run` reports `worktrees.wouldRemove`, `kept` and `orphans`, marks the report
+`possiblyStale: true` and changes nothing: it does not fetch, so no ref or `FETCH_HEAD` changes and
+the merged state is read from the last fetch.
+
+Git runs only when a hook needs it. Building the port and `status` run no git; the primary
+checkout and the integration branch are resolved on first use. A project that is not a git
+repository makes every worktree hook do nothing.
+
+### Known gaps
+
+- `bridge cleanup` and the `merged` event do not yet project the workflow's cleanup step
+  (`rig workflow project --exit done|waiting`): the bridge does not know that step's packet. This
+  arrives with the cleanup step of the workflow spec (#583).
+- The startup instruction of the seats must tell them to work only inside `worktree_path` and never
+  `cd` back to the primary checkout to edit. That one-line change to
+  `adapters/openrig/agentflow/startup/context.md` is pending #583 and is not made here.
+- Squash-merge cleanup is matched by slice. A squash commit does not contain the branch's commits,
+  so the worktree is removed only when the adapter reports the head of the merged pull request
+  (`mergedHead`, read through the adapter on every decision, never taken from a pushed payload)
+  and it equals the worktree's HEAD. The GitHub adapter reports it only for a merged pull request.
+  GitHub has no link from an issue to the pull request that closed it, so the `merged` event,
+  `bridge cleanup` and reconcile must name the pull request reference, and the slice
+  (`github-<number>`) must have been queued from that same reference. A slice queued from an issue
+  and delivered by a differently numbered pull request finds no worktree under the pull request's
+  slice, and its own worktree is kept and reported until a person removes it.
 
 ## Assumption about replaying phases
 
@@ -220,5 +321,5 @@ The bridge takes these optional ports:
 | :---------- | :------------------------------------------------------------------------------------------ |
 | `admission` | Backpressure: returns `{ admit: false, reason }` to defer intake. Default admits everything |
 | `claim`     | Claim before work; default claims through the source when it declares `claim`               |
-| `worktrees` | `prepare` on start, `cleanup` on merged, `sweep` on reconcile                               |
+| `worktrees` | `pathFor` on intake, `prepare` on start, `cleanup` on merged, `sweep` on reconcile          |
 | `notifier`  | Person delivery; default creates a queue row with human intent `decision`                   |

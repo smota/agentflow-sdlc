@@ -78,6 +78,7 @@ const SUBCOMMANDS = [
   ['start', 'q-1'],
   ['evidence', 'filesystem:local#a', '--phase', '1'],
   ['reconcile'],
+  ['cleanup', 'filesystem:local#a'],
   ['escalate', 'filesystem:local#a', '--reason', 'x'],
   ['status'],
 ]
@@ -98,6 +99,9 @@ describe('bridge CLI without a rig (#582 AC6)', () => {
             touched = true
           },
           createSource: () => {
+            touched = true
+          },
+          git: () => {
             touched = true
           },
           stdout,
@@ -124,7 +128,7 @@ describe('bridge CLI without a rig (#582 AC6)', () => {
     const help = run(['bridge', '--help'])
     expect(help.status).toBe(0)
     expect(help.stdout).toContain(
-      'agentflow-sdlc bridge <intake|start|evidence|reconcile|escalate|status>',
+      'agentflow-sdlc bridge <intake|start|evidence|reconcile|cleanup|escalate|status>',
     )
     expect(run(['--help']).stdout).toContain('|bridge>')
   })
@@ -254,6 +258,34 @@ describe('bridge CLI with a rig (#582)', () => {
       status: 'unsupported-predicate',
     })
     expect(code).toBe(1)
+  })
+
+  it('wires slice worktrees by default, lazily, and not when they are off (#584b)', async () => {
+    const statusOf = async (extra) => {
+      const stdout = sink()
+      const calls = []
+      const code = await main(['status', '--target', configured(extra), '--json'], {
+        execFile: fakeRig().execFile,
+        git: (args) => {
+          calls.push(args)
+          throw new Error('not a git repository')
+        },
+        stdout,
+        stderr: sink(),
+      })
+      expect(code).toBe(0)
+      return { status: JSON.parse(stdout.text()), calls }
+    }
+    const on = await statusOf({})
+    expect(on.status.worktrees).toMatchObject({ dir: '.worktrees', branchPrefix: 'work/' })
+    // Status does no git: the primary checkout and integration branch are resolved on use.
+    expect(on.calls).toEqual([])
+    expect((await statusOf({ worktrees: { integration: 'main' } })).status.worktrees).toMatchObject(
+      { integration: 'main' },
+    )
+    const off = await statusOf({ worktrees: false })
+    expect(off.status.worktrees).toBeNull()
+    expect(off.calls).toEqual([])
   })
 
   it('exits 2 when a required argument is missing', async () => {

@@ -4,25 +4,29 @@
 // exits 0, without constructing the source adapter or calling rig.
 import { execFile as nodeExecFile } from 'node:child_process'
 import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { basename, dirname, resolve } from 'node:path'
 import { promisify } from 'node:util'
 import { BridgeError, createBridge } from '../lib/bridge/bridge.mjs'
 import { NO_RIG_MESSAGE, loadBridgeConfig } from '../lib/bridge/config.mjs'
 import { createRigCliQueuePort } from '../lib/bridge/queue-port.mjs'
+import { createWorktreesPort } from '../lib/bridge/worktrees-port.mjs'
+import { nativePath } from '../lib/runtime/path-identity.mjs'
+import { defaultGit } from '../lib/runtime/slice-worktrees.mjs'
 import { createSourceAdapter } from '../lib/sources/registry.mjs'
 
-export const BRIDGE_USAGE = `Usage: agentflow-sdlc bridge <intake|start|evidence|reconcile|escalate|status> [options] [--target <dir>] [--json]
+export const BRIDGE_USAGE = `Usage: agentflow-sdlc bridge <intake|start|evidence|reconcile|cleanup|escalate|status> [options] [--target <dir>] [--json]
   bridge intake <ref> [--event ready|review-done|merged|closed] [--payload-file <json>]
   bridge start <qitemId> [--session <seat@rig>]            (defaults to OPENRIG_SESSION_NAME)
   bridge evidence <ref> --phase <n> --status pass|skipped --seat <id> [--reason <text>] --body-file <file>
       --executed-by <slug> --launcher <slug> --executor <target> --transport <t> --delegation-boundary <b> [--model <m>]
   bridge reconcile [--dry-run]
+  bridge cleanup <ref>                                     (remove a merged slice's worktree and release its claim)
   bridge escalate <ref> --reason <text>
   bridge status
 Exit: 0 done, no rig, not ready, deferred or already queued; 1 source, rig or config failure,
 unsupported predicate or refused evidence; 2 usage.
 `
-const SUBCOMMANDS = ['intake', 'start', 'evidence', 'reconcile', 'escalate', 'status']
+const SUBCOMMANDS = ['intake', 'start', 'evidence', 'reconcile', 'cleanup', 'escalate', 'status']
 const VALUE_FLAGS = new Set([
   '--event',
   '--payload-file',
@@ -120,10 +124,31 @@ async function run(bridge, { subcommand, args, flags }, { env, cwd }) {
     })
   }
   if (subcommand === 'reconcile') return bridge.reconcile({ dryRun: flags['dry-run'] === true })
+  if (subcommand === 'cleanup') return bridge.cleanup(need(args[0], '<ref>'))
   if (subcommand === 'escalate') {
     return bridge.escalate(need(args[0], '<ref>'), { reason: need(flags.reason, '--reason') })
   }
   return bridge.status()
+}
+
+// The slice worktree port, when worktrees are enabled (the default once a rig is configured).
+// Building it runs no git: the primary checkout is resolved on first use, and a project that is
+// not a git repository makes every worktree hook inert.
+export function worktreesFor(config, { target, git }) {
+  const settings = config.worktrees
+  if (!settings || settings.enabled === false) return null
+  return createWorktreesPort({
+    settings,
+    git,
+    // The primary checkout even when a command runs inside a slice worktree, so worktrees never
+    // nest under another worktree.
+    resolveRepoRoot: () => {
+      const common = git(['rev-parse', '--path-format=absolute', '--git-common-dir'], {
+        cwd: target,
+      }).trim()
+      return basename(common) === '.git' ? nativePath(dirname(common)) : null
+    },
+  })
 }
 
 export async function main(
@@ -135,6 +160,7 @@ export async function main(
     stdout = process.stdout,
     stderr = process.stderr,
     createSource = createSourceAdapter,
+    git = defaultGit,
   } = {},
 ) {
   let parsed
@@ -175,7 +201,8 @@ export async function main(
       if (!available.ok)
         return emit({ ok: false, status: 'rig-unavailable', reason: available.reason }, 1)
     }
-    const bridge = createBridge({ source, queue, config: loaded.config })
+    const worktrees = worktreesFor(loaded.config, { target, git })
+    const bridge = createBridge({ source, queue, config: loaded.config, worktrees })
     const result = await run(bridge, parsed, { env, cwd })
     const failed = FAILURE_STATUSES.has(result.status)
     return emit({ ok: !failed, ...result }, failed ? 1 : 0)

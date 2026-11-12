@@ -1385,7 +1385,7 @@ const ROOT_USAGE =
 
 const COMMAND_USAGE = {
   bridge:
-    'Usage: agentflow-sdlc bridge <intake|start|evidence|reconcile|escalate|status> [options] [--target <dir>] [--json]\nPush ready source work into the OpenRig queue and return evidence. With no rig configured it does nothing and exits 0. See docs/openrig-bridge.md.\n',
+    'Usage: agentflow-sdlc bridge <intake|start|evidence|reconcile|cleanup|escalate|status> [options] [--target <dir>] [--json]\nPush ready source work into the OpenRig queue and return evidence. With no rig configured it does nothing and exits 0. See docs/openrig-bridge.md.\n',
   world:
     'Usage: agentflow-sdlc world <scan|refine|apply|ack> [atom-id] [target-dir] [--target <dir>] [--stub-gaps] [--allow-stubs] [--confirm <digest>] [--all] [--json]\n',
   seat: 'Usage: agentflow-sdlc seat <claim|prime|status|release> [seat] [--seat <id>] [--session <id>] [--situation <fresh|handover|post-compaction|reviewer>] [--slice <id>] [--issue <ref>] [--target <dir>] [--json]\n',
