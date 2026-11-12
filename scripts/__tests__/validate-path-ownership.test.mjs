@@ -4,6 +4,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
+import { seatIds } from '../../lib/core/seat-table.mjs'
+import { loadSeatTable } from '../../lib/seat-table-io.mjs'
 import {
   pinOracleDigest,
   verifyOraclePin,
@@ -740,5 +742,132 @@ describe('path ownership', () => {
         e.includes('caller-supplied oracle pin digest contradicts contract oracle digest'),
       ),
     ).toBe(true)
+  })
+
+  describe('team roster deny (#585)', () => {
+    const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
+    const rosterPaths = [
+      '.agentflow/team-roster.json',
+      '.agentflow/team-roster.local.json',
+      'schemas/team-roster.schema.json',
+      'schemas/team-roster-overlay.schema.json',
+    ]
+
+    it('rejects the roster, its overlay and their schemas for every seat in manifests/seats.json', () => {
+      const seats = seatIds(loadSeatTable(repoRoot))
+      expect(seats.length).toBeGreaterThan(10)
+      for (const seat of seats) {
+        for (const path of [...rosterPaths, `./${rosterPaths[0]}`, `goals/../${rosterPaths[1]}`]) {
+          const result = checkPathOwnership({ seat, paths: [path], manifest })
+          expect(result.ok, `${seat} must not write ${path}`).toBe(false)
+          expect(result.errors.some((error) => error.includes('(governance-files-guard)'))).toBe(
+            true,
+          )
+        }
+      }
+    })
+
+    it('rejects case variants of protected files for every seat', () => {
+      const variants = [
+        '.AgentFlow/team-roster.json',
+        '.agentflow/Team-Roster.json',
+        '.AGENTFLOW/TEAM-ROSTER.LOCAL.JSON',
+        'schemas/Team-Roster.schema.json',
+        'Schemas/team-roster-overlay.schema.json',
+        'Manifests/Path-Ownership.json',
+        'scripts/Validate-Path-Ownership.mjs',
+        './.AgentFlow/../.agentflow/Team-Roster.json',
+      ]
+      for (const seat of seatIds(loadSeatTable(repoRoot))) {
+        for (const path of variants) {
+          expect(checkPathOwnership({ seat, paths: [path], manifest }).ok, `${seat} ${path}`).toBe(
+            false,
+          )
+        }
+      }
+      expect(
+        matchOwnedPath('.agentflow/team-roster.json', '.AgentFlow/team-roster.json', {
+          caseInsensitive: true,
+        }),
+      ).toBe(true)
+      expect(matchOwnedPath('.agentflow/team-roster.json', '.AgentFlow/team-roster.json')).toBe(
+        false,
+      )
+    })
+
+    it('rejects Unicode-folded, trailing dot or space, and absolute spellings of protected files', () => {
+      const variants = [
+        '\u017fchemas/team-roster.schema.json',
+        '.agentflow/team-roster.json.',
+        '.agentflow/team-roster.json ',
+        '.agentflow /team-roster.json',
+        'manifests./path-ownership.json',
+        join(repoRoot, '.agentflow/team-roster.json'),
+        '/some/other/checkout/.agentflow/team-roster.local.json',
+        '.agentflow/team-roster.json/',
+        '.agentflow/team-roster.json::$DATA',
+        '.agentflow/TEAM-R~1.JSO',
+        'C:\\work\\repo\\.agentflow\\team-roster.json',
+      ]
+      for (const seat of ['dev.build', 'pm.analyst', 'orch.arch', 'eval.tester']) {
+        for (const path of variants) {
+          const result = checkPathOwnership({ seat, paths: [path], manifest, root: repoRoot })
+          expect(result.ok, `${seat} ${JSON.stringify(path)}`).toBe(false)
+        }
+      }
+      for (const path of [
+        'lib/roster/team-roster.mjs',
+        'docs/team-roster.md',
+        join(repoRoot, 'lib/x.mjs'),
+      ]) {
+        expect(
+          checkPathOwnership({ seat: 'dev.build', paths: [path], manifest, root: repoRoot }).ok,
+          path,
+        ).toBe(true)
+      }
+    })
+
+    it('rejects a manifest whose governance guard stops denying a roster path', () => {
+      for (const path of rosterPaths) {
+        const weakened = structuredClone(manifest)
+        const guard = weakened.rules.find((rule) => rule.id === 'governance-files-guard')
+        guard.deny = guard.deny.filter((item) => item !== path)
+        expect(validatePathOwnershipManifest(weakened).errors).toContain(
+          `governance-files-guard must deny ${path}`,
+        )
+      }
+    })
+
+    it('rejects a branch commit from a rig seat that changes the roster', () => {
+      const fixtureDir = mkdtempSync(join(tmpdir(), 'path-ownership-roster-'))
+      const git = (args) => execFileSync('git', args, { cwd: fixtureDir, encoding: 'utf8' })
+      try {
+        git(['init', '-b', 'development'])
+        git(['config', 'user.name', 'Framework Maintainer'])
+        git(['config', 'user.email', 'maintainer@example.com'])
+        writeFileSync(join(fixtureDir, 'README.md'), '# Fixture\n')
+        git(['add', 'README.md'])
+        git(['commit', '-m', 'chore: initial commit'])
+        git(['checkout', '-b', 'feat/roster-edit'])
+        mkdirSync(join(fixtureDir, '.agentflow'), { recursive: true })
+        writeFileSync(
+          join(fixtureDir, '.agentflow/team-roster.json'),
+          '{"version":1,"people":[]}\n',
+        )
+        git(['add', '.agentflow/team-roster.json'])
+        git([
+          'commit',
+          '-m',
+          'chore: add myself to the roster\n\nSeat: pm.analyst\nCo-Authored-By: Claude <noreply@anthropic.com>',
+        ])
+        const result = checkBranchCommits({ packageRoot: fixtureDir, manifest })
+        expect(result.ok).toBe(false)
+        expect(result.errors.join('\n')).toContain(
+          'pm.analyst cannot write .agentflow/team-roster.json (governance-files-guard)',
+        )
+      } finally {
+        rmSync(fixtureDir, { recursive: true, force: true })
+      }
+    })
   })
 })

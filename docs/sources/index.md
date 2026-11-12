@@ -122,6 +122,9 @@ adapter. Filesystem specifics:
   themselves would both win the same item.
 - **The filesystem writer is self-declared.** Any process that can write the root can claim to be
   any writer, so filesystem permissions on the root are the only protection.
+- **`readLogEntries(reference)` lists comment entries** in log order as `{ writer, body, uri,
+createdAt, updatedAt, edited: false }`, for callers that judge entries themselves, such as gate
+  decisions ([Team roster](../team-roster.md)). It is not part of the source contract.
 - **Each writer keeps its own receipt store** (`receipts-<writer>.json`). A claim or comment is
   committed when its log line, which carries the idempotency key, is written; a failed receipt flush
   after that does not fail the call.
