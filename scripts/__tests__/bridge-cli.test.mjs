@@ -268,6 +268,79 @@ describe('bridge CLI with a rig (#582)', () => {
     expect(stderr.text()).toContain('missing <ref>')
   })
 
+  it('several delivery rigs over a source without claim exit 1 quoting the source limits (#586 AC4)', async () => {
+    const dir = configured({
+      rig: undefined,
+      rigs: { control: 'agentflow-p', delivery: ['agentflow-p-d1', 'agentflow-p-d2'] },
+    })
+    const noClaim = (source, context) => {
+      const adapter = createSourceAdapter(source, context)
+      return { ...adapter, capabilities: adapter.capabilities.filter((item) => item !== 'claim') }
+    }
+    const rig = fakeRig()
+    const stdout = sink()
+    const code = await main(['reconcile', '--target', dir, '--json'], {
+      execFile: rig.execFile,
+      stdout,
+      stderr: sink(),
+      createSource: noClaim,
+    })
+    expect(code).toBe(1)
+    expect(JSON.parse(stdout.text())).toMatchObject({
+      ok: false,
+      status: 'invalid-config',
+      detail: { maxDeliveryRigs: 1, reasons: ['source adapter filesystem does not declare claim'] },
+    })
+    expect(rig.calls).toEqual([])
+  })
+
+  it('defers intake when open gates reach maxOpenGates (#586 AC3)', async () => {
+    const dir = configured({ maxOpenGates: 1 })
+    const work = join(dir, 'work')
+    createFilesystemWorkItem(work, { id: 'gated', title: 't', labels: [] })
+    const source = createSourceAdapter(
+      { adapter: 'filesystem', root: 'work' },
+      { targetDir: dir, env: {} },
+    )
+    const plan = await source.previewMutation({
+      operation: 'add-comment',
+      parameters: { id: 'gated', body: '<!-- agentflow-gate:waiting:g-1 -->' },
+      actionBoundary: { effective: 'external-action' },
+    })
+    await source.flushReceipt(await source.applyMutation(plan, { confirm: plan.token }))
+    const ref = createFilesystemWorkItem(work, { id: 'd', title: 't', labels: ['agentflow:ready'] })
+    const rig = fakeRig()
+    const stdout = sink()
+    expect(
+      await main(['intake', ref, '--target', dir, '--json'], {
+        execFile: rig.execFile,
+        stdout,
+        stderr: sink(),
+      }),
+    ).toBe(0)
+    expect(JSON.parse(stdout.text())).toMatchObject({
+      status: 'deferred',
+      reason: 'gate-capacity',
+      openGates: 1,
+      capacity: 1,
+    })
+    expect(rig.rows.size).toBe(0)
+  })
+
+  it('refuses gate resolution from a delivery seat session (decision 9)', async () => {
+    const dir = configured()
+    const ref = createFilesystemWorkItem(join(dir, 'work'), { id: 'e', title: 't' })
+    const stdout = sink()
+    const code = await main(['intake', ref, '--event', 'review-done', '--target', dir, '--json'], {
+      env: { OPENRIG_SESSION_NAME: 'dev-build@agentflow-p' },
+      execFile: fakeRig().execFile,
+      stdout,
+      stderr: sink(),
+    })
+    expect(code).toBe(1)
+    expect(JSON.parse(stdout.text())).toMatchObject({ ok: false, status: 'refused' })
+  })
+
   it('status reports the source limits and rig availability', async () => {
     const stdout = sink()
     expect(

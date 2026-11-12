@@ -6,9 +6,11 @@ import { execFile as nodeExecFile } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { promisify } from 'node:util'
+import { gateCapacityAdmission } from '../lib/bridge/backpressure.mjs'
 import { BridgeError, createBridge } from '../lib/bridge/bridge.mjs'
 import { NO_RIG_MESSAGE, loadBridgeConfig } from '../lib/bridge/config.mjs'
 import { createRigCliQueuePort } from '../lib/bridge/queue-port.mjs'
+import { loadTeamRoster } from '../lib/roster/team-roster.mjs'
 import { createSourceAdapter } from '../lib/sources/registry.mjs'
 
 export const BRIDGE_USAGE = `Usage: agentflow-sdlc bridge <intake|start|evidence|reconcile|escalate|status> [options] [--target <dir>] [--json]
@@ -94,7 +96,11 @@ async function run(bridge, { subcommand, args, flags }, { env, cwd }) {
   if (subcommand === 'intake') {
     const ref = need(args[0], '<ref>')
     const pushed = flags['payload-file'] ? JSON.parse(readFile(cwd, flags['payload-file'])) : null
-    return bridge.intake(ref, { event: flags.event ?? 'ready', pushed })
+    return bridge.intake(ref, {
+      event: flags.event ?? 'ready',
+      pushed,
+      session: env.OPENRIG_SESSION_NAME ?? null,
+    })
   }
   if (subcommand === 'start') {
     const session = flags.session ?? env.OPENRIG_SESSION_NAME
@@ -118,7 +124,12 @@ async function run(bridge, { subcommand, args, flags }, { env, cwd }) {
       session: env.OPENRIG_SESSION_NAME ?? null,
     })
   }
-  if (subcommand === 'reconcile') return bridge.reconcile({ dryRun: flags['dry-run'] === true })
+  if (subcommand === 'reconcile') {
+    return bridge.reconcile({
+      dryRun: flags['dry-run'] === true,
+      session: env.OPENRIG_SESSION_NAME ?? null,
+    })
+  }
   if (subcommand === 'escalate') {
     return bridge.escalate(need(args[0], '<ref>'), { reason: need(flags.reason, '--reason') })
   }
@@ -134,6 +145,7 @@ export async function main(
     stdout = process.stdout,
     stderr = process.stderr,
     createSource = createSourceAdapter,
+    loadRoster = loadTeamRoster,
   } = {},
 ) {
   let parsed
@@ -169,12 +181,20 @@ export async function main(
   try {
     const source = createSource(loaded.config.source, { targetDir: target, env })
     const queue = createRigCliQueuePort({ exec: execFile, cwd: target, env })
+    // Backpressure (#586): open gates on the source against the roster's capacity, or
+    // maxOpenGates (default 3) without a roster. The roster also decides who opens a review gate.
+    const roster = loadRoster(target)?.roster ?? null
+    const admission = gateCapacityAdmission({
+      source,
+      roster,
+      maxOpenGates: loaded.config.maxOpenGates ?? undefined,
+    })
+    const bridge = createBridge({ source, queue, config: loaded.config, admission, roster })
     if (parsed.subcommand !== 'status') {
       const available = await queue.available()
       if (!available.ok)
         return emit({ ok: false, status: 'rig-unavailable', reason: available.reason }, 1)
     }
-    const bridge = createBridge({ source, queue, config: loaded.config })
     const result = await run(bridge, parsed, { env, cwd })
     const failed = FAILURE_STATUSES.has(result.status)
     return emit({ ok: !failed, ...result }, failed ? 1 : 0)
