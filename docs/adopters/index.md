@@ -18,6 +18,18 @@ Adoption, and bringing an existing installation forward, is one journey:
 The core works with manual execution or any single coding CLI (**Substrate `S0`**). A missing Claude, Codex, Agy, Pi, or Grok
 binary does not block adoption unless project policy explicitly requires that provider capability. As your team's needs grow, you can scale incrementally from **Substrate `S0`** (Single-CLI + native L2 subagents) to **Substrate `S1`** (Multi-CLI orthogonal builder/reviewer routing without a daemon) or **Substrate `S2`** ([OpenRig Lean 4-Seat Squad](../../OPENRIG.md)); see [Project setup](../project-setup.md).
 
+## Adoption levels for the OpenRig execution layer
+
+The [OpenRig execution layer](../openrig-execution-layer.md) is optional. Choose a level; each adds
+to the one before, and a team without a rig loses nothing.
+
+| Level      | Needs                                                               | Gives                                                                |
+| :--------- | :------------------------------------------------------------------ | :------------------------------------------------------------------- |
+| `none`     | AgentFlow and one coding CLI                                        | The full workflow, gates and evidence; `bridge` commands do nothing  |
+| `seats`    | OpenRig 0.7.6 or later and a provisioned squad                      | Named delivery seats, fed by a person or `handoff deliver`           |
+| `workflow` | `seats`, the seat table and the delivery workflow spec              | Phases as workflow steps with queue handoffs                         |
+| `full`     | `workflow`, `adapters.openrig.bridge`, trusted writers and a pusher | Ready work reaches the rig after a push; worktrees; evidence returns |
+
 For a legacy or unrecognized installation, the same journey asks for an explicit
 [migration](../get-started.md#a-legacy-lock) or [recovery](../get-started.md#an-unknown-or-malformed-lock)
 choice. Later setting changes use [Refine your setup](../assisted-configuration.md).

@@ -1,0 +1,56 @@
+# Reference pusher (#587): tell the AgentFlow bridge that a GitHub item changed.
+#
+# It sends ONLY a reference (github:<owner>/<repo>#<number>) and an event kind. It never sends the
+# title, body, labels or comments: the bridge re-reads the item from GitHub and decides from that.
+# See docs/openrig-execution-layer.md.
+#
+# Copy this file to .github/workflows/ of the project repository.
+#
+# A GitHub-hosted runner cannot reach a rig on a private machine, so this job must run on a
+# self-hosted runner installed on the rig's host (the `rig-host` label below), where `agentflow-sdlc`
+# is on PATH and the checkout of the project is at AGENTFLOW_TARGET. If you cannot run a runner
+# there, use one of the other options in the documentation: a relay, a manual push, or a scheduled
+# `bridge reconcile` on the rig host.
+name: Push to rig
+
+on:
+  issues:
+    types: [labeled, closed]
+  pull_request:
+    types: [closed]
+  pull_request_review:
+    types: [submitted]
+
+# The job needs no GitHub token. The bridge reads GitHub with its own credentials on the rig host.
+permissions: {}
+
+jobs:
+  push:
+    runs-on: [self-hosted, rig-host]
+    timeout-minutes: 5
+    # One push at a time per item, in order.
+    concurrency:
+      group: rig-push-${{ github.repository }}-${{ github.event.issue.number || github.event.pull_request.number }}
+      cancel-in-progress: false
+    env:
+      REPO: ${{ github.repository }}
+      NUMBER: ${{ github.event.issue.number || github.event.pull_request.number }}
+      EVENT_NAME: ${{ github.event_name }}
+      ACTION: ${{ github.event.action }}
+      MERGED: ${{ github.event.pull_request.merged }}
+      # Where the project is checked out on the rig host. Set it as a repository variable.
+      TARGET: ${{ vars.AGENTFLOW_TARGET }}
+    steps:
+      - name: Push the reference
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$EVENT_NAME:$ACTION" in
+            issues:labeled) kind=ready ;;
+            issues:closed) kind=closed ;;
+            pull_request:closed)
+              if [ "$MERGED" = "true" ]; then kind=merged; else kind=closed; fi ;;
+            pull_request_review:submitted) kind=review-done ;;
+            *) echo "no push for $EVENT_NAME:$ACTION"; exit 0 ;;
+          esac
+          agentflow-sdlc bridge intake "github:${REPO}#${NUMBER}" --event "$kind" --target "$TARGET"
