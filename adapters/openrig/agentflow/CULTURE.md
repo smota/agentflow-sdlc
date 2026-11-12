@@ -34,13 +34,14 @@ This team delivers production-grade software in the repository given as its work
 6. **Two-Plane Separation**:
    - The external supervisory steering plane (`steer.lead`) operates out-of-rig via CLI orchestration, direct session interaction, or external supervisory runtimes.
    - External steering owns high-level goal decomposition, unfreeze resolutions, defect triage (`accept_and_register`), and merge verbs.
-   - Internal execution squads (`dev.build*`, `dev.test-eng`, `pm.*`, `rev.gate`, `orch.arch`) execute inside isolated git worktrees and cannot modify external steering state or grant self-approvals.
+   - Internal execution squads (`dev.build*`, `dev.test-eng`, `pm.*`, `rev.review`, `orch.arch`) execute inside isolated git worktrees and cannot modify external steering state or grant self-approvals.
 
 7. **Path Ownership & Oracle Pinning**:
    - PM seats (`pm.manager`, `pm.analyst`, `pm.lead` / `pm.*`) write only `.agentflow/**` and `goals/**` (`defaultDeny: true`). Commits touching code, libraries, or test fixtures are rejected.
    - Steering seats (`steer.lead` / `steer.*`) have no file write permissions (`allow: []`, `defaultDeny: true`). Commits authored under steering identities are rejected.
    - Builder seats (`dev.build`, `dev.build-jr`, `dev.build-sr`) cannot edit `tests/oracles/**` or `tests/**/oracles/**` and require a Phase 3 oracle digest pin before building starts.
    - Test engineering seat (`dev.test-eng`) is allowed `tests/**`, `lib/__tests__/**`, `scripts/__tests__/**`, and `guidance/**`, with `src/**` denied explicitly (`defaultDeny: true`).
+   - Tester and reviewer seats (`dev.qa`, `rev.review`) are read-only by role guidance; path rules deny only oracle edits (`tests/oracles/**`, `tests/**/oracles/**`), not a general write ban.
 
 8. **Epoch Fencing & Circuit Breaker**:
    - Rework iterations are counted monotonically from the transition ledger.
