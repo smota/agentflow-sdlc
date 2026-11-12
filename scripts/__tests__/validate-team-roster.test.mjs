@@ -70,7 +70,7 @@ describe('validate-team-roster', () => {
     expect(JSON.parse(text)).toMatchObject({
       ok: true,
       status: 'valid',
-      ref: 'refs/heads/development',
+      ref: 'refs/remotes/origin/development',
       people: ['sam', 'ana'],
       reachable: ['sam', 'ana'],
       overlaySource: 'config-home',
@@ -89,11 +89,25 @@ describe('validate-team-roster', () => {
     const report = JSON.parse(text)
     expect(report.people).toEqual(['sam', 'ana'])
     expect(report.notes).toContain(
-      `the working tree ${TEAM_ROSTER_PATH} differs from refs/heads/development; uncommitted changes have no effect`,
+      `the working tree ${TEAM_ROSTER_PATH} differs from refs/remotes/origin/development; uncommitted changes have no effect`,
     )
     const uncommitted = rosterProject(temp, { roster: sampleRoster(), commit: false })
-    expect(validate([], uncommitted)).toMatchObject({ code: 1 })
-    expect(validate([], uncommitted).text).toContain('cannot resolve the roster ref')
+    expect(validate([], uncommitted)).toMatchObject({ code: 0 })
+    expect(validate([], uncommitted).text).toContain('uncommitted changes have no effect')
+  })
+
+  it('exits 0 in a main-only repository without a roster and refuses one that has an unreadable roster', async () => {
+    const plain = rosterProject(temp, { extra: { 'README.md': 'x' } })
+    plain.git('update-ref', '-d', 'refs/remotes/origin/development')
+    plain.git('branch', '-m', 'main')
+    expect(validate([], plain)).toEqual({ code: 0, text: `${NO_ROSTER_MESSAGE}\n` })
+    expect((await roster(['validate'], plain)).code).toBe(0)
+    const held = rosterProject(temp, { roster: sampleRoster() })
+    held.git('update-ref', '-d', 'refs/remotes/origin/development')
+    held.git('branch', '-m', 'main')
+    const result = validate([], held)
+    expect(result.code).toBe(1)
+    expect(result.text).toContain('HEAD holds a roster')
   })
 
   it('blocks the old in-repo overlay name when it is not gitignored or is tracked', () => {
@@ -188,6 +202,7 @@ describe('agentflow-sdlc roster', () => {
     edited.people[0].scopes[0].gates.push('merge')
     writeFileSync(join(fx.dir, TEAM_ROSTER_PATH), JSON.stringify(edited))
     fx.git('commit', '-qam', 'widen')
+    fx.publish()
     const before = await roster(
       ['route', '--gate', 'merge', '--paths', 'lib/a', '--ref', 'roster-v1', '--json'],
       fx,
