@@ -1,7 +1,7 @@
 // `agentflow-sdlc bridge` (#582). The configured path runs against a fake exec; no test calls a
 // real `rig` (the spawned CLI checks run only without a configured rig, where rig is never called).
 import { spawnSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -62,6 +62,7 @@ function fakeRig() {
         destinationSession: value('--destination'),
         sourceSession: value('--source'),
         tags: value('--tags').split(','),
+        body: readFileSync(value('--body-file'), 'utf8'),
       }
       rows.set(row.qitemId, row)
       return { stdout: JSON.stringify(row) }
@@ -79,6 +80,7 @@ const SUBCOMMANDS = [
   ['evidence', 'filesystem:local#a', '--phase', '1'],
   ['reconcile'],
   ['cleanup', 'filesystem:local#a'],
+  ['release', 'filesystem:local#a'],
   ['escalate', 'filesystem:local#a', '--reason', 'x'],
   ['status'],
 ]
@@ -128,7 +130,7 @@ describe('bridge CLI without a rig (#582 AC6)', () => {
     const help = run(['bridge', '--help'])
     expect(help.status).toBe(0)
     expect(help.stdout).toContain(
-      'agentflow-sdlc bridge <intake|start|evidence|reconcile|cleanup|escalate|status>',
+      'agentflow-sdlc bridge <intake|start|evidence|reconcile|cleanup|release|escalate|status>',
     )
     expect(run(['--help']).stdout).toMatch(/\|bridge[|>]/)
   })
@@ -298,6 +300,133 @@ describe('bridge CLI with a rig (#582)', () => {
       }),
     ).toBe(2)
     expect(stderr.text()).toContain('missing <ref>')
+  })
+
+  it('several delivery rigs over a source without claim exit 1 quoting the source limits (#586 AC4)', async () => {
+    const dir = configured({
+      rig: undefined,
+      rigs: { control: 'agentflow-p', delivery: ['agentflow-p-d1', 'agentflow-p-d2'] },
+    })
+    const noClaim = (source, context) => {
+      const adapter = createSourceAdapter(source, context)
+      return { ...adapter, capabilities: adapter.capabilities.filter((item) => item !== 'claim') }
+    }
+    const rig = fakeRig()
+    const stdout = sink()
+    const code = await main(['reconcile', '--target', dir, '--json'], {
+      execFile: rig.execFile,
+      stdout,
+      stderr: sink(),
+      createSource: noClaim,
+    })
+    expect(code).toBe(1)
+    expect(JSON.parse(stdout.text())).toMatchObject({
+      ok: false,
+      status: 'invalid-config',
+      detail: { maxDeliveryRigs: 1, reasons: ['source adapter filesystem does not declare claim'] },
+    })
+    expect(rig.calls).toEqual([])
+  })
+
+  it('defers intake when open gates reach maxOpenGates (#586 AC3)', async () => {
+    const dir = configured({ maxOpenGates: 1 })
+    const work = join(dir, 'work')
+    createFilesystemWorkItem(work, { id: 'gated', title: 't', labels: [] })
+    const source = createSourceAdapter(
+      { adapter: 'filesystem', root: 'work' },
+      { targetDir: dir, env: {} },
+    )
+    const plan = await source.previewMutation({
+      operation: 'add-comment',
+      parameters: { id: 'gated', body: '<!-- agentflow-gate:waiting:g-1 -->' },
+      actionBoundary: { effective: 'external-action' },
+    })
+    await source.flushReceipt(await source.applyMutation(plan, { confirm: plan.token }))
+    const ref = createFilesystemWorkItem(work, { id: 'd', title: 't', labels: ['agentflow:ready'] })
+    const rig = fakeRig()
+    const stdout = sink()
+    expect(
+      await main(['intake', ref, '--target', dir, '--json'], {
+        execFile: rig.execFile,
+        stdout,
+        stderr: sink(),
+      }),
+    ).toBe(0)
+    expect(JSON.parse(stdout.text())).toMatchObject({
+      status: 'deferred',
+      reason: 'gate-capacity',
+      openGates: 1,
+      capacity: 1,
+    })
+    expect(rig.rows.size).toBe(0)
+  })
+
+  it('refuses gate resolution from a delivery seat session (decision 9)', async () => {
+    const dir = configured()
+    const ref = createFilesystemWorkItem(join(dir, 'work'), { id: 'e', title: 't' })
+    const stdout = sink()
+    const code = await main(['intake', ref, '--event', 'review-done', '--target', dir, '--json'], {
+      env: { OPENRIG_SESSION_NAME: 'dev-build@agentflow-p' },
+      execFile: fakeRig().execFile,
+      stdout,
+      stderr: sink(),
+    })
+    expect(code).toBe(1)
+    expect(JSON.parse(stdout.text())).toMatchObject({ ok: false, status: 'refused' })
+  })
+
+  it('reads the committed roster without the private overlay', async () => {
+    const calls = []
+    const dir = configured()
+    const stdout = sink()
+    expect(
+      await main(['status', '--target', dir, '--json'], {
+        execFile: fakeRig().execFile,
+        stdout,
+        stderr: sink(),
+        loadRoster: (target, options) => (
+          calls.push({ target, options }),
+          { roster: { people: [] } }
+        ),
+      }),
+    ).toBe(0)
+    expect(calls).toEqual([{ target: dir, options: expect.objectContaining({ overlay: false }) }])
+    expect(JSON.parse(stdout.text()).roster).toBe('team-roster')
+  })
+
+  it('release and reconcile need a named caller; --session names one (decision 9)', async () => {
+    const dir = configured()
+    const ref = createFilesystemWorkItem(join(dir, 'work'), { id: 'r', title: 't' })
+    const unnamed = sink()
+    expect(
+      await main(['release', ref, '--target', dir, '--json'], {
+        env: {},
+        execFile: fakeRig().execFile,
+        stdout: unnamed,
+        stderr: sink(),
+      }),
+    ).toBe(1)
+    expect(JSON.parse(unnamed.text())).toMatchObject({ status: 'refused' })
+    const named = sink()
+    expect(
+      await main(['release', ref, '--session', 'human@agentflow-p', '--target', dir, '--json'], {
+        env: {},
+        execFile: fakeRig().execFile,
+        stdout: named,
+        stderr: sink(),
+      }),
+    ).toBe(0)
+    expect(JSON.parse(named.text())).toMatchObject({ ok: true, status: 'free', holder: null })
+    const reconciled = sink()
+    expect(
+      await main(['reconcile', '--target', dir, '--json'], {
+        env: { OPENRIG_SESSION_NAME: 'human@agentflow-p' },
+        execFile: fakeRig().execFile,
+        stdout: reconciled,
+        stderr: sink(),
+      }),
+    ).toBe(0)
+    expect(JSON.parse(reconciled.text()).status).toBe('reconciled')
   })
 
   it('status reports the source limits and rig availability', async () => {

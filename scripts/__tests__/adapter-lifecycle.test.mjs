@@ -542,6 +542,66 @@ describe('adapters squads openrig (AC8-AC11)', () => {
     )
   })
 
+  it('provisions a control rig and delivery replicas; adding replica N+1 leaves rig N untouched (#586)', () => {
+    const home = tempDir('agentflow-home-')
+    const project = tempDir('agentflow-project-')
+    install(home)
+    // A single-rig project upgrades: its delivery rig keeps the plain name.
+    provision(home, '--sibling', 'agentflow-pm', 'demo', project)
+    const single = tree(specs(home, 'agentflow-demo'))
+    const control = provision(home, '--kind', 'control', 'demo', project)
+    expect(control.stdout).toContain(`rig up agentflow-demo-control --cwd ${project}`)
+    const controlRig = readFileSync(specs(home, 'agentflow-demo-control/rig.yaml'), 'utf8')
+    expect(controlRig).toContain('name: agentflow-demo-control')
+    expect(controlRig).toContain('id: manager')
+    expect(controlRig).not.toContain('id: build')
+    const controlSibling = readFileSync(specs(home, 'agentflow-demo-control/sibling.md'), 'utf8')
+    expect(controlSibling).toContain('This copy is the control rig `agentflow-demo-control`')
+    expect(controlSibling).not.toMatch(/agentflow-demo-d\d/)
+
+    const first = provision(home, '--kind', 'delivery', '--replica', '1', 'demo', project)
+    expect(first.stdout).toContain(`rig up agentflow-demo-d1 --cwd ${project}`)
+    const d1 = readFileSync(specs(home, 'agentflow-demo-d1/rig.yaml'), 'utf8')
+    expect(d1).toContain('name: agentflow-demo-d1')
+    expect(d1).toContain('id: build')
+    const d1Sibling = readFileSync(specs(home, 'agentflow-demo-d1/sibling.md'), 'utf8')
+    expect(d1Sibling).toContain('This copy is delivery rig `agentflow-demo-d1` (replica 1)')
+    expect(d1Sibling).toContain('The control rig for this project is `agentflow-demo-control`.')
+
+    const before = {
+      control: tree(specs(home, 'agentflow-demo-control')),
+      d1: tree(specs(home, 'agentflow-demo-d1')),
+    }
+    // An existing single delivery rig keeps its name and is not touched either.
+    provision(home, '--replica', '2', 'demo', project)
+    expect(readFileSync(specs(home, 'agentflow-demo-d2/rig.yaml'), 'utf8')).toContain(
+      'name: agentflow-demo-d2',
+    )
+    expect(tree(specs(home, 'agentflow-demo-control'))).toEqual(before.control)
+    expect(tree(specs(home, 'agentflow-demo-d1'))).toEqual(before.d1)
+    expect(tree(specs(home, 'agentflow-demo'))).toEqual(single)
+    expect(readFileSync(specs(home, 'agentflow-demo-d2/sibling.md'), 'utf8')).not.toContain(
+      'agentflow-demo-d1',
+    )
+  })
+
+  it.each([
+    ['a replica on a product squad', ['--kind', 'product', '--replica', '1', 'demo']],
+    ['a replica that is not a positive integer', ['--replica', '0', 'demo']],
+    ['a replica that already exists', ['--replica', '1', 'demo']],
+    ['a project id ending in -d<n>', ['demo-d1']],
+    ['a project id ending in -control', ['--kind', 'control', 'demo-control']],
+  ])('refuses %s', (label, args) => {
+    const home = tempDir('agentflow-home-')
+    const project = tempDir('agentflow-project-')
+    install(home)
+    if (label.includes('already exists')) provision(home, '--replica', '1', 'demo', project)
+    const before = tree(home)
+    const result = cli(['adapters', 'squads', 'provision', 'openrig', ...args, project], { home })
+    expect(result.status).not.toBe(0)
+    expect(tree(home)).toEqual(before)
+  })
+
   it.each([
     ['an unknown kind', ['--kind', 'other', 'demo']],
     ['an unknown product preset', ['--kind', 'product', '--preset', 'no-such', 'demo']],

@@ -201,6 +201,10 @@ agentflow-sdlc bridge intake github:owner/repo#12 --event ready --target /path/t
 
 `--event` is one of `ready` (default), `review-done`, `merged` or `closed`. The bridge decides from
 the source, not from the event name: a `merged` push for an item that is not merged does nothing.
+`review-done`, `merged` and `closed` resolve or abort gated work, so they need a named caller outside
+the delivery rigs: add `--session <name>`, for example `--session ci@external` (the reference
+pusher does) or `--session human@<control rig>`. Sessions are self-asserted
+([OpenRig bridge](openrig-bridge.md#gate-resolution-stays-outside-the-rig)).
 
 ## Not supported
 
