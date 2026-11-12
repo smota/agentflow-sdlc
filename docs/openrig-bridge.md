@@ -56,6 +56,7 @@ Add `adapters.openrig.bridge` to `agent-workflow.config.json` (or `agentflow.con
 | `worktrees.branchPrefix` | Prefix of each slice's branch                                                                         | `work/`                                                 |
 | `worktrees.integration`  | The branch whose merged state decides removal                                                         | the remote's default branch, else `development`         |
 | `worktrees.remote`       | The remote whose integration branch is fetched                                                        | `origin`                                                |
+| `worktrees.disposable`   | Ignored paths that may be deleted with a worktree (all other ignored files keep it)                   | `["node_modules"]`                                      |
 
 "No rig configured" means `bridge` is absent, or both `rig` and `rigs.delivery` are empty. One
 delivery rig is supported; several delivery rigs on one project arrive with multi-rig delivery.
@@ -224,18 +225,51 @@ OpenRig cannot move a running seat's working directory, so the path reaches the 
 The safety rule. A worktree is removed (with `git worktree remove`, never `--force`, never `rm`)
 only when all of these hold:
 
-- it is registered, lives under the worktrees directory and is not locked;
+- the slice path is not a symlink; the worktree is registered, lives under the worktrees directory,
+  is not locked, and is on the expected branch `<branchPrefix><slice>` (a detached HEAD is refused);
 - it has no modified, staged or untracked files, and no merge, rebase, cherry-pick or revert in progress;
+- it has no ignored files that removal would delete. Git ignores things such as `.agent-runs/`
+  evidence and `.env`, and `git worktree remove` deletes them. Only the paths in
+  `worktrees.disposable` (default `node_modules`, including a symlink of that name) may go with
+  it. The reasons name the blocking paths, relative to the worktree;
+- no other registered worktree lives inside it (a nested worktree would be deleted with its
+  uncommitted work);
 - it has no commits ahead of its upstream, when it has one;
 - its HEAD is an ancestor of `<remote>/<integration>`, or equals the merged head the source reports
   for the item (`mergedHead`, for squash merges);
 - the integration branch was fetched in this run. A fetch that fails means the merged state is
   unknown, and a stale ref keeps the worktree.
 
+Inspection and removal are not one atomic step, so the branch is deleted last and only if its tip is
+still the inspected commit (`git update-ref -d refs/heads/<branch> <inspected commit>`). A commit made in
+between keeps the branch, and the result carries a `branchNote`. Only the expected branch is ever
+deleted, never whatever is checked out. The reflog and stashes are not consulted: a stash is
+shared by the whole repository and is not removed with a worktree.
+
 When removal is refused the worktree stays, the claim stays, and a person is told through the
 notifier (kind `worktree-kept`) with every reason. Telling again about the same reasons is a
-re-delivery, not a new row. Orphans are listed in the reconcile report and not sent to a person.
-`reconcile --dry-run` reports `worktrees.wouldRemove`, `kept` and `orphans` and changes nothing.
+re-delivery, not a new row. What a person is told is scrubbed: paths are relative to the repository
+root, the home directory is `~`, and remote URLs (which may hold tokens) are replaced. Orphans are
+listed in the reconcile report and not sent to a person.
+
+`reconcile --dry-run` reports `worktrees.wouldRemove`, `kept` and `orphans`, marks the report
+`possiblyStale: true` and changes nothing: it does not fetch, so no ref or `FETCH_HEAD` changes and
+the merged state is read from the last fetch.
+
+Git runs only when a hook needs it. Building the port and `status` run no git; the primary
+checkout and the integration branch are resolved on first use. A project that is not a git
+repository makes every worktree hook do nothing.
+
+### Known gaps
+
+- `bridge cleanup` and the `merged` event do not yet project the workflow's cleanup step
+  (`rig workflow project --exit done|waiting`): the bridge does not know that step's packet. This
+  arrives with the cleanup step of the workflow spec (#583).
+- The startup instruction of the seats must tell them to work only inside `worktree_path` and never
+  `cd` back to the primary checkout to edit. That one-line change to
+  `adapters/openrig/agentflow/startup/context.md` is pending #583 and is not made here.
+- Squash-merge removal needs the source to report the merged head (`mergedHead` on the work item).
+  Until an adapter does, a squash-merged worktree is kept and a person is told.
 
 ## Assumption about replaying phases
 

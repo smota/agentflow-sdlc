@@ -130,24 +130,24 @@ async function run(bridge, { subcommand, args, flags }, { env, cwd }) {
   return bridge.status()
 }
 
-// The slice worktree port, when worktrees are enabled (the default once a rig is configured) and
-// the project is a git repository. Nothing is created here; git is touched only when a command
-// needs a worktree.
-function worktreesFor(config, { target, git }) {
+// The slice worktree port, when worktrees are enabled (the default once a rig is configured).
+// Building it runs no git: the primary checkout is resolved on first use, and a project that is
+// not a git repository makes every worktree hook inert.
+export function worktreesFor(config, { target, git }) {
   const settings = config.worktrees
   if (!settings || settings.enabled === false) return null
-  // The primary checkout, even when a command runs from inside a slice worktree: worktrees of a
-  // slice never nest under another worktree.
-  let repoRoot = null
-  try {
-    const common = git(['rev-parse', '--path-format=absolute', '--git-common-dir'], {
-      cwd: target,
-    }).trim()
-    if (basename(common) === '.git') repoRoot = dirname(common)
-  } catch {
-    return null
-  }
-  return repoRoot ? createWorktreesPort({ repoRoot, settings, git }) : null
+  return createWorktreesPort({
+    settings,
+    git,
+    // The primary checkout even when a command runs inside a slice worktree, so worktrees never
+    // nest under another worktree.
+    resolveRepoRoot: () => {
+      const common = git(['rev-parse', '--path-format=absolute', '--git-common-dir'], {
+        cwd: target,
+      }).trim()
+      return basename(common) === '.git' ? dirname(common) : null
+    },
+  })
 }
 
 export async function main(

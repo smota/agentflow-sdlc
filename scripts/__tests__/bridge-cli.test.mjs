@@ -260,39 +260,32 @@ describe('bridge CLI with a rig (#582)', () => {
     expect(code).toBe(1)
   })
 
-  it('wires slice worktrees by default and not when they are off or the project is not a git repo (#584b)', async () => {
-    const statusOf = async (extra, git) => {
+  it('wires slice worktrees by default, lazily, and not when they are off (#584b)', async () => {
+    const statusOf = async (extra) => {
       const stdout = sink()
       const calls = []
       const code = await main(['status', '--target', configured(extra), '--json'], {
         execFile: fakeRig().execFile,
-        git: (args, options) => (calls.push(args), git(args, options)),
+        git: (args) => {
+          calls.push(args)
+          throw new Error('not a git repository')
+        },
         stdout,
         stderr: sink(),
       })
       expect(code).toBe(0)
       return { status: JSON.parse(stdout.text()), calls }
     }
-    const toplevel = (args) => {
-      if (args[0] === 'rev-parse') return '/repo/.git\n'
-      throw new Error('no remote head')
-    }
-    const on = await statusOf({}, toplevel)
-    expect(on.status.worktrees).toMatchObject({
-      repoRoot: '/repo',
-      dir: '.worktrees',
-      branchPrefix: 'work/',
-      integration: 'development',
-    })
-    const custom = await statusOf({ worktrees: { integration: 'main' } }, toplevel)
-    expect(custom.status.worktrees.integration).toBe('main')
-    const off = await statusOf({ worktrees: false }, toplevel)
+    const on = await statusOf({})
+    expect(on.status.worktrees).toMatchObject({ dir: '.worktrees', branchPrefix: 'work/' })
+    // Status does no git: the primary checkout and integration branch are resolved on use.
+    expect(on.calls).toEqual([])
+    expect((await statusOf({ worktrees: { integration: 'main' } })).status.worktrees).toMatchObject(
+      { integration: 'main' },
+    )
+    const off = await statusOf({ worktrees: false })
     expect(off.status.worktrees).toBeNull()
     expect(off.calls).toEqual([])
-    const notGit = await statusOf({}, () => {
-      throw new Error('not a git repository')
-    })
-    expect(notGit.status.worktrees).toBeNull()
   })
 
   it('exits 2 when a required argument is missing', async () => {
