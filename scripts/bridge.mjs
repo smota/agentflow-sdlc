@@ -6,27 +6,40 @@ import { execFile as nodeExecFile } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { basename, dirname, resolve } from 'node:path'
 import { promisify } from 'node:util'
+import { gateCapacityAdmission } from '../lib/bridge/backpressure.mjs'
 import { BridgeError, createBridge } from '../lib/bridge/bridge.mjs'
 import { NO_RIG_MESSAGE, loadBridgeConfig } from '../lib/bridge/config.mjs'
 import { createRigCliQueuePort } from '../lib/bridge/queue-port.mjs'
 import { createWorktreesPort } from '../lib/bridge/worktrees-port.mjs'
 import { nativePath } from '../lib/runtime/path-identity.mjs'
 import { defaultGit } from '../lib/runtime/slice-worktrees.mjs'
+import { loadTeamRoster } from '../lib/roster/team-roster.mjs'
 import { createSourceAdapter } from '../lib/sources/registry.mjs'
 
-export const BRIDGE_USAGE = `Usage: agentflow-sdlc bridge <intake|start|evidence|reconcile|cleanup|escalate|status> [options] [--target <dir>] [--json]
-  bridge intake <ref> [--event ready|review-done|merged|closed] [--payload-file <json>]
-  bridge start <qitemId> [--session <seat@rig>]            (defaults to OPENRIG_SESSION_NAME)
+export const BRIDGE_USAGE = `Usage: agentflow-sdlc bridge <intake|start|evidence|reconcile|cleanup|release|escalate|status> [options] [--target <dir>] [--json]
+  bridge intake <ref> [--event ready|review-done|merged|closed] [--payload-file <json>] [--session <name@rig>]
+  bridge start <qitemId> [--session <seat@rig>] [--resume]  (session defaults to OPENRIG_SESSION_NAME)
   bridge evidence <ref> --phase <n> --status pass|skipped --seat <id> [--reason <text>] --body-file <file>
       --executed-by <slug> --launcher <slug> --executor <target> --transport <t> --delegation-boundary <b> [--model <m>]
-  bridge reconcile [--dry-run]
+  bridge reconcile [--dry-run] [--session <name@rig>]
   bridge cleanup <ref>                                     (remove a merged slice's worktree and release its claim)
+  bridge release <ref> [--session <name@rig>] [--person <roster id>]
+  review-done, merged, closed, reconcile and release need a named caller outside the delivery rigs.
   bridge escalate <ref> --reason <text>
   bridge status
 Exit: 0 done, no rig, not ready, deferred or already queued; 1 source, rig or config failure,
 unsupported predicate or refused evidence; 2 usage.
 `
-const SUBCOMMANDS = ['intake', 'start', 'evidence', 'reconcile', 'cleanup', 'escalate', 'status']
+const SUBCOMMANDS = [
+  'intake',
+  'start',
+  'evidence',
+  'reconcile',
+  'cleanup',
+  'release',
+  'escalate',
+  'status',
+]
 const VALUE_FLAGS = new Set([
   '--event',
   '--payload-file',
@@ -42,6 +55,7 @@ const VALUE_FLAGS = new Set([
   '--transport',
   '--delegation-boundary',
   '--model',
+  '--person',
   '--target',
 ])
 const FAILURE_STATUSES = new Set([
@@ -96,14 +110,18 @@ function render(result) {
 }
 
 async function run(bridge, { subcommand, args, flags }, { env, cwd }) {
+  const caller =
+    typeof flags.session === 'string' ? flags.session : (env.OPENRIG_SESSION_NAME ?? null)
   if (subcommand === 'intake') {
     const ref = need(args[0], '<ref>')
     const pushed = flags['payload-file'] ? JSON.parse(readFile(cwd, flags['payload-file'])) : null
-    return bridge.intake(ref, { event: flags.event ?? 'ready', pushed })
+    return bridge.intake(ref, { event: flags.event ?? 'ready', pushed, session: caller })
   }
   if (subcommand === 'start') {
-    const session = flags.session ?? env.OPENRIG_SESSION_NAME
-    return bridge.start(need(args[0], '<qitemId>'), { session: need(session, '--session') })
+    return bridge.start(need(args[0], '<qitemId>'), {
+      session: need(caller, '--session'),
+      resume: flags.resume === true,
+    })
   }
   if (subcommand === 'evidence') {
     const phase = Number(need(flags.phase, '--phase'))
@@ -123,8 +141,16 @@ async function run(bridge, { subcommand, args, flags }, { env, cwd }) {
       session: env.OPENRIG_SESSION_NAME ?? null,
     })
   }
-  if (subcommand === 'reconcile') return bridge.reconcile({ dryRun: flags['dry-run'] === true })
-  if (subcommand === 'cleanup') return bridge.cleanup(need(args[0], '<ref>'))
+  if (subcommand === 'reconcile') {
+    return bridge.reconcile({ dryRun: flags['dry-run'] === true, session: caller })
+  }
+  if (subcommand === 'cleanup') return bridge.cleanup(need(args[0], '<ref>'), { session: caller })
+  if (subcommand === 'release') {
+    return bridge.release(need(args[0], '<ref>'), {
+      session: caller,
+      person: typeof flags.person === 'string' ? flags.person : null,
+    })
+  }
   if (subcommand === 'escalate') {
     return bridge.escalate(need(args[0], '<ref>'), { reason: need(flags.reason, '--reason') })
   }
@@ -161,6 +187,7 @@ export async function main(
     stderr = process.stderr,
     createSource = createSourceAdapter,
     git = defaultGit,
+    loadRoster = loadTeamRoster,
   } = {},
 ) {
   let parsed
@@ -196,13 +223,47 @@ export async function main(
   try {
     const source = createSource(loaded.config.source, { targetDir: target, env })
     const queue = createRigCliQueuePort({ exec: execFile, cwd: target, env })
+    const worktrees = worktreesFor(loaded.config, { target, git })
+    // Backpressure (#586): open gates on the source against the roster's capacity, or
+    // maxOpenGates (default 3) without a roster. The roster, read from its protected ref, also
+    // decides who opens a review gate; the bridge delivers nothing, so it never reads the overlay.
+    const roster = loadRoster(target, { overlay: false, env })?.roster ?? null
+    const admission = gateCapacityAdmission({
+      source,
+      roster,
+      maxOpenGates: loaded.config.maxOpenGates ?? undefined,
+    })
+    // The review digest takes the source's own head; only when the source has none, the slice
+    // branch head (a branch a seat can move: docs/openrig-bridge.md).
+    const prefix = loaded.config.worktrees?.branchPrefix ?? 'work/'
+    const candidateHead = async ({ slice }) => {
+      try {
+        return (
+          String(
+            git(['rev-parse', '--verify', '--quiet', `refs/heads/${prefix}${slice}`], {
+              cwd: target,
+            }),
+          ).trim() || null
+        )
+      } catch {
+        return null
+      }
+    }
+    // Built before the rig check, so a configuration error never needs rig.
+    const bridge = createBridge({
+      source,
+      queue,
+      config: loaded.config,
+      worktrees,
+      admission,
+      roster,
+      candidateHead,
+    })
     if (parsed.subcommand !== 'status') {
       const available = await queue.available()
       if (!available.ok)
         return emit({ ok: false, status: 'rig-unavailable', reason: available.reason }, 1)
     }
-    const worktrees = worktreesFor(loaded.config, { target, git })
-    const bridge = createBridge({ source, queue, config: loaded.config, worktrees })
     const result = await run(bridge, parsed, { env, cwd })
     const failed = FAILURE_STATUSES.has(result.status)
     return emit({ ok: !failed, ...result }, failed ? 1 : 0)

@@ -47,13 +47,18 @@ Add `adapters.openrig.bridge` to `agent-workflow.config.json` (or `agentflow.con
 | Key                      | Meaning                                                                                               | Default                                                 |
 | :----------------------- | :---------------------------------------------------------------------------------------------------- | :------------------------------------------------------ |
 | `rig`                    | The delivery rig. Shorthand for `rigs: { control: rig, delivery: [rig] }`                             | none: no rig means the bridge is off                    |
+| `rigs.control`           | The rig that runs the bridge and the product seats                                                    | the first delivery rig                                  |
+| `rigs.delivery`          | The delivery rigs offered work ([Several delivery rigs](#several-delivery-rigs))                      | `[rig]`                                                 |
+| `project`                | The project id in the bridge's queue session `agentflow-bridge@<project>`                             | `rigs.control` without a `-control` suffix              |
+| `partition`              | Narrows which delivery rigs an item is offered to, by mission or area label                           | none: every delivery rig                                |
+| `maxOpenGates`           | Open person gates at which intake stops, when the project has no team roster                          | 3                                                       |
 | `source.adapter`         | A registered source adapter (`filesystem`, or a hosted source when its adapter declares readiness)    | required                                                |
 | `source.claimWriters`    | Writers whose claim entries the source trusts                                                         | the bridge's own writer                                 |
 | `source.evidenceWriters` | Writers whose role-pass evidence counts for any bridge decision                                       | `source.claimWriters`; with neither, no evidence counts |
 | `ready`                  | The [ready predicate](sources/index.md): `label`, `status` and `lifecycle` leaves under `all` / `any` | the `agentflow:ready` label on an open item             |
 | `entrySeat`              | The seat that receives intake rows; its phase is where fresh work starts                              | `pm.analyst`                                            |
 | `workflowSpec`           | The OpenRig workflow spec each item runs as                                                           | the AgentFlow delivery workflow                         |
-| `escalateTo`             | The session that receives person escalations                                                          | `human@<rig>`                                           |
+| `escalateTo`             | The session that receives person escalations                                                          | `human@<rig>` of the rig whose queue carries the ask    |
 | `worktrees`              | Slice worktrees ([below](#slice-worktrees)): `false` or `{ enabled: false }` turns them off           | on                                                      |
 | `worktrees.dir`          | Where slice worktrees live, relative to the repository root                                           | `.worktrees`                                            |
 | `worktrees.branchPrefix` | Prefix of each slice's branch                                                                         | `work/`                                                 |
@@ -61,19 +66,19 @@ Add `adapters.openrig.bridge` to `agent-workflow.config.json` (or `agentflow.con
 | `worktrees.remote`       | The remote whose integration branch is fetched                                                        | `origin`                                                |
 | `worktrees.disposable`   | Ignored paths that may be deleted with a worktree (all other ignored files keep it)                   | `["node_modules"]`                                      |
 
-"No rig configured" means `bridge` is absent, or both `rig` and `rigs.delivery` are empty. One
-delivery rig is supported; several delivery rigs on one project arrive with multi-rig delivery.
+"No rig configured" means `bridge` is absent, or both `rig` and `rigs.delivery` are empty.
 
 The `bridge` key is never projected into `adapters/openrig/rig.yaml`.
 
 ## Commands
 
 ```bash
-agentflow-sdlc bridge intake <ref> [--event ready|review-done|merged|closed] [--payload-file <json>] [--json]
-agentflow-sdlc bridge start <qitemId> [--session <seat@rig>] [--json]
+agentflow-sdlc bridge intake <ref> [--event ready|review-done|merged|closed] [--payload-file <json>] [--session <name@rig>] [--json]
+agentflow-sdlc bridge start <qitemId> [--session <seat@rig>] [--resume] [--json]
 agentflow-sdlc bridge evidence <ref> --phase <n> --status pass|skipped --seat <id> --body-file <file> --executed-by <slug> --launcher <slug> --executor <target> --transport <t> --delegation-boundary <b> [--model <m>] [--reason <text>] [--json]
-agentflow-sdlc bridge reconcile [--dry-run] [--json]
-agentflow-sdlc bridge cleanup <ref> [--json]
+agentflow-sdlc bridge reconcile [--dry-run] [--session <name@rig>] [--json]
+agentflow-sdlc bridge cleanup <ref> [--session <seat@rig>] [--json]
+agentflow-sdlc bridge release <ref> [--session <name@rig>] [--person <roster id>] [--json]
 agentflow-sdlc bridge escalate <ref> --reason <text> [--json]
 agentflow-sdlc bridge status [--json]
 ```
@@ -88,11 +93,17 @@ Every command accepts `--target <dir>`. A reference is `<system>:<scope>#<id>`, 
 | `evidence`  | Writes one role-pass comment to the source. A retry with the same inputs writes nothing                                                                                                                                                               |
 | `reconcile` | Rebuilds the queue from the source in one pass                                                                                                                                                                                                        |
 | `cleanup`   | Removes the slice worktree of a merged item when it is safe, and releases the claim. Keeps it and tells a person otherwise ([Slice worktrees](#slice-worktrees))                                                                                      |
+| `release`   | Releases the item's source claim ([Removing a rig](#removing-a-rig-and-recovering-a-claim))                                                                                                                                                           |
 | `escalate`  | Asks a person through the queue                                                                                                                                                                                                                       |
 | `status`    | Shows the rigs, the source, its limits, the ready predicate and whether `rig` is usable                                                                                                                                                               |
 
 `start` reads its session from `OPENRIG_SESSION_NAME` when `--session` is not given. `evidence`
 reads it from `OPENRIG_SESSION_NAME` to decide `seatVerified` and to check the reviewer.
+`intake --event review-done|merged|closed`, `reconcile` and `release` need a named caller
+(`--session`, else `OPENRIG_SESSION_NAME`) outside the delivery rigs; see
+[Gate resolution stays outside the rig](#gate-resolution-stays-outside-the-rig). A pusher names
+itself, for example `--session ci@external`. `cleanup` run on a delivery rig tells a person through
+that rig's own queue.
 
 ## Trusted evidence writers
 
@@ -149,12 +160,12 @@ the source and lists any pushed field that disagrees (`title`, `labels`, `state`
 
 ## Events
 
-| Event         | Requires                                              | Effect                                                                           |
-| :------------ | :---------------------------------------------------- | :------------------------------------------------------------------------------- |
-| `ready`       | The ready predicate holds                             | One intake row, or `not-ready` with reasons, or `deferred`                       |
-| `review-done` | A phase 6 pass recorded after the latest phase 4 pass | Resolves rows parked on `external:review:<id>` with the evidence link            |
-| `merged`      | The item's lifecycle is `merged`                      | Resolves rows parked on `external:merge:<id>`, then cleans up the slice worktree |
-| `closed`      | The item's lifecycle is `closed`                      | Aborts live workflow instances and cancels live rows for the item                |
+| Event         | Requires                                                                                        | Effect                                                                           |
+| :------------ | :---------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------- |
+| `ready`       | The ready predicate holds                                                                       | One intake row, or `not-ready` with reasons, or `deferred`                       |
+| `review-done` | A phase 6 pass after the latest phase 4 pass; with a team roster, an in-scope person's decision | Resolves rows parked on `external:review:<id>` with the evidence link            |
+| `merged`      | The item's lifecycle is `merged`                                                                | Resolves rows parked on `external:merge:<id>`, then cleans up the slice worktree |
+| `closed`      | The item's lifecycle is `closed`                                                                | Aborts live workflow instances and cancels live rows for the item                |
 
 ## Evidence
 
@@ -198,13 +209,21 @@ out) is reported under `failed`; the rest are still handled, and the run ends wi
 
 ### Live work
 
-An item has live work when a row of its intake chain is pending, in progress or blocked, or a
-workflow instance tagged `af:<stable id>` is active or waiting. The intake chain is the stable id
-and its generation ids, read one at a time with `rig queue show`. OpenRig retention may erase
-closed rows, and an erased id cannot be reused, so the scan steps past missing ids (up to 16 in a
-row) and a new row always takes the generation after the highest one found; liveness never comes from
-`rig queue list`, whose output is bounded (100 rows by default, newest first). Escalation and
-notice rows carry the tag `af-notice:<stable id>` and are not work.
+An item has live work when one of its intake rows is pending, in progress or blocked, or a workflow
+instance tagged `af:<stable id>` is active or waiting. Intake rows are found two ways, on every
+rig's queue:
+
+- by listing the bridge's own live rows (`rig queue list --source <session> --state
+pending,in-progress,blocked --limit 10000`; a full page is an error, never a smaller answer) and
+  reading each row's intake body. The sessions listed are the stable `agentflow-bridge@<project>`
+  and the legacy `agentflow-bridge@<rig>` of every configured rig, so rows created before a
+  single-to-multi upgrade or under an earlier control rig name stay visible;
+- by reading the ids the current configuration uses (each rig's offer id and the stable id, and
+  their generations) one at a time with `rig queue show`. OpenRig retention may erase closed rows,
+  and an erased id cannot be reused, so the scan steps past missing ids (up to 16 in a row) and a new
+  row always takes the generation after the highest one found.
+
+Escalation and notice rows carry the tag `af-notice:<stable id>` and are not work.
 
 ## Slice worktrees
 
@@ -320,9 +339,191 @@ until that instance is aborted.
 
 The bridge takes these optional ports:
 
-| Port        | Used for                                                                                    |
-| :---------- | :------------------------------------------------------------------------------------------ |
-| `admission` | Backpressure: returns `{ admit: false, reason }` to defer intake. Default admits everything |
-| `claim`     | Claim before work; default claims through the source when it declares `claim`               |
-| `worktrees` | `pathFor` on intake, `prepare` on start, `cleanup` on merged, `sweep` on reconcile          |
-| `notifier`  | Person delivery; default creates a queue row with human intent `decision`                   |
+| Port            | Used for                                                                                    |
+| :-------------- | :------------------------------------------------------------------------------------------ |
+| `admission`     | Backpressure: returns `{ admit: false, reason }` to defer intake. Default admits everything |
+| `claim`         | Claim before work; default claims through the source when it declares `claim`               |
+| `worktrees`     | `pathFor` on intake, `prepare` on start, `cleanup` on merged, `sweep` on reconcile          |
+| `notifier`      | Person delivery; default creates a queue row with human intent `decision`                   |
+| `queues`        | One queue port per rig name; a rig without one uses `queue`                                 |
+| `roster`        | The team roster; with it the review gate needs an in-scope person's source decision         |
+| `gateEntries`   | Source log entries for gate decisions and markers; default the adapter's `readLogEntries`   |
+| `candidateHead` | The candidate under review when the source reports no head                                  |
+
+The CLI wires `admission` to the gate-capacity port, `roster` to the team roster read from its
+protected ref ([team roster](team-roster.md); the bridge never reads the private overlay), and
+`candidateHead` to `git rev-parse refs/heads/<worktrees.branchPrefix><slice>`.
+
+## Several delivery rigs
+
+A team with more ready work than one rig can carry adds delivery rigs to the same project. The rigs
+never talk to each other: they coordinate only through the source.
+
+```json
+"bridge": {
+  "rigs": { "control": "agentflow-myproj-control", "delivery": ["agentflow-myproj-d1", "agentflow-myproj-d2"] },
+  "source": { "adapter": "filesystem", "claimWriters": ["agentflow-bridge", "rig-d1", "rig-d2"] },
+  "partition": { "key": "mission", "map": { "578": ["agentflow-myproj-d1"] } },
+  "maxOpenGates": 3
+}
+```
+
+- **Rigs.** The control rig (`agentflow-<project>-control`, a product-base copy) runs the bridge
+  and the product seats. Delivery rig _n_ is `agentflow-<project>-d<n>`, a delivery-base copy.
+  Neither collides with a single-rig project's delivery rig `agentflow-<project>`. Project ids
+  ending in `-d<n>` or `-control` are refused. Every rig's `cwd` is the one project root.
+- **Offers.** `intake` and `reconcile` create one offer row per delivery rig the partition names,
+  each on that rig's queue (id `<stable id>-<6 hex of sha256(rig)>`), destined for the rig's entry
+  seat. With one delivery rig the row keeps the plain stable id.
+- **Claim before work.** The entry seat of each rig runs `bridge start <qitemId>` on its own offer.
+  `start` claims the item in the source before it creates anything. The earliest trusted claim wins;
+  a losing rig closes its offer as `canceled` with resolution `claimed by <rig>` and creates no
+  worktree and no workflow instance. The start session must be on a configured delivery rig, and a
+  rig starts only rows offered to it. A second start of the same item on the same rig (from another
+  row) is not a win: holding the claim already, it closes its row as `superseded` and tells a
+  person. Each start claims its row in the queue before it looks for another running start, so of
+  two concurrent starts at most one proceeds; when both see each other both stand down, and the
+  person told pushes the item again.
+- **Partition.** `key: mission` maps the item's parent (`partOf`) to rigs; `key: area` maps the
+  label after `prefix` (default `area:`) to rigs. An item the map does not name is offered to every
+  delivery rig. Every rig in the map must be a delivery rig.
+- **A source without `claim`** allows one delivery rig. Configuring more is a configuration error
+  (exit 1) that quotes the source limits (`describeSourceLimits`).
+
+### Adding a rig
+
+1. `agentflow-sdlc adapters squads provision openrig --kind delivery --replica <n> <project> <cwd>`
+   (the control rig is `--kind control <project> <cwd>`). Provisioning refuses a rig name that
+   already exists and writes only the new rig's files.
+2. `agentflow-sdlc adapters catalog openrig --write --id <project> --rig agentflow-<project>-d<n>`
+   appends the rig to the project in `workspace.yaml`.
+3. Append the rig to `adapters.openrig.bridge.rigs.delivery` and add its source writer to
+   `source.claimWriters`.
+
+No file of a running rig changes: the workflow spec addresses seats as `member@{rig}`, the control
+rig's `sibling.md` does not list delivery rigs, and a delivery rig's `sibling.md` names only the
+control rig. Rows queued while the project had one rig stay visible, so nothing is queued twice.
+
+### Upgrading a single-rig project
+
+A project with one delivery rig `agentflow-<project>` (bridge `rig: agentflow-<project>`) keeps it:
+
+1. Provision the control rig (`--kind control`) and the replicas you want (`--replica 1`, …).
+2. Set `rigs: { control: "agentflow-<project>-control", delivery: ["agentflow-<project>", "agentflow-<project>-d1"] }`
+   and drop the `rig` key. The existing rig is now one delivery rig. The bridge's queue session
+   stays `agentflow-bridge@agentflow-<project>` (the control rig's name without `-control`), so its
+   rows stay visible to intake, cancellation, stray settling and gate markers; nothing is queued
+   twice. Set `project` explicitly if the control rig is named otherwise.
+3. To retire `agentflow-<project>` later, remove it from `rigs.delivery` once it has finished its
+   claimed work (see below).
+
+### Removing a rig, and recovering a claim
+
+Removing a delivery rig from `rigs.delivery` hides none of its live rows, and no other rig starts an
+offer made to it. Its claims stay in the source until released:
+
+- The bridge releases an item's claim when the item is closed, when it is merged (once its slice
+  worktree is gone, when worktrees are on), when a start parks its row on a refused replay or the
+  return-cycle limit, and when a start fails before it creates a workflow instance (the row goes back
+  to pending), so another rig may take the item.
+- For a rig removed while it held a claim, a person runs
+  `agentflow-sdlc bridge release <ref> --session <name@control rig>`, then cancels the removed rig's
+  live rows (`rig queue update <id> --state done --closure-reason canceled`) and pushes the item
+  again. A claim held by a rig still in `rigs.delivery` is released only for a roster person:
+  `--person <roster id>`.
+- Every start records a lease on its row (a queue note with its session and the time). If a start
+  process died after it claimed the row and the item but before the workflow instance, the row stays
+  in progress. Once that start's lease is older than 15 minutes, the entry seat of the same rig runs
+  `bridge start <qitemId> --resume`: it refuses while the lease is fresh, and two resumes race on the
+  queue's atomic claim, so only one proceeds. It also refuses when an instance or another start of
+  the item exists. This relies on `rig queue show` returning row notes; where it does not, the lease
+  cannot be read and only the atomic claim protects a resume.
+
+### Backpressure
+
+More rigs help only while people keep up with review. Before it queues new work, the bridge counts
+the open person gates on the source (the sum of `openGates` over open items). When that count
+reaches capacity, `intake` reports `status: deferred, reason: gate-capacity, openGates, capacity`
+and `reconcile` lists the item under `deferred`; nothing is queued. After a gate closes, the next
+push or `reconcile` queues it.
+
+The gates are recorded in the source by the bridge. Each park of a row on a review, merge, replay or
+failed-start gate gets a comment `<!-- agentflow-gate:waiting:<gate>@<qitem id>~<n> -->`, where
+`<n>` counts that row's parks, so a row that parks again after a resolve is a new gate. Resolving
+the gate, or the row no longer waiting, adds the matching `closed` line. `intake` and `reconcile`
+bring these markers up to date before they count, so a workflow parked at review counts as soon as
+the next push or reconcile runs. Only markers written by trusted writers (the evidence writers and
+the bridge's own writer) count, in the bridge and in the source's `openGates`; anyone else's marker
+is ignored. A source adapter reports `openGates` from these markers (the filesystem source does).
+Intake is held when the source cannot write comments (`reason: gate-markers-unwritable`) or cannot
+list its log entries (`reason: gate-log-unreadable`).
+
+One `reconcile` pass counts the items it has already admitted against capacity, so it does not
+overshoot. Concurrent `intake` calls can: each counts before the others queue, so with _k_ pushes at
+once the queue may exceed capacity by up to _k_ − 1 items. An item queued but not yet at a gate is
+not counted.
+
+Capacity is the sum of `capacity` over the [team roster](team-roster.md) people (3 each by default).
+Without a roster it is `maxOpenGates` (default 3, one person). Start with one delivery rig per
+active reviewing person. **These numbers are not measured.** Record gate wait time and the open-gate
+count from the source and revise them.
+
+### When the control rig stops
+
+Delivery-side commands (`start`, `evidence`, `cleanup`) use only their own rig's queue and the source, never
+the control rig. If the control rig stops, delivery rigs finish the work they have claimed, no new
+offers arrive, and they idle. Escalations from a delivery rig go to `human@<that rig>` unless
+`escalateTo` is set.
+
+The CLI talks to the local OpenRig daemon, so the control rig and its delivery rigs share one
+daemon. Rigs on other hosts are not reached by one bridge; that is not verified against OpenRig.
+
+### Gate resolution stays outside the rig
+
+Workers cannot approve their own work. `intake --event review-done|merged|closed`, `reconcile` and
+`release` refuse:
+
+- a call with no named caller (`--session`, else `OPENRIG_SESSION_NAME`);
+- any session on a delivery rig other than the control rig, whatever its name (`human@<delivery
+rig>`, `agentflow-bridge@<delivery rig>`, a seat);
+- a seat session on the delivery or eval plane (`manifests/seats.json`) on any rig.
+
+**Sessions are self-asserted.** This check stops a worker that follows its instructions, not one
+that lies about its session. With a team roster, the real control is the person's decision recorded
+in the source (below). Without a roster, `review-done` relies on the phase 6 evidence whose
+reviewer session is itself self-declared: that is a residual risk, accepted for single-person
+projects.
+
+With a team roster, `review-done` also needs a person's decision recorded in the source: a comment
+whose first line is
+`<!-- agentflow-gate-decision:{"v":1,"gate":"<ref>:review:<digest>","decision":"agree"} -->`,
+written by a roster person in scope for `acceptance-review` at the item's tier (both reviews for
+high-assurance). The gate id binds what is under review: `<digest>` is the SHA-256 (64 hex) over
+the candidate head and the trusted transitions up to the latest phase 6 pass. The candidate head is
+the one the source reports for the item (a declared candidate head, the pull request head, or the
+merge head); only when the source reports none is it the slice branch head, which a seat can move.
+`gate.candidateFrom` says which (`source` or `branch`). `review-done` reports the current id under `gate.gateId` while it
+waits. A commit pushed after the agreement, or a new build and review round, changes the digest, so
+an agreement for an older one is `stale-gate` and does not count. When the candidate head is unknown
+no roster gate opens (`candidate-head-unknown`). The bridge reads the decision with
+the roster's `gateDecisionState`. A decision from a bridge writer, from someone off the roster,
+given in chat, or in an edited comment counts for nothing; on a high-assurance item an entry whose
+edit state the adapter does not report is refused too. The adapter's `readLogEntries` supplies the
+entries with `edited`, `createdAt` and `updatedAt` (the filesystem log is append-only, so its entries
+are never edited). A source adapter without `readLogEntries` opens no roster gate.
+
+### One rig per project and the shared workspace
+
+Goal #578 decision 7 says one rig points at one project. The shared workspace from #553 attaches
+adopter repositories through `workspace.yaml`. The two compose:
+
+- `workspace.yaml` is a catalogue of projects, `projects: [{ id, root, rigs: [...] }]`, each listing
+  its own rigs. Nothing in #553 is removed.
+- Decision 7 is the constraint on that catalogue: a rig's `cwd` is exactly one project root, and a
+  rig name appears under at most one project. A project may list a control rig and several delivery
+  rigs.
+- `adapters catalog` enforces it: for an existing project id it appends a new rig to that project's
+  `rigs`, leaves an already-listed rig as a no-op, and refuses a rig already attached to another
+  project, writing nothing.
+
+This record follows the ADR 016 draft for goal #578 (open-question resolution b).
