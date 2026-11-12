@@ -341,6 +341,25 @@ describe('bridge CLI with a rig (#582)', () => {
     expect(JSON.parse(stdout.text())).toMatchObject({ ok: false, status: 'refused' })
   })
 
+  it('reads the committed roster without the private overlay', async () => {
+    const calls = []
+    const dir = configured()
+    const stdout = sink()
+    expect(
+      await main(['status', '--target', dir, '--json'], {
+        execFile: fakeRig().execFile,
+        stdout,
+        stderr: sink(),
+        loadRoster: (target, options) => (
+          calls.push({ target, options }),
+          { roster: { people: [] } }
+        ),
+      }),
+    ).toBe(0)
+    expect(calls).toEqual([{ target: dir, options: expect.objectContaining({ overlay: false }) }])
+    expect(JSON.parse(stdout.text()).roster).toBe('team-roster')
+  })
+
   it('status reports the source limits and rig availability', async () => {
     const stdout = sink()
     expect(

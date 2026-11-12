@@ -183,7 +183,9 @@ export async function main(
     const queue = createRigCliQueuePort({ exec: execFile, cwd: target, env })
     // Backpressure (#586): open gates on the source against the roster's capacity, or
     // maxOpenGates (default 3) without a roster. The roster also decides who opens a review gate.
-    const roster = loadRoster(target)?.roster ?? null
+    // The roster is read from a commit (HEAD) of the primary checkout; the bridge delivers
+    // nothing, so it never reads the private overlay.
+    const roster = loadRoster(target, { overlay: false, env })?.roster ?? null
     const admission = gateCapacityAdmission({
       source,
       roster,

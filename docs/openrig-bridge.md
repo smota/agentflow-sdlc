@@ -216,7 +216,9 @@ The bridge takes these optional ports:
 | `roster`      | The team roster; with it the review gate needs an in-scope person's source decision         |
 | `gateEntries` | Reads the source log entries for gate decisions; default the adapter's `readLogEntries`     |
 
-The CLI wires `admission` to the gate-capacity port and `roster` to `.agentflow/team-roster.json`.
+The CLI wires `admission` to the gate-capacity port and `roster` to `.agentflow/team-roster.json`
+as committed at `HEAD` of the primary checkout ([team roster](team-roster.md)); an uncommitted edit
+changes nothing, and the bridge never reads the private overlay.
 
 ## Several delivery rigs
 
@@ -294,11 +296,17 @@ a relay or CI (no session) may call them.
 
 With a team roster, `review-done` also needs a person's decision recorded in the source: a comment
 whose first line is
-`<!-- agentflow-gate-decision:{"v":1,"gate":"external:review:<stable id>","decision":"agree"} -->`,
+`<!-- agentflow-gate-decision:{"v":1,"gate":"<ref>:review:<digest>","decision":"agree"} -->`,
 written by a roster person in scope for `acceptance-review` at the item's tier (both reviews for
-high-assurance). The bridge reads it with the roster's `gateDecisionState`. A decision from a
-bridge writer, from someone off the roster, or given in chat counts for nothing. A source adapter
-that cannot list its log entries (`readLogEntries`) opens no roster gate.
+high-assurance). The gate id binds the evidence under review: `<digest>` is the first 16 hex of the
+SHA-256 over the trusted transitions up to the latest phase 6 pass, and `review-done` reports the
+current id under `gate.gateId` while it waits. A new build and review round has a new digest, so an
+agreement for an older round is `stale-gate` and does not count. The bridge reads the decision with
+the roster's `gateDecisionState`. A decision from a bridge writer, from someone off the roster,
+given in chat, or in an edited comment counts for nothing; on a high-assurance item an entry whose
+edit state the adapter does not report is refused too. The adapter's `readLogEntries` supplies the
+entries with `edited`, `createdAt` and `updatedAt` (the filesystem log is append-only, so its entries
+are never edited). A source adapter without `readLogEntries` opens no roster gate.
 
 ### One rig per project and the shared workspace
 
