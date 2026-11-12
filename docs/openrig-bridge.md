@@ -231,16 +231,26 @@ only when all of these hold:
 - it has no ignored files that removal would delete. Git ignores things such as `.agent-runs/`
   evidence and `.env`, and `git worktree remove` deletes them. Only the paths in
   `worktrees.disposable` (default `node_modules`, including a symlink of that name) may go with
-  it. The reasons name the blocking paths, relative to the worktree;
+  it. A name without a slash matches that directory anywhere, so a monorepo's
+  `packages/*/node_modules` counts; a name with a slash (`build/cache`) matches from the worktree
+  root. Everything beneath a disposable path is deleted with it, including a repository nested
+  there: that is the meaning of listing it. The reasons name the blocking paths, relative to the
+  worktree;
 - no other registered worktree lives inside it (a nested worktree would be deleted with its
   uncommitted work);
 - it has no commits ahead of its upstream, when it has one;
 - its HEAD is an ancestor of `<remote>/<integration>`, or equals the merged head the source reports
-  for the item (`mergedHead`, for squash merges: see Known gaps below for what supplies it);
+  for the item (`mergedHead`, for squash merges). The source must also report the branch it merged
+  into (`mergedInto`), and it must be the integration branch; a head merged into any other branch
+  is ignored. See Known gaps below for what supplies it;
 - the integration branch was fetched in this run. A fetch that fails means the merged state is
   unknown, and a stale ref keeps the worktree.
 
-Inspection and removal are not one atomic step, so the branch is deleted last and only if its tip is
+Inspection and removal are not one atomic step. Before removing, the worktree is locked with a
+reason, inspected again under the lock (ignored files, nested worktrees, HEAD, status), and unlocked
+only to be removed at once; any failure unlocks and keeps. A file git itself would refuse
+(modified, untracked) cannot slip through; an ignored file written in the last instant between
+unlock and removal can, and that residual window is accepted. The branch is deleted last and only if its tip is
 still the inspected commit (`git update-ref -d refs/heads/<branch> <inspected commit>`). A commit made in
 between keeps the branch, and the result carries a `branchNote`. Only the expected branch is ever
 deleted, never whatever is checked out. The reflog and stashes are not consulted: a stash is
@@ -249,7 +259,8 @@ shared by the whole repository and is not removed with a worktree.
 When removal is refused the worktree stays, the claim stays, and a person is told through the
 notifier (kind `worktree-kept`) with every reason. Telling again about the same reasons is a
 re-delivery, not a new row. What a person is told is scrubbed: paths are relative to the repository
-root, the home directory is `~`, and remote URLs (which may hold tokens) are replaced. Orphans are
+root, the home directory and a Windows user profile are `~`, and remote URLs, `user:secret@host`
+credentials, bare GitHub-style tokens and Authorization headers are replaced. Orphans are
 listed in the reconcile report and not sent to a person.
 
 `reconcile --dry-run` reports `worktrees.wouldRemove`, `kept` and `orphans`, marks the report

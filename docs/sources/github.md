@@ -36,8 +36,10 @@ callers see `capability-absent` otherwise.
   revision is unchanged. Mutation plans use the same content digest.
 - Lifecycle is `open`, `closed`, or `merged` (a closed pull request with `merged_at`). A listing
   skips open and unmerged pull requests, and pages 100 at a time.
-- `readWorkItem` of a merged pull request also returns `mergedHead`: the pull request's head commit,
-  for the bridge's squash-merge worktree cleanup (#584). A squash commit does not contain the
+- `readWorkItem` of a merged pull request also returns `mergedHead` (the pull request's head commit)
+  and `mergedInto`, the branch it merged into (a consumer must match it against its integration
+  branch: a head merged elsewhere says nothing about that branch), for the bridge's squash-merge
+  worktree cleanup (#584). A squash commit does not contain the
   branch's commits, so the head is the only tie between the branch and its merge. It is read from the
   pull request resource (one more request) and only when GitHub reports `merged: true` and a
   well-formed sha; an issue, an open pull request and a closed unmerged one get `null`, and nothing
