@@ -58,4 +58,6 @@ jobs:
               if [ "$MERGED" = "true" ]; then kind=merged; else kind=closed; fi ;;
             *) echo "no push for $EVENT_NAME:$ACTION"; exit 0 ;;
           esac
-          agentflow-sdlc bridge intake "github:${REPO}#${NUMBER}" --event "$kind" --target "$TARGET"
+          # merged and closed resolve or abort gated work: the bridge needs a named caller outside
+          # the delivery rigs (docs/openrig-bridge.md, "Gate resolution stays outside the rig").
+          agentflow-sdlc bridge intake "github:${REPO}#${NUMBER}" --event "$kind" --session ci@external --target "$TARGET"

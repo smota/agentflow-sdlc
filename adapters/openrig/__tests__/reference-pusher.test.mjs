@@ -72,6 +72,8 @@ describe('reference pusher (#587)', () => {
     expect(BRIDGE_USAGE).toContain('bridge intake <ref>')
     expect(parsed.args[0]).toBe('github:${REPO}#${NUMBER}')
     expect(parsed.flags.event).toBe('$kind')
+    // Gate-resolving events need a named caller outside the delivery rigs (decision 9).
+    expect(parsed.flags.session).toBe('ci@external')
     const kinds = [...run.matchAll(/kind=([a-z-]+)/g)].map((match) => match[1])
     expect(new Set(kinds)).toEqual(new Set(['ready', 'closed', 'merged']))
     for (const kind of kinds) expect(BRIDGE_USAGE).toContain(kind)
