@@ -192,6 +192,7 @@ export const GIT_EXCLUDES = [
   '.worktrees/',
   '.claude/settings.local.json',
   'gate-lane-verdict.json',
+  '.agentflow/team-roster.local.json',
 ]
 
 function fail(message) {

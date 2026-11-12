@@ -130,7 +130,7 @@ describe('bridge CLI without a rig (#582 AC6)', () => {
     expect(help.stdout).toContain(
       'agentflow-sdlc bridge <intake|start|evidence|reconcile|cleanup|escalate|status>',
     )
-    expect(run(['--help']).stdout).toContain('|bridge>')
+    expect(run(['--help']).stdout).toMatch(/\|bridge[|>]/)
   })
 
   it('exits 2 for an unknown subcommand', async () => {

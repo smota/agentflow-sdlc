@@ -32,6 +32,7 @@ const EXCLUDES = [
   '.worktrees/',
   '.claude/settings.local.json',
   'gate-lane-verdict.json',
+  '.agentflow/team-roster.local.json',
 ]
 const PI_SEATS_BALANCED = [
   'eval-tester@agentflow',
