@@ -17,3 +17,6 @@ pnpm-workspace.yaml
 .agentflow/roles/
 .agentflow/role-catalog.json
 .agentflow/method-catalog.json
+
+# graphify knowledge-graph output (regenerated)
+graphify-out/
