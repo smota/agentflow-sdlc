@@ -23,6 +23,11 @@ The preview is byte-for-byte read-only. Its transaction plan reports `create`, `
 `preserve-removed`, `seed`, and `seed-skip` actions plus a content-derived token.
 Do not approve a blocked plan.
 
+Every profile seeds `.github/pull_request_template.md` from the shared default when the target
+has no PR template. Existing templates remain project-owned. GitHub setup uses the same default.
+See [the generated PR template guide](../guides/contribution-workflow.md#generated-pr-template)
+for field syntax and validation.
+
 Profile resolution closes relative JavaScript imports and JSON Schema `$ref` dependencies
 transitively. A clean target can import every installed module and resolve every installed schema
 without relying on files from a larger profile.

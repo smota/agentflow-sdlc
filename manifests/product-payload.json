@@ -57,6 +57,11 @@
       "ownership": "seed-once"
     },
     {
+      "source": "defaults/pull_request_template.md",
+      "target": ".github/pull_request_template.md",
+      "ownership": "seed-once"
+    },
+    {
       "source": "agents/templates/stack-conventions.md",
       "target": "docs/stack-conventions.md",
       "ownership": "seed-once"

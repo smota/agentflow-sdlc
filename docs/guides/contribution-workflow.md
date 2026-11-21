@@ -53,6 +53,31 @@ pnpm format:check
 - Use `Closes #<issue>` only for PRs targeting the default/trunk branch where GitHub native auto-close should apply.
 - Use `Refs #<issue>` for related but non-closing references.
 
+## Generated PR template
+
+`agentflow-sdlc github setup --apply` and onboarding use the same
+[default PR template](../../defaults/pull_request_template.md). Onboarding seeds
+`.github/pull_request_template.md` only when that file is absent. GitHub setup reports a conflict
+for a custom template and preserves it.
+
+Replace every placeholder before validation. The default uses `Closes #<issue-number>`.
+For an integration PR, change `Closes` to `Implements` as described above.
+
+Keep the section headings and field labels unchanged. Write fields as `- Label: value` or
+`**Label:** value`. The validator does not accept `- **Label:** value`.
+Fill all ten fields under `## Agent review`. Use the registered runtime platform for
+`Implemented by` and `Launcher`, and record the actual executor and transport separately.
+See [execution targets](../execution-targets.md) for accepted values.
+
+Start `Handover comments:` with a bare URL, or use `exception: <reason>` when no role transition
+occurred. Set the CI-equivalent `Status` to `passed`, `not-run-with-reason`, or
+`expected-fail-with-follow-up`. The last value requires a concrete follow-up issue reference.
+List the actual validation commands under `Commands:`.
+
+For `Mode: multi-agent`, also include the role attribution matrix from
+`agents/templates/pr-manifest.md`. That extended template covers release and promotion evidence.
+See [the PR manifest contract](../agent-workflow.md#pr-manifest) for those conditional requirements.
+
 ## Review model
 
 - Bounded and standard work may use explicit, evidence-backed self-review.
