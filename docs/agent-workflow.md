@@ -352,6 +352,17 @@ as the integration branch and does not use a `staging` branch:
 main <- development <- feature/work branches
 ```
 
+A trunk-based project can use one protected branch for both trunk and integration:
+
+```text
+main <- feature/work branches
+```
+
+Set `releaseCandidate` to `null`. Set `trunk`, `integration`, and `defaultPrTarget` to `main`.
+Set `promotionOrder` and `directEditDeniedBranches` to `["main"]`. A shared trunk and integration
+branch is allowed only when `releaseCandidate` is `null`. With a release-candidate branch, all
+three branch names must be distinct.
+
 Implementation edits must happen on a bounded feature/work branch by default, never directly on
 protected branches such as `development` or `main`. Projects may redefine branch names, optional
 release-candidate usage, PR targets, and allowed work prefixes in `agent-workflow.config.json`; see

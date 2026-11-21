@@ -177,6 +177,18 @@ agentflow-sdlc sdlc migrate-authority plan --target /path/to/project
 agentflow-sdlc sdlc migrate-authority apply --target /path/to/project --confirm <plan-token>
 ```
 
+## Branch strategy
+
+The default strategy uses `main`, `staging`, and `development` as distinct protected branches.
+Set `branching.releaseCandidate` to `null` to omit the release-candidate branch.
+With no release-candidate branch, `branching.integration` may equal `branching.trunk` for trunk-based delivery.
+When a release-candidate branch is set, all three branch names must be distinct.
+
+`branching.promotionOrder` must include every protected tier and `branching.defaultPrTarget`.
+`branching.directEditDeniedBranches` must include every protected tier. Each array must have unique entries.
+For a main-only project, set trunk, integration, and default PR target to `main`, and both arrays to `["main"]`.
+See [Branch strategy choices](project-setup.md#branch-strategy-choices) for trunk-based, two-tier, and three-tier examples.
+
 ## Seed-once files
 
 Transactional adoption seeds missing project-owned files such as `AGENTS.md`,

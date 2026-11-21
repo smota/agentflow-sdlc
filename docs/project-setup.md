@@ -146,7 +146,25 @@ or a fallback is used, record that in handover evidence.
 
 ## Branch strategy choices
 
-A simple project can use `main` as both trunk and default PR target. This repository uses a two-tier `development -> main` policy with no `staging` branch:
+A trunk-based project uses `main` as trunk, integration branch, and default PR target. Set
+`releaseCandidate` to `null` and list `main` once in each branch array:
+
+```json
+{
+  "branching": {
+    "trunk": "main",
+    "releaseCandidate": null,
+    "integration": "main",
+    "directEditDeniedBranches": ["main"],
+    "defaultPrTarget": "main",
+    "promotionOrder": ["main"]
+  }
+}
+```
+
+Implementation still uses work branches. Direct edits to `main` remain denied.
+
+This repository uses a two-tier `development -> main` policy with no `staging` branch:
 
 ```json
 {
@@ -164,7 +182,8 @@ A simple project can use `main` as both trunk and default PR target. This reposi
 }
 ```
 
-A project with staged promotion can separate integration, release-candidate, and trunk branches:
+A project with staged promotion can separate integration, release-candidate, and trunk branches.
+When `releaseCandidate` is set, all three branch names must be distinct:
 
 ```json
 {
