@@ -63,10 +63,17 @@ const BIN = mkdtempSync(join(tmpdir(), 'agentflow-adapter-bin-'))
 const GIT = findOnPath('git', process.env.PATH || process.env.Path || '')
 let PATH
 if (WINDOWS) {
-  // Isolate node and git. Git's own directory also contains bash.exe, which this test must not see.
+  // Isolate node and git. Git's own directory may also contain bash.exe, which this test must not see.
   symlinkSync(process.execPath, join(BIN, 'node.exe'))
-  symlinkSync(GIT, join(BIN, 'git.exe'))
-  PATH = BIN
+  const gitDir = dirname(GIT)
+  if (['bash.exe', 'sh.exe'].some((name) => existsSync(join(gitDir, name)))) {
+    symlinkSync(GIT, join(BIN, 'git.exe'))
+    PATH = BIN
+  } else {
+    // A relocated git.exe cannot load the DLLs that sit next to it (the ucrt64 build), so use
+    // its own directory when that directory holds no shell.
+    PATH = [BIN, gitDir].join(delimiter)
+  }
 } else {
   symlinkSync(process.execPath, join(BIN, 'node'))
   symlinkSync(GIT, join(BIN, 'git'))
