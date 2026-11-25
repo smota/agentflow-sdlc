@@ -37,7 +37,7 @@ The problem diagnosis in the design is strong. As written, the design does not p
 
 ---
 
-# Section 1: Zoom-Out Lens (`egm-zoom-out`)
+## Section 1: Zoom-Out Lens (`egm-zoom-out`)
 
 Findings below come from this lens. Where the inventive-catalyst lens found the same issue, the item is marked "also found by catalyst" and is fully described once in Section 3 or in the consolidated list in Section 4.
 
@@ -164,7 +164,7 @@ Findings below come from this lens. Where the inventive-catalyst lens found the 
 
 ---
 
-# Section 2: Cross-Lens Blocker (found independently by both reviewers)
+## Section 2: Cross-Lens Blocker (found independently by both reviewers)
 
 ### B2. The pinned verifier executes candidate-supplied code while holding secrets - Severity: Blocker
 
@@ -175,7 +175,7 @@ Findings below come from this lens. Where the inventive-catalyst lens found the 
 
 ---
 
-# Section 3: Inventive-Catalyst Lens (`egm-inventive-catalyst`)
+## Section 3: Inventive-Catalyst Lens (`egm-inventive-catalyst`)
 
 False compromise was detected. The strongest pattern is that the design puts enforcement in an agent's behavior, or in "the author does it", where a platform-enforced or deterministic mechanism would remove the trade-off. It also treats four things as unavoidable: bad changes merge and are then reverted, the author is the bottleneck on trust-bearing files, a weaker fallback substrate is acceptable, and the steward must be a model session.
 
@@ -321,7 +321,7 @@ Merged into Blocker B2 above. Transform: Segmentation plus Extraction.
 
 ---
 
-# Section 4: Consolidated Prioritized Findings (Blockers -> Major -> Nits)
+## Section 4: Consolidated Prioritized Findings (Blockers -> Major -> Nits)
 
 Overlapping findings are merged. The "Lens" column shows which reviewer found each. Sections 1 to 3 hold the full detail, so this section is the checklist.
 
