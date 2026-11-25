@@ -82,12 +82,10 @@ describe('guarded run with one sandbox per run', () => {
 
   it('removes the sandbox after a kill, because killing the host process alone leaves the agent running', async () => {
     const running = run(['sleep', '60000'])
-    const until = Date.now() + 5000
-    while (Date.now() < until) {
-      const active = existsSync(activeRunPath(root))
-        ? JSON.parse(readFileSync(activeRunPath(root), 'utf8'))
-        : null
-      if (active?.pid) break
+    // Wait until the agent step has started inside the fake sandbox, not just until it is spawned:
+    // on Linux the kill can otherwise land before the child has run at all.
+    const until = Date.now() + 10000
+    while (Date.now() < until && !lines().some((l) => l[0] === 'exec')) {
       await new Promise((done) => setTimeout(done, 50))
     }
     await coordinator('kill', { root })
