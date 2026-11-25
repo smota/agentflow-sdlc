@@ -1429,7 +1429,7 @@ const COMMAND_USAGE = {
     'Usage: agentflow-sdlc board [backfill] --medium <filesystem|github> [--root <dir> | --repo <owner/repo>] [--json] [--apply]\nShows every work item in one of Backlog, Readiness, WIP, or Delivered. backfill previews GitHub label corrections; --apply writes them.\n',
   coordinator:
     'Usage: agentflow-sdlc coordinator <status|pause|resume|kill> [--reason <text>] [--target <dir>] [--json]\nThe local kill switch for guarded agent runs. With no state file the coordinator reads as paused; kill also stops the active guarded run and its process tree.\n',
-  box: 'Usage: agentflow-sdlc box check [--control-repo <owner/name>] [--json]\nRead-only check of the setup acts the governed factory needs. It names each missing act and exits non-zero when a week-0 act is missing.\n',
+  box: 'Usage: agentflow-sdlc box <check|gate> [--control-repo <owner/name>] [--target <dir>] [--json]\ncheck: read-only check of the setup acts; it names each missing act. gate: the week-0 gate against the real sbx (containment, a timed kill, the run cap); it writes .agentflow/gates/week0.json.\n',
   gates:
     'Usage: agentflow-sdlc gates <open|answer|candidate|on-behalf|sync|waiting> --medium <filesystem|github> [--root <dir> | --repo <owner/repo> --issue <n>] [--json]\nPerson gates on the work record. A person runs gates answer in their own terminal; it refuses to run under an agent runtime.\n',
   resume:

@@ -147,8 +147,14 @@ export function boxCheck({
 export function main(argv, { run } = {}) {
   const flag = (name) => (argv.includes(name) ? argv[argv.indexOf(name) + 1] : undefined)
   const [verb] = argv.filter((arg, i) => !arg.startsWith('--') && !argv[i - 1]?.startsWith('--'))
+  if (verb === 'gate') {
+    // The week-0 gate (W0-15) imports this module, so it is loaded only when asked for.
+    return import('./week0-gate.mjs').then((gate) => gate.main(argv))
+  }
   if (verb !== 'check') {
-    process.stderr.write('Usage: agentflow-sdlc box check [--control-repo <owner/name>] [--json]\n')
+    process.stderr.write(
+      'Usage: agentflow-sdlc box <check|gate> [--control-repo <owner/name>] [--target <dir>] [--json]\n',
+    )
     return 2
   }
   const controlRepo = flag('--control-repo') ?? process.env.AGENTFLOW_CONTROL_REPO ?? null
@@ -166,5 +172,11 @@ export function main(argv, { run } = {}) {
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  process.exitCode = main(process.argv.slice(2))
+  Promise.resolve(main(process.argv.slice(2))).then(
+    (code) => (process.exitCode = code),
+    (error) => {
+      process.stderr.write(`${error.message}\n`)
+      process.exitCode = 1
+    },
+  )
 }
