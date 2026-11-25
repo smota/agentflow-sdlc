@@ -61,6 +61,9 @@ These acts must pass before the week-0 gate.
    `command` runs an agent command inside a sandbox; `stopCommand` tears the sandbox down after
    every run; `envAllowlist` may name only approved, non-credential variables.
 
+When every week-0 act passes, run the [week-0 gate](week-0-gate.md):
+`agentflow-sdlc box gate --control-repo <owner>/agentflow-control`.
+
 ## Later milestones
 
 `box check` lists these as `later` until the milestone that needs them.
