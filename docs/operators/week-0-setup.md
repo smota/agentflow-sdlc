@@ -23,11 +23,12 @@ These acts must pass before the week-0 gate.
    winget install Docker.sbx
    ```
 
-2. **Start the daemon and sign in** to Docker in your own terminal. The sign-in uses your Docker
+2. **Start the daemon in the background and sign in** to Docker in your own terminal. Without
+   `--detach` the daemon stops when its terminal closes. The sign-in uses your Docker
    account, so an agent never performs it. Signing in also initializes the global network policy:
 
    ```bash
-   sbx daemon start
+   sbx daemon start --detach
    sbx login
    sbx diagnose
    ```

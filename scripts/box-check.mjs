@@ -78,7 +78,7 @@ export function boxCheck({
   results.push(
     passed('Daemon')
       ? ok('sbx-daemon', 'healthy')
-      : missing('sbx-daemon', 'Start the sbx daemon (sbx daemon start)'),
+      : missing('sbx-daemon', 'Start the sbx daemon in the background (sbx daemon start --detach)'),
     passed('Authentication')
       ? ok('sbx-signed-in', 'signed in')
       : missing('sbx-signed-in', 'Sign sbx in to Docker (sbx login), in your own terminal'),
