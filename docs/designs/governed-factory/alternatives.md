@@ -8,43 +8,43 @@ The first seven alternatives are program-level. The rest follow the architecture
 
 - **Pros**: Familiar order (truth, safe execution, verification, evidence, GxP, enterprise), and it matches how the gaps were first found.
 - **Cons**: Sized for a team: 24-37 focused weeks for one maintainer. It puts evidence integrity and GxP in the wrong order, so the evidence schema would need migrating after signing starts.
-- **Reason for Rejection**: Rejected by author: the milestones in this design start from a containment floor and a walking skeleton, design the evidence envelope first, and keep the package demonstrable every week.
+- **Reason for Rejection**: Rejected by author: the milestones in this design start from a containment floor and a walking skeleton, design the evidence envelope first, and keep the package demonstrable every week. Technical reason: the original order sizes the work for a team at 24-37 focused weeks for one maintainer and puts evidence integrity and GxP in the wrong order, so the evidence schema would need migrating after signing starts.
 
 ## Alternative B: Build the execution engine in-house
 
 - **Pros**: Full control of scheduling, isolation and result handling, and no dependency on a vendor's roadmap.
 - **Cons**: A platform, not a slice: the existing launcher is a one-shot `spawnSync` call with no cancel. It is far beyond what one maintainer can review and keep current.
-- **Reason for Rejection**: Rejected by author: rent isolation, and build only a thin launcher. Rented pieces are `sbx`, GitHub and the signing tools.
+- **Reason for Rejection**: Rejected by author: rent isolation, and build only a thin launcher. Rented pieces are `sbx`, GitHub and the signing tools. Technical reason: an in-house engine is a platform far beyond what one maintainer can review and keep current, and the existing launcher is a one-shot `spawnSync` call with no cancel.
 
 ## Alternative C: Keep a human at the merge, in full or for high-risk classes
 
 - **Pros**: The strongest accountability story for a regulated buyer: an individual human approves each change, which closes the Part 11 signature gap for those changes. The council and reviewers recommended a policy-authorized version of this: agents merge light and standard changes, and a human signs release, high-assurance and `factory-core` changes.
 - **Cons**: Human attention becomes the throughput limit, and the factory cannot run dark. The design already treats the author's hours as unscheduled.
-- **Reason for Rejection**: Rejected by author: the end state is unconditional agent merge, including `factory-core` and `next` prereleases (the `latest` release and the verifier pin stay human; see Alternatives AW and AX). The Technical Plan adds the controls that make that recoverable (a box outside the repo, a pinned verifier, cross-family review, a merge queue with revert, a time-lock and an external red-team canon), and shows the signature gap as partial in the GxP mapping. A human merge is kept only for the early autonomy levels.
+- **Reason for Rejection**: Rejected by author: the end state is unconditional agent merge, including `factory-core` and `next` prereleases (the `latest` release and the verifier pin stay human; see Alternatives AW and AX). The Technical Plan adds the controls that make that recoverable (a box outside the repo, a pinned verifier, cross-family review, a merge queue with revert, a time-lock and an external red-team canon), and shows the signature gap as partial in the GxP mapping. A human merge is kept only for the early autonomy levels. Technical reason: a human at every merge makes human attention the throughput limit, so the factory cannot run dark.
 
 ## Alternative D: Wire every unwired module
 
 - **Pros**: It makes every principle in `docs/guiding-principles.md` true as written.
 - **Cons**: `lease-fencing` duplicates `seat-lease.mjs`, `role-flow-span` duplicates the stronger chained store in `run-state.mjs`, and the 15% handover cap and WIP checkpoint branches have no measured need. Wiring all of them adds surface area that nothing asks for.
-- **Reason for Rejection**: Rejected by author as the default: the cross-machine fencing-token claim (the unwired `lease-fencing` module; the writer-generation fencing in the run store is live and stays), the 15% handover cap, WIP checkpoint branches and the `role-flow-span` chain are retracted in a public claims ledger. The gate sweeper and process supervisor are wired (D17), after adaptation.
+- **Reason for Rejection**: Rejected by author as the default: the cross-machine fencing-token claim (the unwired `lease-fencing` module; the writer-generation fencing in the run store is live and stays), the 15% handover cap, WIP checkpoint branches and the `role-flow-span` chain are retracted in a public claims ledger. The gate sweeper and process supervisor are wired (D17), after adaptation. Technical reason: `lease-fencing` duplicates `seat-lease.mjs`, `role-flow-span` duplicates the stronger chained store in `run-state.mjs`, and the 15% handover cap and WIP checkpoint branches have no measured need, so wiring everything adds surface area that nothing asks for.
 
 ## Alternative E: Position AgentFlow as a governed integrator of ADK, Celesto and learning frameworks
 
 - **Pros**: Name recognition, and an answer to "does it work with what we already run?".
 - **Cons**: An integrator inherits every dependency's release risk and rarely owns a category. No prospect has asked for any of the three, and the author has used none of them. Each integration is a new supplier in a GxP story that scopes supplier work to one template.
-- **Reason for Rejection**: Rejected by author, on the council's and reviewers' findings: the headline is the governance and evidence layer. "Integrator" describes the method, and positioning stays a hypothesis to test. Integrations enter only under the admission rule (deletes a plan item, or is the only way to meet an exit criterion).
+- **Reason for Rejection**: Rejected by author, on the council's and reviewers' findings: the headline is the governance and evidence layer. "Integrator" describes the method, and positioning stays a hypothesis to test. Integrations enter only under the admission rule (deletes a plan item, or is the only way to meet an exit criterion). Technical reason: an integrator inherits every dependency's release risk, no prospect has asked for any of the three, and each integration adds a supplier to a GxP story that scopes supplier work to one template.
 
 ## Alternative F: Leave GxP to the end
 
 - **Pros**: It keeps early milestones focused on the controls and the walking skeleton.
 - **Cons**: GxP fields (signer identity, the meaning of a signature, the reason for a change) shape the evidence schema, so late GxP work means migrating signed history.
-- **Reason for Rejection**: Rejected by author: the envelope is designed first, with a hand-written golden fixture of the final outputs, and the mapping is a projection over recorded evidence.
+- **Reason for Rejection**: Rejected by author: the envelope is designed first, with a hand-written golden fixture of the final outputs, and the mapping is a projection over recorded evidence. Technical reason: GxP fields shape the evidence schema, so leaving GxP to the end means migrating signed history.
 
 ## Alternative G: Dogfood only on AgentFlow's own repository
 
 - **Pros**: Least setup, and the strongest "builds itself" story.
 - **Cons**: It never produces regulated-style artifacts, so the GxP projection would have nothing real to run on.
-- **Reason for Rejection**: Rejected by author: a mock-GxP calibration and logbook tracker is a second consumer, built through the factory from its first commit.
+- **Reason for Rejection**: Rejected by author: a mock-GxP calibration and logbook tracker is a second consumer, built through the factory from its first commit. Technical reason: dogfooding alone never produces regulated-style artifacts, so the GxP projection would have nothing real to run on.
 
 ## Alternative H: Hosted sandboxes for subscription agents (Celesto hosted, GitHub-hosted runners)
 
@@ -56,25 +56,25 @@ The first seven alternatives are program-level. The rest follow the architecture
 
 - **Pros**: Apache-2.0, a graph workflow engine, plugin hooks, an evaluation framework with deterministic criteria, and A2A and MCP interoperability.
 - **Cons**: It calls models through APIs, which conflicts with subscription-only billing, and some LLM-judged evaluations need billed Vertex services. The workers are Claude and Agy CLIs that run their own tool loops, so ADK would see only a wrapper. Its graph would be a third phase-graph definition. It releases every one to two weeks with breaking 2.x changes.
-- **Reason for Rejection**: Rejected by author, on the council's and reviewers' findings: not in this plan. An out-of-process adapter becomes possible only if a customer asks or the subscription-only decision is reopened.
+- **Reason for Rejection**: Rejected by author, on the council's and reviewers' findings: not in this plan. An out-of-process adapter becomes possible only if a customer asks or the subscription-only decision is reopened. Technical reason: ADK calls models through APIs, which conflicts with subscription-only billing, and the workers are CLIs that run their own tool loops, so ADK would see only a wrapper and its graph would be a third phase-graph definition.
 
 ## Alternative J: Runtime self-improving agents, or external optimizers now
 
 - **Pros**: Possible gains in prompts and playbooks. GEPA has a peer-reviewed paper, and DSPy has broad use.
 - **Cons**: DGM, SEAL and ADAS rewrite code, weights or evaluators, and DGM faked tool use and deleted its own detection markers. Optimizers need outcome data that does not exist yet, and the post that recommended them is vendor marketing with no benchmark numbers.
-- **Reason for Rejection**: Rejected by author: runtime self-modification never. The existing v1.9.0 pipeline is wired, after month 6 (P-1), as a propose-only worker role inside the learning boundary. External optimizers wait for L3 and enough scored outcomes, probably after month 6.
+- **Reason for Rejection**: Rejected by author: runtime self-modification never. The existing v1.9.0 pipeline is wired, after month 6 (P-1), as a propose-only worker role inside the learning boundary. External optimizers wait for L3 and enough scored outcomes, probably after month 6. Technical reason: runtime self-modifying systems rewrite code, weights or evaluators (DGM faked tool use and deleted its own detection markers), and optimizers need outcome data that does not exist yet.
 
 ## Alternative K: A custom hash chain, OPA or Cedar policy, and a full in-toto layer
 
 - **Pros**: Full control of the evidence format and fine-grained, declarative policy.
 - **Cons**: Too much for one maintainer, and the chained store already exists in `run-state.mjs`.
-- **Reason for Rejection**: Rejected by author: use signed commits, GitHub attestations and an RFC 3161 timestamp (kept as a separate optional seam).
+- **Reason for Rejection**: Rejected by author: use signed commits, GitHub attestations and an RFC 3161 timestamp (kept as a separate optional seam). Technical reason: a custom chain, OPA or Cedar policy and a full in-toto layer are too much for one maintainer, and the chained store already exists in `run-state.mjs`.
 
 ## Alternative L: SSH signatures for everything
 
 - **Pros**: Fully offline verification with only a public key, and one mechanism.
 - **Cons**: The root of trust is one key, and agent evidence signed on the agent host would sit next to the agents. It needs a key-custody process for rotation and loss.
-- **Reason for Rejection**: Rejected by author: GitHub is the only signer and attestor of machine evidence. SSH-signature verification stays as the cheapest second implementation of the signing seam.
+- **Reason for Rejection**: Rejected by author: GitHub is the only signer and attestor of machine evidence. SSH-signature verification stays as the cheapest second implementation of the signing seam. Technical reason: with SSH signatures the root of trust is one key, agent evidence signed on the agent host would sit next to the agents, and rotation and loss need a key-custody process.
 
 ## Alternative M: Sigstore for everything
 
@@ -134,19 +134,19 @@ The first seven alternatives are program-level. The rest follow the architecture
 
 - **Pros**: Event-driven and GitHub-native, and it reuses the shipped pusher from #587.
 - **Cons**: A self-hosted runner can execute untrusted code from a public repository (my background knowledge, unchecked), and AgentFlow's repository is public. It shares the machine with the credentials and the `sbx` host, and the runner's updates are the author's to maintain.
-- **Reason for Rejection**: Rejected by author: poll first. A runner may return as a trigger, behind the same intake seam.
+- **Reason for Rejection**: Rejected by author: poll first. A runner may return as a trigger, behind the same intake seam. Technical reason: a self-hosted runner would share the machine with the credentials and the `sbx` host, its updates would be the author's to maintain, and the Cons record an unchecked risk that it can run untrusted code from AgentFlow's public repository.
 
 ## Alternative W: A webhook relay now
 
 - **Pros**: Event-driven, with nothing inbound to the author's machine if the machine connects out. It is also the route for other services such as Linear or a board app.
 - **Cons**: It adds a service to operate, and new signature and replay handling to build and test, and it needs a reconcile sweep for dropped events.
-- **Reason for Rejection**: Rejected by author for now: relay later, as another trigger behind the same intake seam. It stays a Non-Goal for the 26 weeks.
+- **Reason for Rejection**: Rejected by author for now: relay later, as another trigger behind the same intake seam. It stays a Non-Goal for the 26 weeks. Technical reason: a relay adds a service to operate, needs new signature and replay handling to build and test, and still needs a reconcile sweep for dropped events.
 
 ## Alternative X: Schedule work by the author's review minutes
 
 - **Pros**: It keeps audit load within the author's available time and gives a natural back-pressure signal.
 - **Cons**: It makes the factory depend on the author's calendar and needs a model of review effort that does not exist.
-- **Reason for Rejection**: Rejected by author (D21): the author's hours are not a scheduler input. Back-pressure comes from the in-flight cap, the revert circuit breaker and subscription quota, and the author can pause and resume the factory.
+- **Reason for Rejection**: Rejected by author (D21): the author's hours are not a scheduler input. Back-pressure comes from the in-flight cap, the revert circuit breaker and subscription quota, and the author can pause and resume the factory. Technical reason: scheduling by review minutes makes the factory depend on the author's calendar and needs a model of review effort that does not exist.
 
 ## Alternative Y: Keep the OpenRig layer as shipped, or trim it conservatively or moderately
 
@@ -188,13 +188,13 @@ The first seven alternatives are program-level. The rest follow the architecture
 
 - **Pros**: The smallest change, and no unwired module is left behind.
 - **Cons**: It loses the one real check in the module (a "passed" verdict needs digested artifacts), which the GxP trace matrix will need.
-- **Reason for Rejection**: Rejected by author: the module is kept and wired through a tester lane, after month 6 (P-2).
+- **Reason for Rejection**: Rejected by author: the module is kept and wired through a tester lane, after month 6 (P-2). Technical reason: retracting the module loses its one real check, that a "passed" verdict needs digested artifacts, which the GxP trace matrix will need.
 
 ## Alternative AF: Keep only the artifact check and drop the tool check
 
 - **Pros**: Keeps the real check for about 60 lines, with no new lane.
 - **Cons**: Leaves the black-box principle (no source reading, no edits) unenforced, so it would stay unclaimed.
-- **Reason for Rejection**: Rejected by author: deliver the principle as written, with a tester lane that mounts only the built artifact, after month 6 (P-2).
+- **Reason for Rejection**: Rejected by author: deliver the principle as written, with a tester lane that mounts only the built artifact, after month 6 (P-2). Technical reason: keeping only the artifact check leaves the black-box principle (no source reading, no edits) unenforced, so it would stay unclaimed.
 
 ## Alternative AG: A manual week-0 gate, replaced by code later
 
@@ -206,79 +206,79 @@ The first seven alternatives are program-level. The rest follow the architecture
 
 - **Pros**: The simplest plan: controls arrive with each milestone, and unattended runs start with the M2 soak.
 - **Cons**: It assumes the author watches the agents during weeks 0-8, and agents would run without containment while they build the containment.
-- **Reason for Rejection**: Rejected by author: the brief's gate stays ("no unattended runs before this passes").
+- **Reason for Rejection**: Rejected by author: the brief's gate stays ("no unattended runs before this passes"). Technical reason: without a week-0 gate, agents would run without containment while they build the containment, and the plan would assume the author watches them during weeks 0-8.
 
 ## Alternative AI: Only the `sbx` spike in week 0
 
 - **Pros**: The shortest week 0, which matters now that week 0 carries the gate.
 - **Cons**: The signed-act slice in M1-13 could hit the line-ending problem before M3-5, and the case study would have no recorded "before" numbers.
-- **Reason for Rejection**: Rejected by author: all three spikes run in week 0, as the brief says.
+- **Reason for Rejection**: Rejected by author: all three spikes run in week 0, as the brief says. Technical reason: with only the `sbx` spike, the signed-act slice in M1-13 could hit the line-ending problem before M3-5, and the case study would have no recorded "before" numbers.
 
 ## Alternative AJ: Run each spike where it is first needed
 
 - **Pros**: Week 0 stays focused on the gate and the `sbx` spike, and each unknown is answered just before the work that depends on it.
 - **Cons**: The vendor-terms risk would stay open into M2, and a late "no" would arrive after work built on the assumption that it is allowed.
-- **Reason for Rejection**: Rejected by author: answer the early unknowns before M0 starts.
+- **Reason for Rejection**: Rejected by author: answer the early unknowns before M0 starts. Technical reason: running each spike where it is first needed leaves the vendor-terms risk open into M2, so a late "no" would arrive after work built on the assumption that it is allowed.
 
 ## Alternative AK: Net-zero surface, enforced by CI
 
 - **Pros**: It shrinks the surface a newcomer faces and makes the freeze rule real: a `manifests/surface-count.json` fails CI when a count rises without a retirement.
 - **Cons**: It adds an M0 audit to find verbs and schemas that are safe to retire, and some planned additions would have to fold into existing command groups.
-- **Reason for Rejection**: Rejected by author: accept the "state why" rule as drafted.
+- **Reason for Rejection**: Rejected by author: accept the "state why" rule as drafted. Technical reason: net-zero surface needs an M0 audit to find verbs and schemas that are safe to retire and forces some planned additions to fold into existing command groups.
 
 ## Alternative AL: A capped growth budget
 
 - **Pros**: Growth is bounded and visible, and no retirement audit is needed.
 - **Cons**: The cap is a guess. Legitimate work can exceed it, and a loose cap never binds.
-- **Reason for Rejection**: Rejected by author: accept the "state why" rule as drafted.
+- **Reason for Rejection**: Rejected by author: accept the "state why" rule as drafted. Technical reason: a capped budget rests on a guess, because legitimate work can exceed the cap and a loose cap never binds.
 
 ## Alternative AM: At most 3 PRs in flight in total
 
 - **Pros**: The simplest rule, the least exposure if a bad change merges, and at most three changes waiting for cross-family review.
 - **Cons**: Three slow items from one lane would block the other lane's work.
-- **Reason for Rejection**: Rejected by author: the cap is 3 per agent lane, as D5 says.
+- **Reason for Rejection**: Rejected by author: the cap is 3 per agent lane, as D5 says. Technical reason: a single total cap lets three slow items from one lane block the other lane's work.
 
 ## Alternative AN: A signed tag for each milestone boundary
 
 - **Pros**: The simplest mental model: one signed tag in the control repository after the exit criteria pass, and the coordinator admits no next-milestone work without it.
 - **Cons**: It is a new mechanism beside the existing person gates, it ties a gate to a phase number (the README says gates bind to subjects), and nothing binds the signature to what the exit criteria showed.
-- **Reason for Rejection**: Rejected by author: milestones are goals, admitted through the existing admission gate.
+- **Reason for Rejection**: Rejected by author: milestones are goals, admitted through the existing admission gate. Technical reason: a milestone tag is a new mechanism beside the existing person gates, it ties a gate to a phase number although gates bind to subjects, and nothing binds the signature to what the exit criteria showed.
 
 ## Alternative AO: No milestone gate beyond delegation changes
 
 - **Pros**: The fewest interruptions and the closest fit to a dark factory: the only signed acts are the delegation, its scope changes (ladder promotions and release) and policy changes.
 - **Cons**: Fewer signed human checkpoints, which the GxP mapping uses as design-review evidence, and milestone work could drift from its goal between ladder promotions.
-- **Reason for Rejection**: Rejected by author: keep a human admission at each milestone.
+- **Reason for Rejection**: Rejected by author: keep a human admission at each milestone. Technical reason: dropping milestone admission leaves fewer signed human checkpoints, which the GxP mapping uses as design-review evidence, and milestone work could drift from its goal between ladder promotions.
 
 ## Alternative AP: A narrated screencast recorded by the author
 
 - **Pros**: The most persuasive for a services offer.
 - **Cons**: It costs the author's time, sits on the author's side of D12 (business work), and goes stale at each release.
-- **Reason for Rejection**: Rejected by author: a generated terminal recording of the scripted demo, regenerated at every release.
+- **Reason for Rejection**: Rejected by author: a generated terminal recording of the scripted demo, regenerated at every release. Technical reason: a recorded screencast costs the author's time, falls on the author's side of D12 (business work), and goes stale at each release.
 
 ## Alternative AQ: No screencast
 
 - **Pros**: The least to build and maintain. The scripted demo and the website walkthrough pages are the demonstration.
 - **Cons**: A prospect who will not run the demo has nothing quick to look at.
-- **Reason for Rejection**: Rejected by author: keep a short recording, as the brief says.
+- **Reason for Rejection**: Rejected by author: keep a short recording, as the brief says. Technical reason: without a recording, a prospect who will not run the demo has nothing quick to look at.
 
 ## Alternative AR: Keep human approval for `factory-core` and release only
 
 - **Pros**: Consistent with the repository's rules with no policy weakened, and the strongest GxP story: an individual human signature on the riskiest changes.
 - **Cons**: The factory is not dark at L3. Control-plane changes and releases wait for the author, and approvals can turn into rubber stamps. It narrows D4.
-- **Reason for Rejection**: Rejected by author: keep D4 and add an opt-in delegation setting, with this repository opting in.
+- **Reason for Rejection**: Rejected by author: keep D4 and add an opt-in delegation setting, with this repository opting in. Technical reason: human approval for `factory-core` and release means the factory is not dark at L3, control-plane changes and releases wait for the author, and approvals can turn into rubber stamps.
 
 ## Alternative AS: A new change class for `factory-core`, leaving "high-assurance" unchanged
 
 - **Pros**: Nothing existing is weakened, and D4 stays.
 - **Cons**: It adds vocabulary to a project whose reviewers already flagged overlapping terms, and it can look like renaming to avoid a rule.
-- **Reason for Rejection**: Rejected by author: keep the "high-assurance" class and make the delegation setting explicit and opt-in.
+- **Reason for Rejection**: Rejected by author: keep the "high-assurance" class and make the delegation setting explicit and opt-in. Technical reason: a new class adds vocabulary to a project whose reviewers already flagged overlapping terms, and it can look like renaming to avoid a rule.
 
 ## Alternative AT: Merge tickets signed by the author for each goal
 
 - **Pros**: Each goal carries a signature of the author with a bounded number of merges, paths and an expiry, which limits what a compromised steward can do.
 - **Cons**: A ticket to sign for every milestone, and an exhausted ticket stalls the factory until the author issues another. Loose bounds stop limiting anything.
-- **Reason for Rejection**: Rejected by author: the steward issues each per-merge decision under the standing delegation, and the delegation's scope carries the limit.
+- **Reason for Rejection**: Rejected by author: the steward issues each per-merge decision under the standing delegation, and the delegation's scope carries the limit. Technical reason: per-goal tickets need a signature for every milestone, an exhausted ticket stalls the factory until the author issues another, and loose bounds stop limiting anything.
 
 ## Alternative AU: Edit only the binding policy and this repository's agent instructions
 
@@ -290,7 +290,7 @@ The first seven alternatives are program-level. The rest follow the architecture
 
 - **Pros**: The smallest edit, and the Overview claim becomes true.
 - **Cons**: A list in prose drifts as acts are added or moved, and the GxP mapping has nothing to cite.
-- **Reason for Rejection**: Rejected by author: a "Human acts" table in the Technical Plan, linked from the Overview, with a claims-ledger row.
+- **Reason for Rejection**: Rejected by author: a "Human acts" table in the Technical Plan, linked from the Overview, with a claims-ledger row. Technical reason: a prose list drifts as acts are added or moved, and the GxP mapping would have nothing to cite.
 
 ## Alternative AW: Every release and the verifier pin stay human
 
@@ -302,7 +302,7 @@ The first seven alternatives are program-level. The rest follow the architecture
 
 - **Pros**: Fully dark, as D4 first stated. A pin change would pass the current verifier and the canon, then wait out the time-lock with the author's veto.
 - **Cons**: A ratchet: each small weakening of the verifier passes the previous verifier, so a series of agent pins can erode the judge with no single step failing. Countering it needs a canon that never shrinks and a rule that fails a pin when any canon case stops being caught.
-- **Reason for Rejection**: Rejected by author: the default public channel and the choice of judge stay with a person.
+- **Reason for Rejection**: Rejected by author: the default public channel and the choice of judge stay with a person. Technical reason: a steward-performed pin is a ratchet, because each small weakening of the verifier passes the previous verifier, so a series of agent pins can erode the judge with no single step failing.
 
 ## Alternative AY: Repository configuration owns all policy; the control repository holds only signed acts and secrets
 
@@ -314,7 +314,7 @@ The first seven alternatives are program-level. The rest follow the architecture
 
 - **Pros**: A clear security seam in the `source-adapter` style: containment, which the verifier and evidence rely on, stays out of the layer where provider descriptors are self-declared.
 - **Cons**: A second registry for something `docs/modular-architecture.md:33` assigns to the provider layer, which `docs/guiding-principles.md:123` forbids unless justified, plus a new `substrate` adapter kind in the plugin machinery.
-- **Reason for Rejection**: Rejected by author: a `containment` provider facet, with the launcher's conformance-run gate giving the security property.
+- **Reason for Rejection**: Rejected by author: a `containment` provider facet, with the launcher's conformance-run gate giving the security property. Technical reason: a separate registry duplicates something `docs/modular-architecture.md:33` assigns to the provider layer, which `docs/guiding-principles.md:123` forbids unless justified, and it adds a new `substrate` adapter kind to the plugin machinery.
 
 ## Alternative BA: Agent merge for every class within month 6
 
@@ -332,13 +332,13 @@ The first seven alternatives are program-level. The rest follow the architecture
 
 - **Pros**: The 18,438-line adapter shrinks early, and G1 has fewer claims to back.
 - **Cons**: M0 grows, and the second review found the M0 file list wrong in several places; a missed importer breaks `validate:release` on the critical path.
-- **Reason for Rejection**: Rejected by author (2026-11-25): the trim becomes scoped L2 issues that the factory builds in M2, checked by the release gate.
+- **Reason for Rejection**: Rejected by author (2026-11-25): the trim becomes scoped L2 issues that the factory builds in M2, checked by the release gate. Technical reason: trimming by hand in M0 grows M0, and the second review found the M0 file list wrong in several places, so a missed importer breaks `validate:release` on the critical path.
 
 ## Alternative BD: Defer the OpenRig trim and its capability review past month 6
 
 - **Pros**: The least month-6 work; the claims ledger marks the adapter's documented controls `planned` or `retracted`, which satisfies G1 without deleting code.
 - **Cons**: About 18,000 lines stay for six months, against the author's stated intent.
-- **Reason for Rejection**: Rejected by author (2026-11-25): the trim stays in month 6 as factory work off the critical path.
+- **Reason for Rejection**: Rejected by author (2026-11-25): the trim stays in month 6 as factory work off the critical path. Technical reason: deferring the trim leaves about 18,000 lines of adapter code in place for six months.
 
 ## Alternative BE: Build the WSL2 substrate in month 6 so the substrate port can be claimed as pluggable
 
@@ -362,19 +362,19 @@ The first seven alternatives are program-level. The rest follow the architecture
 
 - **Pros**: The smallest month 6.
 - **Cons**: The month-6 package loses the GxP pack and the public pages that the services offer depends on.
-- **Reason for Rejection**: Rejected by author (2026-11-25): GxP stays, bounded to what G6 checks, and the website and demo stay in the month-6 package.
+- **Reason for Rejection**: Rejected by author (2026-11-25): GxP stays, bounded to what G6 checks, and the website and demo stay in the month-6 package. Technical reason: deferring them would cost the month-6 package the GxP pack and the public pages that the services offer depends on.
 
 ## Alternative BI: Write all ten ADRs in week 0
 
 - **Pros**: Every decision is recorded before the first unattended run.
 - **Cons**: The week-0 gate moves further from the start, and the ADRs for M2b to M4 are written months before they can be checked against reality.
-- **Reason for Rejection**: Rejected by author (2026-11-25): each ADR is written by the milestone that builds what it records.
+- **Reason for Rejection**: Rejected by author (2026-11-25): each ADR is written by the milestone that builds what it records. Technical reason: ADRs for M2b to M4 written in week 0 would come months before they can be checked against reality, and the week-0 gate would move further from the start.
 
 ## Alternative BJ: Move the digest and signing spike to M3 with the evidence ADRs
 
 - **Pros**: Week 0 is one day shorter, and the spike sits beside the work it informs.
 - **Cons**: M1 writes evidence records from the start; a format problem found in M3 forces a migration of those records.
-- **Reason for Rejection**: Rejected by author (2026-11-25): the spike stays in week 0.
+- **Reason for Rejection**: Rejected by author (2026-11-25): the spike stays in week 0. Technical reason: M1 writes evidence records from the start, so a format problem found in M3 would force a migration of those records.
 
 ---
 
@@ -388,16 +388,40 @@ The first seven alternatives are program-level. The rest follow the architecture
 
 - **Pros**: The simplest verifier and the smallest attack surface; the no-op check and public seeded defects still catch vacuous tests.
 - **Cons**: Weakens G4: public seeded defects can be learned, and nothing secret checks behavior.
-- **Reason for Rejection**: Rejected by author (2026-11-25): holdouts stay, run in a credential-free hosted job.
+- **Reason for Rejection**: Rejected by author (2026-11-25): holdouts stay, run in a credential-free hosted job. Technical reason: deferring holdouts weakens G4, because public seeded defects can be learned and nothing secret checks behavior.
 
 ## Alternative BM: Hold the reviewer App token under a separate Windows user
 
 - **Pros**: A launcher bug can no longer forge a review.
 - **Cons**: No help against an administrator-level compromise, which reaches both accounts; adds a user account, a second scheduled task and cross-user file handoff.
-- **Reason for Rejection**: Rejected by author (2026-11-25): the reviewer App posts PR reviews from the launcher, and the host residual is stated.
+- **Reason for Rejection**: Rejected by author (2026-11-25): the reviewer App posts PR reviews from the launcher, and the host residual is stated. Technical reason: a separate Windows user gives no help against an administrator-level compromise, which reaches both accounts, and it adds a user account, a second scheduled task and cross-user file handoff.
 
 ## Alternative BN: Post the review as a check run that a ruleset requires from the reviewer App
 
 - **Pros**: GitHub enforces the review directly, not only through job B.
 - **Cons**: With the merge queue, required checks must pass on the merge-group commit while the reviewer's check sits on the PR head; this needs re-posting or another platform spike.
 - **Reason for Rejection**: Rejected by author (2026-11-25): job B is already the required check, so the platform enforces the review through it.
+
+## Alternative BO: Also move the merger into a scheduled hosted workflow
+
+- **Pros**: No merge-capable token on the author's machine.
+- **Cons**: Little security gain, because a compromised host still holds the builder and reviewer tokens and can push a PR and post a review that a hosted merger would merge; scheduled runs are best-effort and use Actions minutes on private repositories.
+- **Reason for Rejection**: Rejected by author (2026-11-25): the merger stays on the host, and GitHub enforces every merge condition. Technical reason: a hosted merger gives little security gain, because a compromised host still holds the builder and reviewer tokens, and scheduled runs are best-effort and use Actions minutes on private repositories.
+
+## Alternative BP: Keep merge-condition enforcement in the merger and state the residual
+
+- **Pros**: The least work.
+- **Cons**: A merger bug or a compromised host could merge while paused or merge a `factory-core` PR, caught only after merge.
+- **Reason for Rejection**: Rejected by author (2026-11-25): every condition becomes a GitHub-enforced gate through job B and the rulesets. Technical reason: enforcement inside the merger means a merger bug or a compromised host could merge while paused or merge a `factory-core` PR, caught only after merge.
+
+## Alternative BQ: Run M0 and M1 unattended through the guarded runner from the week-0 gate
+
+- **Pros**: Agents work without the author from week 1.
+- **Cons**: The guarded runner cannot push, so every run's output needs manual pushing and PR creation, and nothing records receipts or checks scope until M1.
+- **Reason for Rejection**: Rejected by author (2026-11-25): unattended work starts at the M1 exit, when receipts, scope checks and App pushes exist.
+
+## Alternative BR: Stay attended until the M2b exit
+
+- **Pros**: The safest: nothing runs without the author or the full verifier.
+- **Cons**: Defers the factory's main claim to the second half of the program, and the M2 soak needs unattended runs.
+- **Reason for Rejection**: Rejected by author (2026-11-25): unattended work starts at the M1 exit. Technical reason: staying attended defers the factory's main claim to the second half of the program, and the M2 soak needs unattended runs.
