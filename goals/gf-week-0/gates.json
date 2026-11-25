@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "kind": "gate",
+      "gate": {
+        "gateClass": "adequacy-of-intent",
+        "subjectDigest": "e2f95509418354a4e2193c4b24813816390d163053ecd1613d7537263e4191b1",
+        "subjectKind": "admission",
+        "requiredRole": "person",
+        "hints": [],
+        "version": 1,
+        "type": "gate",
+        "digest": "8eeca7a4ce3360db46ef0792984c8829b0f27a11ae089c78622e431980841105"
+      },
+      "who": {
+        "role": "person",
+        "platform": "human",
+        "person": null
+      },
+      "openedAt": "2026-11-25T01:00:51.408Z",
+      "changeClass": "standard"
+    }
+  ]
+}

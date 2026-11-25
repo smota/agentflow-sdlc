@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "title": "goal: Governed factory M4: GxP projection",
+  "body": "**Kind:** goal\n\nSource: `docs/designs/governed-factory.md` (milestone m4).\n\n## Job\n\nWhen a regulated buyer asks how the evidence maps to GxP clauses, I want a trace matrix generated from recorded evidence and an opt-in GxP pack, so I can show the mapping without claiming compliance.\n\n## Outcome\n\n- The trace generator reads recorded evidence and versioned mapping data and emits the trace matrix (M4-1).\n- The opt-in `gxp-projection` extension pack, its templates, mapping data and validator exist (M4-2).\n- The supplier table and the responsibilities table exist (M4-3), and ADR 025 is written (M4-4).\n- On `calibration-logbook` the generator links 100% of requirements to issue, PR, tests and approval, shows the missing individual human e-signature as partial, and passes the wording rule (no \"compliant\" or \"validated\" outside negation).\n\n## Release intent\n\nNo publication beyond `next` prereleases.\n\n## Split judgment\n\nEach work item in this milestone of the design is one focused PR with a declared scope; items that require each other stay one PR. The milestone's re-verification item (where it has one) lands first and fixes the exact file list. Shipping order follows the design's table.\n",
+  "kind": "goal",
+  "parent": null,
+  "changeClass": null,
+  "admission": null,
+  "createdAt": "2026-11-25T01:00:28.874Z"
+}

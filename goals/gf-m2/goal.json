@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "title": "goal: Governed factory M2: safe dark running at L1 and L2",
+  "body": "**Kind:** goal\n\nSource: `docs/designs/governed-factory.md` (milestone m2).\n\n## Job\n\nWhen unattended agent work starts, I want an independent verifier, a cross-family reviewer and an egress allowlist around every PR, so I can run the factory for days without a containment escape.\n\n## Outcome\n\n- The pinned verifier runs as three hosted jobs (secretless candidate job, credentialed policy job that never runs candidate code and posts the required check, credential-free holdout job) against the separate holdouts repository (M2-1, M2-2).\n- The reviewer lane runs in its own sandbox from the other model family and its verdict is posted as a reviewer-App PR review that job B checks (M2-3).\n- The daily quota window, the egress allowlist and the soak harness exist; the vendor terms are re-checked and dated (M2-5, M2-6, M2-8, M2-9).\n- The soak passes: 48 to 72 active hours, about 20 issues, zero containment escapes; a seeded vacuous test and a seeded defect are caught; the builder token cannot read the holdouts.\n- The OpenRig trim issues are built and merged by the factory, and `pnpm validate:release` passes after them (M2-11).\n- The week-0 gate re-run passes. The WSL2 substrate exists only if the `sbx` spike failed (M2-7).\n\n## Release intent\n\nNo publication. The author still merges every PR.\n\n## Split judgment\n\nEach work item in this milestone of the design is one focused PR with a declared scope; items that require each other stay one PR. The milestone's re-verification item (where it has one) lands first and fixes the exact file list. Shipping order follows the design's table.\n",
+  "kind": "goal",
+  "parent": null,
+  "changeClass": null,
+  "admission": null,
+  "createdAt": "2026-11-25T01:00:28.380Z"
+}

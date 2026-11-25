@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "phase": 0,
+  "role": "product-manager",
+  "seat": "pm.manager",
+  "status": "pass",
+  "reason": null,
+  "seatVerified": false,
+  "seatRig": null,
+  "body": "**Kind:** goal\n\nSource: `docs/designs/governed-factory.md` (milestone m0).\n\n## Job\n\nWhen the documents claim more than the code does, I want every claim backed or retracted under a CI rule and an alpha package published, so I can build the factory on an honest base.\n\n## Outcome\n\n- The reachability audit covers `lib/audit/`, `lib/gates/`, `lib/qa/` and `lib/runtime/` (M0-1).\n- The claims ledger, its schema and its validator are in `pnpm validate:release`; every `MUST` and `INVARIANT` line in `docs/guiding-principles.md`, `AGENTS.md`, the README and the public product pages has a row marked `implemented`, `measured`, `planned` or `retracted` (M0-3, G1).\n- The retracted or re-pointed claims are rewritten: the second chain, the fencing wording, the handover cap and the WIP branches (M0-2, M0-4, M0-10, M0-13).\n- The `claude-cli` and `agy-cli` providers accept `--model` (M0-5).\n- `publish.yml` publishes a `next` alpha with provenance; the limits page exists; the quickstart smoke reaches first local evidence in under 10 minutes (M0-6, M0-7, M0-8).\n- The `claude-agy-v1` profile loads through a project-supplied `routes` table, and the shipped `subscription-balanced-v1` profile resolves with an unchanged digest (M0-11).\n- ADRs 017 and 024 are written, and the alternatives docs check runs (M0-12, M0-13, M0-14).\n- `pnpm validate:release` passes.\n\n## Release intent\n\nAn `@next` alpha on npm. No `latest` release.\n\n## Split judgment\n\nEach work item in this milestone of the design is one focused PR with a declared scope; items that require each other stay one PR. The milestone's re-verification item (where it has one) lands first and fixes the exact file list. Shipping order follows the design's table.\n",
+  "idempotencyKey": "gf-m0-framed",
+  "uri": "transitions/0001.json"
+}

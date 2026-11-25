@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "phase": 0,
+  "role": "product-manager",
+  "seat": "pm.manager",
+  "status": "pass",
+  "reason": null,
+  "seatVerified": false,
+  "seatRig": null,
+  "body": "**Kind:** goal\n\nSource: `docs/designs/governed-factory.md` (milestone m1).\n\n## Job\n\nWhen agents still run only attended, I want a thin end-to-end slice from issue to contained run to PR with receipts, so I can let agents work unattended from the M1 exit.\n\n## Outcome\n\n- The containment port and the `sbx` provider exist; the conformance suite passes on `sbx` and fails on the deliberately weak adapter (M1-1, M1-2, M1-3).\n- The launcher's `runUnit` and the `launch` verb run one issue in `sbx`, check the declared scope, push under the builder App and write a receipt with the substrate fields (M1-4, M1-5, M1-12).\n- Headless provider invocations and App token minting work (M1-6, M1-7).\n- The coordinator's `tick` and `resume`, the control-repository reader, the pause flag, check-ins and the dead-man rule work; the gate sweeper has a product caller; the poller claims with deterministic IDs and a conditional append and admits only under an agreed admission gate (M1-8, M1-9, M1-10).\n- The trust-policy loader exists and `satisfyGate` accepts a human gate only with a verified signed act where the posture requires it (M1-13).\n- The demo runs from an issue to an execution receipt; the watchdog writes alerts (M1-14).\n- The week-0 gate re-run passes with the launcher, and `guarded-run.mjs` is then deleted (M1-14).\n- ADR 027 (OpenRig capability review) and ADR 026 (intake seam) are written (M1-15, M1-16).\n\n## Release intent\n\nNo publication. From the exit, agents run unattended through the launcher and the author merges every PR.\n\n## Split judgment\n\nEach work item in this milestone of the design is one focused PR with a declared scope; items that require each other stay one PR. The milestone's re-verification item (where it has one) lands first and fixes the exact file list. Shipping order follows the design's table.\n",
+  "idempotencyKey": "gf-m1-framed",
+  "uri": "transitions/0001.json"
+}

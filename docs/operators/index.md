@@ -22,3 +22,6 @@ For the dated Dendro and AgentFlow incident adoption preparation, see
 [the held Dendro preview](adoption-516/dendro-preview.md).
 
 AgentFlow uses the same [source and installed adoption boundary](adoption-516/agentflow-preview.md).
+
+For the governed-factory milestones, use [milestone admission](milestone-admission.md) to admit a
+milestone before work under it starts.

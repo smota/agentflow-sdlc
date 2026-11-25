@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "phase": 0,
+  "role": "product-manager",
+  "seat": "pm.manager",
+  "status": "pass",
+  "reason": null,
+  "seatVerified": false,
+  "seatRig": null,
+  "body": "**Kind:** goal\n\nSource: `docs/designs/governed-factory.md` (milestone m5).\n\n## Job\n\nWhen the factory works for its author, I want a published package, a conformance report, a case study, manuals and a recorded demo, so I can offer it to others.\n\n## Outcome\n\n- The conformance report lists only what passes: sources and execution providers as pluggable with two implementations each (with the shared provider contract suite), and one reference implementation for containment and for signing (M5-1).\n- The case study reports measured numbers from the run records (M5-2), and the manuals exist (M5-3).\n- The demo recording shows a passing verification and a rejected tampered bundle (M5-6).\n- A third party runs the demo from a clean machine; `npm view agentflow-sdlc` shows `latest` with provenance, cut by the author (M5-4); the website passes `npm run validate` in the movetheneedle repository.\n\n## Release intent\n\nThe npm `latest` release (the author's act) and the month-6 package.\n\n## Split judgment\n\nEach work item in this milestone of the design is one focused PR with a declared scope; items that require each other stay one PR. The milestone's re-verification item (where it has one) lands first and fixes the exact file list. Shipping order follows the design's table.\n",
+  "idempotencyKey": "gf-m5-framed",
+  "uri": "transitions/0001.json"
+}
