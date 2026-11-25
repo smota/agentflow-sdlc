@@ -87,6 +87,20 @@ export function boxCheck({
       : missing('sbx-network-policy', 'Initialize the sbx global network policy (after sbx login)'),
   )
 
+  // A stored `github` secret would let the sbx proxy authenticate an agent's GitHub requests,
+  // which breaks "an agent holds no GitHub credential" (ADR 020).
+  const secrets = run('sbx', ['secret', 'ls'])
+  results.push(
+    secrets.status !== 0
+      ? missing('sbx-no-github-secret', 'Could not list sbx secrets (sbx secret ls)')
+      : /^\s*github\b/im.test(secrets.stdout)
+        ? missing(
+            'sbx-no-github-secret',
+            'Remove the github secret from sbx (sbx secret rm github)',
+          )
+        : ok('sbx-no-github-secret', 'no github secret stored'),
+  )
+
   if (!controlRepo) {
     results.push(
       missing('control-repo', 'Name the control repository with --control-repo <owner/name>'),
