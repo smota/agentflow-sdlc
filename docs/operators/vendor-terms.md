@@ -145,7 +145,14 @@ Recommended reading: unclear. The FAQ supports `agy -p` in the author's own scri
 
 ## Decision
 
-The go or no-go is the author's decision. This finding records what the pages say and does not decide it. Both vendors read as unclear on 2026-11-25. What would change the reading:
+**Decided by the author on 2026-11-25: go, with subscription logins.** Unattended runs use the
+author's own subscription logins, running the unmodified vendor binaries launched by the factory's
+own runner (deterministic code, no AI agent between the scheduler and the CLI), and the logins are
+never shared. In `sbx`, the Claude login is the host-side OAuth sign-in made with `/login`; the token
+does not enter the sandbox. The conditions below that would move a vendor to no-go are part of the
+decision: if one occurs, unattended runs for that vendor stop until the author decides again.
+
+The reading on 2026-11-25 was unclear for both vendors. What would change it:
 
 - Switching to an API key (Anthropic Console key, Google AI Studio or Vertex key, or Gemini Enterprise). Anthropic's Consumer Terms exempt API-key access from the automation ban, and Google's FAQ names API keys as the route for third-party agents. This turns both vendors to go, at pay-per-token cost.
 - A written confirmation from either vendor's support that unattended scheduled use of the official binary on a consumer plan is permitted, kept with this file.
