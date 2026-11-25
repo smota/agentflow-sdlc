@@ -14,3 +14,10 @@
 
 # Generated workflow spec is compared byte-for-byte with the generator output
 *.workflow.yaml text eol=lf
+
+# Data and text files use LF too, so Windows and WSL checkouts hash the same bytes
+*.json text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.toml text eol=lf
+*.txt text eol=lf
