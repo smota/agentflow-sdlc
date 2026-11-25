@@ -24,4 +24,6 @@ For the dated Dendro and AgentFlow incident adoption preparation, see
 AgentFlow uses the same [source and installed adoption boundary](adoption-516/agentflow-preview.md).
 
 For the governed-factory milestones, use [milestone admission](milestone-admission.md) to admit a
-milestone before work under it starts.
+milestone before work under it starts, and the [week-0 setup](week-0-setup.md) guide for the setup
+acts that `agentflow-sdlc box check` verifies, and the [week-0 gate](week-0-gate.md) that must pass
+before any agent runs unattended.

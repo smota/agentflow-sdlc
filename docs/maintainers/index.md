@@ -15,20 +15,21 @@ from local configuration alone. Pin exact upstream revisions and validate the in
 
 ## Active maintainer & autonomy specifications
 
-| Document                                                                            | Scope                                                            |
-| ----------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| [Breaking changes](breaking-changes.md)                                             | Compatibility policy and major-version migration rules           |
-| [Process source baseline](process-source-baseline.md)                               | Canonical source-adapter baseline for process autonomy           |
-| [Delegation](../process-autonomy/delegation.md)                                     | Delegation boundaries, child-subagent rules, and trust envelopes |
-| [Harness dispatch](../process-autonomy/harness-dispatch.md)                         | Cross-CLI and subagent dispatch mechanics                        |
-| [Engineering provider profile](../process-autonomy/engineering-provider-profile.md) | Capability facets and provider conformance                       |
-| [Observability](../process-autonomy/observability.md)                               | Telemetry, run health, and evidence projection                   |
-| [Portable continuation](../process-autonomy/portable-continuation.md)               | Cross-session and cross-harness continuation envelopes           |
-| [Pending audit journal](../process-autonomy/pending-audit-journal.md)               | Transactional journal and rollback receipts                      |
-| [Host intent consent](../process-autonomy/host-intent-consent.md)                   | Explicit human confirmation before host mutations                |
-| [Segmented storage](../process-autonomy/segmented-storage.md)                       | Scratch vs. durable artifact storage boundaries                  |
-| [Source efficiency](../process-autonomy/source-efficiency.md)                       | Pointer envelopes and compact GitHub/filesystem writes           |
-| [GitHub merge](../process-autonomy/github-merge.md)                                 | Merge gate and integration lifecycle rules                       |
+| Document                                                                            | Scope                                                                               |
+| ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| [Breaking changes](breaking-changes.md)                                             | Compatibility policy and major-version migration rules                              |
+| [Process source baseline](process-source-baseline.md)                               | Canonical source-adapter baseline for process autonomy                              |
+| [Pre-factory delivery baseline](baseline-2026-11.md)                                | The November 2026 delivery figures the governed-factory case study compares against |
+| [Delegation](../process-autonomy/delegation.md)                                     | Delegation boundaries, child-subagent rules, and trust envelopes                    |
+| [Harness dispatch](../process-autonomy/harness-dispatch.md)                         | Cross-CLI and subagent dispatch mechanics                                           |
+| [Engineering provider profile](../process-autonomy/engineering-provider-profile.md) | Capability facets and provider conformance                                          |
+| [Observability](../process-autonomy/observability.md)                               | Telemetry, run health, and evidence projection                                      |
+| [Portable continuation](../process-autonomy/portable-continuation.md)               | Cross-session and cross-harness continuation envelopes                              |
+| [Pending audit journal](../process-autonomy/pending-audit-journal.md)               | Transactional journal and rollback receipts                                         |
+| [Host intent consent](../process-autonomy/host-intent-consent.md)                   | Explicit human confirmation before host mutations                                   |
+| [Segmented storage](../process-autonomy/segmented-storage.md)                       | Scratch vs. durable artifact storage boundaries                                     |
+| [Source efficiency](../process-autonomy/source-efficiency.md)                       | Pointer envelopes and compact GitHub/filesystem writes                              |
+| [GitHub merge](../process-autonomy/github-merge.md)                                 | Merge gate and integration lifecycle rules                                          |
 
 ## Historical qualification, audit & spike records (Archive)
 
