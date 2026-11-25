@@ -8,7 +8,7 @@ import { readActiveRun } from './guarded-run.mjs'
 
 const VERBS = ['status', 'pause', 'resume', 'kill']
 
-export async function coordinator(verb, { root, reason = null }) {
+export async function coordinator(verb, { root, reason = null, verifyMs = 8000 }) {
   if (!VERBS.includes(verb)) throw new Error(`Usage: coordinator <${VERBS.join('|')}>`)
   if (verb === 'status') return { ...readCoordinatorState(root), activeRun: readActiveRun(root) }
   if (verb === 'pause') return writeCoordinatorState(root, { state: 'paused', reason })
@@ -17,8 +17,23 @@ export async function coordinator(verb, { root, reason = null }) {
   // active run's process tree.
   const state = writeCoordinatorState(root, { state: 'killed', reason })
   const active = readActiveRun(root)
-  if (active) await killProcessTree(active.pid)
-  return { ...state, stoppedRun: active?.runId ?? null }
+  if (!active?.pid) return { ...state, stoppedRun: active?.runId ?? null, stopVerified: true }
+  // Kill, then confirm the process is gone; retry once a second for up to `verifyMs`.
+  const until = Date.now() + verifyMs
+  while (alive(active.pid) && Date.now() < until) {
+    await killProcessTree(active.pid)
+    await new Promise((done) => setTimeout(done, 1000))
+  }
+  return { ...state, stoppedRun: active.runId, stopVerified: !alive(active.pid) }
+}
+
+function alive(pid) {
+  try {
+    process.kill(pid, 0)
+    return true
+  } catch (error) {
+    return error.code === 'EPERM'
+  }
 }
 
 export async function main(argv) {
@@ -30,7 +45,8 @@ export async function main(argv) {
   process.stdout.write(
     argv.includes('--json') ? `${JSON.stringify(result, null, 2)}\n` : `${result.state}\n`,
   )
-  return 0
+  // A kill that could not confirm the run stopped is a failure the person must see.
+  return result.stopVerified === false ? 1 : 0
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

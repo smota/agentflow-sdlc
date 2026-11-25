@@ -47,12 +47,79 @@ describe('guarded run', () => {
     expect((await run(['exit', '0'])).reason).toMatch(/no sandbox command/)
   })
 
-  it('refuses a secret-looking variable in the sandbox allowlist', async () => {
+  it.each([['GITHUB_TOKEN'], ['DATABASE_URL'], ['AUTHORIZATION']])(
+    'refuses %s in the sandbox allowlist, because only approved variables may pass',
+    async (name) => {
+      writeFileSync(
+        sandboxConfigPath(root),
+        JSON.stringify({ command: [process.execPath], envAllowlist: [name] }),
+      )
+      await expect(run(['exit', '0'])).rejects.toThrow(/only approved variables/)
+    },
+  )
+
+  it.each([[Number.NaN], [Number.POSITIVE_INFINITY], [0], [-5]])(
+    'refuses a timeout of %s',
+    async (timeoutSeconds) => {
+      expect(await run(['exit', '0'], { timeoutSeconds })).toMatchObject({
+        status: 'refused',
+        reason: expect.stringMatching(/timeout/),
+      })
+    },
+  )
+
+  it('refuses while another run is being admitted', async () => {
+    mkdirSync(runsDirectory(root), { recursive: true })
+    writeFileSync(join(runsDirectory(root), 'admission.lock'), '')
+    expect((await run(['exit', '0'])).reason).toBe('another guarded run is being admitted')
+  })
+
+  it('ignores a stale active record whose process is gone', async () => {
+    mkdirSync(runsDirectory(root), { recursive: true })
+    writeFileSync(
+      activeRunPath(root),
+      JSON.stringify({ runId: 'old', pid: 2147483646, startedAt: new Date().toISOString() }),
+    )
+    expect((await run(['exit', '0'])).status).toBe('completed')
+  })
+
+  it('tears the sandbox down with the stop command after every run', async () => {
+    const marker = join(root, 'stopped.txt')
+    writeFileSync(
+      join(root, 'fake-stop.cjs'),
+      `require('node:fs').writeFileSync(${JSON.stringify(marker)}, 'ok')`,
+    )
     writeFileSync(
       sandboxConfigPath(root),
-      JSON.stringify({ command: [process.execPath], envAllowlist: ['GITHUB_TOKEN'] }),
+      JSON.stringify({
+        command: [process.execPath, join(root, 'fake-sbx.cjs')],
+        stopCommand: [process.execPath, join(root, 'fake-stop.cjs')],
+      }),
     )
-    await expect(run(['exit', '0'])).rejects.toThrow(/secret-looking/)
+    expect(await run(['exit', '0'])).toMatchObject({ status: 'completed', teardown: 0 })
+    expect(readFileSync(marker, 'utf8')).toBe('ok')
+  })
+
+  it('passes an approved extra variable and nothing else', async () => {
+    const out = join(root, 'env.json')
+    writeFileSync(
+      sandboxConfigPath(root),
+      JSON.stringify({
+        command: [process.execPath, join(root, 'fake-sbx.cjs')],
+        envAllowlist: ['LANG'],
+      }),
+    )
+    const environment = {
+      PATH: process.env.PATH,
+      Path: process.env.Path,
+      SystemRoot: process.env.SystemRoot,
+      LANG: 'C.UTF-8',
+      DATABASE_URL: 'postgres://u:secret@h/db',
+    }
+    await run(['env', out], { environment })
+    const seen = JSON.parse(readFileSync(out, 'utf8'))
+    expect(seen.LANG).toBe('C.UTF-8')
+    expect(seen.DATABASE_URL).toBeUndefined()
   })
 
   it('refuses a run over the cap', async () => {
@@ -108,9 +175,23 @@ describe('guarded run', () => {
     }
     const killedAt = Date.now()
     const killed = await coordinator('kill', { root, reason: 'drill' })
-    expect(killed.state).toBe('killed')
+    expect(killed).toMatchObject({ state: 'killed', stopVerified: true })
     const result = await running
     expect(result.status).toBe('killed')
     expect(Date.now() - killedAt).toBeLessThan(10000)
+  }, 30000)
+
+  it('reports killed when the coordinator stops the tree before the runner polls again', async () => {
+    const running = run(['sleep', '60000'], { pollMs: 60000 })
+    const startedBy = Date.now() + 5000
+    while (Date.now() < startedBy) {
+      const active = existsSync(activeRunPath(root))
+        ? JSON.parse(readFileSync(activeRunPath(root), 'utf8'))
+        : null
+      if (active?.pid) break
+      await new Promise((done) => setTimeout(done, 50))
+    }
+    await coordinator('kill', { root })
+    expect((await running).status).toBe('killed')
   }, 30000)
 })

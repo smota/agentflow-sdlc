@@ -1,11 +1,23 @@
 #!/usr/bin/env node
-// The week-0 guarded runner (design item W0-14). It is deliberately small: it checks the coordinator
-// state and the run cap, starts one agent command inside the configured sandbox command with a
-// credential-free environment, enforces a timeout, records start and stop, and stops when the
-// coordinator is killed. The launcher replaces it at the M1 exit.
-import { spawn } from 'node:child_process'
+// The week-0 guarded runner (design item W0-14). It checks the coordinator state and the run cap
+// under one admission lock, starts one agent command inside the configured sandbox command with a
+// credential-free environment, enforces a timeout, records start and stop, stops when the
+// coordinator is killed, and tears the sandbox down afterwards. The launcher replaces it at the
+// M1 exit.
+import { spawn, spawnSync } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
-import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  appendFileSync,
+  closeSync,
+  existsSync,
+  mkdirSync,
+  openSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { dispatchAllowed, readCoordinatorState } from '../lib/runtime/coordinator-state.mjs'
@@ -13,13 +25,34 @@ import { admitRun } from '../lib/runtime/run-cap.mjs'
 import { killProcessTree } from '../lib/qa/process-supervisor.mjs'
 
 const BASE_ENVIRONMENT = ['PATH', 'Path', 'HOME', 'USERPROFILE', 'TMP', 'TEMP', 'SystemRoot']
-const SECRET_NAME = /TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIAL|KEY|^GH_|^GITHUB_/i
+// The only extra variables a sandbox may receive: none of them carries a credential value.
+export const APPROVED_EXTRA_ENVIRONMENT = Object.freeze([
+  'ComSpec',
+  'PATHEXT',
+  'windir',
+  'SystemDrive',
+  'LOCALAPPDATA',
+  'APPDATA',
+  'ProgramData',
+  'ProgramFiles',
+  'LANG',
+  'LC_ALL',
+  'TERM',
+  'XDG_RUNTIME_DIR',
+  'XDG_CONFIG_HOME',
+  'DOCKER_HOST',
+  'DOCKER_CONFIG',
+])
+const LOCK_STALE_MS = 30_000
+const KILL_RETRY_MS = 2_000
 
 export const runsDirectory = (root) => join(root, '.agentflow', 'runs')
 export const activeRunPath = (root) => join(runsDirectory(root), 'active.json')
 export const sandboxConfigPath = (root) => join(root, '.agentflow', 'sandbox.json')
+const lockPath = (root) => join(runsDirectory(root), 'admission.lock')
 
 function alive(pid) {
+  if (!Number.isInteger(pid) || pid <= 0) return false
   try {
     process.kill(pid, 0)
     return true
@@ -28,31 +61,72 @@ function alive(pid) {
   }
 }
 
-export function readActiveRun(root) {
-  if (!existsSync(activeRunPath(root))) return null
-  const run = JSON.parse(readFileSync(activeRunPath(root), 'utf8'))
-  return Number.isInteger(run?.pid) && alive(run.pid) ? run : null
+function writeAtomically(path, text) {
+  const temporary = `${path}.${process.pid}.tmp`
+  writeFileSync(temporary, text)
+  renameSync(temporary, path)
 }
 
-// `.agentflow/sandbox.json`: `{ "command": ["sbx", ...], "envAllowlist": [...] }`. The command line
-// comes from the week-0 `sbx` spike (ADR 020); the agent command is appended to it.
+// An active record counts only while its process lives and its own deadline (plus a minute) has
+// not passed, which bounds the window in which a reused PID could be mistaken for the run.
+export function readActiveRun(root, now = Date.now()) {
+  if (!existsSync(activeRunPath(root))) return null
+  let run
+  try {
+    run = JSON.parse(readFileSync(activeRunPath(root), 'utf8'))
+  } catch {
+    return null
+  }
+  if (run?.pid === null && Date.parse(run.startedAt) + LOCK_STALE_MS > now) return run
+  const expiresAt = Date.parse(run?.startedAt) + (run?.timeoutSeconds ?? 0) * 1000 + 60_000
+  return alive(run?.pid) && expiresAt > now ? run : null
+}
+
+// `.agentflow/sandbox.json`: `{ "command": [...], "stopCommand": [...], "envAllowlist": [...] }`.
+// The command lines come from the week-0 `sbx` spike (ADR 020); the agent command is appended to
+// `command`, and `stopCommand` tears the sandbox down after every run.
 function readSandboxConfig(root) {
   const path = sandboxConfigPath(root)
   if (!existsSync(path)) return null
   const config = JSON.parse(readFileSync(path, 'utf8'))
-  const command = config?.command
-  if (!Array.isArray(command) || !command.length || command.some((p) => typeof p !== 'string')) {
-    throw new Error(`${path} needs a non-empty "command" array of strings`)
+  const strings = (value) =>
+    Array.isArray(value) && value.length > 0 && value.every((p) => typeof p === 'string')
+  if (!strings(config?.command)) throw new Error(`${path} needs a non-empty "command" array`)
+  if (config.stopCommand !== undefined && !strings(config.stopCommand)) {
+    throw new Error(`${path}: "stopCommand" must be a non-empty array of strings`)
   }
   const extra = config.envAllowlist ?? []
-  const secret = extra.filter((name) => SECRET_NAME.test(name))
-  if (secret.length) throw new Error(`${path} may not pass secret-looking variables: ${secret}`)
-  return { command, envAllowlist: extra }
+  if (!Array.isArray(extra) || extra.some((n) => typeof n !== 'string')) {
+    throw new Error(`${path}: "envAllowlist" must be an array of variable names`)
+  }
+  const unapproved = extra.filter((name) => !APPROVED_EXTRA_ENVIRONMENT.includes(name))
+  if (unapproved.length) {
+    throw new Error(`${path} may pass only approved variables; not approved: ${unapproved}`)
+  }
+  return { command: config.command, stopCommand: config.stopCommand ?? null, envAllowlist: extra }
 }
 
 export function sandboxEnvironment(source, extra = []) {
-  const names = [...BASE_ENVIRONMENT, ...extra].filter((name) => !SECRET_NAME.test(name))
+  const names = [
+    ...BASE_ENVIRONMENT,
+    ...extra.filter((n) => APPROVED_EXTRA_ENVIRONMENT.includes(n)),
+  ]
   return Object.fromEntries(names.filter((n) => source[n] !== undefined).map((n) => [n, source[n]]))
+}
+
+function acquireLock(root) {
+  const path = lockPath(root)
+  try {
+    if (Date.now() - statSync(path).mtimeMs > LOCK_STALE_MS) rmSync(path, { force: true })
+  } catch {
+    // No lock yet.
+  }
+  try {
+    closeSync(openSync(path, 'wx'))
+    return () => rmSync(path, { force: true })
+  } catch {
+    return null
+  }
 }
 
 const record = (root, event) =>
@@ -68,16 +142,32 @@ export async function guardedRun({
   stdio = 'inherit',
 }) {
   if (!command?.length) return refused('no agent command given')
-  const gate = dispatchAllowed(root)
-  if (!gate.allowed) return refused(`coordinator is ${gate.state}`)
+  if (!Number.isFinite(timeoutSeconds) || timeoutSeconds <= 0) {
+    return refused('timeout must be a finite number of seconds above zero')
+  }
   const config = readSandboxConfig(root)
   if (!config) return refused('no sandbox command in .agentflow/sandbox.json; set it from ADR 020')
-  if (readActiveRun(root)) return refused('another guarded run is active')
-  const runId = randomUUID()
-  const cap = admitRun(root, { id: runId })
-  if (!cap.admitted) return refused(cap.reason, { cap })
-
   mkdirSync(runsDirectory(root), { recursive: true })
+
+  // Admission: state, active run and cap are checked and the run is registered under one lock.
+  const release = acquireLock(root)
+  if (!release) return refused('another guarded run is being admitted')
+  const runId = randomUUID()
+  const startedAt = new Date().toISOString()
+  try {
+    const gate = dispatchAllowed(root)
+    if (!gate.allowed) return refused(`coordinator is ${gate.state}`)
+    if (readActiveRun(root)) return refused('another guarded run is active')
+    const cap = admitRun(root, { id: runId })
+    if (!cap.admitted) return refused(cap.reason, { cap })
+    writeAtomically(
+      activeRunPath(root),
+      `${JSON.stringify({ runId, pid: null, startedAt, timeoutSeconds })}\n`,
+    )
+  } finally {
+    release()
+  }
+
   const [executable, ...args] = [...config.command, ...command]
   const child = spawn(executable, args, {
     cwd: root,
@@ -86,34 +176,73 @@ export async function guardedRun({
     detached: process.platform !== 'win32',
     windowsHide: true,
   })
-  const startedAt = new Date().toISOString()
-  writeFileSync(activeRunPath(root), `${JSON.stringify({ runId, pid: child.pid, startedAt })}\n`)
-  record(root, { event: 'start', runId, pid: child.pid, at: startedAt, executable })
-
-  let reason = 'exited'
-  const deadline = Date.now() + timeoutSeconds * 1000
   const exited = new Promise((done) => {
     child.once('exit', (code, signal) => done({ code, signal }))
     child.once('error', (error) => done({ code: null, signal: null, error: error.message }))
   })
+  let reason = 'exited'
+  let lastKill = 0
+  const stop = (why) => {
+    if (reason === 'exited') reason = why
+    if (Date.now() - lastKill >= KILL_RETRY_MS) {
+      lastKill = Date.now()
+      killProcessTree(child.pid)
+    }
+  }
+  try {
+    writeAtomically(
+      activeRunPath(root),
+      `${JSON.stringify({ runId, pid: child.pid, startedAt, timeoutSeconds })}\n`,
+    )
+    record(root, { event: 'start', runId, pid: child.pid, at: startedAt, executable })
+  } catch (error) {
+    stop('failed-to-start')
+    await exited
+    throw error
+  }
+  // A kill that landed between admission and spawn is caught here, before the first poll.
+  if (readCoordinatorState(root).state === 'killed') stop('killed')
+
+  const deadline = Date.now() + timeoutSeconds * 1000
   const watch = setInterval(() => {
-    if (reason !== 'exited') return
     let state = 'killed'
     try {
       state = readCoordinatorState(root).state
     } catch {
       // An unreadable state file stops the run.
     }
-    if (state === 'killed') reason = 'killed'
-    else if (Date.now() > deadline) reason = 'timed-out'
-    if (reason !== 'exited') killProcessTree(child.pid)
+    if (state === 'killed') stop('killed')
+    else if (reason !== 'exited') stop(reason)
+    else if (Date.now() > deadline) stop('timed-out')
   }, pollMs)
   const result = await exited
   clearInterval(watch)
-  rmSync(activeRunPath(root), { force: true })
-  record(root, { event: 'stop', runId, at: new Date().toISOString(), reason, ...result })
+  // The coordinator may have stopped the tree itself before the next poll.
+  if (reason === 'exited' && result.code !== 0 && readCoordinatorState(root).state === 'killed') {
+    reason = 'killed'
+  }
+  // POSIX: the process group outlives its leader, so stop anything the sandbox command left.
+  if (process.platform !== 'win32') killProcessTree(child.pid)
+  // Tear the sandbox down; on Windows this is the only reach to processes the wrapper started.
+  const teardown = config.stopCommand
+    ? spawnSync(config.stopCommand[0], config.stopCommand.slice(1), {
+        cwd: root,
+        env: sandboxEnvironment(environment, config.envAllowlist),
+        stdio: 'ignore',
+        windowsHide: true,
+        timeout: 60_000,
+      }).status
+    : null
+  try {
+    if (JSON.parse(readFileSync(activeRunPath(root), 'utf8')).runId === runId) {
+      rmSync(activeRunPath(root), { force: true })
+    }
+  } catch {
+    // Already gone.
+  }
+  record(root, { event: 'stop', runId, at: new Date().toISOString(), reason, teardown, ...result })
   const status = reason !== 'exited' ? reason : result.code === 0 ? 'completed' : 'failed'
-  return { status, runId, reason, exitCode: result.code, error: result.error ?? null }
+  return { status, runId, reason, exitCode: result.code, teardown, error: result.error ?? null }
 }
 
 export async function main(argv) {

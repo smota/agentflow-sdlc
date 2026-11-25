@@ -24,6 +24,7 @@ describe('coordinator command', () => {
     expect(await coordinator('kill', { root })).toMatchObject({
       state: 'killed',
       stoppedRun: null,
+      stopVerified: true,
     })
     expect((await coordinator('status', { root })).state).toBe('killed')
   })
