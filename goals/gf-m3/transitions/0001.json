@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "phase": 0,
+  "role": "product-manager",
+  "seat": "pm.manager",
+  "status": "pass",
+  "reason": null,
+  "seatVerified": false,
+  "seatRig": null,
+  "body": "**Kind:** goal\n\nSource: `docs/designs/governed-factory.md` (milestone m3).\n\n## Job\n\nWhen the evidence a run leaves can only be trusted by the author, I want signed, attested bundles that anyone can verify offline, so I can show an outsider what the factory did.\n\n## Outcome\n\n- The evidence envelope and bundle writer exist; bundles are attested after post-merge success (M3-1, M3-2).\n- Bundles verify with `gh attestation verify` and the offline `evidence verify` checker (M3-3, M3-4).\n- Digests agree between Windows and WSL checkouts; prompt and context digests are recorded (M3-5, M3-6).\n- ADRs 022 and 023 are written (M3-7, M3-8).\n- `evidence verify` passes on a clean Windows machine and on WSL with no network and without the author's private keys; the five tamper fixtures fail with the reason named; the result is the same with the integration packages removed.\n\n## Release intent\n\nNo publication beyond `next` prereleases cut by the author.\n\n## Split judgment\n\nEach work item in this milestone of the design is one focused PR with a declared scope; items that require each other stay one PR. The milestone's re-verification item (where it has one) lands first and fixes the exact file list. Shipping order follows the design's table.\n",
+  "idempotencyKey": "gf-m3-framed",
+  "uri": "transitions/0001.json"
+}

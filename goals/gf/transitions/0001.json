@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "phase": 0,
+  "role": "product-manager",
+  "seat": "pm.manager",
+  "status": "pass",
+  "reason": null,
+  "seatVerified": false,
+  "seatRig": null,
+  "body": "**Kind:** goal\n\nSource: `docs/designs/governed-factory.md` (milestone program).\n\n## Job\n\nWhen AgentFlow claims controls its code does not implement, cannot run work unattended and records nothing an outsider can verify, I want to evolve it into a governed factory that builds itself, so I can offer an implementation-and-services package backed by a working reference stack by month 6.\n\n## Outcome\n\n- The named reference stack works end to end and is in actual use, by the factory building itself and on the author's own repositories.\n- Agents take GitHub issues, build in contained `sbx` sandboxes, are reviewed across model families, and merge L1 and L2 work under conditions GitHub enforces.\n- Every documented claim is backed or retracted in the claims ledger, and the evidence a run leaves can be verified offline by a third party.\n- Milestones week 0, M0, M1, M2, M2b, M3, M4 and M5 are each met, as stated in their own goals.\n\n## Release intent\n\nAn npm `latest` release with provenance, a mock-GxP sample repository, an offline evidence verifier, a case study with measured numbers, a public claims ledger, technical documentation, manuals and the product website. L3 (agent merge of the factory's own controls) and the deferred items P-1 to P-3 are later goals and are not folded in.\n\n## Split judgment\n\nEach milestone is its own goal (`goals/gf-week-0` to `goals/gf-m5`), admitted by the author through its admission gate; this goal is not split further.\n",
+  "idempotencyKey": "gf-framed",
+  "uri": "transitions/0001.json"
+}

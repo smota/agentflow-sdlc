@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "phase": 0,
+  "role": "product-manager",
+  "seat": "pm.manager",
+  "status": "pass",
+  "reason": null,
+  "seatVerified": false,
+  "seatRig": null,
+  "body": "**Kind:** goal\n\nSource: `docs/designs/governed-factory.md` (milestone week-0).\n\n## Job\n\nWhen no agent may run unattended until containment is proven, I want the setup acts done, a minimal kill switch, run cap and guarded runner, and the early checks recorded, so I can pass the week-0 gate and start M0 on a known footing.\n\n## Outcome\n\n- The week-0 gate (`box gate`, W0-15) passes on the author's machine: in a sandbox the agent cannot read `~/.ssh` or the `gh` configuration, holds no GitHub credential and cannot reach an off-allowlist host; `coordinator kill` halts a run in under 10 seconds; the run cap refuses a run over the limit.\n- The setup acts in `docs/operators/week-0-setup.md` are done and `box check` passes, including the control repository, the three GitHub Apps, the code-owner and tag rulesets, quotas and host rules (W0-12).\n- ADR 020 records the `sbx` spike result and command mapping, or selects the fallback; ADR 021 records the control repository layout and path classes; the ADR index registers both (W0-4, W0-5, W0-11).\n- The vendor-terms finding is dated, quotes the clauses and states go or no-go for each vendor (W0-18).\n- The baseline document exists with measured numbers (W0-16), and the digest and signing spike answers its four questions, including the `workflow_run` behaviors (W0-17).\n- The program and milestone goals exist (W0-19).\n\n## Release intent\n\nNothing is published. No agent runs unattended until the gate passes; attended sessions continue as today.\n\n## Split judgment\n\nEach work item in this milestone of the design is one focused PR with a declared scope; items that require each other stay one PR. The milestone's re-verification item (where it has one) lands first and fixes the exact file list. Shipping order follows the design's table.\n",
+  "idempotencyKey": "gf-week-0-framed",
+  "uri": "transitions/0001.json"
+}
