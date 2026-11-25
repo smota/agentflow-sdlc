@@ -3,7 +3,7 @@
 All significant decisions about this framework are recorded here. Read these before changing
 anything the decisions govern.
 
-New decisions get the next available number.
+New decisions get the next available number. ADRs 017 to 027 are reserved for the [governed-factory design](../designs/governed-factory.md); each is written by the milestone that builds what it records, so the index can show gaps in that range.
 
 ---
 
@@ -27,6 +27,7 @@ New decisions get the next available number.
 | [ADR 014](014-remove-optional-ai-foundry-desk-provider.md)                       | Remove the optional AI Foundry Desk provider                                              | Accepted by explicit maintainer direction on 2026-10-10; amends ADR 004 decision only        | 2026-10-10 |
 | [ADR 015](015-remove-pi-cli-provider.md)                                         | Remove the pi-cli provider                                                                | Accepted under the standard admission on #371 on 2026-10-10                                  | 2026-10-10 |
 | [ADR 016](016-optional-openrig-execution-layer.md)                               | Run AgentFlow delivery on an optional OpenRig execution layer                             | Accepted for merged parts (#580–#582, #584, #587); the rest as their pull requests merge     | 2026-11-11 |
+| [ADR 020](020-substrate.md)                                                      | Docker Sandboxes (`sbx`) as the reference containment substrate                           | Proposed                                                                                     | 2026-11-25 |
 
 ---
 

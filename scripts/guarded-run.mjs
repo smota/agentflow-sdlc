@@ -82,9 +82,18 @@ export function readActiveRun(root, now = Date.now()) {
   return alive(run?.pid) && expiresAt > now ? run : null
 }
 
-// `.agentflow/sandbox.json`: `{ "command": [...], "stopCommand": [...], "envAllowlist": [...] }`.
-// The command lines come from the week-0 `sbx` spike (ADR 020); the agent command is appended to
-// `command`, and `stopCommand` tears the sandbox down after every run.
+// `.agentflow/sandbox.json`:
+// `{ "startCommand": [...], "command": [...], "stopCommand": [...], "envAllowlist": [...] }`.
+// The command lines come from the week-0 `sbx` spike (ADR 020). `startCommand` creates the run's
+// sandbox, the agent command is appended to `command`, and `stopCommand` removes the sandbox after
+// every run, including a killed one: stopping the host process alone leaves the agent running
+// inside the sandbox. `{name}` (one sandbox name per run) and `{workspace}` are filled in.
+export function fillCommand(argv, vars) {
+  return argv.map((part) =>
+    part.replaceAll('{name}', vars.name).replaceAll('{workspace}', vars.workspace),
+  )
+}
+
 function readSandboxConfig(root) {
   const path = sandboxConfigPath(root)
   if (!existsSync(path)) return null
@@ -92,8 +101,10 @@ function readSandboxConfig(root) {
   const strings = (value) =>
     Array.isArray(value) && value.length > 0 && value.every((p) => typeof p === 'string')
   if (!strings(config?.command)) throw new Error(`${path} needs a non-empty "command" array`)
-  if (config.stopCommand !== undefined && !strings(config.stopCommand)) {
-    throw new Error(`${path}: "stopCommand" must be a non-empty array of strings`)
+  for (const key of ['startCommand', 'stopCommand']) {
+    if (config[key] !== undefined && !strings(config[key])) {
+      throw new Error(`${path}: "${key}" must be a non-empty array of strings`)
+    }
   }
   const extra = config.envAllowlist ?? []
   if (!Array.isArray(extra) || extra.some((n) => typeof n !== 'string')) {
@@ -103,7 +114,12 @@ function readSandboxConfig(root) {
   if (unapproved.length) {
     throw new Error(`${path} may pass only approved variables; not approved: ${unapproved}`)
   }
-  return { command: config.command, stopCommand: config.stopCommand ?? null, envAllowlist: extra }
+  return {
+    startCommand: config.startCommand ?? null,
+    command: config.command,
+    stopCommand: config.stopCommand ?? null,
+    envAllowlist: extra,
+  }
 }
 
 export function sandboxEnvironment(source, extra = []) {
@@ -129,6 +145,7 @@ function acquireLock(root) {
   }
 }
 
+const splitCommand = (argv) => [argv[0], argv.slice(1)]
 const record = (root, event) =>
   appendFileSync(join(runsDirectory(root), 'log.jsonl'), `${JSON.stringify(event)}\n`)
 const refused = (reason, extra = {}) => ({ status: 'refused', reason, ...extra })
@@ -168,10 +185,51 @@ export async function guardedRun({
     release()
   }
 
-  const [executable, ...args] = [...config.command, ...command]
+  const vars = { name: `af-${runId.slice(0, 8)}`, workspace: root }
+  const sandboxEnv = sandboxEnvironment(environment, config.envAllowlist)
+  const teardownSandbox = () =>
+    config.stopCommand
+      ? spawnSync(...splitCommand(fillCommand(config.stopCommand, vars)), {
+          cwd: root,
+          env: sandboxEnv,
+          stdio: 'ignore',
+          windowsHide: true,
+          timeout: 60_000,
+        }).status
+      : null
+  if (config.startCommand) {
+    const started = spawnSync(...splitCommand(fillCommand(config.startCommand, vars)), {
+      cwd: root,
+      env: sandboxEnv,
+      stdio: 'ignore',
+      windowsHide: true,
+      timeout: 300_000,
+    })
+    if (started.status !== 0) {
+      const teardown = teardownSandbox()
+      rmSync(activeRunPath(root), { force: true })
+      record(root, {
+        event: 'stop',
+        runId,
+        at: new Date().toISOString(),
+        reason: 'failed-to-start',
+        teardown,
+      })
+      return {
+        status: 'failed-to-start',
+        runId,
+        reason: 'sandbox start command failed',
+        exitCode: started.status,
+        teardown,
+        error: started.error?.message ?? null,
+      }
+    }
+  }
+
+  const [executable, ...args] = [...fillCommand(config.command, vars), ...command]
   const child = spawn(executable, args, {
     cwd: root,
-    env: sandboxEnvironment(environment, config.envAllowlist),
+    env: sandboxEnv,
     stdio,
     detached: process.platform !== 'win32',
     windowsHide: true,
@@ -223,16 +281,8 @@ export async function guardedRun({
   }
   // POSIX: the process group outlives its leader, so stop anything the sandbox command left.
   if (process.platform !== 'win32') killProcessTree(child.pid)
-  // Tear the sandbox down; on Windows this is the only reach to processes the wrapper started.
-  const teardown = config.stopCommand
-    ? spawnSync(config.stopCommand[0], config.stopCommand.slice(1), {
-        cwd: root,
-        env: sandboxEnvironment(environment, config.envAllowlist),
-        stdio: 'ignore',
-        windowsHide: true,
-        timeout: 60_000,
-      }).status
-    : null
+  // Remove the sandbox: killing the host process does not stop the agent inside it (ADR 020).
+  const teardown = teardownSandbox()
   try {
     if (JSON.parse(readFileSync(activeRunPath(root), 'utf8')).runId === runId) {
       rmSync(activeRunPath(root), { force: true })

@@ -21,6 +21,7 @@ function fakeRun(answers) {
 const allGood = {
   'sbx version': { stdout: 'sbx version v0.54.1 abc' },
   'sbx diagnose': { stdout: HEALTHY_DIAGNOSE },
+  'sbx secret ls': { stdout: 'No secrets found\n' },
   'gh api repos/me/control --jq': { stdout: 'true\n' },
   'gh api repos/me/control/contents': { stdout: 'file\n' },
   powercfg: { stdout: 'Current AC Power Setting Index: 0x00000000' },
@@ -79,6 +80,17 @@ describe('box check', () => {
         boxCheck({ controlRepo: 'me/control', platform: 'win32', run: noLayout }),
         'control-layout',
       ).status,
+    ).toBe('missing')
+  })
+
+  it('fails when a github secret is stored in sbx', () => {
+    const run = fakeRun({
+      ...allGood,
+      'sbx secret ls': { stdout: 'SERVICE  SCOPE\ngithub   global\n' },
+    })
+    expect(
+      byId(boxCheck({ controlRepo: 'me/control', platform: 'win32', run }), 'sbx-no-github-secret')
+        .status,
     ).toBe('missing')
   })
 

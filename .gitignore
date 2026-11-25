@@ -20,3 +20,10 @@ pnpm-workspace.yaml
 
 # graphify knowledge-graph output (regenerated)
 graphify-out/
+
+# Local governed-factory runtime state (W0-14, W0-15)
+.agentflow/coordinator.json
+.agentflow/run-cap.json
+.agentflow/sandbox.json
+.agentflow/runs/
+.agentflow/gates/
