@@ -49,30 +49,38 @@ that spike (design item W0-4), run on the author's host on 2026-11-25 with `sbx`
 
 6. **Model credentials go through the proxy.** Claude Code runs headless inside the sandbox
    (`claude -p ... --output-format json` returns a result with no terminal) but reports
-   "Not logged in" until a credential exists. The two routes are a stored `anthropic` service secret
-   (an API key, injected by the proxy and never visible inside) or a login made inside the sandbox,
-   which is lost when the sandbox is removed. Which route applies is the author's vendor-terms
-   decision (W0-18). `sbx` has no built-in Agy agent; Agy needs the `shell` agent with `agy`
-   installed, or a kit.
+   "Not logged in" until a credential exists. The author chose subscription logins (W0-18). The
+   Claude login is a host-side OAuth sign-in: run `/login` once in Claude Code inside any sandbox,
+   and `sbx` stores it as a global `anthropic` service secret ("oauth configured") that the proxy
+   uses for every sandbox; the token does not enter the sandbox. A fresh sandbox under a new name
+   then ran `claude -p` headless and answered, so the login is shared and survives sandbox removal.
+   `sbx` has no built-in Agy agent; Agy needs the `shell` agent with `agy` installed, or a kit.
+
+7. **Never create a sandbox whose workspace is the home folder.** `sbx run` from a terminal in the
+   home folder mounts the whole profile, including `~/.ssh` and the `gh` configuration, into the
+   sandbox. `box check` fails while such a sandbox exists, and the factory always passes an explicit
+   working copy.
 
 ## Spike results
 
-| Question                                    | Result                                                                                             |
-| ------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| Headless run with no terminal               | Works through `sbx exec`; `sbx run` needs `--detach` when not interactive                          |
-| `~/.ssh`, `gh` configuration                | Absent inside; the host profile shows only the empty folders leading to the workspace              |
-| Ambient GitHub token                        | Only the proxy placeholder; GitHub answers 401; no secrets stored                                  |
-| Off-allowlist egress                        | 403 from the proxy (`example.com`, `neverssl.com`); `api.anthropic.com` reachable                  |
-| Writes outside the workspace                | `/etc` refused; the sandbox's own home is writable and disappears with the sandbox                 |
-| Kill of the host process                    | The process inside keeps running; removing the sandbox stops it                                    |
-| Coordinator kill through the guarded runner | Run reported `killed` and its sandbox removed 2.1 seconds after `coordinator kill`                 |
-| Sandbox lifecycle                           | Create 55 s on first use (image download), 5 s cached; `sbx rm --force` 1 s; no leftover processes |
+| Question                                      | Result                                                                                             |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Headless run with no terminal                 | Works through `sbx exec`; `sbx run` needs `--detach` when not interactive                          |
+| `~/.ssh`, `gh` configuration                  | Absent inside; the host profile shows only the empty folders leading to the workspace              |
+| Ambient GitHub token                          | Only the proxy placeholder; GitHub answers 401; no secrets stored                                  |
+| Off-allowlist egress                          | 403 from the proxy (`example.com`, `neverssl.com`); `api.anthropic.com` reachable                  |
+| Writes outside the workspace                  | `/etc` refused; the sandbox's own home is writable and disappears with the sandbox                 |
+| Kill of the host process                      | The process inside keeps running; removing the sandbox stops it                                    |
+| Coordinator kill through the guarded runner   | Run reported `killed` and its sandbox removed 2.1 seconds after `coordinator kill`                 |
+| Sandbox lifecycle                             | Create 55 s on first use (image download), 5 s cached; `sbx rm --force` 1 s; no leftover processes |
+| Subscription login in a fresh sandbox         | `claude -p` answered in a newly named sandbox, using the stored host-side OAuth login              |
+| A real Claude task through the guarded runner | Claude created a file in the working copy; the run completed and its sandbox was removed in 18 s   |
 
 The agent user inside the microVM belongs to `sudo`; the microVM is the boundary, not the user.
 
-Not answered yet: whether a Claude login survives `sbx rm` and re-creation, and token refresh,
-because no Claude credential has been provided (decision 6); and working-copy performance on the full
-repository, measured only on a small scratch workspace so far.
+Not answered yet: how long the stored OAuth login lasts before it must be renewed, which shows over
+the first weeks of use; and working-copy performance on the full repository, measured only on small
+scratch workspaces so far.
 
 ## Consequences
 

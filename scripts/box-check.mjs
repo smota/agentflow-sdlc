@@ -4,7 +4,8 @@
 // reported as `later` and do not fail the week-0 check. It needs local credentials (`gh`, `sbx`),
 // so it is not part of `validate:release`.
 import { spawnSync } from 'node:child_process'
-import { resolve } from 'node:path'
+import { homedir } from 'node:os'
+import { dirname, parse, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 // `sbx` 0.51.0 fixed a high-severity file-copy escape (design, Known risks: Suppliers).
@@ -59,6 +60,7 @@ export function boxCheck({
   controlRepo = null,
   platform = process.platform,
   run = defaultRun,
+  home = homedir(),
 } = {}) {
   const results = []
 
@@ -93,12 +95,30 @@ export function boxCheck({
   results.push(
     secrets.status !== 0
       ? missing('sbx-no-github-secret', 'Could not list sbx secrets (sbx secret ls)')
-      : /^\s*github\b/im.test(secrets.stdout)
+      : /\bservice\s+github\b/i.test(secrets.stdout)
         ? missing(
             'sbx-no-github-secret',
             'Remove the github secret from sbx (sbx secret rm github)',
           )
         : ok('sbx-no-github-secret', 'no github secret stored'),
+  )
+
+  // A sandbox whose workspace is the home folder (or above it) exposes ~/.ssh and the gh
+  // configuration to whatever runs in it. `sbx run` from a home-folder terminal does this.
+  const sandboxes = run('sbx', ['ls'])
+  const escape = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const exposed = [home, dirname(home), parse(home).root]
+    .filter((p, i, all) => p && all.indexOf(p) === i)
+    .filter((p) => new RegExp(`\\s${escape(p)}(\\s{2,}|\\s*$)`, 'im').test(sandboxes.stdout))
+  results.push(
+    sandboxes.status !== 0
+      ? missing('sbx-no-home-mount', 'Could not list sbx sandboxes (sbx ls)')
+      : exposed.length
+        ? missing(
+            'sbx-no-home-mount',
+            `Remove the sandboxes whose workspace is ${exposed.join(' or ')} (sbx ls, then sbx rm --force <name>)`,
+          )
+        : ok('sbx-no-home-mount', 'no sandbox mounts the home folder'),
   )
 
   if (!controlRepo) {

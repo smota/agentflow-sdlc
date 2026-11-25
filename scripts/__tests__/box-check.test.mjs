@@ -21,7 +21,13 @@ function fakeRun(answers) {
 const allGood = {
   'sbx version': { stdout: 'sbx version v0.54.1 abc' },
   'sbx diagnose': { stdout: HEALTHY_DIAGNOSE },
-  'sbx secret ls': { stdout: 'No secrets found\n' },
+  'sbx secret ls': {
+    stdout: 'SCOPE  TYPE  NAME  SECRET\n(global)  service  anthropic  (oauth configured)\n',
+  },
+  'sbx ls': {
+    stdout:
+      'SANDBOX  AGENT  STATUS  PORTS  WORKSPACE  CREATED\naf-1  claude  running    C:\\Users\\me\\work\\repo   2m\n',
+  },
   'gh api repos/me/control --jq': { stdout: 'true\n' },
   'gh api repos/me/control/contents': { stdout: 'file\n' },
   powercfg: { stdout: 'Current AC Power Setting Index: 0x00000000' },
@@ -83,10 +89,33 @@ describe('box check', () => {
     ).toBe('missing')
   })
 
+  it('fails when a sandbox mounts the home folder, but not one under it', () => {
+    const home = 'C:\\Users\\me'
+    const homeMount = fakeRun({
+      ...allGood,
+      'sbx ls': {
+        stdout:
+          'SANDBOX  AGENT  STATUS  PORTS  WORKSPACE  CREATED\nclaude-me  claude  stopped    C:\\Users\\me   4m\n',
+      },
+    })
+    expect(
+      byId(
+        boxCheck({ controlRepo: 'me/control', platform: 'win32', run: homeMount, home }),
+        'sbx-no-home-mount',
+      ),
+    ).toMatchObject({ status: 'missing', act: expect.stringMatching(/C:\\Users\\me/) })
+    expect(
+      byId(
+        boxCheck({ controlRepo: 'me/control', platform: 'win32', run: fakeRun(allGood), home }),
+        'sbx-no-home-mount',
+      ).status,
+    ).toBe('ok')
+  })
+
   it('fails when a github secret is stored in sbx', () => {
     const run = fakeRun({
       ...allGood,
-      'sbx secret ls': { stdout: 'SERVICE  SCOPE\ngithub   global\n' },
+      'sbx secret ls': { stdout: '(global)  service  github  (token configured)\n' },
     })
     expect(
       byId(boxCheck({ controlRepo: 'me/control', platform: 'win32', run }), 'sbx-no-github-secret')
