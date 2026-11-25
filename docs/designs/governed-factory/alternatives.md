@@ -377,3 +377,27 @@ The first seven alternatives are program-level. The rest follow the architecture
 - **Reason for Rejection**: Rejected by author (2026-11-25): the spike stays in week 0.
 
 ---
+
+## Alternative BK: Run the holdouts on the author's host in `sbx` with egress denied
+
+- **Pros**: Real containment: the holdouts cannot leave the sandbox.
+- **Cons**: The result is asserted by the host, not attested by CI, and the holdout check stops whenever the host is off.
+- **Reason for Rejection**: Rejected by author (2026-11-25): three hosted jobs keep CI-attested evidence; the holdout leak that remains needs deliberate exfiltration code.
+
+## Alternative BL: Defer holdouts past month 6
+
+- **Pros**: The simplest verifier and the smallest attack surface; the no-op check and public seeded defects still catch vacuous tests.
+- **Cons**: Weakens G4: public seeded defects can be learned, and nothing secret checks behavior.
+- **Reason for Rejection**: Rejected by author (2026-11-25): holdouts stay, run in a credential-free hosted job.
+
+## Alternative BM: Hold the reviewer App token under a separate Windows user
+
+- **Pros**: A launcher bug can no longer forge a review.
+- **Cons**: No help against an administrator-level compromise, which reaches both accounts; adds a user account, a second scheduled task and cross-user file handoff.
+- **Reason for Rejection**: Rejected by author (2026-11-25): the reviewer App posts PR reviews from the launcher, and the host residual is stated.
+
+## Alternative BN: Post the review as a check run that a ruleset requires from the reviewer App
+
+- **Pros**: GitHub enforces the review directly, not only through job B.
+- **Cons**: With the merge queue, required checks must pass on the merge-group commit while the reviewer's check sits on the PR head; this needs re-posting or another platform spike.
+- **Reason for Rejection**: Rejected by author (2026-11-25): job B is already the required check, so the platform enforces the review through it.
