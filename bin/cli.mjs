@@ -1380,7 +1380,7 @@ function handleWorld(rest, defaultTargetDir) {
 }
 
 const ROOT_USAGE =
-  'Usage: agentflow-sdlc <init|run|distribution|doctor|doctor-env|config|adopt|providers|adapters|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding|onboarding-prompt|wizard|release-plan|handoff|resume|phase|board|gates|mcp|project|goal|steer|seat|dispatch|world|bridge> [path] [--target <dir>] [--json]\n' +
+  'Usage: agentflow-sdlc <init|run|distribution|doctor|doctor-env|config|adopt|providers|adapters|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding|onboarding-prompt|wizard|release-plan|handoff|resume|phase|board|gates|coordinator|mcp|project|goal|steer|seat|dispatch|world|bridge> [path] [--target <dir>] [--json]\n' +
   'Execution adapters: agentflow-sdlc adapters <install|update|catalog|squads provision|squads update|squads list|squads remove> <id> (see agentflow-sdlc adapters --help)\n'
 
 const COMMAND_USAGE = {
@@ -1427,6 +1427,8 @@ const COMMAND_USAGE = {
     'Usage: agentflow-sdlc phase <append|read|integrate> --medium <filesystem|github> --phase <0-8> --status <pass|skipped> --seat <id> --key <id> [--root <dir> | --repo <owner/repo> [--issue <n>]] [--title <text>] [--body <text>] [--reason <text>] [--kind <goal|capability|spec> [--parent <dir|issue>] [--change-class <class>] [--gate-file <path> --attestation-file <path>]]\n',
   board:
     'Usage: agentflow-sdlc board [backfill] --medium <filesystem|github> [--root <dir> | --repo <owner/repo>] [--json] [--apply]\nShows every work item in one of Backlog, Readiness, WIP, or Delivered. backfill previews GitHub label corrections; --apply writes them.\n',
+  coordinator:
+    'Usage: agentflow-sdlc coordinator <status|pause|resume|kill> [--reason <text>] [--target <dir>] [--json]\nThe local kill switch for guarded agent runs. With no state file the coordinator reads as paused; kill also stops the active guarded run and its process tree.\n',
   gates:
     'Usage: agentflow-sdlc gates <open|answer|candidate|on-behalf|sync|waiting> --medium <filesystem|github> [--root <dir> | --repo <owner/repo> --issue <n>] [--json]\nPerson gates on the work record. A person runs gates answer in their own terminal; it refuses to run under an agent runtime.\n',
   resume:
@@ -1692,6 +1694,10 @@ function main() {
 
   if (command === 'gates') {
     return runScript('scripts/person-gates.mjs', rest, targetDir)
+  }
+
+  if (command === 'coordinator') {
+    return runScript('scripts/coordinator.mjs', rest, targetDir)
   }
 
   if (command === 'handoff') {
