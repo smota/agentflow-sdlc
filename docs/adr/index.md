@@ -27,6 +27,7 @@ New decisions get the next available number. ADRs 017 to 027 are reserved for th
 | [ADR 014](014-remove-optional-ai-foundry-desk-provider.md)                       | Remove the optional AI Foundry Desk provider                                              | Accepted by explicit maintainer direction on 2026-10-10; amends ADR 004 decision only        | 2026-10-10 |
 | [ADR 015](015-remove-pi-cli-provider.md)                                         | Remove the pi-cli provider                                                                | Accepted under the standard admission on #371 on 2026-10-10                                  | 2026-10-10 |
 | [ADR 016](016-optional-openrig-execution-layer.md)                               | Run AgentFlow delivery on an optional OpenRig execution layer                             | Accepted for merged parts (#580–#582, #584, #587); the rest as their pull requests merge     | 2026-11-11 |
+| [ADR 021](021-control-repository-and-trust-roots.md)                             | Control repository and path classes                                                       | Proposed                                                                                     | 2026-11-25 |
 | [ADR 020](020-substrate.md)                                                      | Docker Sandboxes (`sbx`) as the reference containment substrate                           | Proposed                                                                                     | 2026-11-25 |
 
 ---
