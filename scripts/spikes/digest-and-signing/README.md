@@ -69,6 +69,4 @@ envelope's timestamp source records.
 
 `smota/agentflow-sdlc` is owned by a personal account, so it cannot use a merge queue, which the M2b
 merge path assumes. The managing-a-merge-queue page confirms that a required check must also run on
-the `merge_group` event, which matches verifier job A. Whether to move the repository to an
-organization or have the merger serialize merges itself is the author's decision; the
-`workflow_run` checks on a scratch repository wait for it.
+the `merge_group` event, which matches verifier job A. The author decided on 2026-11-25 not to move the repository now and to revisit it before M2b; until then the M2b merger serializes merges itself (see the design's "Merge queue availability"). The `workflow_run` checks run with M2-2, on this repository.
