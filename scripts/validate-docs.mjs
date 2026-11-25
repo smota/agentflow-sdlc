@@ -34,6 +34,7 @@ const KNOWN_CLI_COMMANDS = new Set([
   'board',
   'gates',
   'coordinator',
+  'box',
   'mcp',
   'wizard',
   'project',

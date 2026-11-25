@@ -1380,7 +1380,7 @@ function handleWorld(rest, defaultTargetDir) {
 }
 
 const ROOT_USAGE =
-  'Usage: agentflow-sdlc <init|run|distribution|doctor|doctor-env|config|adopt|providers|adapters|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding|onboarding-prompt|wizard|release-plan|handoff|resume|phase|board|gates|coordinator|mcp|project|goal|steer|seat|dispatch|world|bridge> [path] [--target <dir>] [--json]\n' +
+  'Usage: agentflow-sdlc <init|run|distribution|doctor|doctor-env|config|adopt|providers|adapters|collaboration|sdlc|cockpit|skills|roles|methods|plugins|settings|extensions|harness|github|onboarding|onboarding-prompt|wizard|release-plan|handoff|resume|phase|board|gates|coordinator|box|mcp|project|goal|steer|seat|dispatch|world|bridge> [path] [--target <dir>] [--json]\n' +
   'Execution adapters: agentflow-sdlc adapters <install|update|catalog|squads provision|squads update|squads list|squads remove> <id> (see agentflow-sdlc adapters --help)\n'
 
 const COMMAND_USAGE = {
@@ -1429,6 +1429,7 @@ const COMMAND_USAGE = {
     'Usage: agentflow-sdlc board [backfill] --medium <filesystem|github> [--root <dir> | --repo <owner/repo>] [--json] [--apply]\nShows every work item in one of Backlog, Readiness, WIP, or Delivered. backfill previews GitHub label corrections; --apply writes them.\n',
   coordinator:
     'Usage: agentflow-sdlc coordinator <status|pause|resume|kill> [--reason <text>] [--target <dir>] [--json]\nThe local kill switch for guarded agent runs. With no state file the coordinator reads as paused; kill also stops the active guarded run and its process tree.\n',
+  box: 'Usage: agentflow-sdlc box check [--control-repo <owner/name>] [--json]\nRead-only check of the setup acts the governed factory needs. It names each missing act and exits non-zero when a week-0 act is missing.\n',
   gates:
     'Usage: agentflow-sdlc gates <open|answer|candidate|on-behalf|sync|waiting> --medium <filesystem|github> [--root <dir> | --repo <owner/repo> --issue <n>] [--json]\nPerson gates on the work record. A person runs gates answer in their own terminal; it refuses to run under an agent runtime.\n',
   resume:
@@ -1698,6 +1699,10 @@ function main() {
 
   if (command === 'coordinator') {
     return runScript('scripts/coordinator.mjs', rest, targetDir)
+  }
+
+  if (command === 'box') {
+    return runScript('scripts/box-check.mjs', rest, targetDir)
   }
 
   if (command === 'handoff') {
