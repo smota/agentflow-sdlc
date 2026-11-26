@@ -88,11 +88,12 @@ future implementation must revalidate the relevant revision and callsites.
 
 ### P1: exposed recovery is not authoritative and can delete a live lock
 
-`bin/cli.mjs:937-985` prints a generated handoff, but top-level resume constructs
-`mockPacket` and prints success. It does not retrieve a remote packet/run or restore
-Git state. `lib/runtime/lease-fencing.mjs:56-67` computes a token without shared CAS;
-`lib/runtime/handover-protocol.mjs:129-145` accepts missing current lease. This is
-separate from the stronger `run resume` protocol and must not inherit its assurance.
+When this was written, top-level resume constructed a `mockPacket` and printed success
+without retrieving a remote packet or run (since fixed, commit `c4df9de`).
+`lib/runtime/lease-fencing.mjs` computed a token without shared compare-and-swap, and
+`lib/runtime/handover-protocol.mjs` accepted a missing current lease; both had no product
+caller and were retracted (governed-factory design, item M0-2). Recovery runs through the
+stronger `run resume` protocol.
 
 `lib/runtime/context-sanitizer.mjs:81-92` removes an index lock based on age >=5 seconds,
 before authority validation, with no owner/liveness check and no linked-worktree

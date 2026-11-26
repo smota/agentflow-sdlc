@@ -9,6 +9,7 @@ import {
   detectOptionalRigor,
   detectUnreachablePolicy,
   loadEnforcementPairs,
+  parseExportedFunctionNames,
   runAudit,
 } from '../audit-reachability.mjs'
 
@@ -273,5 +274,33 @@ describe('W8d D2 — controls found by location (lib/core, lib/verification), no
     // since OFF_PATH_EXEMPTIONS is a fixed map in the audit module, not fixture-injectable.
     const findings = detectOffPathEnforcement({ root: repoRoot })
     expect(findings.some((item) => item.symbol === 'checkPostureCapability')).toBe(false)
+  })
+})
+
+// Governed-factory design, item M0-1: class exports and the widened lib/gates, lib/qa, lib/runtime
+// and lib/audit scope.
+describe('M0-1: class exports and the widened scope', () => {
+  it('sees exported classes and generator functions', () => {
+    expect(
+      parseExportedFunctionNames(
+        'export class Sweeper {}\nexport function* walk() {}\nexport async function go() {}\n',
+      ),
+    ).toEqual(['Sweeper', 'walk', 'go'])
+  })
+
+  it('flags an exported class in lib/gates with no caller anywhere', () => {
+    const root = w8dFixtureRoot()
+    writeFixtureFile(root, 'bin/cli.mjs', "console.log('cli')\n")
+    writeFixtureFile(root, 'lib/gates/unwired.mjs', 'export class UnwiredGate {}\n')
+    const findings = detectOffPathEnforcement({ root })
+    expect(findings.some((item) => item.symbol === 'UnwiredGate')).toBe(true)
+  })
+
+  it('does not flag an export that has a recorded planned exemption', () => {
+    const root = w8dFixtureRoot()
+    writeFixtureFile(root, 'bin/cli.mjs', "console.log('cli')\n")
+    writeFixtureFile(root, 'lib/gates/gate-sweeper.mjs', 'export class BoundedGateSweeper {}\n')
+    const findings = detectOffPathEnforcement({ root })
+    expect(findings.some((item) => item.symbol === 'BoundedGateSweeper')).toBe(false)
   })
 })
