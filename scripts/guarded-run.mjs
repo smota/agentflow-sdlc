@@ -156,7 +156,7 @@ export async function guardedRun({
   timeoutSeconds = 900,
   pollMs = 500,
   environment = process.env,
-  stdio = 'inherit',
+  stdio = ['ignore', 'inherit', 'inherit'],
 }) {
   if (!command?.length) return refused('no agent command given')
   if (!Number.isFinite(timeoutSeconds) || timeoutSeconds <= 0) {

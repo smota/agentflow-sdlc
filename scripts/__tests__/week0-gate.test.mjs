@@ -22,6 +22,7 @@ function fakeRun({ probe = CLEAN_PROBE, signedIn = true } = {}) {
       )
     }
     if (key === 'sbx secret ls') return ok('No secrets found\n')
+    if (key === 'sbx ls') return ok('No sandboxes found\n')
     if (key.startsWith('gh api repos/me/control --jq')) return ok('true\n')
     if (key.startsWith('gh api repos/me/control/contents')) return ok('file\n')
     if (command === 'powercfg') return ok('Current AC Power Setting Index: 0x00000000')
