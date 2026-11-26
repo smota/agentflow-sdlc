@@ -35,7 +35,9 @@ import { finding, report } from '../lib/sdlc-state.mjs'
 const packageRoot = resolvePath(dirname(fileURLToPath(import.meta.url)), '..')
 
 const VALIDATOR_NAME_RE = /^(validate|require|verify|assert|check)[A-Z]/
-const EXPORT_FUNCTION_RE = /^export\s+(?:async\s+)?function\s+([A-Za-z_$][\w$]*)/gm
+// Classes count as exports too: without them the audit cannot see `BoundedGateSweeper` or
+// `ProcessSupervisor` (design item M0-1).
+const EXPORT_FUNCTION_RE = /^export\s+(?:(?:async\s+)?function\s*\*?|class)\s+([A-Za-z_$][\w$]*)/gm
 const IMPORT_RE = /import\s+(?:([\s\S]*?)\s+from\s+)?['"]([^'"]+)['"]/g
 // D2: `scripts/validate-*.mjs` is a real, load-bearing naming convention for standalone gate
 // scripts (e.g. scripts/validate-branch-strategy.mjs) that bin/cli.mjs never spawns and no CI
@@ -203,6 +205,36 @@ const OFF_PATH_EXEMPTIONS = new Map([
     `lib/core/source-claim.mjs#${name}`,
     'claim-log comment marker for comment-based sources; first caller is the GitHub claim ledger ' +
       '(#581b), which removes this exemption; exercised by lib/__tests__/source-claim.test.mjs',
+  ]),
+  // Governed-factory design, item M0-1: the audit now covers lib/audit, lib/gates, lib/qa and
+  // lib/runtime. These exports have no product caller yet; each exemption names the item that wires
+  // it or decides its fate, and that item removes the exemption. Their claims are `planned` in the
+  // claims ledger (M0-3) until then.
+  ...[
+    'createGateTracker',
+    'formatRevisionContext',
+    'handleWebhookEvent',
+    'sweepGate',
+    'BoundedGateSweeper',
+  ].map((name) => [
+    `lib/gates/gate-sweeper.mjs#${name}`,
+    'planned: the gate sweeper gets its first product caller in design item M1-9 (milestone ' +
+      'admission depends on it), which removes this exemption',
+  ]),
+  ...['isPortInUse', 'ProcessSupervisor'].map((name) => [
+    `lib/qa/process-supervisor.mjs#${name}`,
+    'planned: the persisted process supervisor is deferred past month 6 (design item P-3); ' +
+      'killProcessTree from the same module is already called by scripts/guarded-run.mjs',
+  ]),
+  ...['computeArtifactDigest', 'verifyQAEvidenceContract'].map((name) => [
+    `lib/qa/qa-contract-verifier.mjs#${name}`,
+    'planned: wired through the tester lane, deferred past month 6 (design item P-2)',
+  ]),
+  ...['defaultGit', 'sweepSliceWorktrees'].map((name) => [
+    `lib/runtime/slice-worktrees.mjs#${name}`,
+    'OpenRig bridge code: passed by reference from scripts/bridge.mjs and ' +
+      'lib/bridge/worktrees-port.mjs, which this audit cannot see as a call; kept or retired by ' +
+      'the OpenRig trim (design item M2-11)',
   ]),
 ])
 const SCAN_ROOTS = ['lib', 'scripts', 'bin']
@@ -572,7 +604,16 @@ function importersOf(table, definingModule, exportName, candidateFiles) {
 // application code); lib/core/ and lib/verification/ are where "should something be enforcing this
 // and isn't" is actually a meaningful question to ask, per file, of every export — not just the ones
 // that happen to be named like a validator.
-const CORE_API_PREFIXES = ['lib/core/', 'lib/verification/']
+// lib/audit, lib/gates, lib/qa and lib/runtime hold documented controls, so an export there with no
+// product caller is a claim the code does not back (design item M0-1).
+const CORE_API_PREFIXES = [
+  'lib/core/',
+  'lib/verification/',
+  'lib/audit/',
+  'lib/gates/',
+  'lib/qa/',
+  'lib/runtime/',
+]
 function isCoreApiModule(modulePath) {
   return CORE_API_PREFIXES.some((prefix) => modulePath.startsWith(prefix))
 }

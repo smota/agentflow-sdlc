@@ -43,7 +43,7 @@ Rather than treating AI coding agents as opaque, unconstrained code generators, 
   - `MUST`: Apply the review model in `AGENTS.md` and `docs/agent-workflow.md`: bounded work may use explicit, evidence-backed self-review; standard work may use explicit, evidence-backed self-review; high-assurance work requires human security and acceptance review on the open PR before merge. Self-review cannot satisfy the high-assurance gate.
   - `MUST`: Enforce strict Separation of Duties. The `tester` and `reviewer` roles are strictly read-only (`observe` boundary) and must never repair or modify candidate source code directly.
 - **Codebase Manifestation:**
-  - Cryptographic Span Ledger: `lib/audit/role-flow-span.mjs` (`verifySpanChain`)
+  - Chained run records: `lib/core/run-state.mjs` (each event names the digest of the one before it, and a stale parent is refused)
   - Interactive Dual-Control Gates: `lib/cockpit-actions.mjs`, `lib/sparring-gate.mjs`
   - Black-Box QA Separation of Duties: `roles/tester/tool-policy.json`, `lib/qa/qa-contract-verifier.mjs`
 
@@ -85,15 +85,13 @@ Rather than treating AI coding agents as opaque, unconstrained code generators, 
 
 - **Normative Rules:**
   - `INVARIANT`: Uncommitted work and pipeline state must never be trapped on a single physical machine.
-  - `MUST`: Automatically synchronize WIP checkpoint branches (`wip/<task-id>`) upon quota exhaustion or executor handoff.
-  - `MUST`: Enforce monotonic fencing tokens to prevent split-brain write collisions if multiple machines or executors attempt to work on the same task.
-  - `MUST`: Normalize file paths to POSIX (`/`), preserve Git lock files unless ownership and safe removal are proven (age alone is insufficient), and aggressively scrub credentials, API keys, and local PII before pushing state.
-  - `MUST`: Compress handover payloads to strictly remain within <= 15% of the target agent's context window.
+  - `MUST`: Keep run state in the run store, where each event carries a writer generation and the digest of the event before it, so that a stale writer cannot append and a run can resume elsewhere.
+  - `MUST`: Normalize file paths to POSIX (`/`) and scrub credentials, API keys, and local PII before pushing state.
 - **Codebase Manifestation:**
+  - Run store with writer generations: `lib/core/run-state.mjs`
   - Cross-Platform Sanitizer: `lib/runtime/context-sanitizer.mjs`
-  - Lease Fencing Manager: `lib/runtime/lease-fencing.mjs`
-  - Handover Protocol: `lib/runtime/handover-protocol.mjs`
-  - CLI Commands: `agentflow-sdlc handoff`, `agentflow-sdlc resume`
+  - CLI Commands: `agentflow-sdlc run resume`, `agentflow-sdlc handoff`
+- **Retracted (governed-factory design, items M0-2 and M0-4):** automatic WIP checkpoint branches, cross-machine monotonic fencing tokens (`lib/runtime/lease-fencing.mjs`), the handover packet (`lib/runtime/handover-protocol.mjs`) and the 15% handover-size cap. None had a product caller; the claims ledger records them as retracted.
 
 ---
 
