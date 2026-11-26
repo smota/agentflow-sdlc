@@ -173,8 +173,8 @@
         "tests": ["lib/__tests__/cockpit-goal-model.test.mjs"],
         "conformance": null
       },
-      "plannedBy": "none",
-      "note": "Optional role projection exists, but no inspected test proves the claimed dynamic design and verification gate bypass and no specific design item schedules that gap."
+      "plannedBy": "M1-17",
+      "note": "The author decided (2026-11-26) that light work must be really lighter: M1-17 skips the design and verification gates that do not apply to the light profile and records why."
     },
     {
       "id": "high-assurance-consensus",
@@ -210,8 +210,8 @@
         "tests": [],
         "conformance": null
       },
-      "plannedBy": "none",
-      "note": "The cockpit displays open dependency blockers, but no inspected transition guard proves that unverified prerequisites forbid implementation and no specific design item schedules it."
+      "plannedBy": "M1-10",
+      "note": "The cockpit shows blockers but nothing enforces them; the author decided (2026-11-26) to implement the block in M1-10, in the poller's admission and the phase-append path."
     },
     {
       "id": "gate-decision-context",
@@ -231,7 +231,7 @@
     },
     {
       "id": "avoid-repetitive-approvals",
-      "quote": "- `MUST NOT`: Force humans into repetitive, low-context approvals for deterministic, evidence-backed steps.",
+      "quote": "people are not asked for repetitive, low-context approvals",
       "source": {
         "file": "docs/guiding-principles.md",
         "line": 73
@@ -243,8 +243,8 @@
         "tests": [],
         "conformance": null
       },
-      "plannedBy": "none",
-      "note": "This is an agent interaction instruction with no enforcing check for repetitive or low-context approvals."
+      "plannedBy": "M5-2",
+      "note": "Reworded as an aim (author decision, 2026-11-26); the M5 case study measures the author's time per merged change, which turns this row to measured."
     },
     {
       "id": "emergency-waiver-justification",
@@ -264,20 +264,19 @@
     },
     {
       "id": "cross-machine-uncommitted-work",
-      "quote": "- `INVARIANT`: Uncommitted work and pipeline state must never be trapped on a single physical machine.",
+      "quote": "Run state is never trapped on a single physical machine",
       "source": {
         "file": "docs/guiding-principles.md",
         "line": 87
       },
       "case": "B",
-      "status": "planned",
+      "status": "implemented",
       "evidence": {
-        "code": ["lib/core/run-state.mjs"],
+        "code": ["lib/core/run-state.mjs", "lib/application/run-service.mjs"],
         "tests": ["lib/__tests__/run-state.test.mjs"],
         "conformance": null
       },
-      "plannedBy": "none",
-      "note": "Portable run recovery does not preserve arbitrary uncommitted work remotely, and the design retracts automatic WIP checkpoints without scheduling a replacement for this universal claim."
+      "note": "Reworded to what is true (author decision, 2026-11-26): run state recovers through the run store; uncommitted work is discarded and the run retried, matching the factory's disposable sandboxes."
     },
     {
       "id": "writer-generation-recovery",
@@ -297,7 +296,7 @@
     },
     {
       "id": "sanitize-before-state-push",
-      "quote": "- `MUST`: Normalize file paths to POSIX (`/`) and scrub credentials, API keys, and local PII before pushing state.",
+      "quote": "pass all pushed content through the configured scrubber",
       "source": {
         "file": "docs/guiding-principles.md",
         "line": 89
@@ -309,8 +308,8 @@
         "tests": ["lib/__tests__/context-sanitizer.test.mjs"],
         "conformance": null
       },
-      "plannedBy": "none",
-      "note": "Tested sanitization helpers redact engineering evidence, but universal scrubbing before state pushes has no inspected enforcing caller or specific scheduled design item."
+      "plannedBy": "M1-18",
+      "note": "The author decided (2026-11-26) to scrub all pushed content through a pluggable scrubber port (M1-18): the current regex scrubber is the default, and stronger scrubbers plug in by passing the same conformance suite."
     },
     {
       "id": "bounded-async-gates",
@@ -369,20 +368,19 @@
     },
     {
       "id": "failure-log-revision-prompts",
-      "quote": "- `MUST`: Automatically extract external failure logs and inject them directly into downstream revision prompt loops.",
+      "quote": "feeding external failure logs into the next revision attempt belongs to the rework loop",
       "source": {
         "file": "docs/guiding-principles.md",
         "line": 109
       },
       "case": "B",
-      "status": "planned",
+      "status": "retracted",
       "evidence": {
-        "code": ["lib/gates/gate-sweeper.mjs"],
-        "tests": ["lib/__tests__/gate-sweeper.test.mjs"],
+        "code": [],
+        "tests": [],
         "conformance": null
       },
-      "plannedBy": "none",
-      "note": "The sweeper collects external failure logs, but no product caller injects them into revision prompts and no specific design item schedules that missing loop."
+      "note": "Retracted (author decision, 2026-11-26) until the rework loop is designed (#652); the sweeper collects logs but nothing feeds them to an agent."
     },
     {
       "id": "contributor-cognitive-standards",
@@ -522,20 +520,19 @@
     },
     {
       "id": "trusted-oracle-custody-host",
-      "quote": "The trusted host `resolveOracleCustody(request)` MUST verify the exact source-backed test-engineering",
+      "quote": "AgentFlow does not supply such a host",
       "source": {
         "file": "docs/evidence-contracts.md",
-        "line": 84
+        "line": 85
       },
       "case": "B",
-      "status": "planned",
+      "status": "retracted",
       "evidence": {
-        "code": ["lib/application/run-service.mjs", "lib/core/oracle-custody.mjs"],
-        "tests": ["lib/__tests__/oracle-custody.test.mjs"],
+        "code": [],
+        "tests": [],
         "conformance": null
       },
-      "plannedBy": "none",
-      "note": "The service requires a verified request-bound receipt, but the exact source-backed assignment verification is an injected host obligation with no concrete implementation or specific scheduled design item found."
+      "note": "Reworded as an obligation on the integrator (author decision, 2026-11-26); AgentFlow requires a verified receipt from the host but does not implement the host."
     },
     {
       "id": "preserve-unknown-oracle-history",

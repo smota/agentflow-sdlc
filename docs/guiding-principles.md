@@ -70,7 +70,7 @@ Rather than treating AI coding agents as opaque, unconstrained code generators, 
 
 - **Normative Rules:**
   - `INVARIANT`: Transition gates must present concise, actionable decision context, highlighting residual risk, verification receipts, and test coverage gaps.
-  - `MUST NOT`: Force humans into repetitive, low-context approvals for deterministic, evidence-backed steps.
+  - Aim, measured rather than enforced: people are not asked for repetitive, low-context approvals of deterministic, evidence-backed steps. The governed-factory case study measures the author's time per merged change.
   - `MUST`: Require human justification and explicit logging whenever an automated gate or invariant is bypassed via an emergency waiver.
 - **Codebase Manifestation:**
   - Interactive Gate Dialogs: `lib/cockpit-ui.mjs`
@@ -84,9 +84,9 @@ Rather than treating AI coding agents as opaque, unconstrained code generators, 
 **Statement:** AI-assisted development must be completely resilient against machine crashes, workstation migrations, and API rate limits (HTTP 429).
 
 - **Normative Rules:**
-  - `INVARIANT`: Uncommitted work and pipeline state must never be trapped on a single physical machine.
+  - `INVARIANT`: Run state is never trapped on a single physical machine: it lives in the run store, and a run resumes on another machine. A run's uncommitted work is discarded with its sandbox, and the run is retried from its claim.
   - `MUST`: Keep run state in the run store, where each event carries a writer generation and the digest of the event before it, so that a stale writer cannot append and a run can resume elsewhere.
-  - `MUST`: Normalize file paths to POSIX (`/`) and scrub credentials, API keys, and local PII before pushing state.
+  - `MUST`: Normalize file paths to POSIX (`/`) and pass all pushed content through the configured scrubber, which removes credentials, API keys and local PII before anything leaves the host.
 - **Codebase Manifestation:**
   - Run store with writer generations: `lib/core/run-state.mjs`
   - Cross-Platform Sanitizer: `lib/runtime/context-sanitizer.mjs`
@@ -106,7 +106,7 @@ Rather than treating AI coding agents as opaque, unconstrained code generators, 
     2. Background reconciling sweeper with exponential backoff.
     3. Deterministic timeout resolving hung gates to an explicit, auditable status (`timed_out` with reason).
   - `MUST`: Supervise all spawned child processes in monitored process trees, guaranteeing SIGTERM/SIGKILL termination and zero port lockups (`EADDRINUSE`).
-  - `MUST`: Automatically extract external failure logs and inject them directly into downstream revision prompt loops.
+  - Not yet built: feeding external failure logs into the next revision attempt belongs to the rework loop, which is still to be designed (issue #652).
 - **Codebase Manifestation:**
   - Bounded Evidence Gate Sweeper: `lib/gates/gate-sweeper.mjs`
   - Process Group Supervisor: `lib/qa/process-supervisor.mjs`

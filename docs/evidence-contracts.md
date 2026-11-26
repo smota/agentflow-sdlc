@@ -81,8 +81,8 @@ ledger. It does not open another ledger, advance a phase, grant write permission
 human gate. Its request binds the current source/run revision, native writer generation and
 revocation epoch, candidate and existing oracle pin. Native generation zero remains zero.
 
-The trusted host `resolveOracleCustody(request)` MUST verify the exact source-backed test-engineering
-assignment, manifest, identity and evidence. Compose the existing oracle-assignment admission
+A host that implements `resolveOracleCustody(request)` must verify the exact source-backed
+test-engineering assignment, manifest, identity and evidence; AgentFlow does not supply such a host. Compose the existing oracle-assignment admission
 contract; do not infer authorization from `pinnedBefore`, the run owner or a seat name. The host
 returns a verified, checksummed `oracle-custody-receipt` binding the exact request. Checksums prove
 consistency, not authentication. Service authorization and compare-and-swap still control the write.
