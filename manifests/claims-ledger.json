@@ -1,0 +1,782 @@
+{
+  "version": 1,
+  "sources": [
+    {
+      "file": "docs/guiding-principles.md"
+    },
+    {
+      "file": "CLAUDE.md"
+    },
+    {
+      "file": "AGY.md"
+    },
+    {
+      "file": "CODEX.md"
+    },
+    {
+      "file": "docs/evidence-contracts.md"
+    },
+    {
+      "file": "docs/sources/index.md"
+    },
+    {
+      "file": "docs/process-autonomy/harness-dispatch.md"
+    },
+    {
+      "file": ".agentflow/PRODUCT.md"
+    }
+  ],
+  "wording": {
+    "files": [
+      "README.md",
+      "docs/index.md",
+      "docs/agentflow-in-5-minutes.md",
+      "docs/guiding-principles.md"
+    ],
+    "supportsFiles": ["README.md", "docs/index.md", "docs/agentflow-in-5-minutes.md"],
+    "deferredRules": [
+      {
+        "rule": "high-assurance-human-review-says-by-default",
+        "until": "L3-1",
+        "reason": "The policy edits that add \"by default\" to every high-assurance human-review sentence are built with the L3 goal (design decision D39); until then the default human rule is the rule, so the check is not active."
+      }
+    ]
+  },
+  "rows": [
+    {
+      "id": "neutral-core-ports",
+      "quote": "- `INVARIANT`: Never couple core SDLC logic to vendor-specific session formats or proprietary database engines.",
+      "source": {
+        "file": "docs/guiding-principles.md",
+        "line": 27
+      },
+      "case": "B",
+      "status": "implemented",
+      "evidence": {
+        "code": ["lib/core/source-adapter.mjs", "lib/providers/harness-dispatch.mjs"],
+        "tests": [
+          "lib/__tests__/source-capabilities.test.mjs",
+          "lib/__tests__/engineering-neutral-conformance.test.mjs"
+        ],
+        "conformance": null
+      },
+      "note": "Neutral source and harness contracts isolate core behavior from source systems and vendor invocation formats."
+    },
+    {
+      "id": "platform-target-separation",
+      "quote": "- `MUST`: Distinguish between the **runtime platform slug** (who provided workflow evidence, e.g., `agy`, `claude`, `codex`, `pi`) and the **execution target**",
+      "source": {
+        "file": "docs/guiding-principles.md",
+        "line": 28
+      },
+      "case": "B",
+      "status": "implemented",
+      "evidence": {
+        "code": ["lib/execution-targets.mjs"],
+        "tests": ["lib/__tests__/execution-targets.test.mjs"],
+        "conformance": null
+      },
+      "note": "The target resolver separates platform identity from execution target, transport and delegation boundary."
+    },
+    {
+      "id": "explicit-provider-resolution",
+      "quote": "- `MUST NOT`: Assume an agent executes in its own native environment or inherit providers implicitly.",
+      "source": {
+        "file": "docs/guiding-principles.md",
+        "line": 29
+      },
+      "case": "B",
+      "status": "implemented",
+      "evidence": {
+        "code": ["lib/execution-targets.mjs"],
+        "tests": ["lib/__tests__/execution-targets.test.mjs"],
+        "conformance": null
+      },
+      "note": "Ambiguous cross-agent requests require clarification rather than inheriting the current provider."
+    },
+    {
+      "id": "chained-role-transitions",
+      "quote": "- `INVARIANT`: All completed role transitions produce tamper-evident, cryptographically chained records.",
+      "source": {
+        "file": "docs/guiding-principles.md",
+        "line": 42
+      },
+      "case": "B",
+      "status": "implemented",
+      "evidence": {
+        "code": ["lib/core/run-state.mjs", "lib/application/run-service.mjs"],
+        "tests": ["lib/__tests__/run-state.test.mjs", "lib/__tests__/oracle-custody.test.mjs"],
+        "conformance": null
+      },
+      "note": "Run events carry checked digests and parent links, with tests rejecting conflicting parents and tampered replay."
+    },
+    {
+      "id": "assurance-review-policy",
+      "quote": "- `MUST`: Apply the review model in `AGENTS.md` and `docs/agent-workflow.md`: bounded work may use explicit, evidence-backed self-review; standard work may use",
+      "source": {
+        "file": "docs/guiding-principles.md",
+        "line": 43
+      },
+      "case": "B",
+      "status": "implemented",
+      "evidence": {
+        "code": ["scripts/validate-sdlc-role-pass.mjs", "lib/core/gate.mjs"],
+        "tests": ["scripts/__tests__/role-pass-gate.test.mjs", "lib/__tests__/gate.test.mjs"],
+        "conformance": null
+      },
+      "note": "Role-pass validation rejects high-assurance self-review and human gates reject agent reviewers, although signed human authentication remains future work."
+    },
+    {
+      "id": "tester-reviewer-readonly",
+      "quote": "- `MUST`: Enforce strict Separation of Duties. The `tester` and `reviewer` roles are strictly read-only (`observe` boundary) and must never repair or modify",
+      "source": {
+        "file": "docs/guiding-principles.md",
+        "line": 44
+      },
+      "case": "B",
+      "status": "planned",
+      "evidence": {
+        "code": ["lib/qa/qa-contract-verifier.mjs"],
+        "tests": ["lib/__tests__/black-box-qa.test.mjs"],
+        "conformance": null
+      },
+      "plannedBy": "P-2",
+      "note": "The QA contract helper does not contain executing agents, so full enforcement needs tester lane P-2 and reviewer lane M2-3."
+    },
+    {
+      "id": "risk-profile-taxonomy",
+      "quote": "- `INVARIANT`: Cards are categorized into explicit taxonomy profiles: `light`, `standard`, and `high-assurance`.",
+      "source": {
+        "file": "docs/guiding-principles.md",
+        "line": 57
+      },
+      "case": "B",
+      "status": "implemented",
+      "evidence": {
+        "code": ["lib/sdlc-vocabulary.mjs", "lib/cockpit-goal-model.mjs"],
+        "tests": ["lib/__tests__/cockpit-goal-model.test.mjs"],
+        "conformance": null
+      },
+      "note": "The vocabulary defines light, standard and high-assurance profiles and the goal model derives the selected risk profile."
+    },
+    {
+      "id": "light-gate-bypass",
+      "quote": "- `MUST`: Dynamically bypass non-applicable design or verification gates for `light` tasks (e.g., minor docs, non-functional tweaks) when project posture",
+      "source": {
+        "file": "docs/guiding-principles.md",
+        "line": 58
+      },
+      "case": "B",
+      "status": "planned",
+      "evidence": {
+        "code": ["lib/sdlc-vocabulary.mjs", "lib/cockpit-goal-model.mjs"],
+        "tests": ["lib/__tests__/cockpit-goal-model.test.mjs"],
+        "conformance": null
+      },
+      "plannedBy": "none",
+      "note": "Optional role projection exists, but no inspected test proves the claimed dynamic design and verification gate bypass and no specific design item schedules that gap."
+    },
+    {
+      "id": "high-assurance-consensus",
+      "quote": "- `MUST`: Require multi-agent consensus, rigorous exploratory QA, and formal human security sign-off for `high-assurance` tasks.",
+      "source": {
+        "file": "docs/guiding-principles.md",
+        "line": 59
+      },
+      "case": "B",
+      "status": "planned",
+      "evidence": {
+        "code": ["lib/core/execution-receipt.mjs", "scripts/validate-sdlc-role-pass.mjs"],
+        "tests": [
+          "lib/__tests__/modular-contracts.test.mjs",
+          "scripts/__tests__/role-pass-gate.test.mjs"
+        ],
+        "conformance": null
+      },
+      "plannedBy": "M2-3",
+      "note": "Review policy checks exist, but the independently contained cross-family reviewer lane is planned in M2-3 and signed human acts in M1-13."
+    },
+    {
+      "id": "dependency-implementation-block",
+      "quote": "- `MUST`: Enforce topological dependency ordering (`blocked_by`). A card cannot transition to implementation if prerequisite dependency cards remain unverified.",
+      "source": {
+        "file": "docs/guiding-principles.md",
+        "line": 60
+      },
+      "case": "B",
+      "status": "planned",
+      "evidence": {
+        "code": ["lib/cockpit-goal-model.mjs", "lib/cockpit-markdown.mjs"],
+        "tests": [],
+        "conformance": null
+      },
+      "plannedBy": "none",
+      "note": "The cockpit displays open dependency blockers, but no inspected transition guard proves that unverified prerequisites forbid implementation and no specific design item schedules it."
+    },
+    {
+      "id": "gate-decision-context",
+      "quote": "- `INVARIANT`: Transition gates must present concise, actionable decision context, highlighting residual risk, verification receipts, and test coverage gaps.",
+      "source": {
+        "file": "docs/guiding-principles.md",
+        "line": 72
+      },
+      "case": "B",
+      "status": "implemented",
+      "evidence": {
+        "code": ["lib/cockpit-ui.mjs", "lib/cockpit-goal-model.mjs"],
+        "tests": ["lib/__tests__/interactive-gate-dialogs.test.mjs"],
+        "conformance": null
+      },
+      "note": "The gate dialog presents risk, evidence readiness dimensions and missing-check context with rendering tests."
+    },
+    {
+      "id": "avoid-repetitive-approvals",
+      "quote": "- `MUST NOT`: Force humans into repetitive, low-context approvals for deterministic, evidence-backed steps.",
+      "source": {
+        "file": "docs/guiding-principles.md",
+        "line": 73
+      },
+      "case": "B",
+      "status": "planned",
+      "evidence": {
+        "code": [],
+        "tests": [],
+        "conformance": null
+      },
+      "plannedBy": "none",
+      "note": "This is an agent interaction instruction with no enforcing check for repetitive or low-context approvals."
+    },
+    {
+      "id": "emergency-waiver-justification",
+      "quote": "- `MUST`: Require human justification and explicit logging whenever an automated gate or invariant is bypassed via an emergency waiver.",
+      "source": {
+        "file": "docs/guiding-principles.md",
+        "line": 74
+      },
+      "case": "B",
+      "status": "implemented",
+      "evidence": {
+        "code": ["lib/cockpit-actions.mjs", "lib/cockpit-ui.mjs"],
+        "tests": ["lib/__tests__/interactive-gate-dialogs.test.mjs"],
+        "conformance": null
+      },
+      "note": "Waiver checks require a reason and independent approver for high-assurance work and the transition comment records the justification."
+    },
+    {
+      "id": "cross-machine-uncommitted-work",
+      "quote": "- `INVARIANT`: Uncommitted work and pipeline state must never be trapped on a single physical machine.",
+      "source": {
+        "file": "docs/guiding-principles.md",
+        "line": 87
+      },
+      "case": "B",
+      "status": "planned",
+      "evidence": {
+        "code": ["lib/core/run-state.mjs"],
+        "tests": ["lib/__tests__/run-state.test.mjs"],
+        "conformance": null
+      },
+      "plannedBy": "none",
+      "note": "Portable run recovery does not preserve arbitrary uncommitted work remotely, and the design retracts automatic WIP checkpoints without scheduling a replacement for this universal claim."
+    },
+    {
+      "id": "writer-generation-recovery",
+      "quote": "- `MUST`: Keep run state in the run store, where each event carries a writer generation and the digest of the event before it, so that a stale writer cannot",
+      "source": {
+        "file": "docs/guiding-principles.md",
+        "line": 88
+      },
+      "case": "B",
+      "status": "implemented",
+      "evidence": {
+        "code": ["lib/core/run-state.mjs", "lib/application/run-service.mjs"],
+        "tests": ["lib/__tests__/run-state.test.mjs"],
+        "conformance": null
+      },
+      "note": "The reducer rejects stale parents and writer generations and resume advances the generation after confirmed writer termination."
+    },
+    {
+      "id": "sanitize-before-state-push",
+      "quote": "- `MUST`: Normalize file paths to POSIX (`/`) and scrub credentials, API keys, and local PII before pushing state.",
+      "source": {
+        "file": "docs/guiding-principles.md",
+        "line": 89
+      },
+      "case": "B",
+      "status": "planned",
+      "evidence": {
+        "code": ["lib/runtime/context-sanitizer.mjs", "lib/providers/engineering-evidence.mjs"],
+        "tests": ["lib/__tests__/context-sanitizer.test.mjs"],
+        "conformance": null
+      },
+      "plannedBy": "none",
+      "note": "Tested sanitization helpers redact engineering evidence, but universal scrubbing before state pushes has no inspected enforcing caller or specific scheduled design item."
+    },
+    {
+      "id": "bounded-async-gates",
+      "quote": "- `INVARIANT (Zero Deadlock)`: Every asynchronous verification gate must deterministically resolve within a configured deadline (default: 30 minutes).",
+      "source": {
+        "file": "docs/guiding-principles.md",
+        "line": 103
+      },
+      "case": "B",
+      "status": "planned",
+      "evidence": {
+        "code": ["lib/gates/gate-sweeper.mjs"],
+        "tests": ["lib/__tests__/gate-sweeper.test.mjs"],
+        "conformance": null
+      },
+      "plannedBy": "M1-9",
+      "note": "The in-memory sweeper has deadline tests but its persisted state and first product caller are scheduled for M1-9."
+    },
+    {
+      "id": "three-tier-gate-resolution",
+      "quote": "- `MUST`: Employ a three-tier gate resolution architecture:",
+      "source": {
+        "file": "docs/guiding-principles.md",
+        "line": 104
+      },
+      "case": "B",
+      "status": "planned",
+      "evidence": {
+        "code": ["lib/gates/gate-sweeper.mjs"],
+        "tests": ["lib/__tests__/gate-sweeper.test.mjs"],
+        "conformance": null
+      },
+      "plannedBy": "M1-9",
+      "note": "Webhook, reconciliation and timeout helpers do not establish a running three-tier gate service until M1-9 wires the sweeper."
+    },
+    {
+      "id": "supervise-child-processes",
+      "quote": "- `MUST`: Supervise all spawned child processes in monitored process trees, guaranteeing SIGTERM/SIGKILL termination and zero port lockups (`EADDRINUSE`).",
+      "source": {
+        "file": "docs/guiding-principles.md",
+        "line": 108
+      },
+      "case": "B",
+      "status": "planned",
+      "evidence": {
+        "code": [
+          "lib/qa/process-supervisor.mjs",
+          "scripts/guarded-run.mjs",
+          "scripts/coordinator.mjs"
+        ],
+        "tests": ["lib/__tests__/black-box-qa.test.mjs"],
+        "conformance": null
+      },
+      "plannedBy": "P-3",
+      "note": "Some process-tree kill callers exist, but persisted supervisor registration and orphan reconciliation remain scheduled for P-3."
+    },
+    {
+      "id": "failure-log-revision-prompts",
+      "quote": "- `MUST`: Automatically extract external failure logs and inject them directly into downstream revision prompt loops.",
+      "source": {
+        "file": "docs/guiding-principles.md",
+        "line": 109
+      },
+      "case": "B",
+      "status": "planned",
+      "evidence": {
+        "code": ["lib/gates/gate-sweeper.mjs"],
+        "tests": ["lib/__tests__/gate-sweeper.test.mjs"],
+        "conformance": null
+      },
+      "plannedBy": "none",
+      "note": "The sweeper collects external failure logs, but no product caller injects them into revision prompts and no specific design item schedules that missing loop."
+    },
+    {
+      "id": "contributor-cognitive-standards",
+      "quote": "When creating code, modifying architecture, or authoring documentation in this repository, agents MUST adhere to these cognitive and structural standards:",
+      "source": {
+        "file": "docs/guiding-principles.md",
+        "line": 118
+      },
+      "case": "B",
+      "status": "planned",
+      "evidence": {
+        "code": [],
+        "tests": [],
+        "conformance": null
+      },
+      "plannedBy": "none",
+      "note": "This is an agent instruction covering writing and contribution standards with no check enforcing the whole instruction."
+    },
+    {
+      "id": "normative-writing-keywords",
+      "quote": "1. **Be Normatively Deterministic:** Use exact keywords (`MUST`, `MUST NOT`, `INVARIANT`, `RECOMMENDED`). Avoid ambiguous phrases such as \"try to\" or \"if",
+      "source": {
+        "file": "docs/guiding-principles.md",
+        "line": 120
+      },
+      "case": "B",
+      "status": "planned",
+      "evidence": {
+        "code": [],
+        "tests": [],
+        "conformance": null
+      },
+      "plannedBy": "none",
+      "note": "This is an agent writing instruction with no enforcing check requiring these keywords or rejecting the named ambiguous phrases."
+    },
+    {
+      "id": "claude-read-repository-policy",
+      "quote": "You MUST read `AGENTS.md` before any tool call, file write, architecture proposal, or gate",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 3
+      },
+      "case": "B",
+      "status": "planned",
+      "evidence": {
+        "code": [],
+        "tests": [],
+        "conformance": null
+      },
+      "plannedBy": "none",
+      "note": "This is an agent instruction with no enforcing check that Claude reads AGENTS.md before acting."
+    },
+    {
+      "id": "claude-read-workflow",
+      "quote": "You MUST also read `docs/agent-workflow.md` before starting issue work. That document defines the",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 7
+      },
+      "case": "B",
+      "status": "planned",
+      "evidence": {
+        "code": [],
+        "tests": [],
+        "conformance": null
+      },
+      "plannedBy": "none",
+      "note": "This is an agent instruction with no enforcing check that Claude reads the workflow before issue work."
+    },
+    {
+      "id": "agy-read-repository-policy",
+      "quote": "You MUST read `AGENTS.md` before any tool call, file write, or gate decision. If it is missing,",
+      "source": {
+        "file": "AGY.md",
+        "line": 3
+      },
+      "case": "B",
+      "status": "planned",
+      "evidence": {
+        "code": [],
+        "tests": [],
+        "conformance": null
+      },
+      "plannedBy": "none",
+      "note": "This is an agent instruction with no enforcing check that Agy reads AGENTS.md before acting."
+    },
+    {
+      "id": "agy-read-workflow",
+      "quote": "You MUST read `docs/agent-workflow.md` before starting issue work.",
+      "source": {
+        "file": "AGY.md",
+        "line": 5
+      },
+      "case": "B",
+      "status": "planned",
+      "evidence": {
+        "code": [],
+        "tests": [],
+        "conformance": null
+      },
+      "plannedBy": "none",
+      "note": "This is an agent instruction with no enforcing check that Agy reads the workflow before issue work."
+    },
+    {
+      "id": "codex-read-repository-policy",
+      "quote": "You MUST read `AGENTS.md` before any tool call, file write, or gate decision. If it is missing,",
+      "source": {
+        "file": "CODEX.md",
+        "line": 3
+      },
+      "case": "B",
+      "status": "planned",
+      "evidence": {
+        "code": [],
+        "tests": [],
+        "conformance": null
+      },
+      "plannedBy": "none",
+      "note": "This is an agent instruction with no enforcing check that Codex reads AGENTS.md before acting."
+    },
+    {
+      "id": "codex-read-workflow",
+      "quote": "You MUST read `docs/agent-workflow.md` before starting issue work.",
+      "source": {
+        "file": "CODEX.md",
+        "line": 5
+      },
+      "case": "B",
+      "status": "planned",
+      "evidence": {
+        "code": [],
+        "tests": [],
+        "conformance": null
+      },
+      "plannedBy": "none",
+      "note": "This is an agent instruction with no enforcing check that Codex reads the workflow before issue work."
+    },
+    {
+      "id": "trusted-oracle-custody-host",
+      "quote": "The trusted host `resolveOracleCustody(request)` MUST verify the exact source-backed test-engineering",
+      "source": {
+        "file": "docs/evidence-contracts.md",
+        "line": 84
+      },
+      "case": "B",
+      "status": "planned",
+      "evidence": {
+        "code": ["lib/application/run-service.mjs", "lib/core/oracle-custody.mjs"],
+        "tests": ["lib/__tests__/oracle-custody.test.mjs"],
+        "conformance": null
+      },
+      "plannedBy": "none",
+      "note": "The service requires a verified request-bound receipt, but the exact source-backed assignment verification is an injected host obligation with no concrete implementation or specific scheduled design item found."
+    },
+    {
+      "id": "preserve-unknown-oracle-history",
+      "quote": "including segmented snapshot checksums. Missing historical evidence stays unknown; migration MUST",
+      "source": {
+        "file": "docs/evidence-contracts.md",
+        "line": 102
+      },
+      "case": "B",
+      "status": "implemented",
+      "evidence": {
+        "code": ["lib/core/run-state.mjs", "lib/core/oracle-custody.mjs"],
+        "tests": ["lib/__tests__/oracle-custody.test.mjs"],
+        "conformance": null
+      },
+      "note": "Legacy history retains its reduced shape and prospective assignment remains separate from historical authorship without resetting native counters."
+    },
+    {
+      "id": "absent-capability-result",
+      "quote": "declare the capability. They MUST NOT throw for absence.",
+      "source": {
+        "file": "docs/sources/index.md",
+        "line": 55
+      },
+      "case": "B",
+      "status": "implemented",
+      "evidence": {
+        "code": ["lib/core/source-adapter.mjs"],
+        "tests": ["lib/__tests__/source-capabilities.test.mjs"],
+        "conformance": null
+      },
+      "note": "Optional capability probes return capability-absent results while errors from declared capabilities still propagate."
+    },
+    {
+      "id": "adapter-supported-ready-kinds",
+      "quote": "Callers MUST pass the adapter's `readyPredicateKinds` as `supportedKinds`; the default of every",
+      "source": {
+        "file": "docs/sources/index.md",
+        "line": 74
+      },
+      "case": "B",
+      "status": "implemented",
+      "evidence": {
+        "code": ["lib/bridge/bridge.mjs", "lib/core/ready-predicate.mjs"],
+        "tests": ["lib/__tests__/bridge-intake.test.mjs", "lib/__tests__/ready-predicate.test.mjs"],
+        "conformance": null
+      },
+      "note": "Bridge readiness passes the source supported kinds and tests reject predicates unsupported by that adapter."
+    },
+    {
+      "id": "trusted-source-claim-writers",
+      "quote": "- **The trusted writer list is the authority.** Every writer on a source MUST resolve claims with",
+      "source": {
+        "file": "docs/sources/index.md",
+        "line": 96
+      },
+      "case": "B",
+      "status": "implemented",
+      "evidence": {
+        "code": [
+          "lib/core/source-claim.mjs",
+          "lib/sources/filesystem-source.mjs",
+          "lib/sources/github.mjs"
+        ],
+        "tests": [
+          "lib/__tests__/source-claim.test.mjs",
+          "lib/__tests__/filesystem-source-contract.test.mjs",
+          "lib/__tests__/github-source-contract.test.mjs"
+        ],
+        "conformance": null
+      },
+      "note": "Claim resolution requires a configured trusted writer list and both adapters resolve source-authored entries against that list."
+    },
+    {
+      "id": "governed-request-identity",
+      "quote": "The caller MUST bind a stable AgentFlow operation ID and exact candidate SHA-256 to",
+      "source": {
+        "file": "docs/process-autonomy/harness-dispatch.md",
+        "line": 8
+      },
+      "case": "B",
+      "status": "implemented",
+      "evidence": {
+        "code": ["lib/providers/harness-dispatch.mjs"],
+        "tests": ["lib/__tests__/engineering-neutral-conformance.test.mjs"],
+        "conformance": null
+      },
+      "note": "Governed dispatch binds operation identity and candidate SHA-256 and rejects incomplete or stale identity bindings."
+    },
+    {
+      "id": "provider-return-identity",
+      "quote": "each governed request. The provider MUST return both in its terminal payload and",
+      "source": {
+        "file": "docs/process-autonomy/harness-dispatch.md",
+        "line": 9
+      },
+      "case": "B",
+      "status": "implemented",
+      "evidence": {
+        "code": ["lib/providers/harness-dispatch.mjs"],
+        "tests": ["lib/__tests__/engineering-neutral-conformance.test.mjs"],
+        "conformance": null
+      },
+      "note": "Dispatch verifies returned operation and candidate identity in terminal output and provider receipt metadata."
+    },
+    {
+      "id": "raw-byte-artifact-integrity",
+      "quote": "MUST NOT be used for artifact integrity. Unknown, running, pending, empty,",
+      "source": {
+        "file": "docs/process-autonomy/harness-dispatch.md",
+        "line": 13
+      },
+      "case": "B",
+      "status": "implemented",
+      "evidence": {
+        "code": ["lib/providers/harness-dispatch.mjs"],
+        "tests": ["lib/__tests__/engineering-neutral-conformance.test.mjs"],
+        "conformance": null
+      },
+      "note": "Artifact integrity uses SHA-256 of original UTF-8 or canonical base64 bytes rather than a structured-record digest."
+    },
+    {
+      "id": "auditability-ergonomics-principle",
+      "quote": "- `INVARIANT 1`: Autonomy without auditability is a liability; governance without ergonomics is abandoned.",
+      "source": {
+        "file": ".agentflow/PRODUCT.md",
+        "line": 11
+      },
+      "case": "B",
+      "status": "planned",
+      "evidence": {
+        "code": [],
+        "tests": [],
+        "conformance": null
+      },
+      "plannedBy": "none",
+      "note": "This is an agent product principle with no enforcing check that proves the stated auditability and ergonomics outcome."
+    },
+    {
+      "id": "product-neutral-core",
+      "quote": "- `INVARIANT 2`: Extensibility and harness neutrality; core SDLC logic must remain strictly decoupled from vendor-specific session formats or CLI targets.",
+      "source": {
+        "file": ".agentflow/PRODUCT.md",
+        "line": 12
+      },
+      "case": "B",
+      "status": "implemented",
+      "evidence": {
+        "code": ["lib/core/source-adapter.mjs", "lib/providers/harness-dispatch.mjs"],
+        "tests": [
+          "lib/__tests__/source-capabilities.test.mjs",
+          "lib/__tests__/engineering-neutral-conformance.test.mjs"
+        ],
+        "conformance": null
+      },
+      "note": "Neutral contracts and conformance tests separate source and provider implementations from the core workflow interface."
+    },
+    {
+      "id": "product-observe-only-roles",
+      "quote": "- `INVARIANT 3`: Separation of Duties; product management proposes outcomes, builders mutate worktrees, and testers/reviewers strictly observe.",
+      "source": {
+        "file": ".agentflow/PRODUCT.md",
+        "line": 13
+      },
+      "case": "B",
+      "status": "planned",
+      "evidence": {
+        "code": ["lib/qa/qa-contract-verifier.mjs"],
+        "tests": ["lib/__tests__/black-box-qa.test.mjs"],
+        "conformance": null
+      },
+      "plannedBy": "P-2",
+      "note": "Role instructions and oracle path guards do not enforce general observation-only execution, which requires P-2 and M2-3."
+    },
+    {
+      "id": "product-zero-deadlock",
+      "quote": "- `INVARIANT 4`: Zero Deadlock; all asynchronous verification gates and return loops must resolve within deterministic bounds.",
+      "source": {
+        "file": ".agentflow/PRODUCT.md",
+        "line": 14
+      },
+      "case": "B",
+      "status": "planned",
+      "evidence": {
+        "code": ["lib/gates/gate-sweeper.mjs"],
+        "tests": ["lib/__tests__/gate-sweeper.test.mjs"],
+        "conformance": null
+      },
+      "plannedBy": "M1-9",
+      "note": "Universal gate liveness remains unproved until M1-9 connects persisted sweeping to product execution."
+    },
+    {
+      "id": "readme-phase-readonly-authority",
+      "quote": "- **Authority is enforced per phase and falls as well as rises.** It drops to read-only at test and",
+      "source": {
+        "file": "README.md",
+        "line": 41
+      },
+      "case": "B",
+      "status": "planned",
+      "evidence": {
+        "code": ["lib/qa/qa-contract-verifier.mjs"],
+        "tests": ["lib/__tests__/black-box-qa.test.mjs"],
+        "conformance": null
+      },
+      "plannedBy": "P-2",
+      "note": "The design explicitly keeps this read-only claim planned until the tester lane P-2 lands, with reviewer containment separately scheduled for M2-3."
+    },
+    {
+      "id": "readme-structural-duty-separation",
+      "quote": "structural properties, not post-hoc paperwork. Tester and reviewer are read-only and never repair",
+      "source": {
+        "file": "README.md",
+        "line": 175
+      },
+      "case": "B",
+      "status": "planned",
+      "evidence": {
+        "code": ["lib/qa/qa-contract-verifier.mjs"],
+        "tests": ["lib/__tests__/black-box-qa.test.mjs"],
+        "conformance": null
+      },
+      "plannedBy": "P-2",
+      "note": "Current role guidance does not prevent candidate source mutation by testers or reviewers, so structural enforcement awaits P-2 and M2-3."
+    },
+    {
+      "id": "readme-bounded-gate-resolution",
+      "quote": "6. **Bounded supervision and zero deadlock.** Every asynchronous gate resolves deterministically",
+      "source": {
+        "file": "README.md",
+        "line": 183
+      },
+      "case": "B",
+      "status": "planned",
+      "evidence": {
+        "code": ["lib/gates/gate-sweeper.mjs"],
+        "tests": ["lib/__tests__/gate-sweeper.test.mjs"],
+        "conformance": null
+      },
+      "plannedBy": "M1-9",
+      "note": "An isolated sweeper implementation does not guarantee product gate deadlines before M1-9 adds persistence and a caller."
+    }
+  ]
+}
