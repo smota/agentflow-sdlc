@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/smota/agentflow-sdlc/schemas/claims-ledger.schema.json",
+  "title": "AgentFlow claims ledger",
+  "description": "One row per documented claim, with the evidence that backs it (governed-factory design, item M0-3).",
+  "type": "object",
+  "required": ["version", "sources", "wording", "rows"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "const": 1 },
+    "sources": {
+      "description": "Files whose MUST, INVARIANT, SHALL or REQUIRED lines must each have a row.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["file"],
+        "additionalProperties": false,
+        "properties": { "file": { "type": "string" } }
+      }
+    },
+    "wording": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "files": { "type": "array", "items": { "type": "string" } },
+        "supportsFiles": { "type": "array", "items": { "type": "string" } },
+        "deferredRules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["rule", "until", "reason"],
+            "additionalProperties": false,
+            "properties": {
+              "rule": { "type": "string" },
+              "until": { "type": "string" },
+              "reason": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "rows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "quote", "source", "case", "status", "evidence", "note"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "quote": { "type": "string", "minLength": 10 },
+          "source": {
+            "type": "object",
+            "required": ["file", "line"],
+            "additionalProperties": false,
+            "properties": {
+              "file": { "type": "string" },
+              "line": { "type": "integer", "minimum": 1 }
+            }
+          },
+          "case": { "enum": ["A", "B"] },
+          "status": { "enum": ["implemented", "measured", "planned", "retracted", "instruction"] },
+          "evidence": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "code": { "type": "array", "items": { "type": "string" } },
+              "tests": { "type": "array", "items": { "type": "string" } },
+              "conformance": { "type": ["string", "null"] }
+            }
+          },
+          "plannedBy": { "type": "string" },
+          "count": {
+            "type": "object",
+            "required": ["dir", "suffix", "expected"],
+            "additionalProperties": false,
+            "properties": {
+              "dir": { "type": "string" },
+              "suffix": { "type": "string" },
+              "expected": { "type": "integer", "minimum": 0 }
+            }
+          },
+          "note": { "type": "string" }
+        }
+      }
+    }
+  }
+}

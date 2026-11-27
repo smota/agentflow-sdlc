@@ -409,6 +409,8 @@ function handleSdlc(rest, targetDir) {
     return runScript('scripts/validate-sdlc-config.mjs', pass, targetDir)
   if (subcommand === 'validate-authority')
     return runScript('scripts/validate-config-authority.mjs', pass, targetDir)
+  if (subcommand === 'validate-claims')
+    return runScript('scripts/validate-claims-ledger.mjs', pass, targetDir)
   if (subcommand === 'migrate-authority')
     return runScript('scripts/authority-migration.mjs', pass, targetDir)
   if (subcommand === 'validate-issue')
@@ -438,6 +440,7 @@ function handleSdlc(rest, targetDir) {
   process.stderr.write(`Usage:
   agentflow-sdlc sdlc validate [--target <dir>] [--json]
   agentflow-sdlc sdlc validate-authority [--target <dir>] [--json]
+  agentflow-sdlc sdlc validate-claims [--target <dir>] [--json]
   agentflow-sdlc sdlc migrate-authority <plan|apply --confirm <plan-token>> [--target <dir>]
   agentflow-sdlc sdlc sync-goal --goal <n> [--records <file.json>] [--apply] [--json]
   agentflow-sdlc sdlc validate-issue --path <issue.json> [--json]
