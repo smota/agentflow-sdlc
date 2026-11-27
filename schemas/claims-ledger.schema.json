@@ -58,7 +58,7 @@
             }
           },
           "case": { "enum": ["A", "B"] },
-          "status": { "enum": ["implemented", "measured", "planned", "retracted"] },
+          "status": { "enum": ["implemented", "measured", "planned", "retracted", "instruction"] },
           "evidence": {
             "type": "object",
             "additionalProperties": false,

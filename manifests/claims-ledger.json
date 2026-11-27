@@ -390,14 +390,13 @@
         "line": 118
       },
       "case": "B",
-      "status": "planned",
+      "status": "instruction",
       "evidence": {
         "code": [],
         "tests": [],
         "conformance": null
       },
-      "plannedBy": "none",
-      "note": "This is an agent instruction covering writing and contribution standards with no check enforcing the whole instruction."
+      "note": "This is an agent instruction covering writing and contribution standards with no check enforcing the whole instruction. Recorded as an instruction (author decision on #649): it tells agents how to behave and is not counted as a product claim."
     },
     {
       "id": "normative-writing-keywords",
@@ -407,14 +406,13 @@
         "line": 120
       },
       "case": "B",
-      "status": "planned",
+      "status": "instruction",
       "evidence": {
         "code": [],
         "tests": [],
         "conformance": null
       },
-      "plannedBy": "none",
-      "note": "This is an agent writing instruction with no enforcing check requiring these keywords or rejecting the named ambiguous phrases."
+      "note": "This is an agent writing instruction with no enforcing check requiring these keywords or rejecting the named ambiguous phrases. Recorded as an instruction (author decision on #649): it tells agents how to behave and is not counted as a product claim."
     },
     {
       "id": "claude-read-repository-policy",
@@ -424,14 +422,13 @@
         "line": 3
       },
       "case": "B",
-      "status": "planned",
+      "status": "instruction",
       "evidence": {
         "code": [],
         "tests": [],
         "conformance": null
       },
-      "plannedBy": "none",
-      "note": "This is an agent instruction with no enforcing check that Claude reads AGENTS.md before acting."
+      "note": "This is an agent instruction with no enforcing check that Claude reads AGENTS.md before acting. Recorded as an instruction (author decision on #649): it tells agents how to behave and is not counted as a product claim."
     },
     {
       "id": "claude-read-workflow",
@@ -441,14 +438,13 @@
         "line": 7
       },
       "case": "B",
-      "status": "planned",
+      "status": "instruction",
       "evidence": {
         "code": [],
         "tests": [],
         "conformance": null
       },
-      "plannedBy": "none",
-      "note": "This is an agent instruction with no enforcing check that Claude reads the workflow before issue work."
+      "note": "This is an agent instruction with no enforcing check that Claude reads the workflow before issue work. Recorded as an instruction (author decision on #649): it tells agents how to behave and is not counted as a product claim."
     },
     {
       "id": "agy-read-repository-policy",
@@ -458,14 +454,13 @@
         "line": 3
       },
       "case": "B",
-      "status": "planned",
+      "status": "instruction",
       "evidence": {
         "code": [],
         "tests": [],
         "conformance": null
       },
-      "plannedBy": "none",
-      "note": "This is an agent instruction with no enforcing check that Agy reads AGENTS.md before acting."
+      "note": "This is an agent instruction with no enforcing check that Agy reads AGENTS.md before acting. Recorded as an instruction (author decision on #649): it tells agents how to behave and is not counted as a product claim."
     },
     {
       "id": "agy-read-workflow",
@@ -475,14 +470,13 @@
         "line": 5
       },
       "case": "B",
-      "status": "planned",
+      "status": "instruction",
       "evidence": {
         "code": [],
         "tests": [],
         "conformance": null
       },
-      "plannedBy": "none",
-      "note": "This is an agent instruction with no enforcing check that Agy reads the workflow before issue work."
+      "note": "This is an agent instruction with no enforcing check that Agy reads the workflow before issue work. Recorded as an instruction (author decision on #649): it tells agents how to behave and is not counted as a product claim."
     },
     {
       "id": "codex-read-repository-policy",
@@ -492,14 +486,13 @@
         "line": 3
       },
       "case": "B",
-      "status": "planned",
+      "status": "instruction",
       "evidence": {
         "code": [],
         "tests": [],
         "conformance": null
       },
-      "plannedBy": "none",
-      "note": "This is an agent instruction with no enforcing check that Codex reads AGENTS.md before acting."
+      "note": "This is an agent instruction with no enforcing check that Codex reads AGENTS.md before acting. Recorded as an instruction (author decision on #649): it tells agents how to behave and is not counted as a product claim."
     },
     {
       "id": "codex-read-workflow",
@@ -509,14 +502,13 @@
         "line": 5
       },
       "case": "B",
-      "status": "planned",
+      "status": "instruction",
       "evidence": {
         "code": [],
         "tests": [],
         "conformance": null
       },
-      "plannedBy": "none",
-      "note": "This is an agent instruction with no enforcing check that Codex reads the workflow before issue work."
+      "note": "This is an agent instruction with no enforcing check that Codex reads the workflow before issue work. Recorded as an instruction (author decision on #649): it tells agents how to behave and is not counted as a product claim."
     },
     {
       "id": "trusted-oracle-custody-host",
@@ -662,14 +654,13 @@
         "line": 11
       },
       "case": "B",
-      "status": "planned",
+      "status": "instruction",
       "evidence": {
         "code": [],
         "tests": [],
         "conformance": null
       },
-      "plannedBy": "none",
-      "note": "This is an agent product principle with no enforcing check that proves the stated auditability and ergonomics outcome."
+      "note": "This is an agent product principle with no enforcing check that proves the stated auditability and ergonomics outcome. Recorded as an instruction (author decision on #649): it tells agents how to behave and is not counted as a product claim."
     },
     {
       "id": "product-neutral-core",
